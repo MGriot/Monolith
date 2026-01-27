@@ -1,0 +1,130 @@
+[
+  {
+    "id": "INFRA-001",
+    "title": "Initialize Docker Environment",
+    "status": "done",
+    "priority": "critical",
+    "linked_req": "PRD Section 2: Infrastructure & DevOps",
+    "description": "Setup docker-compose.yml with FastAPI, React, PostgreSQL, and Nginx containers. Configure local volume for file storage."
+  },
+  {
+    "id": "BACK-001",
+    "title": "FastAPI Project Scaffold",
+    "status": "done",
+    "priority": "critical",
+    "linked_req": "PRD Section 2: Backend",
+    "description": "Initialize FastAPI project structure with poetry/pip, basic configuration, and async SQLAlchemy setup."
+  },
+  {
+    "id": "BACK-002",
+    "title": "Database Modeling (SQLAlchemy)",
+    "status": "in_progress",
+    "priority": "high",
+    "linked_req": "PRD Section 5: Data Model Draft",
+    "description": "Implement User, Project, Task, Subtask models with all metadata fields (dates, tags, type, topic, assignees)."
+  },
+  {
+    "id": "BACK-003",
+    "title": "Authentication System (JWT)",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 3: User Personas (Implied Auth)",
+    "description": "Implement User registration and login using JWT (OAuth2PasswordBearer)."
+  },
+  {
+    "id": "BACK-004",
+    "title": "API: Projects CRUD",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 6: API Endpoint Rough Sketch",
+    "description": "Create endpoints for listing, creating, reading, updating, and deleting projects."
+  },
+  {
+    "id": "BACK-005",
+    "title": "API: Tasks & Subtasks CRUD",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 4.1: Hierarchy & Data Management",
+    "description": "Create endpoints for tasks and subtasks management."
+  },
+  {
+    "id": "BACK-006",
+    "title": "Logic: Status Propagation",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 4.1: Hierarchy & Data Management",
+    "description": "Implement automated logic: Subtask completion updates Task; Task updates Project progress."
+  },
+  {
+    "id": "BACK-007",
+    "title": "Logic: Dependencies & Cycle Detection",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.1 & 8: Risks",
+    "description": "Implement Finish-to-Start dependencies and prevent circular dependencies."
+  },
+  {
+    "id": "BACK-008",
+    "title": "MCP Module Implementation",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.4: MCP Module",
+    "description": "Create MCP server adapter exposing projects/tasks resources and tools."
+  },
+  {
+    "id": "BACK-009",
+    "title": "Notifications System",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.5: Notifications",
+    "description": "Implement backend logic for triggers (unblocking, assignment) and email dispatch."
+  },
+  {
+    "id": "FRONT-001",
+    "title": "React + Vite Scaffold",
+    "status": "done",
+    "priority": "critical",
+    "linked_req": "PRD Section 2: Frontend",
+    "description": "Initialize React app with TypeScript, Vite, and Tailwind CSS."
+  },
+  {
+    "id": "FRONT-002",
+    "title": "UI System (Shadcn/UI)",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 2: Frontend",
+    "description": "Install and configure Shadcn/UI components (Button, Card, Input, Dialog, etc.)."
+  },
+  {
+    "id": "FRONT-003",
+    "title": "Authentication UI",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 3: User Personas",
+    "description": "Login and Registration pages."
+  },
+  {
+    "id": "FRONT-004",
+    "title": "Global Dashboard (Master View)",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Implement Master Gantt and Master Calendar views."
+  },
+  {
+    "id": "FRONT-005",
+    "title": "Project Dashboard",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Project-specific Gantt, Kanban, and Contribution Graph (Heatmap)."
+  },
+  {
+    "id": "FRONT-006",
+    "title": "Task & Subtask Management UI",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 4.1: Hierarchy",
+    "description": "Forms for creating/editing tasks, managing dependencies, and uploading attachments."
+  }
+]
