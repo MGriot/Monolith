@@ -2,10 +2,10 @@
 
 ## Milestone 1: Foundation (Current)
 **Goal:** A running dockerized stack with Database connectivity and basic Authentication.
-- [ ] Infrastructure Setup (Docker, Nginx, DB).
-- [ ] Backend Base (FastAPI, SQL Models).
+- [x] Infrastructure Setup (Docker, Nginx, DB).
+- [x] Backend Base (FastAPI, SQL Models).
 - [ ] Frontend Base (React, Shadcn/UI).
-- [ ] Authentication (JWT, Login UI).
+- [x] Authentication (JWT, Login UI).
 
 ## Milestone 2: Core Hierarchy & CRUD
 **Goal:** Users can create Projects, Tasks, and Subtasks.
