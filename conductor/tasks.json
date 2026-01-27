@@ -42,7 +42,7 @@
   {
     "id": "BACK-005",
     "title": "API: Tasks & Subtasks CRUD",
-    "status": "in_progress",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 4.1: Hierarchy & Data Management",
     "description": "Create endpoints for tasks and subtasks management."
@@ -50,7 +50,7 @@
   {
     "id": "BACK-006",
     "title": "Logic: Status Propagation",
-    "status": "todo",
+    "status": "in_progress",
     "priority": "high",
     "linked_req": "PRD Section 4.1: Hierarchy & Data Management",
     "description": "Implement automated logic: Subtask completion updates Task; Task updates Project progress."
