@@ -18,7 +18,7 @@
   {
     "id": "BACK-002",
     "title": "Database Modeling (SQLAlchemy)",
-    "status": "in_progress",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 5: Data Model Draft",
     "description": "Implement User, Project, Task, Subtask models with all metadata fields (dates, tags, type, topic, assignees)."
@@ -26,7 +26,7 @@
   {
     "id": "BACK-003",
     "title": "Authentication System (JWT)",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 3: User Personas (Implied Auth)",
     "description": "Implement User registration and login using JWT (OAuth2PasswordBearer)."
@@ -34,7 +34,7 @@
   {
     "id": "BACK-004",
     "title": "API: Projects CRUD",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 6: API Endpoint Rough Sketch",
     "description": "Create endpoints for listing, creating, reading, updating, and deleting projects."
@@ -42,7 +42,7 @@
   {
     "id": "BACK-005",
     "title": "API: Tasks & Subtasks CRUD",
-    "status": "todo",
+    "status": "in_progress",
     "priority": "high",
     "linked_req": "PRD Section 4.1: Hierarchy & Data Management",
     "description": "Create endpoints for tasks and subtasks management."
