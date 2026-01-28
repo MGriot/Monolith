@@ -13,6 +13,7 @@ class SubtaskBase(BaseModel):
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     tags: Optional[List[str]] = []
+    assignee_ids: Optional[List[UUID]] = []
 
 class SubtaskCreate(SubtaskBase):
     title: str
@@ -46,6 +47,7 @@ class TaskBase(BaseModel):
     tags: Optional[List[str]] = []
     attachments: Optional[List[str]] = []
     blocked_by_ids: Optional[List[UUID]] = []
+    assignee_ids: Optional[List[UUID]] = []
 
 class TaskCreate(TaskBase):
     title: str
