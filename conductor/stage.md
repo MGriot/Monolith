@@ -8,11 +8,13 @@
 - [x] Implement Status Propagation (Subtask -> Task -> Project).
 - [x] Implement Dependency Cycle Detection.
 - [x] Implement MCP Module (AI Integration).
+- [x] Implement Notifications System.
 
 ## Blockers
 - None currently.
 
 ## Recent Achievements
+- [x] Implemented Notifications System with Triggers (BACK-009).
 - [x] Implemented MCP Module using FastMCP (BACK-008).
 - [x] Implemented Dependency Logic & Cycle Detection (BACK-007).
 - [x] Implemented Status Propagation Logic (BACK-006).

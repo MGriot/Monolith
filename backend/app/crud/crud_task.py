@@ -80,6 +80,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     async def create(self, db: AsyncSession, *, obj_in: TaskCreate) -> Task:
         obj_data = obj_in.dict(exclude_unset=True)
         blocker_ids = obj_data.pop("blocked_by_ids", [])
+        assignee_ids = obj_data.pop("assignee_ids", [])
         
         db_obj = self.model(**obj_data)
         
@@ -92,25 +93,83 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             blockers = result.scalars().all()
             db_obj.blocking_tasks = blockers
 
+        if assignee_ids:
+            from app.models.user import User
+            res = await db.execute(select(User).filter(User.id.in_(assignee_ids)))
+            users = res.scalars().all()
+            db_obj.assignees = users
+
         db.add(db_obj)
         await db.commit()
         await db.refresh(db_obj)
         
         await self.update_project_progress(db, db_obj.project_id)
+        if assignee_ids:
+            await self.notify_assignees(db, db_obj.id, assignee_ids, db_obj.title)
+            
         return db_obj
+
+    async def notify_unblocked_tasks(self, db: AsyncSession, task_obj: Task):
+        from app.crud.crud_notification import notification as notification_crud
+        from app.schemas.notification import NotificationCreate
+        
+        # Reload blocking_tasks to be sure (though selectinload should have it)
+        result = await db.execute(
+            select(Task).filter(Task.id == task_obj.id).options(selectinload(Task.blocked_tasks).selectinload(Task.blocking_tasks))
+        )
+        task_refreshed = result.scalars().first()
+        
+        for blocked_task in task_refreshed.blocked_tasks:
+            # Check if this task is now completely unblocked
+            active_blockers = await self.check_for_active_blockers(db, blocked_task)
+            if not active_blockers:
+                # Notify all assignees of the blocked task
+                # First, ensure assignees are loaded
+                res = await db.execute(select(Task).filter(Task.id == blocked_task.id).options(selectinload(Task.assignees)))
+                bt_with_assignees = res.scalars().first()
+                
+                for user in bt_with_assignees.assignees:
+                    await notification_crud.create(
+                        db,
+                        obj_in=NotificationCreate(
+                            user_id=user.id,
+                            title="Task Unblocked",
+                            message=f"Task '{blocked_task.title}' is now unblocked as '{task_obj.title}' was completed.",
+                            type="unblocked",
+                            link=f"/tasks/{blocked_task.id}"
+                        )
+                    )
+
+    async def notify_assignees(self, db: AsyncSession, task_id: UUID, new_assignee_ids: List[UUID], item_title: str, is_subtask: bool = False):
+        from app.crud.crud_notification import notification as notification_crud
+        from app.schemas.notification import NotificationCreate
+        
+        link = f"/tasks/{task_id}" if not is_subtask else f"/subtasks/{task_id}"
+        item_type = "Task" if not is_subtask else "Subtask"
+        
+        for user_id in new_assignee_ids:
+            await notification_crud.create(
+                db,
+                obj_in=NotificationCreate(
+                    user_id=user_id,
+                    title=f"New Assignment: {item_type}",
+                    message=f"You have been assigned to {item_type.lower()} '{item_title}'.",
+                    type="assignment",
+                    link=link
+                )
+            )
 
     async def update(
         self, db: AsyncSession, *, db_obj: Task, obj_in: Union[TaskUpdate, Dict[str, Any]]
     ) -> Task:
         obj_data = obj_in.dict(exclude_unset=True) if isinstance(obj_in, TaskUpdate) else obj_in
         
+        old_status = db_obj.status
+        
         # 1. Handle Status Change and Blockers
         if obj_data.get("status") == Status.DONE:
             active_blockers = await self.check_for_active_blockers(db, db_obj)
             if active_blockers:
-                # We could raise an error, but PRD says "Visual warning if a dependency blocks completion".
-                # For backend, let's enforce it unless we want to allow it.
-                # Enforcing is safer for data integrity.
                 raise ValueError(f"Task is blocked by unfinished tasks: {', '.join(active_blockers)}")
 
         # 2. Handle Dependency Updates
@@ -130,10 +189,30 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             blockers = result.scalars().all()
             db_obj.blocking_tasks = blockers
 
-        # 3. Standard Update
+        # 3. Handle Assignee Updates
+        if "assignee_ids" in obj_data:
+            new_assignee_ids = obj_data.pop("assignee_ids")
+            # Simple approach: find added assignees to notify
+            current_assignee_ids = [u.id for u in db_obj.assignees]
+            added_ids = [uid for uid in new_assignee_ids if uid not in current_assignee_ids]
+            
+            from app.models.user import User
+            res = await db.execute(select(User).filter(User.id.in_(new_assignee_ids)))
+            users = res.scalars().all()
+            db_obj.assignees = users
+            
+            if added_ids:
+                await self.notify_assignees(db, db_obj.id, added_ids, db_obj.title)
+
+        # 4. Standard Update
         db_obj = await super().update(db, db_obj=db_obj, obj_in=obj_data)
         
+        # 4. Propagation & Notifications
         await self.update_project_progress(db, db_obj.project_id)
+        
+        if db_obj.status == Status.DONE and old_status != Status.DONE:
+            await self.notify_unblocked_tasks(db, db_obj)
+            
         return db_obj
 
     async def remove(self, db: AsyncSession, *, id: UUID) -> Task:
@@ -174,14 +253,47 @@ class CRUDSubtask(CRUDBase[Subtask, SubtaskCreate, SubtaskUpdate]):
             await task.update(db, db_obj=task_obj, obj_in={"status": new_status})
 
     async def create(self, db: AsyncSession, *, obj_in: SubtaskCreate) -> Subtask:
-        db_obj = await super().create(db, obj_in=obj_in)
+        obj_data = obj_in.dict(exclude_unset=True)
+        assignee_ids = obj_data.pop("assignee_ids", [])
+        
+        db_obj = self.model(**obj_data)
+        
+        if assignee_ids:
+            from app.models.user import User
+            res = await db.execute(select(User).filter(User.id.in_(assignee_ids)))
+            users = res.scalars().all()
+            db_obj.assignees = users
+
+        db.add(db_obj)
+        await db.commit()
+        await db.refresh(db_obj)
+        
         await self.update_parent_task_status(db, db_obj.task_id)
+        
+        if assignee_ids:
+            await task.notify_assignees(db, db_obj.id, assignee_ids, db_obj.title, is_subtask=True)
+            
         return db_obj
 
     async def update(
         self, db: AsyncSession, *, db_obj: Subtask, obj_in: Union[SubtaskUpdate, Dict[str, Any]]
     ) -> Subtask:
-        db_obj = await super().update(db, db_obj=db_obj, obj_in=obj_in)
+        obj_data = obj_in.dict(exclude_unset=True) if isinstance(obj_in, SubtaskUpdate) else obj_in
+        
+        if "assignee_ids" in obj_data:
+            new_assignee_ids = obj_data.pop("assignee_ids")
+            current_assignee_ids = [u.id for u in db_obj.assignees]
+            added_ids = [uid for uid in new_assignee_ids if uid not in current_assignee_ids]
+            
+            from app.models.user import User
+            res = await db.execute(select(User).filter(User.id.in_(new_assignee_ids)))
+            users = res.scalars().all()
+            db_obj.assignees = users
+            
+            if added_ids:
+                await task.notify_assignees(db, db_obj.id, added_ids, db_obj.title, is_subtask=True)
+
+        db_obj = await super().update(db, db_obj=db_obj, obj_in=obj_data)
         await self.update_parent_task_status(db, db_obj.task_id)
         return db_obj
 

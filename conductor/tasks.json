@@ -74,7 +74,7 @@
   {
     "id": "BACK-009",
     "title": "Notifications System",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 4.5: Notifications",
     "description": "Implement backend logic for triggers (unblocking, assignment) and email dispatch."
