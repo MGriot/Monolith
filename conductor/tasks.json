@@ -50,7 +50,7 @@
   {
     "id": "BACK-006",
     "title": "Logic: Status Propagation",
-    "status": "in_progress",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 4.1: Hierarchy & Data Management",
     "description": "Implement automated logic: Subtask completion updates Task; Task updates Project progress."
@@ -125,6 +125,6 @@
     "status": "todo",
     "priority": "high",
     "linked_req": "PRD Section 4.1: Hierarchy",
-    "description": "Forms for creating/editing tasks, managing dependencies, and uploading attachments."
+    "description": "Forms for creating/editing tasks and subtasks, managing dependencies, and uploading attachments."
   }
 ]
