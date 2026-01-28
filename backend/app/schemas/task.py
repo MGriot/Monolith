@@ -45,6 +45,7 @@ class TaskBase(BaseModel):
     due_date: Optional[datetime] = None
     tags: Optional[List[str]] = []
     attachments: Optional[List[str]] = []
+    blocked_by_ids: Optional[List[UUID]] = []
 
 class TaskCreate(TaskBase):
     title: str

@@ -58,7 +58,7 @@
   {
     "id": "BACK-007",
     "title": "Logic: Dependencies & Cycle Detection",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 4.1 & 8: Risks",
     "description": "Implement Finish-to-Start dependencies and prevent circular dependencies."
