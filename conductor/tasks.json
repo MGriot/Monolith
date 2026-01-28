@@ -90,7 +90,7 @@
   {
     "id": "FRONT-002",
     "title": "UI System (Shadcn/UI)",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 2: Frontend",
     "description": "Install and configure Shadcn/UI components (Button, Card, Input, Dialog, etc.)."
