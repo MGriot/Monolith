@@ -1,2 +1,12 @@
 .env
 .DS_Store
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.db.sqlite3
+dist/
+build/
+*.egg-info/
+node_modules/
