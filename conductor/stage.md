@@ -1,22 +1,19 @@
-# Current Stage: Backend Development
+# Current Stage: Frontend Development
 
 **Status:** ✅ Idle
 **Focus:** 
 
 ## Active Goals
-- [x] Implement Tasks & Subtasks CRUD.
-- [x] Implement Status Propagation (Subtask -> Task -> Project).
-- [x] Implement Dependency Cycle Detection.
-- [x] Implement MCP Module (AI Integration).
-- [x] Implement Notifications System.
+- [x] Configure Tailwind CSS & Shadcn/UI.
+- [ ] Implement Authentication UI (Login/Register).
+- [ ] Implement Global Dashboard.
 
 ## Blockers
 - None currently.
 
 ## Recent Achievements
+- [x] Initialized UI System with Shadcn/UI (FRONT-002).
 - [x] Implemented Notifications System with Triggers (BACK-009).
 - [x] Implemented MCP Module using FastMCP (BACK-008).
-- [x] Implemented Dependency Logic & Cycle Detection (BACK-007).
-- [x] Implemented Status Propagation Logic (BACK-006).
 - [x] Implemented Projects, Tasks, and Subtasks API.
 - [x] Completed Milestone 1 Foundation (Backend part).
