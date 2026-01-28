@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.api_v1.api import api_router
+from app.api.api_v1.endpoints.mcp import mcp
 
 app = FastAPI(title="Monolith Project Planner API", version="0.1.0")
 
@@ -14,6 +15,7 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api/v1")
+app.mount("/mcp", mcp.sse_app)
 
 @app.get("/api/health")
 async def health_check():
