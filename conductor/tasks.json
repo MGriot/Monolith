@@ -170,7 +170,7 @@
   {
     "id": "FRONT-005-B",
     "title": "Project Kanban Board",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 4.3: Visualization",
     "description": "Implement Kanban view with drag-and-drop status updates."
