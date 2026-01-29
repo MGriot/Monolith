@@ -120,12 +120,28 @@
     "description": "Implement Registration UI with react-hook-form and API integration."
   },
   {
-    "id": "FRONT-004",
-    "title": "Global Dashboard (Master View)",
+    "id": "FRONT-004-A",
+    "title": "Dashboard Infra & Layout",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Install TanStack Query, date-fns, and implement Main Layout with Sidebar/Navbar."
+  },
+  {
+    "id": "FRONT-004-B",
+    "title": "Master Calendar View",
     "status": "todo",
     "priority": "high",
     "linked_req": "PRD Section 4.3: Visualization",
-    "description": "Implement Master Gantt and Master Calendar views."
+    "description": "Implement monthly view of all due dates across projects."
+  },
+  {
+    "id": "FRONT-004-C",
+    "title": "Master Gantt View",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Implement high-level project timeline visualization."
   },
   {
     "id": "FRONT-005",

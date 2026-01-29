@@ -52,7 +52,7 @@ export default function LoginPage() {
         },
       });
 
-      login(response.data.access_token, { email: data.email });
+      await login(response.data.access_token);
       navigate("/");
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to login. Please check your credentials.");

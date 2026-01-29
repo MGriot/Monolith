@@ -1,52 +1,67 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./components/auth-provider";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import Layout from "./components/layout";
 import LoginPage from "./pages/login";
 import RegisterPage from "./pages/register";
 
+const queryClient = new QueryClient();
+
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { token, isLoading } = useAuth();
-  if (isLoading) return <div>Loading...</div>;
-  return token ? <>{children}</> : <Navigate to="/login" />;
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>
+  );
+  return token ? <Layout>{children}</Layout> : <Navigate to="/login" />;
 };
 
 function Dashboard() {
-  const { logout } = useAuth();
   return (
-    <div className="p-8 flex flex-col gap-4">
-      <h1 className="text-3xl font-bold">Monolith Planner</h1>
-      <Card className="w-[350px]">
-        <CardHeader>
-          <CardTitle>Welcome to Dashboard</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <p>You are logged in.</p>
-          <Button onClick={logout} variant="outline">Logout</Button>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Dashboard stats placeholders */}
+        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <p className="text-sm font-medium text-slate-500">Active Projects</p>
+          <p className="text-2xl font-bold">0</p>
+        </div>
+        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <p className="text-sm font-medium text-slate-500">Tasks in Progress</p>
+          <p className="text-2xl font-bold">0</p>
+        </div>
+      </div>
     </div>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route
+              path="/"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            {/* Placeholder routes for navigation */}
+            <Route path="/projects" element={<PrivateRoute><div>Projects Page</div></PrivateRoute>} />
+            <Route path="/calendar" element={<PrivateRoute><div>Calendar Page</div></PrivateRoute>} />
+            <Route path="/roadmap" element={<PrivateRoute><div>Roadmap Page</div></PrivateRoute>} />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

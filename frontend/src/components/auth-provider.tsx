@@ -1,9 +1,18 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api from '../lib/api';
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  is_active: boolean;
+  is_superuser: boolean;
+}
 
 interface AuthContextType {
-  user: any | null;
+  user: User | null;
   token: string | null;
-  login: (token: string, user: any) => void;
+  login: (token: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -11,19 +20,34 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Basic verification of token could go here
-    setIsLoading(false);
+  const fetchUser = useCallback(async () => {
+    try {
+      const response = await api.get('/users/me');
+      setUser(response.data);
+    } catch (error) {
+      console.error('Failed to fetch user', error);
+      logout();
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const login = (newToken: string, newUser: any) => {
-    setToken(newToken);
-    setUser(newUser);
+  useEffect(() => {
+    if (token) {
+      fetchUser();
+    } else {
+      setIsLoading(false);
+    }
+  }, [token, fetchUser]);
+
+  const login = async (newToken: string) => {
     localStorage.setItem('token', newToken);
+    setToken(newToken);
+    // User will be fetched by the useEffect
   };
 
   const logout = () => {
