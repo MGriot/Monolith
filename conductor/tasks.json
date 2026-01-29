@@ -178,7 +178,7 @@
   {
     "id": "FRONT-005-C",
     "title": "Project Gantt & Heatmap",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 4.3: Visualization",
     "description": "Implement project-specific Gantt chart and contribution heatmap."
