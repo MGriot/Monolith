@@ -5,6 +5,7 @@ import Layout from "./components/layout";
 import LoginPage from "./pages/login";
 import RegisterPage from "./pages/register";
 import CalendarPage from "./pages/calendar";
+import RoadmapPage from "./pages/roadmap";
 
 const queryClient = new QueryClient();
 
@@ -58,7 +59,7 @@ function App() {
             {/* Placeholder routes for navigation */}
             <Route path="/projects" element={<PrivateRoute><div>Projects Page</div></PrivateRoute>} />
             <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
-            <Route path="/roadmap" element={<PrivateRoute><div>Roadmap Page</div></PrivateRoute>} />
+            <Route path="/roadmap" element={<PrivateRoute><RoadmapPage /></PrivateRoute>} />
           </Routes>
         </Router>
       </AuthProvider>
