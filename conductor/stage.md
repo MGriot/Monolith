@@ -7,18 +7,16 @@
 - [x] Configure Tailwind CSS & Shadcn/UI.
 - [x] Configure Auth Infrastructure & Routing.
 - [x] Implement Dashboard Infra & Layout.
-- [x] Implement Master Calendar View.
-- [x] Implement Master Gantt View (FRONT-004-C).
+- [x] Implement Master Calendar & Gantt Views.
+- [x] Implement Project Dashboard Layout (FRONT-005-A).
+- [ ] Implement Project Kanban Board (FRONT-005-B).
+- [ ] Implement Project Gantt & Heatmap (FRONT-005-C).
 
 ## Blockers
 - None currently.
 
 ## Recent Achievements
-- [x] Implemented Master Gantt View with SVG-based timeline visualization (FRONT-004-C).
-- [x] Implemented backend `/projects/gantt` endpoint (BACK-011).
-- [x] Implemented Master Calendar View with event grid and detail popovers (FRONT-004-B).
-- [x] Implemented backend `/calendar` endpoint for aggregated event data (BACK-010).
-- [x] Implemented Notifications System with Triggers (BACK-009).
-- [x] Implemented MCP Module using FastMCP (BACK-008).
-- [x] Implemented Projects, Tasks, and Subtasks API.
-- [x] Completed Milestone 1 Foundation (Backend part).
+- [x] Created tabbed Project Detail Page with progress tracking (FRONT-005-A).
+- [x] Implemented backend `/projects/{id}/statistics` for activity data (FRONT-005-A).
+- [x] Implemented Master Gantt & Calendar views.
+- [x] Configured global Dashboard Layout.

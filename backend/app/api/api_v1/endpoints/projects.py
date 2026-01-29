@@ -69,6 +69,40 @@ async def read_projects_gantt(
     projects = result.scalars().all()
     return projects
 
+@router.get("/{project_id}/statistics", response_model=Any)
+async def read_project_statistics(
+    project_id: UUID,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Get project statistics (activity data for heatmap).
+    """
+    from sqlalchemy import func
+    from app.models.task import Task
+    from app.models.project import Project as ProjectModel
+    from sqlalchemy import select
+
+    project = await db.get(ProjectModel, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Simple activity query: count completed tasks per day
+    query = select(
+        func.date(Task.completed_at).label("date"),
+        func.count(Task.id).label("count")
+    ).where(
+        Task.project_id == project_id,
+        Task.completed_at != None
+    ).group_by(
+        func.date(Task.completed_at)
+    )
+
+    result = await db.execute(query)
+    stats = result.all()
+    
+    return [{"date": str(s.date), "count": s.count} for s in stats]
+
 @router.get("/{project_id}", response_model=Project)
 async def read_project(
     project_id: UUID,

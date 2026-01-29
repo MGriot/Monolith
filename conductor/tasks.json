@@ -160,12 +160,28 @@
     "description": "Implement high-level project timeline visualization."
   },
   {
-    "id": "FRONT-005",
-    "title": "Project Dashboard",
+    "id": "FRONT-005-A",
+    "title": "Project Dashboard Layout & Stats API",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Implement Project page shell with tabs and backend endpoint for activity stats."
+  },
+  {
+    "id": "FRONT-005-B",
+    "title": "Project Kanban Board",
     "status": "todo",
     "priority": "high",
     "linked_req": "PRD Section 4.3: Visualization",
-    "description": "Project-specific Gantt, Kanban, and Contribution Graph (Heatmap)."
+    "description": "Implement Kanban view with drag-and-drop status updates."
+  },
+  {
+    "id": "FRONT-005-C",
+    "title": "Project Gantt & Heatmap",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Implement project-specific Gantt chart and contribution heatmap."
   },
   {
     "id": "FRONT-006",

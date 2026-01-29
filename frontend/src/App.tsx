@@ -6,6 +6,7 @@ import LoginPage from "./pages/login";
 import RegisterPage from "./pages/register";
 import CalendarPage from "./pages/calendar";
 import RoadmapPage from "./pages/roadmap";
+import ProjectDetailPage from "./pages/project-detail";
 
 const queryClient = new QueryClient();
 
@@ -57,7 +58,8 @@ function App() {
               }
             />
             {/* Placeholder routes for navigation */}
-            <Route path="/projects" element={<PrivateRoute><div>Projects Page</div></PrivateRoute>} />
+            <Route path="/projects" element={<PrivateRoute><div>Projects List Page</div></PrivateRoute>} />
+            <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
             <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
             <Route path="/roadmap" element={<PrivateRoute><RoadmapPage /></PrivateRoute>} />
           </Routes>
