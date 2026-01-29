@@ -128,9 +128,17 @@
     "description": "Install TanStack Query, date-fns, and implement Main Layout with Sidebar/Navbar."
   },
   {
+    "id": "BACK-010",
+    "title": "API: Calendar Aggregated View",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 6: API Endpoint Rough Sketch",
+    "description": "Implement GET /calendar to return all projects, tasks, and subtasks with due dates."
+  },
+  {
     "id": "FRONT-004-B",
     "title": "Master Calendar View",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 4.3: Visualization",
     "description": "Implement monthly view of all due dates across projects."
