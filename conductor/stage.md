@@ -5,13 +5,15 @@
 
 ## Active Goals
 - [x] Configure Tailwind CSS & Shadcn/UI.
-- [ ] Implement Authentication UI (Login/Register).
-- [ ] Implement Global Dashboard.
+- [x] Configure Auth Infrastructure & Routing (FRONT-003-A).
+- [ ] Implement Login Page (FRONT-003-B).
+- [ ] Implement Register Page (FRONT-003-C).
 
 ## Blockers
 - None currently.
 
 ## Recent Achievements
+- [x] Configured React Router, Axios, and AuthProvider (FRONT-003-A).
 - [x] Initialized UI System with Shadcn/UI (FRONT-002).
 - [x] Implemented Notifications System with Triggers (BACK-009).
 - [x] Implemented MCP Module using FastMCP (BACK-008).

@@ -96,12 +96,28 @@
     "description": "Install and configure Shadcn/UI components (Button, Card, Input, Dialog, etc.)."
   },
   {
-    "id": "FRONT-003",
-    "title": "Authentication UI",
+    "id": "FRONT-003-A",
+    "title": "Auth Infrastructure & Routing",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 3: User Personas",
+    "description": "Configure React Router, Axios client, and basic Auth Provider skeleton."
+  },
+  {
+    "id": "FRONT-003-B",
+    "title": "Login Page Implementation",
     "status": "todo",
     "priority": "high",
     "linked_req": "PRD Section 3: User Personas",
-    "description": "Login and Registration pages."
+    "description": "Implement Login UI with react-hook-form and API integration."
+  },
+  {
+    "id": "FRONT-003-C",
+    "title": "Registration Page Implementation",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 3: User Personas",
+    "description": "Implement Registration UI with react-hook-form and API integration."
   },
   {
     "id": "FRONT-004",
