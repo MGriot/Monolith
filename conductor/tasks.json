@@ -106,7 +106,7 @@
   {
     "id": "FRONT-003-B",
     "title": "Login Page Implementation",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 3: User Personas",
     "description": "Implement Login UI with react-hook-form and API integration."
