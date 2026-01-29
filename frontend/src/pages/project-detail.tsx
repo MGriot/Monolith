@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import KanbanBoard from '@/components/kanban-board';
+import ProjectGantt from '@/components/project-gantt';
+import ProjectHeatmap from '@/components/project-heatmap';
 import { 
   Trello, 
   GanttChart, 
@@ -30,6 +32,8 @@ interface Task {
   status: string;
   priority: string;
   topic?: string;
+  start_date?: string;
+  due_date?: string;
 }
 
 export default function ProjectDetailPage() {
@@ -52,6 +56,14 @@ export default function ProjectDetailPage() {
     },
   });
 
+  const { data: stats, isLoading: isStatsLoading } = useQuery({
+    queryKey: ['project-stats', id],
+    queryFn: async () => {
+      const response = await api.get(`/projects/${id}/statistics`);
+      return response.data;
+    },
+  });
+
   const moveTaskMutation = useMutation({
     mutationFn: async ({ taskId, newStatus }: { taskId: string; newStatus: string }) => {
       return api.put(`/tasks/${taskId}`, { status: newStatus });
@@ -59,6 +71,7 @@ export default function ProjectDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', id] });
       queryClient.invalidateQueries({ queryKey: ['project', id] });
+      queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
     },
   });
 
@@ -66,7 +79,7 @@ export default function ProjectDetailPage() {
     moveTaskMutation.mutate({ taskId, newStatus });
   };
 
-  if (isProjectLoading || isTasksLoading) {
+  if (isProjectLoading || isTasksLoading || isStatsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -128,16 +141,12 @@ export default function ProjectDetailPage() {
           <KanbanBoard tasks={tasks || []} onTaskMove={handleTaskMove} />
         </TabsContent>
         
-        <TabsContent value="gantt" className="min-h-[500px] border rounded-xl p-6 bg-white shadow-sm">
-          <div className="flex flex-col items-center justify-center h-64 text-slate-400 italic">
-            Project Gantt Implementation Coming Soon...
-          </div>
+        <TabsContent value="gantt" className="min-h-[500px] border rounded-xl p-6 bg-white shadow-sm overflow-hidden">
+          <ProjectGantt tasks={tasks || []} />
         </TabsContent>
         
-        <TabsContent value="activity" className="min-h-[500px] border rounded-xl p-6 bg-white shadow-sm">
-          <div className="flex flex-col items-center justify-center h-64 text-slate-400 italic">
-            Activity Heatmap Implementation Coming Soon...
-          </div>
+        <TabsContent value="activity" className="min-h-[500px] border rounded-xl p-6 bg-white shadow-sm overflow-hidden">
+          <ProjectHeatmap stats={stats || []} />
         </TabsContent>
       </Tabs>
     </div>
