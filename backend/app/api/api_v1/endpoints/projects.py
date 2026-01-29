@@ -43,6 +43,32 @@ async def create_project(
     )
     return project
 
+@router.get("/gantt", response_model=List[Project])
+async def read_projects_gantt(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Retrieve projects for Gantt view (those with start and due dates).
+    """
+    from sqlalchemy import and_
+    from app.models.project import Project as ProjectModel
+    from sqlalchemy import select
+
+    query = select(ProjectModel).where(
+        and_(
+            ProjectModel.start_date != None,
+            ProjectModel.due_date != None
+        )
+    )
+    
+    if not current_user.is_superuser:
+        query = query.where(ProjectModel.owner_id == current_user.id)
+    
+    result = await db.execute(query)
+    projects = result.scalars().all()
+    return projects
+
 @router.get("/{project_id}", response_model=Project)
 async def read_project(
     project_id: UUID,

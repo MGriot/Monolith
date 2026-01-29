@@ -144,9 +144,17 @@
     "description": "Implement monthly view of all due dates across projects."
   },
   {
+    "id": "BACK-011",
+    "title": "API: Master Gantt View",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Implement GET /projects/gantt to return project timelines for the Master Gantt view."
+  },
+  {
     "id": "FRONT-004-C",
     "title": "Master Gantt View",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 4.3: Visualization",
     "description": "Implement high-level project timeline visualization."
