@@ -1,9 +1,10 @@
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import KanbanBoard from '@/components/kanban-board';
 import { 
   Trello, 
   GanttChart, 
@@ -23,10 +24,19 @@ interface Project {
   type: string;
 }
 
+interface Task {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  topic?: string;
+}
+
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
 
-  const { data: project, isLoading } = useQuery({
+  const { data: project, isLoading: isProjectLoading } = useQuery({
     queryKey: ['project', id],
     queryFn: async () => {
       const response = await api.get(`/projects/${id}`);
@@ -34,7 +44,29 @@ export default function ProjectDetailPage() {
     },
   });
 
-  if (isLoading) {
+  const { data: tasks, isLoading: isTasksLoading } = useQuery({
+    queryKey: ['tasks', id],
+    queryFn: async () => {
+      const response = await api.get(`/tasks/?project_id=${id}`);
+      return response.data as Task[];
+    },
+  });
+
+  const moveTaskMutation = useMutation({
+    mutationFn: async ({ taskId, newStatus }: { taskId: string; newStatus: string }) => {
+      return api.put(`/tasks/${taskId}`, { status: newStatus });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+    },
+  });
+
+  const handleTaskMove = (taskId: string, newStatus: string) => {
+    moveTaskMutation.mutate({ taskId, newStatus });
+  };
+
+  if (isProjectLoading || isTasksLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -92,10 +124,8 @@ export default function ProjectDetailPage() {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="kanban" className="min-h-[500px] border rounded-xl p-6 bg-white shadow-sm">
-          <div className="flex flex-col items-center justify-center h-64 text-slate-400 italic">
-            Kanban Board Implementation Coming Soon...
-          </div>
+        <TabsContent value="kanban" className="min-h-[500px] border rounded-xl p-6 bg-white shadow-sm overflow-hidden">
+          <KanbanBoard tasks={tasks || []} onTaskMove={handleTaskMove} />
         </TabsContent>
         
         <TabsContent value="gantt" className="min-h-[500px] border rounded-xl p-6 bg-white shadow-sm">
