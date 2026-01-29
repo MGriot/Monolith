@@ -114,7 +114,7 @@
   {
     "id": "FRONT-003-C",
     "title": "Registration Page Implementation",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 3: User Personas",
     "description": "Implement Registration UI with react-hook-form and API integration."

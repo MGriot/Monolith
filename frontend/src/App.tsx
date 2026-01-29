@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import LoginPage from "./pages/login";
+import RegisterPage from "./pages/register";
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { token, isLoading } = useAuth();
@@ -34,7 +35,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<div>Register Page Placeholder</div>} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route
             path="/"
             element={
