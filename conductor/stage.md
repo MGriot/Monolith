@@ -1,19 +1,18 @@
-# Current Stage: Frontend Development
+# Current Stage: Frontend Development - Advanced Features
 
 **Status:** ✅ Idle
 **Focus:** 
 
 ## Active Goals
-- [x] Implement File upload UI & Preview.
-- [x] Implement Backend File Upload Endpoint.
-- [x] Connect Attachment updates to API.
-- [x] Integrate Attachment Manager into Task Dialog.
+- [x] Implement Users list page.
+- [x] Connect to Backend Users API.
+- [x] Add User management into Sidebar.
 
 ## Blockers
 - None currently.
 
 ## Recent Achievements
-- [x] Implemented File Attachment System (FRONT-006-D).
-- [x] Implemented Dependency Management UI (FRONT-006-C).
-- [x] Implemented Subtask Management UI (FRONT-006-B).
-- [x] Implemented Task Creation & Edit Forms (FRONT-006-A).
+- [x] Implemented User & Team Management UI (FRONT-007).
+- [x] Implemented Task Management Suite (FRONT-006).
+- [x] Implemented Project Dashboard visuals (FRONT-005).
+- [x] Implemented Master Views (FRONT-004).
