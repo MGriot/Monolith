@@ -234,7 +234,7 @@
   {
     "id": "FRONT-009",
     "title": "Task Assignment UI",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 4.2: Metadata",
     "description": "Implement user selection for task assignees."

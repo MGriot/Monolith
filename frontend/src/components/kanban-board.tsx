@@ -22,7 +22,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreVertical, GripVertical, Plus } from 'lucide-react';
+import { MoreVertical, GripVertical, Plus, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Task {
@@ -31,6 +31,7 @@ interface Task {
   status: string;
   priority: string;
   topic?: string;
+  assignees?: { id: string; full_name: string; email: string }[];
 }
 
 interface KanbanBoardProps {
@@ -301,15 +302,29 @@ function TaskCard({ task, isDragging, dragProps, onClick }: { task: Task, isDrag
           </div>
         </div>
         
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 capitalize border-none", priorityColors[task.priority])}>
-            {task.priority}
-          </Badge>
-          {task.topic && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-              {task.topic}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 capitalize border-none", priorityColors[task.priority])}>
+              {task.priority}
             </Badge>
-          )}
+            {task.topic && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {task.topic}
+              </Badge>
+            )}
+          </div>
+          
+          <div className="flex -space-x-1.5 overflow-hidden">
+            {task.assignees?.map((u) => (
+              <div 
+                key={u.id}
+                className="inline-block h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center ring-0"
+                title={u.full_name || u.email}
+              >
+                <UserIcon className="w-2.5 h-2.5 text-slate-500" />
+              </div>
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>

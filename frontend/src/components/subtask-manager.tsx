@@ -7,15 +7,23 @@ import {
   Plus, 
   Trash2, 
   Loader2,
-  ChevronRight
+  ChevronRight,
+  User as UserIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+}
 
 interface Subtask {
   id: string;
   title: string;
   status: string;
   task_id: string;
+  assignees?: User[];
 }
 
 interface SubtaskManagerProps {
@@ -25,6 +33,15 @@ interface SubtaskManagerProps {
 export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
   const queryClient = useQueryClient();
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [activeSubtaskMenu, setActiveSubtaskMenu] = useState<string | null>(null);
+
+  const { data: users } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const response = await api.get('/users/');
+      return response.data as User[];
+    },
+  });
 
   const { data: subtasks, isLoading } = useQuery({
     queryKey: ['subtasks', taskId],
@@ -45,13 +62,12 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
     },
   });
 
-  const toggleMutation = useMutation({
-    mutationFn: async ({ subtaskId, status }: { subtaskId: string; status: string }) => {
-      return api.put(`/subtasks/${subtaskId}`, { status });
+  const updateMutation = useMutation({
+    mutationFn: async ({ subtaskId, data }: { subtaskId: string; data: any }) => {
+      return api.put(`/subtasks/${subtaskId}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
-      // Also invalidate parent task/project to reflect progress changes
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
@@ -64,6 +80,18 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
     },
   });
+
+  const toggleAssignee = (subtask: Subtask, userId: string) => {
+    const currentIds = subtask.assignees?.map(u => u.id) || [];
+    const index = currentIds.indexOf(userId);
+    let newIds = [...currentIds];
+    if (index > -1) {
+      newIds.splice(index, 1);
+    } else {
+      newIds.push(userId);
+    }
+    updateMutation.mutate({ subtaskId: subtask.id, data: { assignee_ids: newIds } });
+  };
 
   const handleAddSubtask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,35 +122,71 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
 
       <div className="space-y-2">
         {subtasks?.map((subtask) => (
-          <div 
-            key={subtask.id} 
-            className="flex items-center justify-between p-2 rounded-lg border border-transparent hover:border-slate-100 hover:bg-slate-50 group transition-all"
-          >
-            <div className="flex items-center gap-3 flex-1">
-              <input 
-                type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
-                checked={subtask.status === "Done"} 
-                onChange={(e) => {
-                  toggleMutation.mutate({ 
-                    subtaskId: subtask.id, 
-                    status: e.target.checked ? "Done" : "Todo" 
-                  });
-                }}
-              />
-              <span className={cn(
-                "text-sm",
-                subtask.status === "Done" && "line-through text-slate-400"
-              )}>
-                {subtask.title}
-              </span>
+          <div key={subtask.id} className="space-y-2">
+            <div className="flex items-center justify-between p-2 rounded-lg border border-transparent hover:border-slate-100 hover:bg-slate-50 group transition-all">
+              <div className="flex items-center gap-3 flex-1">
+                <input 
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                  checked={subtask.status === "Done"} 
+                  onChange={(e) => {
+                    updateMutation.mutate({ 
+                      subtaskId: subtask.id, 
+                      data: { status: e.target.checked ? "Done" : "Todo" }
+                    });
+                  }}
+                />
+                <span className={cn(
+                  "text-sm",
+                  subtask.status === "Done" && "line-through text-slate-400"
+                )}>
+                  {subtask.title}
+                </span>
+                
+                <div className="flex -space-x-1 ml-2">
+                  {subtask.assignees?.map(u => (
+                    <div 
+                      key={u.id}
+                      className="w-5 h-5 rounded-full bg-slate-200 border border-white flex items-center justify-center"
+                      title={u.full_name || u.email}
+                    >
+                      <UserIcon className="w-2.5 h-2.5 text-slate-500" />
+                    </div>
+                  ))}
+                  <button 
+                    onClick={() => setActiveSubtaskMenu(activeSubtaskMenu === subtask.id ? null : subtask.id)}
+                    className="w-5 h-5 rounded-full border border-dashed border-slate-300 flex items-center justify-center hover:border-primary hover:text-primary transition-colors bg-white"
+                  >
+                    <Plus className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              </div>
+              <button 
+                onClick={() => deleteMutation.mutate(subtask.id)}
+                className="p-1 text-slate-300 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
-            <button 
-              onClick={() => deleteMutation.mutate(subtask.id)}
-              className="p-1 text-slate-300 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            
+            {activeSubtaskMenu === subtask.id && (
+              <div className="ml-8 p-2 border rounded-md bg-white shadow-sm flex flex-wrap gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                {users?.map(user => (
+                  <button
+                    key={user.id}
+                    onClick={() => toggleAssignee(subtask, user.id)}
+                    className={cn(
+                      "px-2 py-0.5 rounded-full text-[10px] border transition-all",
+                      subtask.assignees?.some(u => u.id === user.id)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300"
+                    )}
+                  >
+                    {user.full_name || user.email}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -147,3 +211,4 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
     </div>
   );
 }
+

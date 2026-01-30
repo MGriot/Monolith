@@ -4,17 +4,17 @@
 **Focus:** 
 
 ## Active Goals
-- [x] Implement Notification Popover.
-- [x] Connect to Backend Notifications API.
-- [x] Implement "Mark as Read" functionality.
-- [x] Integrate into Main Layout.
+- [x] Implement User & Team Management UI (FRONT-007).
+- [x] Implement Notification UI (FRONT-008).
+- [x] Implement Task & Subtask Assignment UI (FRONT-009).
 
 ## Blockers
 - None currently.
 
 ## Recent Achievements
-- [x] Implemented Notification UI (Bell & Dropdown) (FRONT-008).
+- [x] Implemented Task Assignment UI (FRONT-009).
+- [x] Added assignee selection to Task Creation/Edit forms.
+- [x] Added assignee management to Subtasks.
+- [x] Updated Kanban board to show task assignees.
+- [x] Implemented Notification UI (FRONT-008).
 - [x] Implemented User & Team Management UI (FRONT-007).
-- [x] Implemented Task Management Suite (FRONT-006).
-- [x] Implemented Project Dashboard visuals (FRONT-005).
-- [x] Implemented Master Views (FRONT-004).

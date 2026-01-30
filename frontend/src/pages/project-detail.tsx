@@ -53,6 +53,7 @@ interface Task {
   due_date?: string;
   blocked_by_ids?: string[];
   attachments?: string[];
+  assignees?: { id: string; full_name: string; email: string }[];
 }
 
 export default function ProjectDetailPage() {
@@ -244,6 +245,7 @@ export default function ProjectDetailPage() {
               type: editingTask.type,
               start_date: editingTask.start_date ? editingTask.start_date.split('T')[0] : '',
               due_date: editingTask.due_date ? editingTask.due_date.split('T')[0] : '',
+              assignee_ids: editingTask.assignees?.map(u => u.id) || [],
             } : {
               status: initialStatus
             }}
