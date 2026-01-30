@@ -242,7 +242,7 @@
   {
     "id": "FRONT-010",
     "title": "Markdown Support",
-    "status": "todo",
+    "status": "done",
     "priority": "low",
     "linked_req": "PRD Section 4.2: Metadata",
     "description": "Integrate markdown rendering for project and task descriptions."
