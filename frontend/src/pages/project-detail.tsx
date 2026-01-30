@@ -17,6 +17,7 @@ import ProjectGantt from '@/components/project-gantt';
 import ProjectHeatmap from '@/components/project-heatmap';
 import TaskForm from '@/components/task-form';
 import type { TaskFormValues } from '@/components/task-form';
+import SubtaskManager from '@/components/subtask-manager';
 import { 
   Trello, 
   GanttChart, 
@@ -246,6 +247,9 @@ export default function ProjectDetailPage() {
             onCancel={() => setIsTaskDialogOpen(false)}
             isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
           />
+          {editingTask && (
+            <SubtaskManager taskId={editingTask.id} />
+          )}
         </DialogContent>
       </Dialog>
     </div>
