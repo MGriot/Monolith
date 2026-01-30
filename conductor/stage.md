@@ -4,19 +4,16 @@
 **Focus:** 
 
 ## Active Goals
-- [x] Implement Task Creation Dialog.
-- [x] Implement Task Edit Dialog.
-- [x] Connect Forms to Backend API.
+- [x] Implement Subtask List component.
+- [x] Implement Subtask Creation inline.
+- [x] Connect Subtask Toggling/Deletion to API.
+- [x] Integrate Subtask Manager into Task Dialog.
 
 ## Blockers
 - None currently.
 
 ## Recent Achievements
-- [x] Implemented Task Creation & Edit Forms (FRONT-006-A).
-- [x] Integrated forms with Project Detail page and Kanban board.
+- [x] Implemented Subtask Management UI (FRONT-006-B).
+- [x] Integrated subtasks into the Task Edit Dialog.
 - [x] Verified build stability with `npm run build`.
-- [x] Implemented project-specific Gantt chart for task timelines (FRONT-005-C).
-- [x] Implemented Activity Heatmap using react-calendar-heatmap (FRONT-005-C).
-- [x] Completed Project Dashboard core visualizations.
-- [x] Implemented drag-and-drop Kanban Board.
-- [x] Decomposed FRONT-006 into atomic tasks.
+- [x] Implemented Task Creation & Edit Forms (FRONT-006-A).

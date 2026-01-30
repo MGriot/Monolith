@@ -194,7 +194,7 @@
   {
     "id": "FRONT-006-B",
     "title": "Subtask Management UI",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 4.1: Hierarchy",
     "description": "Implement inline editing and nesting for subtasks within the task view."
