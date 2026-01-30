@@ -226,7 +226,7 @@
   {
     "id": "FRONT-008",
     "title": "Notification UI (Bell & Dropdown)",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 4.5: Notifications",
     "description": "Implement real-time notification bell in header with dropdown list."
