@@ -18,6 +18,7 @@ import ProjectHeatmap from '@/components/project-heatmap';
 import TaskForm from '@/components/task-form';
 import type { TaskFormValues } from '@/components/task-form';
 import SubtaskManager from '@/components/subtask-manager';
+import DependencyManager from '@/components/dependency-manager';
 import { 
   Trello, 
   GanttChart, 
@@ -248,7 +249,13 @@ export default function ProjectDetailPage() {
             isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
           />
           {editingTask && (
-            <SubtaskManager taskId={editingTask.id} />
+            <>
+              <SubtaskManager taskId={editingTask.id} />
+              <DependencyManager 
+                currentTask={editingTask} 
+                allTasks={tasks || []} 
+              />
+            </>
           )}
         </DialogContent>
       </Dialog>
