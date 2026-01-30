@@ -202,7 +202,7 @@
   {
     "id": "FRONT-006-C",
     "title": "Dependency Management UI",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 4.1 & 8: Risks",
     "description": "Implement UI for selecting Finish-to-Start dependencies between tasks."
