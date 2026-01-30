@@ -4,17 +4,16 @@
 **Focus:** 
 
 ## Active Goals
-- [x] Implement Dependency Selector component (Multi-select).
-- [x] Prevent Circular Dependency selection in UI.
-- [x] Connect Dependency updates to API.
-- [x] Integrate Dependency UI into Task Dialog.
+- [x] Implement File upload UI & Preview.
+- [x] Implement Backend File Upload Endpoint.
+- [x] Connect Attachment updates to API.
+- [x] Integrate Attachment Manager into Task Dialog.
 
 ## Blockers
 - None currently.
 
 ## Recent Achievements
+- [x] Implemented File Attachment System (FRONT-006-D).
 - [x] Implemented Dependency Management UI (FRONT-006-C).
-- [x] Integrated dependencies into the Task Edit Dialog.
-- [x] Verified build stability with `npm run build`.
 - [x] Implemented Subtask Management UI (FRONT-006-B).
 - [x] Implemented Task Creation & Edit Forms (FRONT-006-A).

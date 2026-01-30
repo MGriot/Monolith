@@ -19,6 +19,7 @@ import TaskForm from '@/components/task-form';
 import type { TaskFormValues } from '@/components/task-form';
 import SubtaskManager from '@/components/subtask-manager';
 import DependencyManager from '@/components/dependency-manager';
+import AttachmentManager from '@/components/attachment-manager';
 import { 
   Trello, 
   GanttChart, 
@@ -50,6 +51,8 @@ interface Task {
   type?: string;
   start_date?: string;
   due_date?: string;
+  blocked_by_ids?: string[];
+  attachments?: string[];
 }
 
 export default function ProjectDetailPage() {
@@ -254,6 +257,10 @@ export default function ProjectDetailPage() {
               <DependencyManager 
                 currentTask={editingTask} 
                 allTasks={tasks || []} 
+              />
+              <AttachmentManager 
+                taskId={editingTask.id}
+                attachments={editingTask.attachments || []}
               />
             </>
           )}

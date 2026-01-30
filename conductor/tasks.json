@@ -210,7 +210,7 @@
   {
     "id": "FRONT-006-D",
     "title": "File Attachment System",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 4.1: Hierarchy",
     "description": "Implement file upload UI and preview for task attachments."
