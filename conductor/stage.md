@@ -4,14 +4,16 @@
 **Focus:** 
 
 ## Active Goals
-- [x] Implement Users list page.
-- [x] Connect to Backend Users API.
-- [x] Add User management into Sidebar.
+- [x] Implement Notification Popover.
+- [x] Connect to Backend Notifications API.
+- [x] Implement "Mark as Read" functionality.
+- [x] Integrate into Main Layout.
 
 ## Blockers
 - None currently.
 
 ## Recent Achievements
+- [x] Implemented Notification UI (Bell & Dropdown) (FRONT-008).
 - [x] Implemented User & Team Management UI (FRONT-007).
 - [x] Implemented Task Management Suite (FRONT-006).
 - [x] Implemented Project Dashboard visuals (FRONT-005).
