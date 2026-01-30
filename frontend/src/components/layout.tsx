@@ -9,7 +9,8 @@ import {
   LogOut, 
   Bell,
   Settings,
-  User as UserIcon
+  User as UserIcon,
+  Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -23,6 +24,7 @@ const navItems = [
   { icon: FolderKanban, label: 'Projects', href: '/projects' },
   { icon: CalendarIcon, label: 'Calendar', href: '/calendar' },
   { icon: GanttChart, label: 'Roadmap', href: '/roadmap' },
+  { icon: Users, label: 'Team', href: '/users' },
 ];
 
 export default function Layout({ children }: LayoutProps) {

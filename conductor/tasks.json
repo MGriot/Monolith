@@ -214,5 +214,37 @@
     "priority": "medium",
     "linked_req": "PRD Section 4.1: Hierarchy",
     "description": "Implement file upload UI and preview for task attachments."
+  },
+  {
+    "id": "FRONT-007",
+    "title": "User & Team Management UI",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 3: User Personas",
+    "description": "Implement page for viewing all users and their details/roles."
+  },
+  {
+    "id": "FRONT-008",
+    "title": "Notification UI (Bell & Dropdown)",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.5: Notifications",
+    "description": "Implement real-time notification bell in header with dropdown list."
+  },
+  {
+    "id": "FRONT-009",
+    "title": "Task Assignment UI",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 4.2: Metadata",
+    "description": "Implement user selection for task assignees."
+  },
+  {
+    "id": "FRONT-010",
+    "title": "Markdown Support",
+    "status": "todo",
+    "priority": "low",
+    "linked_req": "PRD Section 4.2: Metadata",
+    "description": "Integrate markdown rendering for project and task descriptions."
   }
 ]

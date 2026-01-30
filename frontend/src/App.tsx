@@ -7,6 +7,7 @@ import RegisterPage from "./pages/register";
 import CalendarPage from "./pages/calendar";
 import RoadmapPage from "./pages/roadmap";
 import ProjectDetailPage from "./pages/project-detail";
+import UsersPage from "./pages/users";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ function App() {
             <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
             <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
             <Route path="/roadmap" element={<PrivateRoute><RoadmapPage /></PrivateRoute>} />
+            <Route path="/users" element={<PrivateRoute><UsersPage /></PrivateRoute>} />
           </Routes>
         </Router>
       </AuthProvider>
