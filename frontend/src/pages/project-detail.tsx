@@ -1,18 +1,30 @@
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import api from '@/lib/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import KanbanBoard from '@/components/kanban-board';
 import ProjectGantt from '@/components/project-gantt';
 import ProjectHeatmap from '@/components/project-heatmap';
+import TaskForm from '@/components/task-form';
+import type { TaskFormValues } from '@/components/task-form';
 import { 
   Trello, 
   GanttChart, 
   Activity,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Plus
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Project {
   id: string;
@@ -29,9 +41,11 @@ interface Project {
 interface Task {
   id: string;
   title: string;
+  description?: string;
   status: string;
   priority: string;
   topic?: string;
+  type?: string;
   start_date?: string;
   due_date?: string;
 }
@@ -39,6 +53,9 @@ interface Task {
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [initialStatus, setInitialStatus] = useState<string>("Todo");
 
   const { data: project, isLoading: isProjectLoading } = useQuery({
     queryKey: ['project', id],
@@ -64,6 +81,30 @@ export default function ProjectDetailPage() {
     },
   });
 
+  const createTaskMutation = useMutation({
+    mutationFn: async (newTask: TaskFormValues) => {
+      return api.post('/tasks/', { ...newTask, project_id: id });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      setIsTaskDialogOpen(false);
+    },
+  });
+
+  const updateTaskMutation = useMutation({
+    mutationFn: async ({ taskId, data }: { taskId: string; data: Partial<TaskFormValues> }) => {
+      return api.put(`/tasks/${taskId}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
+      setIsTaskDialogOpen(false);
+      setEditingTask(null);
+    },
+  });
+
   const moveTaskMutation = useMutation({
     mutationFn: async ({ taskId, newStatus }: { taskId: string; newStatus: string }) => {
       return api.put(`/tasks/${taskId}`, { status: newStatus });
@@ -79,6 +120,25 @@ export default function ProjectDetailPage() {
     moveTaskMutation.mutate({ taskId, newStatus });
   };
 
+  const handleAddTask = (status?: string) => {
+    setEditingTask(null);
+    setInitialStatus(status || "Todo");
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleTaskClick = (task: Task) => {
+    setEditingTask(task);
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleTaskSubmit = (data: TaskFormValues) => {
+    if (editingTask) {
+      updateTaskMutation.mutate({ taskId: editingTask.id, data });
+    } else {
+      createTaskMutation.mutate(data);
+    }
+  };
+
   if (isProjectLoading || isTasksLoading || isStatsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -92,7 +152,7 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8 pb-12">
       {/* Project Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
@@ -103,21 +163,26 @@ export default function ProjectDetailPage() {
           <p className="text-slate-500 max-w-2xl">{project.description}</p>
         </div>
         
-        <div className="w-full md:w-64 space-y-2">
-          <div className="flex justify-between text-sm font-medium">
-            <span className="text-slate-600">Overall Progress</span>
-            <span className="text-primary">{project.progress_percent}%</span>
-          </div>
-          <Progress value={project.progress_percent} className="h-2" />
-          <div className="flex items-center gap-4 pt-2 text-xs text-slate-500">
-            <div className="flex items-center gap-1">
-              <CalendarIcon className="w-3 h-3" />
-              {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'N/A'}
+        <div className="flex flex-col gap-4">
+          <Button onClick={() => handleAddTask()} className="gap-2">
+            <Plus className="w-4 h-4" /> Add Task
+          </Button>
+          <div className="w-full md:w-64 space-y-2">
+            <div className="flex justify-between text-sm font-medium">
+              <span className="text-slate-600">Overall Progress</span>
+              <span className="text-primary">{project.progress_percent}%</span>
             </div>
-            <span>→</span>
-            <div className="flex items-center gap-1">
-              <CalendarIcon className="w-3 h-3" />
-              {project.due_date ? new Date(project.due_date).toLocaleDateString() : 'N/A'}
+            <Progress value={project.progress_percent} className="h-2" />
+            <div className="flex items-center gap-4 pt-2 text-xs text-slate-500">
+              <div className="flex items-center gap-1">
+                <CalendarIcon className="w-3 h-3" />
+                {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'N/A'}
+              </div>
+              <span>→</span>
+              <div className="flex items-center gap-1">
+                <CalendarIcon className="w-3 h-3" />
+                {project.due_date ? new Date(project.due_date).toLocaleDateString() : 'N/A'}
+              </div>
             </div>
           </div>
         </div>
@@ -138,7 +203,12 @@ export default function ProjectDetailPage() {
         </TabsList>
         
         <TabsContent value="kanban" className="min-h-[500px] border rounded-xl p-6 bg-white shadow-sm overflow-hidden">
-          <KanbanBoard tasks={tasks || []} onTaskMove={handleTaskMove} />
+          <KanbanBoard 
+            tasks={tasks || []} 
+            onTaskMove={handleTaskMove}
+            onAddTask={handleAddTask}
+            onTaskClick={handleTaskClick}
+          />
         </TabsContent>
         
         <TabsContent value="gantt" className="min-h-[500px] border rounded-xl p-6 bg-white shadow-sm overflow-hidden">
@@ -149,6 +219,35 @@ export default function ProjectDetailPage() {
           <ProjectHeatmap stats={stats || []} />
         </TabsContent>
       </Tabs>
+
+      {/* Task Dialog */}
+      <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
+            <DialogDescription>
+              {editingTask ? 'Modify the task details below.' : 'Add a new task to your project.'}
+            </DialogDescription>
+          </DialogHeader>
+          <TaskForm 
+            initialValues={editingTask ? {
+              title: editingTask.title,
+              description: editingTask.description,
+              status: editingTask.status,
+              priority: editingTask.priority,
+              topic: editingTask.topic,
+              type: editingTask.type,
+              start_date: editingTask.start_date ? editingTask.start_date.split('T')[0] : '',
+              due_date: editingTask.due_date ? editingTask.due_date.split('T')[0] : '',
+            } : {
+              status: initialStatus
+            }}
+            onSubmit={handleTaskSubmit}
+            onCancel={() => setIsTaskDialogOpen(false)}
+            isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

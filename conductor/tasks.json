@@ -184,11 +184,35 @@
     "description": "Implement project-specific Gantt chart and contribution heatmap."
   },
   {
-    "id": "FRONT-006",
-    "title": "Task & Subtask Management UI",
+    "id": "FRONT-006-A",
+    "title": "Task Creation & Edit Forms",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 4.1: Hierarchy",
+    "description": "Implement Dialog-based forms for creating and editing tasks with validation."
+  },
+  {
+    "id": "FRONT-006-B",
+    "title": "Subtask Management UI",
     "status": "todo",
     "priority": "high",
     "linked_req": "PRD Section 4.1: Hierarchy",
-    "description": "Forms for creating/editing tasks and subtasks, managing dependencies, and uploading attachments."
+    "description": "Implement inline editing and nesting for subtasks within the task view."
+  },
+  {
+    "id": "FRONT-006-C",
+    "title": "Dependency Management UI",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 4.1 & 8: Risks",
+    "description": "Implement UI for selecting Finish-to-Start dependencies between tasks."
+  },
+  {
+    "id": "FRONT-006-D",
+    "title": "File Attachment System",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.1: Hierarchy",
+    "description": "Implement file upload UI and preview for task attachments."
   }
 ]

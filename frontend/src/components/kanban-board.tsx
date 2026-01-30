@@ -22,7 +22,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreVertical, GripVertical } from 'lucide-react';
+import { MoreVertical, GripVertical, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Task {
@@ -36,30 +36,34 @@ interface Task {
 interface KanbanBoardProps {
   tasks: Task[];
   onTaskMove: (taskId: string, newStatus: string) => void;
+  onAddTask?: (status: string) => void;
+  onTaskClick?: (task: Task) => void;
 }
 
 const COLUMNS = [
-  { id: 'todo', title: 'To Do' },
-  { id: 'in_progress', title: 'In Progress' },
-  { id: 'review', title: 'Review' },
-  { id: 'done', title: 'Done' }
+  { id: 'Todo', title: 'To Do' },
+  { id: 'In Progress', title: 'In Progress' },
+  { id: 'Review', title: 'Review' },
+  { id: 'Done', title: 'Done' }
 ];
 
-export default function KanbanBoard({ tasks, onTaskMove }: KanbanBoardProps) {
+export default function KanbanBoard({ tasks, onTaskMove, onAddTask, onTaskClick }: KanbanBoardProps) {
   const [items, setItems] = useState<Record<string, string[]>>({
-    todo: [],
-    in_progress: [],
-    review: [],
-    done: []
+    'Backlog': [],
+    'Todo': [],
+    'In Progress': [],
+    'Review': [],
+    'Done': []
   });
   const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
     const newItems: Record<string, string[]> = {
-      todo: [],
-      in_progress: [],
-      review: [],
-      done: []
+      'Backlog': [],
+      'Todo': [],
+      'In Progress': [],
+      'Review': [],
+      'Done': []
     };
     tasks.forEach(task => {
       if (newItems[task.status]) {
@@ -172,8 +176,10 @@ export default function KanbanBoard({ tasks, onTaskMove }: KanbanBoardProps) {
             key={col.id} 
             id={col.id} 
             title={col.title} 
-            taskIds={items[col.id]} 
+            taskIds={items[col.id] || []} 
             tasks={tasks}
+            onAddTask={onAddTask}
+            onTaskClick={onTaskClick}
           />
         ))}
       </div>
@@ -202,9 +208,11 @@ interface KanbanColumnProps {
   title: string;
   taskIds: string[];
   tasks: Task[];
+  onAddTask?: (status: string) => void;
+  onTaskClick?: (task: Task) => void;
 }
 
-function KanbanColumn({ id, title, taskIds, tasks }: KanbanColumnProps) {
+function KanbanColumn({ id, title, taskIds, tasks, onAddTask, onTaskClick }: KanbanColumnProps) {
   return (
     <div className="flex flex-col w-80 shrink-0">
       <div className="flex items-center justify-between mb-4 px-2">
@@ -214,13 +222,28 @@ function KanbanColumn({ id, title, taskIds, tasks }: KanbanColumnProps) {
             {taskIds.length}
           </span>
         </h3>
-        <MoreVertical className="w-4 h-4 text-slate-400 cursor-pointer" />
+        <div className="flex items-center gap-1">
+          {onAddTask && (
+            <button 
+              onClick={() => onAddTask(id)}
+              className="p-1 hover:bg-slate-100 rounded-md text-slate-500 transition-colors"
+              title="Add Task"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          )}
+          <MoreVertical className="w-4 h-4 text-slate-400 cursor-pointer" />
+        </div>
       </div>
       
       <SortableContext id={id} items={taskIds} strategy={verticalListSortingStrategy}>
         <div className="flex-1 bg-slate-50/50 rounded-xl p-3 border border-slate-100 min-h-[400px]">
           {taskIds.map((taskId) => (
-            <SortableTaskCard key={taskId} task={tasks.find(t => t.id === taskId)!} />
+            <SortableTaskCard 
+              key={taskId} 
+              task={tasks.find(t => t.id === taskId)!} 
+              onTaskClick={onTaskClick}
+            />
           ))}
         </div>
       </SortableContext>
@@ -228,7 +251,7 @@ function KanbanColumn({ id, title, taskIds, tasks }: KanbanColumnProps) {
   );
 }
 
-function SortableTaskCard({ task }: { task: Task }) {
+function SortableTaskCard({ task, onTaskClick }: { task: Task, onTaskClick?: (task: Task) => void }) {
   const {
     attributes,
     listeners,
@@ -245,24 +268,31 @@ function SortableTaskCard({ task }: { task: Task }) {
 
   return (
     <div ref={setNodeRef} style={style} className={cn(isDragging && "opacity-0")}>
-      <TaskCard task={task} dragProps={{ ...attributes, ...listeners }} />
+      <TaskCard 
+        task={task} 
+        dragProps={{ ...attributes, ...listeners }} 
+        onClick={() => onTaskClick?.(task)}
+      />
     </div>
   );
 }
 
-function TaskCard({ task, isDragging, dragProps }: { task: Task, isDragging?: boolean, dragProps?: any }) {
+function TaskCard({ task, isDragging, dragProps, onClick }: { task: Task, isDragging?: boolean, dragProps?: any, onClick?: () => void }) {
   const priorityColors: Record<string, string> = {
-    low: "bg-blue-100 text-blue-700",
-    medium: "bg-yellow-100 text-yellow-700",
-    high: "bg-orange-100 text-orange-700",
-    critical: "bg-red-100 text-red-700",
+    Low: "bg-blue-100 text-blue-700",
+    Medium: "bg-yellow-100 text-yellow-700",
+    High: "bg-orange-100 text-orange-700",
+    Critical: "bg-red-100 text-red-700",
   };
 
   return (
-    <Card className={cn(
-      "mb-3 shadow-sm hover:shadow-md transition-shadow cursor-default group",
-      isDragging && "shadow-xl border-primary/50"
-    )}>
+    <Card 
+      className={cn(
+        "mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer group",
+        isDragging && "shadow-xl border-primary/50"
+      )}
+      onClick={onClick}
+    >
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-sm font-semibold leading-tight">{task.title}</CardTitle>
