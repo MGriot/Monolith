@@ -20,6 +20,7 @@ import type { TaskFormValues } from '@/components/task-form';
 import SubtaskManager from '@/components/subtask-manager';
 import DependencyManager from '@/components/dependency-manager';
 import AttachmentManager from '@/components/attachment-manager';
+import MarkdownRenderer from '@/components/markdown-renderer';
 import { 
   Trello, 
   GanttChart, 
@@ -28,6 +29,7 @@ import {
   Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 interface Project {
   id: string;
@@ -166,7 +168,10 @@ export default function ProjectDetailPage() {
             <h1 className="text-3xl font-bold text-slate-900">{project.name}</h1>
             <Badge variant="secondary" className="capitalize">{project.status}</Badge>
           </div>
-          <p className="text-slate-500 max-w-2xl">{project.description}</p>
+          <MarkdownRenderer 
+            content={project.description || "No description provided."} 
+            className="text-slate-500 max-w-2xl"
+          />
         </div>
         
         <div className="flex flex-col gap-4">
@@ -235,6 +240,14 @@ export default function ProjectDetailPage() {
               {editingTask ? 'Modify the task details below.' : 'Add a new task to your project.'}
             </DialogDescription>
           </DialogHeader>
+          
+          {editingTask && editingTask.description && (
+            <div className="bg-slate-50 p-4 rounded-lg border mb-4">
+              <Label className="text-[10px] uppercase text-slate-400 font-bold mb-2 block">Description Preview</Label>
+              <MarkdownRenderer content={editingTask.description} />
+            </div>
+          )}
+
           <TaskForm 
             initialValues={editingTask ? {
               title: editingTask.title,
