@@ -34,3 +34,9 @@ async def authenticate(db: AsyncSession, email: str, password: str) -> Optional[
     if not verify_password(password, user.hashed_password):
         return None
     return user
+
+async def get_multi(
+    db: AsyncSession, *, skip: int = 0, limit: int = 100
+) -> list[User]:
+    result = await db.execute(select(User).offset(skip).limit(limit))
+    return result.scalars().all()

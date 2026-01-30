@@ -14,7 +14,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         result = await db.execute(
             select(self.model)
             .filter(self.model.id == id)
-            .options(selectinload(Task.blocking_tasks))
+            .options(
+                selectinload(Task.blocking_tasks),
+                selectinload(Task.assignees)
+            )
         )
         return result.scalars().first()
 
@@ -24,6 +27,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         result = await db.execute(
             select(self.model)
             .filter(self.model.project_id == project_id)
+            .options(selectinload(Task.assignees))
             .offset(skip)
             .limit(limit)
         )
@@ -228,6 +232,7 @@ class CRUDSubtask(CRUDBase[Subtask, SubtaskCreate, SubtaskUpdate]):
         result = await db.execute(
             select(self.model)
             .filter(self.model.task_id == task_id)
+            .options(selectinload(Subtask.assignees))
             .offset(skip)
             .limit(limit)
         )

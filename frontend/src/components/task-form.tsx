@@ -1,9 +1,13 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { User as UserIcon, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -14,9 +18,16 @@ const taskSchema = z.object({
   type: z.string().optional(),
   start_date: z.string().optional().nullable(),
   due_date: z.string().optional().nullable(),
+  assignee_ids: z.array(z.string()),
 });
 
 export type TaskFormValues = z.infer<typeof taskSchema>;
+
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+}
 
 interface TaskFormProps {
   initialValues?: Partial<TaskFormValues>;
@@ -26,18 +37,42 @@ interface TaskFormProps {
 }
 
 export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading }: TaskFormProps) {
+  const { data: users, isLoading: isLoadingUsers } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const response = await api.get('/users/');
+      return response.data as User[];
+    },
+  });
+
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
       status: "Todo",
       priority: "Medium",
+      assignee_ids: [],
       ...initialValues,
     },
   });
+
+  const selectedAssignees = watch("assignee_ids") || [];
+
+  const toggleAssignee = (userId: string) => {
+    const current = [...selectedAssignees];
+    const index = current.indexOf(userId);
+    if (index > -1) {
+      current.splice(index, 1);
+    } else {
+      current.push(userId);
+    }
+    setValue("assignee_ids", current);
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -91,6 +126,34 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading 
             <option value="High">High</option>
             <option value="Critical">Critical</option>
           </select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Assignees</Label>
+        <div className="flex flex-wrap gap-2 p-3 border rounded-md bg-slate-50/50 min-h-[60px]">
+          {isLoadingUsers ? (
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <Loader2 className="w-3 h-3 animate-spin" /> Loading team...
+            </div>
+          ) : (
+            users?.map(user => (
+              <button
+                key={user.id}
+                type="button"
+                onClick={() => toggleAssignee(user.id)}
+                className={cn(
+                  "flex items-center gap-2 px-2 py-1 rounded-full text-xs border transition-all",
+                  selectedAssignees.includes(user.id)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                )}
+              >
+                <UserIcon className="w-3 h-3" />
+                {user.full_name || user.email}
+              </button>
+            ))
+          )}
         </div>
       </div>
 

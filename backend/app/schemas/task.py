@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel
 from app.core.enums import Status, Priority
+from app.schemas.user import User as UserSchema
 
 class SubtaskBase(BaseModel):
     title: Optional[str] = None
@@ -28,6 +29,7 @@ class SubtaskInDBBase(SubtaskBase):
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None
+    assignees: List[UserSchema] = []
 
     class Config:
         from_attributes = True
@@ -62,6 +64,7 @@ class TaskInDBBase(TaskBase):
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None
+    assignees: List[UserSchema] = []
 
     class Config:
         from_attributes = True
