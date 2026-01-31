@@ -61,9 +61,14 @@
 
 ### 4.3 Visualization
 *   **Project Dashboard (Single Project):**
-    *   **Gantt Chart:** Interactive timeline of Tasks/Subtasks. Zoom levels (Day, Week, Month).
-    *   **Contribution Graph:** A "GitHub-style" heatmap showing activity (tasks completed/updated) over the last year for this project.
-    *   **Kanban Board:** Drag-and-drop tasks between statuses.
+    *   **Interactive Tabs:** 
+        *   **Kanban Board:** Drag-and-drop tasks between statuses.
+        *   **Task List View:** A comprehensive table of all tasks and subtasks with expansion support.
+        *   **Gantt Chart:** Interactive timeline of Tasks/Subtasks. Zoom levels (Day, Week, Month).
+        *   **Activity Heatmap:** A "GitHub-style" graph showing task completion activity over time.
+    *   **Direct Navigation:** All project references (names in lists, cards, breadcrumbs) must be clickable, leading directly to this view.
+    *   **Metadata Header:** Prominent display of Project Topic, Type, Start Date, and Due Date.
+    *   **Management:** Functional "Edit Project" button to modify metadata (name, dates, type).
 *   **Global Dashboard (All Projects):**
     *   **Master Gantt:** High-level view of all active projects.
     *   **Master Calendar:** Monthly view of all due dates across projects.
@@ -72,7 +77,7 @@
 *   **Architecture:** Embedded within the Backend (FastAPI) service to share Database sessions and business logic.
 *   **Access:** Exposed via standard MCP protocol (Stdio/SSE) on the backend container.
 *   **Resources:** Expose `projects://`, `tasks://` as readable resources.
-*   **Tools:** Expose `create_task`, `update_status`, `search_projects`, `create_user` as executable tools for AI agents.
+*   **Tools:** Expose `create_task`, `update_status`, `search_projects`, `create_user`, `update_project`, `create_subtask` as executable tools for AI agents.
   
 ### 4.5 Notifications
 *   **Triggers:**
@@ -159,17 +164,14 @@ erDiagram
 ## 9. Gap Analysis & Improvement Plan (Current State Review)
 
 ### 9.1 Frontend Gaps
-*   **Missing Projects List Page:** The `/projects` route currently renders a placeholder `<div>`. A proper table/grid view of all projects is required.
-*   **Missing "Create Project" Workflow:** 
-    *   No "Create Project" button exists in the global navigation or Dashboard.
-    *   The "Create your first project" button in the Roadmap Empty State is non-functional (dead link).
-    *   **Improvement:** Add a global "New Project" button in the Sidebar or Header. Implement the `ProjectCreate` dialog form.
-*   **Dead Buttons (Visual Only):**
-    *   **Calendar Page:** The "New Task" button in the header and "View Details" button in task popovers are purely visual and have no click handlers.
-*   **Task/Subtask UX Friction:**
-    *   Subtasks can only be added *after* a task is created (via the Edit dialog).
-    *   **Improvement:** Allow defining initial subtasks directly in the "Create Task" form, or clearer UX guiding the user to the Edit view.
-*   **Dashboard Placeholder:** The main Dashboard (`/`) contains hardcoded "0" stats and no real data visualization.
+*   **Navigation & Discoverability:** 
+    *   Project names in the "Projects List" and "Upcoming Deadlines" are now direct links.
+    *   **Improvement:** Maintain prominent navigation anchors for all hierarchical levels.
+*   **Missing Project Editing:**
+    *   Users can now update project metadata via the "Settings" action in the project header.
+*   **Task List View (Project Level):**
+    *   Implemented a "List" tab in `ProjectDetailPage` with a sortable table of tasks and their subtasks.
+*   **Dashboard Placeholder:** The main Dashboard (`/`) now features real statistics and links to active work.
 
 ### 9.2 Infrastructure & MCP
 *   **MCP Container Visibility:** Users noted the absence of a dedicated MCP container. 
