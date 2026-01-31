@@ -8,6 +8,7 @@ from app.crud.base import CRUDBase
 from app.models.task import Task, Subtask, task_dependencies
 from app.schemas.task import TaskCreate, TaskUpdate, SubtaskCreate, SubtaskUpdate
 from app.core.enums import Status
+from app.core.utils import clean_dict_datetimes
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[Task]:
@@ -82,7 +83,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return active_blockers
 
     async def create(self, db: AsyncSession, *, obj_in: TaskCreate) -> Task:
-        obj_data = obj_in.dict(exclude_unset=True)
+        obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True))
         blocker_ids = obj_data.pop("blocked_by_ids", [])
         assignee_ids = obj_data.pop("assignee_ids", [])
         subtasks_data = obj_data.pop("subtasks", [])
@@ -177,7 +178,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     async def update(
         self, db: AsyncSession, *, db_obj: Task, obj_in: Union[TaskUpdate, Dict[str, Any]]
     ) -> Task:
-        obj_data = obj_in.dict(exclude_unset=True) if isinstance(obj_in, TaskUpdate) else obj_in
+        if isinstance(obj_in, TaskUpdate):
+            obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True))
+        else:
+            obj_data = clean_dict_datetimes(obj_in)
         
         old_status = db_obj.status
         
@@ -269,7 +273,7 @@ class CRUDSubtask(CRUDBase[Subtask, SubtaskCreate, SubtaskUpdate]):
             await task.update(db, db_obj=task_obj, obj_in={"status": new_status})
 
     async def create(self, db: AsyncSession, *, obj_in: SubtaskCreate) -> Subtask:
-        obj_data = obj_in.dict(exclude_unset=True)
+        obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True))
         assignee_ids = obj_data.pop("assignee_ids", [])
         
         db_obj = self.model(**obj_data)
@@ -294,7 +298,10 @@ class CRUDSubtask(CRUDBase[Subtask, SubtaskCreate, SubtaskUpdate]):
     async def update(
         self, db: AsyncSession, *, db_obj: Subtask, obj_in: Union[SubtaskUpdate, Dict[str, Any]]
     ) -> Subtask:
-        obj_data = obj_in.dict(exclude_unset=True) if isinstance(obj_in, SubtaskUpdate) else obj_in
+        if isinstance(obj_in, SubtaskUpdate):
+            obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True))
+        else:
+            obj_data = clean_dict_datetimes(obj_in)
         
         if "assignee_ids" in obj_data:
             new_assignee_ids = obj_data.pop("assignee_ids")

@@ -8,6 +8,7 @@ from app.api import deps
 from app.models.project import Project
 from app.models.task import Task, Subtask
 from app.schemas.calendar import CalendarResponse, CalendarItem
+from app.core.utils import make_naive
 
 router = APIRouter()
 
@@ -21,6 +22,9 @@ async def get_calendar_events(
     """
     Get all projects, tasks, and subtasks with due dates.
     """
+    start_date = make_naive(start_date)
+    end_date = make_naive(end_date)
+    
     items = []
     
     # Fetch Projects
