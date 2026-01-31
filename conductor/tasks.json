@@ -266,7 +266,7 @@
   {
     "id": "FRONT-013",
     "title": "Dashboard Implementation",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 9.1: Frontend Gaps",
     "description": "Replace the placeholder Dashboard with real statistics and visualization widgets."
