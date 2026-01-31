@@ -101,47 +101,51 @@ export default function AttachmentManager({ taskId, attachments }: AttachmentMan
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {attachments.map((url) => (
-          <div 
-            key={url} 
-            className="flex items-center gap-3 p-2 rounded-lg border bg-white group hover:border-primary/30 transition-all"
-          >
-            <div className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
-              {isImage(url) ? (
-                <img 
-                  src={url} 
-                  alt="preview" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <FileText className="w-5 h-5 text-slate-400" />
-              )}
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-slate-700 truncate">
-                {getFileName(url)}
-              </p>
-            </div>
+        {attachments.map((url) => {
+          const fullUrl = url.startsWith('http') ? url : url; 
+          
+          return (
+            <div 
+              key={url} 
+              className="flex items-center gap-3 p-2 rounded-lg border bg-white group hover:border-primary/30 transition-all shadow-sm"
+            >
+              <div className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden border">
+                {isImage(url) ? (
+                  <img 
+                    src={fullUrl} 
+                    alt="preview" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <FileText className="w-5 h-5 text-slate-400" />
+                )}
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-slate-700 truncate">
+                  {getFileName(url)}
+                </p>
+              </div>
 
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <a 
-                href={url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-primary"
-              >
-                <Download className="w-3.5 h-3.5" />
-              </a>
-              <button 
-                onClick={() => removeMutation.mutate(url)}
-                className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-destructive"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <a 
+                  href={fullUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-primary transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                </a>
+                <button 
+                  onClick={() => removeMutation.mutate(url)}
+                  className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-destructive transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {attachments.length === 0 && !isUploading && (

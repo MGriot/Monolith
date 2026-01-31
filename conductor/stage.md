@@ -1,7 +1,7 @@
-# Current Stage: Gap Closure & Polish
+# Current Stage: Advanced UX & Feature Polish
 
 **Status:** ✅ Complete
-**Focus:** Implementing missing pages, fixing dead buttons, and refining UX based on Gap Analysis.
+**Focus:** Refining the core visualization tools (Gantt, Kanban), fixing layout issues, and ensuring robust file management.
 
 ## Active Goals
 - All goals completed.
@@ -10,15 +10,8 @@
 - None.
 
 ## Recent Achievements
-- [x] Implemented 'List' tab in Project Detail for comprehensive task management.
-- [x] Added 'Edit Project' functionality with metadata editing.
-- [x] Improved navigation (clickable project names) across Dashboard and Project List.
-- [x] Fixed missing dates for Monolith Alpha project via MCP/Python.
-- [x] Update Documentation (DOCS-001).
-- [x] Improve Task Creation UX (FRONT-015).
-- [x] Fix Calendar Page Dead Buttons (FRONT-014).
-- [x] Implement Main Dashboard Visualization (FRONT-013).
-- [x] Implement Create Project Workflow (FRONT-012).
-- [x] Implement Projects List Page (FRONT-011).
-- [x] Completed initial MVP Feature Set (FRONT-010).
-- [x] Performed Gap Analysis (2026-01-31).
+- [x] Full-Width Layout Fix (FRONT-017): Removed max-width constraints and optimized flex layout.
+- [x] Enhanced Gantt (FRONT-018): Added subtask toggle and status/priority color coding.
+- [x] Project Detail Refinement (FRONT-019): Hierarchical task list and high-density metadata display.
+- [x] Attachment System Fix (FRONT-020): Fixed Nginx routing and pathing for file uploads.
+- [x] Kanban Color Coding (FRONT-021): Implemented priority-based visual hierarchy.
