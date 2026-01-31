@@ -274,7 +274,7 @@
   {
     "id": "FRONT-014",
     "title": "Fix Calendar Dead Buttons",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 9.1: Frontend Gaps",
     "description": "Wire up the 'New Task' and 'View Details' buttons on the Calendar page to functional event handlers."

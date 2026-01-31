@@ -1,24 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './auth-provider';
-import { 
-  LayoutDashboard, 
-  FolderKanban, 
-  Calendar as CalendarIcon, 
-  GanttChart, 
-  LogOut, 
-  Settings,
-  User as UserIcon,
-  Users
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import NotificationPopover from './notification-popover';
-
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
 import { 
   LayoutDashboard, 
   FolderKanban, 
@@ -34,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import NotificationPopover from './notification-popover';
+import TaskCreateDialog from './task-create-dialog';
 import {
   Popover,
   PopoverContent,
@@ -56,6 +39,7 @@ export default function Layout({ children }: LayoutProps) {
   const { logout, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isTaskCreateOpen, setIsTaskCreateOpen] = useState(false);
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -158,9 +142,14 @@ export default function Layout({ children }: LayoutProps) {
                     <FolderKanban className="w-3.5 h-3.5 text-slate-400" />
                     New Project
                   </Button>
-                  <Button variant="ghost" size="sm" className="justify-start gap-2 text-xs font-medium text-slate-400 cursor-not-allowed">
-                    <LayoutDashboard className="w-3.5 h-3.5" />
-                    New Task (Select Project)
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="justify-start gap-2 text-xs font-medium"
+                    onClick={() => setIsTaskCreateOpen(true)}
+                  >
+                    <Plus className="w-3.5 h-3.5 text-slate-400" />
+                    New Task
                   </Button>
                   <Button variant="ghost" size="sm" className="justify-start gap-2 text-xs font-medium text-slate-400 cursor-not-allowed">
                     <Users className="w-3.5 h-3.5" />
@@ -189,6 +178,7 @@ export default function Layout({ children }: LayoutProps) {
           {children}
         </main>
       </div>
+      <TaskCreateDialog open={isTaskCreateOpen} onOpenChange={setIsTaskCreateOpen} />
     </div>
   );
 }
