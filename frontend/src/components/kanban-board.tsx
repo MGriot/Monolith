@@ -171,18 +171,20 @@ export default function KanbanBoard({ tasks, onTaskMove, onAddTask, onTaskClick 
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-6 h-full overflow-x-auto pb-4">
-        {COLUMNS.map((col) => (
-          <KanbanColumn 
-            key={col.id} 
-            id={col.id} 
-            title={col.title} 
-            taskIds={items[col.id] || []} 
-            tasks={tasks}
-            onAddTask={onAddTask}
-            onTaskClick={onTaskClick}
-          />
-        ))}
+      <div className="h-full overflow-x-auto pb-4">
+        <div className="flex gap-6 min-w-min mx-auto justify-center px-6">
+          {COLUMNS.map((col) => (
+            <KanbanColumn 
+              key={col.id} 
+              id={col.id} 
+              title={col.title} 
+              taskIds={items[col.id] || []} 
+              tasks={tasks}
+              onAddTask={onAddTask}
+              onTaskClick={onTaskClick}
+            />
+          ))}
+        </div>
       </div>
       <DragOverlay dropAnimation={{
         sideEffects: defaultDropAnimationSideEffects({

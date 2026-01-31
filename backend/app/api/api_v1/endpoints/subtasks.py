@@ -52,6 +52,9 @@ async def create_subtask(
     if not current_user.is_superuser and (project.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     
+    if not subtask_in.owner_id:
+        subtask_in.owner_id = current_user.id
+        
     subtask = await crud_task.subtask.create(db=db, obj_in=subtask_in)
     return subtask
 

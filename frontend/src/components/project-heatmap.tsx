@@ -2,7 +2,7 @@ import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
-import { subYears, format } from 'date-fns';
+import { subYears, format, parseISO, startOfDay } from 'date-fns';
 
 interface Stat {
   date: string;
@@ -11,11 +11,13 @@ interface Stat {
 
 interface ProjectHeatmapProps {
   stats: Stat[];
+  projectStartDate?: string;
+  projectDueDate?: string;
 }
 
-export default function ProjectHeatmap({ stats }: ProjectHeatmapProps) {
-  const endDate = new Date();
-  const startDate = subYears(endDate, 1);
+export default function ProjectHeatmap({ stats, projectStartDate, projectDueDate }: ProjectHeatmapProps) {
+  const endDate = projectDueDate ? parseISO(projectDueDate) : new Date();
+  const startDate = projectStartDate ? parseISO(projectStartDate) : subYears(endDate, 1);
 
   return (
     <div className="py-4">
@@ -48,7 +50,7 @@ export default function ProjectHeatmap({ stats }: ProjectHeatmapProps) {
             if (!value || !value.date) return { 'data-tooltip-id': 'heatmap-tooltip', 'data-tooltip-content': 'No activity' } as any;
             return {
               'data-tooltip-id': 'heatmap-tooltip',
-              'data-tooltip-content': `${value.count} tasks completed on ${format(new Date(value.date), 'MMM d, yyyy')}`,
+              'data-tooltip-content': `${value.count} tasks completed on ${format(parseISO(value.date), 'MMM d, yyyy')}`,
             } as any;
           }}
         />

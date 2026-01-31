@@ -21,7 +21,11 @@ const taskSchema = z.object({
   assignee_ids: z.array(z.string()),
   subtasks: z.array(z.object({
     title: z.string().min(1, "Subtask title is required"),
-    status: z.string().min(1, "Subtask status is required")
+    status: z.string().min(1, "Subtask status is required"),
+    priority: z.string().min(1, "Subtask priority is required"),
+    start_date: z.string().optional().nullable(),
+    due_date: z.string().optional().nullable(),
+    assignee_ids: z.array(z.string()).optional()
   })).optional()
 });
 
@@ -83,6 +87,21 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading 
       current.push(userId);
     }
     setValue("assignee_ids", current);
+  };
+
+  const toggleSubtaskAssignee = (subtaskIndex: number, userId: string) => {
+    const currentSubtasks = watch("subtasks") || [];
+    const currentAssignees = currentSubtasks[subtaskIndex]?.assignee_ids || [];
+    const newAssignees = [...currentAssignees];
+    const index = newAssignees.indexOf(userId);
+    
+    if (index > -1) {
+      newAssignees.splice(index, 1);
+    } else {
+      newAssignees.push(userId);
+    }
+    
+    setValue(`subtasks.${subtaskIndex}.assignee_ids`, newAssignees);
   };
 
   return (
@@ -200,30 +219,99 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading 
               variant="outline" 
               size="sm" 
               className="h-7 text-[10px] gap-1"
-              onClick={() => append({ title: "", status: "Todo" })}
+              onClick={() => append({ title: "", status: "Todo", priority: "Medium", assignee_ids: [] })}
             >
               <Plus className="w-3 h-3" /> Add Subtask
             </Button>
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="flex gap-2 items-start">
-                <div className="flex-1 space-y-1">
-                  <Input
-                    {...register(`subtasks.${index}.title` as const)}
-                    placeholder="Subtask title..."
-                    className="h-8 text-xs"
-                  />
-                  {errors.subtasks?.[index]?.title && (
-                    <p className="text-[10px] text-destructive">{errors.subtasks[index]?.title?.message}</p>
-                  )}
-                </div>
+              <div key={field.id} className="p-3 border rounded-lg bg-slate-50/50 space-y-3 relative group">
                 <Button 
                   type="button" 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 text-slate-400 hover:text-destructive"
+                  className="absolute top-2 right-2 h-6 w-6 text-slate-400 hover:text-destructive"
+                  onClick={() => remove(index)}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2 space-y-1">
+                    <Label className="text-[9px] uppercase font-bold text-slate-400">Title</Label>
+                    <Input
+                      {...register(`subtasks.${index}.title` as const)}
+                      placeholder="Subtask title..."
+                      className="h-8 text-xs bg-white"
+                    />
+                    {errors.subtasks?.[index]?.title && (
+                      <p className="text-[10px] text-destructive">{errors.subtasks[index]?.title?.message}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase font-bold text-slate-400">Priority</Label>
+                    <select
+                      {...register(`subtasks.${index}.priority` as const)}
+                      className="h-8 w-full rounded-md border border-input bg-white px-2 py-1 text-[10px] ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                      <option value="Critical">Critical</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold text-slate-400">Start</Label>
+                      <Input
+                        type="date"
+                        {...register(`subtasks.${index}.start_date` as const)}
+                        className="h-8 text-[10px] bg-white px-1"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold text-slate-400">Due</Label>
+                      <Input
+                        type="date"
+                        {...register(`subtasks.${index}.due_date` as const)}
+                        className="h-8 text-[10px] bg-white px-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[9px] uppercase font-bold text-slate-400">Assignees</Label>
+                  <div className="flex flex-wrap gap-1 p-2 bg-white border rounded-md min-h-[32px]">
+                    {users?.map(user => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => toggleSubtaskAssignee(index, user.id)}
+                        className={cn(
+                          "px-2 py-0.5 rounded-full text-[9px] border transition-all",
+                          (watch(`subtasks.${index}.assignee_ids`) || []).includes(user.id)
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300"
+                        )}
+                      >
+                        {user.full_name || user.email}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {fields.length === 0 && (
+              <p className="text-[10px] text-slate-400 italic">No subtasks added yet.</p>
+            )}
+          </div>
+        </div>
+      )}
                   onClick={() => remove(index)}
                 >
                   <Trash2 className="w-3.5 h-3.5" />

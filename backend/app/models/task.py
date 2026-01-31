@@ -33,6 +33,7 @@ class Task(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     
     title = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
@@ -54,6 +55,7 @@ class Task(Base):
     # Relationships
     project = relationship("Project", back_populates="tasks")
     subtasks = relationship("Subtask", back_populates="task", cascade="all, delete-orphan")
+    owner = relationship("User", foreign_keys=[owner_id])
     assignees = relationship("User", secondary=task_assignees, backref="assigned_tasks")
     
     # Dependencies: blocked_tasks (tasks blocked by this one), blocking_tasks (tasks blocking this one)
@@ -70,6 +72,7 @@ class Subtask(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=False)
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     
     title = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
@@ -77,6 +80,7 @@ class Subtask(Base):
     type = Column(String, index=True)
     
     status = Column(SAEnum(Status), default=Status.TODO)
+    priority = Column(SAEnum(Priority), default=Priority.MEDIUM)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -89,4 +93,5 @@ class Subtask(Base):
     
     # Relationships
     task = relationship("Task", back_populates="subtasks")
+    owner = relationship("User", foreign_keys=[owner_id])
     assignees = relationship("User", secondary=subtask_assignees, backref="assigned_subtasks")

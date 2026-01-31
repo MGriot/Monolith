@@ -89,6 +89,9 @@ async def create_task(
     if not current_user.is_superuser and (project.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     
+    if not task_in.owner_id:
+        task_in.owner_id = current_user.id
+        
     task = await crud_task.task.create(db=db, obj_in=task_in)
     return task
 

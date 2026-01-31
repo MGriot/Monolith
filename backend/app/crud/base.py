@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import Base
+from app.core.utils import clean_dict_datetimes
 
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
@@ -24,7 +25,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return result.scalars().all()
 
     async def create(self, db: AsyncSession, *, obj_in: CreateSchemaType) -> ModelType:
-        obj_in_data = obj_in.dict()
+        obj_in_data = clean_dict_datetimes(obj_in.dict())
         db_obj = self.model(**obj_in_data)
         db.add(db_obj)
         await db.commit()
@@ -39,6 +40,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         obj_in: Union[UpdateSchemaType, Dict[str, Any]]
     ) -> ModelType:
         obj_data = obj_in.dict(exclude_unset=True) if isinstance(obj_in, BaseModel) else obj_in
+        obj_data = clean_dict_datetimes(obj_data)
         for field in obj_data:
             if hasattr(db_obj, field):
                 setattr(db_obj, field, obj_data[field])

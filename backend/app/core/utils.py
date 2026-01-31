@@ -10,13 +10,15 @@ def make_naive(dt: Optional[datetime]) -> Optional[datetime]:
         return dt.replace(tzinfo=None)
     return dt
 
-def clean_dict_datetimes(data: dict) -> dict:
+def clean_dict_datetimes(data: Any) -> Any:
     """
-    Recursively clean all datetime objects in a dictionary to be naive.
+    Recursively clean all datetime objects in a dictionary or list to be naive.
     """
-    for key, value in data.items():
-        if isinstance(value, datetime):
-            data[key] = make_naive(value)
-        elif isinstance(value, list):
-            data[key] = [make_naive(v) if isinstance(v, datetime) else v for v in value]
-    return data
+    if isinstance(data, dict):
+        return {k: clean_dict_datetimes(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [clean_dict_datetimes(v) for v in data]
+    elif isinstance(data, datetime):
+        return make_naive(data)
+    else:
+        return data
