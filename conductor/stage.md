@@ -10,6 +10,10 @@
 - None.
 
 ## Recent Achievements
+- [x] Fixed missing dates for Monolith Alpha project via MCP/Python.
+- [x] Implemented 'List' tab in Project Detail for comprehensive task management.
+- [x] Added 'Edit Project' functionality with metadata editing.
+- [x] Improved navigation (clickable project names) across Dashboard and Project List.
 - [x] Update Documentation (DOCS-001).
 - [x] Improve Task Creation UX (FRONT-015).
 - [x] Fix Calendar Page Dead Buttons (FRONT-014).

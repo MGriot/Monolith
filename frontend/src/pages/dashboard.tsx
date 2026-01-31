@@ -140,16 +140,16 @@ export default function DashboardPage() {
                   <Link 
                     key={task.id} 
                     to={`/projects/${task.project_id}`}
-                    className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors group"
+                    className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-primary/20 hover:bg-slate-50 transition-all group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-amber-500" />
+                      <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                       <div>
-                        <p className="text-sm font-medium text-slate-900">{task.title}</p>
-                        <p className="text-[10px] text-slate-500">Due {format(parseISO(task.due_date), 'MMM d, h:mm a')}</p>
+                        <p className="text-sm font-semibold text-slate-900 group-hover:text-primary transition-colors">{task.title}</p>
+                        <p className="text-[10px] text-slate-500 font-medium">Due {format(parseISO(task.due_date), 'MMM d, h:mm a')}</p>
                       </div>
                     </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-primary transition-colors" />
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                   </Link>
                 ))
               )}

@@ -1,10 +1,12 @@
 from mcp.server.fastmcp import FastMCP
 from app.crud import crud_project, crud_task
 from app.db.session import AsyncSessionLocal
-from app.schemas.task import TaskCreate, TaskUpdate, SubtaskCreate
-from app.schemas.project import ProjectCreate
+from app.schemas.task import TaskCreate, TaskUpdate, SubtaskCreate, SubtaskUpdate
+from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.core.enums import Status
 from uuid import UUID
+from datetime import datetime
+from typing import List, Optional
 
 from app.schemas.user import UserCreate
 from app.crud import crud_user
@@ -33,11 +35,17 @@ async def create_user(email: str, password: str, full_name: str = None, is_super
             return f"Error creating user: {str(e)}"
 
 @mcp.tool()
-async def create_project(name: str, topic: str = None, type: str = None, description: str = None) -> str:
-    """Create a new project."""
+async def create_project(
+    name: str, 
+    topic: str = None, 
+    type: str = None, 
+    description: str = None,
+    start_date: str = None,
+    due_date: str = None
+) -> str:
+    """Create a new project. Dates in ISO format (YYYY-MM-DD)."""
     async with AsyncSessionLocal() as db:
         try:
-            # For MCP, we'll assign to the first superuser or a default owner
             users = await crud_user.get_multi(db, limit=1)
             if not users:
                 return "Error: No users found in system. Create a user first."
@@ -46,7 +54,9 @@ async def create_project(name: str, topic: str = None, type: str = None, descrip
                 name=name,
                 topic=topic,
                 type=type,
-                description=description
+                description=description,
+                start_date=datetime.fromisoformat(start_date) if start_date else None,
+                due_date=datetime.fromisoformat(due_date) if due_date else None
             )
             project_obj = await crud_project.project.create_with_owner(
                 db, obj_in=project_in, owner_id=users[0].id
@@ -54,6 +64,44 @@ async def create_project(name: str, topic: str = None, type: str = None, descrip
             return f"Successfully created project '{name}' with ID: {project_obj.id}"
         except Exception as e:
             return f"Error creating project: {str(e)}"
+
+@mcp.tool()
+async def update_project(
+    project_id: str,
+    name: str = None,
+    topic: str = None,
+    type: str = None,
+    description: str = None,
+    status: str = None,
+    start_date: str = None,
+    due_date: str = None
+) -> str:
+    """Update an existing project."""
+    async with AsyncSessionLocal() as db:
+        try:
+            project_obj = await crud_project.project.get(db, id=UUID(project_id))
+            if not project_obj:
+                return f"Project with ID {project_id} not found."
+            
+            update_data = {}
+            if name: update_data["name"] = name
+            if topic: update_data["topic"] = topic
+            if type: update_data["type"] = type
+            if description: update_data["description"] = description
+            if status:
+                try:
+                    status_member = next(s for s in Status if s.value.lower() == status.lower())
+                    update_data["status"] = status_member
+                except StopIteration:
+                    pass
+            if start_date: update_data["start_date"] = datetime.fromisoformat(start_date)
+            if due_date: update_data["due_date"] = datetime.fromisoformat(due_date)
+            
+            project_in = ProjectUpdate(**update_data)
+            await crud_project.project.update(db, db_obj=project_obj, obj_in=project_in)
+            return f"Successfully updated project '{project_obj.name}'"
+        except Exception as e:
+            return f"Error updating project: {str(e)}"
 
 @mcp.resource("projects://list")
 async def list_projects() -> str:
@@ -80,8 +128,15 @@ async def list_all_tasks() -> str:
         return "\n".join(lines)
 
 @mcp.tool()
-async def create_task(project_id: str, title: str, description: str = None, status: str = "Todo") -> str:
-    """Create a new task in a project."""
+async def create_task(
+    project_id: str, 
+    title: str, 
+    description: str = None, 
+    status: str = "Todo",
+    start_date: str = None,
+    due_date: str = None
+) -> str:
+    """Create a new task in a project. Dates in ISO format (YYYY-MM-DD)."""
     async with AsyncSessionLocal() as db:
         try:
             status_member = Status.TODO
@@ -95,7 +150,9 @@ async def create_task(project_id: str, title: str, description: str = None, stat
                 title=title,
                 project_id=UUID(project_id),
                 description=description,
-                status=status_member
+                status=status_member,
+                start_date=datetime.fromisoformat(start_date) if start_date else None,
+                due_date=datetime.fromisoformat(due_date) if due_date else None
             )
             task_obj = await crud_task.task.create(db, obj_in=task_in)
             return f"Successfully created task '{title}' with ID: {task_obj.id}"
@@ -103,8 +160,14 @@ async def create_task(project_id: str, title: str, description: str = None, stat
             return f"Error creating task: {str(e)}"
 
 @mcp.tool()
-async def create_subtask(task_id: str, title: str, status: str = "Todo") -> str:
-    """Create a new subtask for a task."""
+async def create_subtask(
+    task_id: str, 
+    title: str, 
+    status: str = "Todo",
+    start_date: str = None,
+    due_date: str = None
+) -> str:
+    """Create a new subtask for a task. Dates in ISO format (YYYY-MM-DD)."""
     async with AsyncSessionLocal() as db:
         try:
             status_member = Status.TODO
@@ -117,7 +180,9 @@ async def create_subtask(task_id: str, title: str, status: str = "Todo") -> str:
             st_in = SubtaskCreate(
                 title=title,
                 task_id=UUID(task_id),
-                status=status_member
+                status=status_member,
+                start_date=datetime.fromisoformat(start_date) if start_date else None,
+                due_date=datetime.fromisoformat(due_date) if due_date else None
             )
             st_obj = await crud_task.subtask.create(db, obj_in=st_in)
             return f"Successfully created subtask '{title}' with ID: {st_obj.id}"
@@ -127,16 +192,13 @@ async def create_subtask(task_id: str, title: str, status: str = "Todo") -> str:
 @mcp.tool()
 async def update_task_status(task_id: str, status: str) -> str:
     """Update the status of an existing task."""
-    # Allowed statuses: Backlog, Todo, In Progress, Review, Done
     async with AsyncSessionLocal() as db:
         try:
             task_obj = await crud_task.task.get(db, id=UUID(task_id))
             if not task_obj:
                 return f"Task with ID {task_id} not found."
             
-            # Case insensitive match for enum
             try:
-                # Find the correct Status enum member
                 status_member = next(s for s in Status if s.value.lower() == status.lower())
             except StopIteration:
                 return f"Invalid status: {status}. Allowed: {[s.value for s in Status]}"

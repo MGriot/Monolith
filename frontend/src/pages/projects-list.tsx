@@ -140,13 +140,13 @@ export default function ProjectsListPage() {
               </TableRow>
             ) : (
               projects?.map((project) => (
-                <TableRow key={project.id} className="hover:bg-slate-50/50 transition-colors">
+                <TableRow key={project.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => navigate(`/projects/${project.id}`)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20 shrink-0">
+                      <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20 shrink-0 group-hover:scale-105 transition-transform">
                         <FolderKanban className="w-4 h-4 text-primary" />
                       </div>
-                      <span className="font-medium text-slate-900 truncate">{project.name}</span>
+                      <span className="font-semibold text-slate-900 truncate group-hover:text-primary transition-colors">{project.name}</span>
                     </div>
                   </TableCell>
                   <TableCell>

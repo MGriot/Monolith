@@ -294,5 +294,21 @@
     "priority": "low",
     "linked_req": "PRD Section 9.2: Infrastructure & MCP",
     "description": "Document how to connect to the embedded MCP module in the backend container."
+  },
+  {
+    "id": "FRONT-016",
+    "title": "Project Detail Enhancements",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Added metadata display, Edit Project button, and 'List' tab for task management."
+  },
+  {
+    "id": "UX-001",
+    "title": "Improved Navigation Links",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 9.1: Frontend Gaps",
+    "description": "Made project names clickable across all views to ensure direct access to detail pages."
   }
 ]
