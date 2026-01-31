@@ -6,12 +6,13 @@ from sqlalchemy.future import select
 from app.crud.base import CRUDBase
 from app.models.project import Project
 from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.core.utils import clean_dict_datetimes
 
 class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
     async def create_with_owner(
         self, db: AsyncSession, *, obj_in: ProjectCreate, owner_id: UUID
     ) -> Project:
-        obj_in_data = obj_in.dict()
+        obj_in_data = clean_dict_datetimes(obj_in.dict())
         db_obj = self.model(**obj_in_data, owner_id=owner_id)
         db.add(db_obj)
         await db.commit()
