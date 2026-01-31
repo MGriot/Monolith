@@ -9,6 +9,7 @@ import RoadmapPage from "./pages/roadmap";
 import ProjectDetailPage from "./pages/project-detail";
 import UsersPage from "./pages/users";
 
+import DashboardPage from "./pages/dashboard";
 import ProjectsListPage from "./pages/projects-list";
 
 const queryClient = new QueryClient();
@@ -23,27 +24,6 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   return token ? <Layout>{children}</Layout> : <Navigate to="/login" />;
 };
 
-function Dashboard() {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Dashboard stats placeholders */}
-        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Active Projects</p>
-          <p className="text-2xl font-bold">0</p>
-        </div>
-        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Tasks in Progress</p>
-          <p className="text-2xl font-bold">0</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -56,7 +36,7 @@ function App() {
               path="/"
               element={
                 <PrivateRoute>
-                  <Dashboard />
+                  <DashboardPage />
                 </PrivateRoute>
               }
             />
