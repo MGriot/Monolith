@@ -282,7 +282,7 @@
   {
     "id": "FRONT-015",
     "title": "Improve Task Creation UX",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 9.1: Frontend Gaps",
     "description": "Allow defining initial subtasks directly within the Create Task dialog to reduce friction."
