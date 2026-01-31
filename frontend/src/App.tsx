@@ -9,6 +9,8 @@ import RoadmapPage from "./pages/roadmap";
 import ProjectDetailPage from "./pages/project-detail";
 import UsersPage from "./pages/users";
 
+import ProjectsListPage from "./pages/projects-list";
+
 const queryClient = new QueryClient();
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -59,7 +61,7 @@ function App() {
               }
             />
             {/* Placeholder routes for navigation */}
-            <Route path="/projects" element={<PrivateRoute><div>Projects List Page</div></PrivateRoute>} />
+            <Route path="/projects" element={<PrivateRoute><ProjectsListPage /></PrivateRoute>} />
             <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
             <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
             <Route path="/roadmap" element={<PrivateRoute><RoadmapPage /></PrivateRoute>} />

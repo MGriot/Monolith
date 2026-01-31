@@ -109,7 +109,7 @@ export default function AttachmentManager({ taskId, attachments }: AttachmentMan
             <div className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
               {isImage(url) ? (
                 <img 
-                  src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${url}`} 
+                  src={url} 
                   alt="preview" 
                   className="w-full h-full object-cover"
                 />
@@ -126,7 +126,7 @@ export default function AttachmentManager({ taskId, attachments }: AttachmentMan
 
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <a 
-                href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${url}`} 
+                href={url} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-primary"

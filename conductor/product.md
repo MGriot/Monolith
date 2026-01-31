@@ -69,9 +69,10 @@
     *   **Master Calendar:** Monthly view of all due dates across projects.
 
 ### 4.4 MCP Module (AI Integration)
-*   Expose a standard MCP endpoint (e.g., SSE or Stdio
+*   **Architecture:** Embedded within the Backend (FastAPI) service to share Database sessions and business logic.
+*   **Access:** Exposed via standard MCP protocol (Stdio/SSE) on the backend container.
 *   **Resources:** Expose `projects://`, `tasks://` as readable resources.
-*   **Tools:** Expose `create_task`, `update_status`, `search_projects` as executable tools for AI agents.
+*   **Tools:** Expose `create_task`, `update_status`, `search_projects`, `create_user` as executable tools for AI agents.
   
 ### 4.5 Notifications
 *   **Triggers:**
@@ -154,3 +155,29 @@ erDiagram
     *   *Mitigation:* Validate for cycles (DAG check) before saving dependency links.
 *   **Risk:** Gantt chart becoming unreadable on mobile.
     *   *Mitigation:* Disable complex Gantt on mobile; default to List/Card view.
+
+## 9. Gap Analysis & Improvement Plan (Current State Review)
+
+### 9.1 Frontend Gaps
+*   **Missing Projects List Page:** The `/projects` route currently renders a placeholder `<div>`. A proper table/grid view of all projects is required.
+*   **Missing "Create Project" Workflow:** 
+    *   No "Create Project" button exists in the global navigation or Dashboard.
+    *   The "Create your first project" button in the Roadmap Empty State is non-functional (dead link).
+    *   **Improvement:** Add a global "New Project" button in the Sidebar or Header. Implement the `ProjectCreate` dialog form.
+*   **Dead Buttons (Visual Only):**
+    *   **Calendar Page:** The "New Task" button in the header and "View Details" button in task popovers are purely visual and have no click handlers.
+*   **Task/Subtask UX Friction:**
+    *   Subtasks can only be added *after* a task is created (via the Edit dialog).
+    *   **Improvement:** Allow defining initial subtasks directly in the "Create Task" form, or clearer UX guiding the user to the Edit view.
+*   **Dashboard Placeholder:** The main Dashboard (`/`) contains hardcoded "0" stats and no real data visualization.
+
+### 9.2 Infrastructure & MCP
+*   **MCP Container Visibility:** Users noted the absence of a dedicated MCP container. 
+    *   **Clarification:** The MCP module is currently *embedded* within the `backend` container (`backend/app/api/api_v1/endpoints/mcp.py`) to leverage the shared Async SQLAlchemy session.
+    *   **Improvement:** Documentation should clearly state how to connect an MCP Client to the Backend container (e.g., `docker exec -i monolith_backend mcp-server`).
+    *   **Optional:** If distinct scaling is needed, split MCP into a separate service in `docker-compose.yml` sharing the same `backend` image but running a different entrypoint.
+
+### 9.3 Detailed UX Requirements (Additions)
+*   **Global Header:** Must include a primary "Action" button (e.g., "+" Icon) that opens a context menu to Quick Create: Project, Task (needs Project selection), or User.
+*   **Empty States:** All empty states (Roadmap, Project Lists) must have functional "Create" buttons that trigger the respective creation flows.
+*   **Feedback Loops:** Buttons should show loading states (spinners) during API calls (currently partially implemented in TaskForm).

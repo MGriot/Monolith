@@ -11,3 +11,6 @@ alembic
 python-dotenv
 mcp
 sse-starlette
+email-validator
+bcrypt==4.0.1
+bcrypt

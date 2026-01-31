@@ -246,5 +246,53 @@
     "priority": "low",
     "linked_req": "PRD Section 4.2: Metadata",
     "description": "Integrate markdown rendering for project and task descriptions."
+  },
+  {
+    "id": "FRONT-011",
+    "title": "Projects List Page",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 9.1: Frontend Gaps",
+    "description": "Implement the /projects page to list all projects in a table/grid view with status and progress indicators."
+  },
+  {
+    "id": "FRONT-012",
+    "title": "Create Project Workflow",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 9.1: Frontend Gaps",
+    "description": "Implement a global 'Create Project' button and the associated Dialog form to create new projects."
+  },
+  {
+    "id": "FRONT-013",
+    "title": "Dashboard Implementation",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 9.1: Frontend Gaps",
+    "description": "Replace the placeholder Dashboard with real statistics and visualization widgets."
+  },
+  {
+    "id": "FRONT-014",
+    "title": "Fix Calendar Dead Buttons",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 9.1: Frontend Gaps",
+    "description": "Wire up the 'New Task' and 'View Details' buttons on the Calendar page to functional event handlers."
+  },
+  {
+    "id": "FRONT-015",
+    "title": "Improve Task Creation UX",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 9.1: Frontend Gaps",
+    "description": "Allow defining initial subtasks directly within the Create Task dialog to reduce friction."
+  },
+  {
+    "id": "DOCS-001",
+    "title": "MCP Documentation",
+    "status": "todo",
+    "priority": "low",
+    "linked_req": "PRD Section 9.2: Infrastructure & MCP",
+    "description": "Document how to connect to the embedded MCP module in the backend container."
   }
 ]
