@@ -63,15 +63,17 @@ async def get_calendar_events(
         ))
 
     # Fetch Subtasks
-    subtask_query = select(Subtask).where(Subtask.due_date != None)
+    subtask_query = select(Subtask, Task.project_id).join(Task, Subtask.task_id == Task.id).where(Subtask.due_date != None)
     if start_date:
         subtask_query = subtask_query.where(Subtask.due_date >= start_date)
     if end_date:
         subtask_query = subtask_query.where(Subtask.due_date <= end_date)
     
     result = await db.execute(subtask_query)
-    subtasks = result.scalars().all()
-    for st in subtasks:
+    subtasks_data = result.all()
+    for st_row in subtasks_data:
+        st = st_row[0]
+        p_id = st_row[1]
         items.append(CalendarItem(
             id=st.id,
             title=st.title,
@@ -79,7 +81,8 @@ async def get_calendar_events(
             status=st.status,
             start_date=st.start_date,
             due_date=st.due_date,
-            task_id=st.task_id
+            task_id=st.task_id,
+            project_id=p_id
         ))
 
     return {"items": items}

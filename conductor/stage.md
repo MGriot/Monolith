@@ -4,7 +4,6 @@
 **Focus:** Implementing missing pages, fixing dead buttons, and refining UX based on Gap Analysis.
 
 ## Active Goals
-- [ ] Fix Calendar Page Dead Buttons (FRONT-014).
 - [ ] Improve Task Creation UX (FRONT-015).
 - [ ] Update Documentation (DOCS-001).
 
@@ -12,6 +11,7 @@
 - None.
 
 ## Recent Achievements
+- [x] Fix Calendar Page Dead Buttons (FRONT-014).
 - [x] Implement Main Dashboard Visualization (FRONT-013).
 - [x] Implement Create Project Workflow (FRONT-012).
 - [x] Implement Projects List Page (FRONT-011).

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { 
   format, 
   addMonths, 
@@ -15,7 +16,7 @@ import {
 } from 'date-fns';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Popover,
@@ -23,6 +24,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from '@/lib/utils';
+import TaskCreateDialog from '@/components/task-create-dialog';
 
 interface CalendarItem {
   id: string;
@@ -30,10 +32,14 @@ interface CalendarItem {
   item_type: 'project' | 'task' | 'subtask';
   status: string;
   due_date: string;
+  project_id?: string;
+  task_id?: string;
 }
 
 export default function CalendarPage() {
+  const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['calendar', format(currentMonth, 'yyyy-MM')],
@@ -48,6 +54,14 @@ export default function CalendarPage() {
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
+  const handleViewDetails = (item: CalendarItem) => {
+    if (item.item_type === 'project') {
+      navigate(`/projects/${item.id}`);
+    } else if (item.project_id) {
+      navigate(`/projects/${item.project_id}`);
+    }
+  };
+
   const renderHeader = () => {
     return (
       <div className="flex items-center justify-between mb-8">
@@ -57,17 +71,17 @@ export default function CalendarPage() {
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-white border border-slate-200 rounded-md p-1 shadow-sm">
-            <Button variant="ghost" size="icon" onClick={prevMonth} className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={prevMonth} className="h-8 w-8 text-slate-500">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" className="h-8 text-xs font-medium px-3" onClick={() => setCurrentMonth(new Date())}>
+            <Button variant="ghost" className="h-8 text-xs font-medium px-3 text-slate-600" onClick={() => setCurrentMonth(new Date())}>
               Today
             </Button>
-            <Button variant="ghost" size="icon" onClick={nextMonth} className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={nextMonth} className="h-8 w-8 text-slate-500">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <Button size="sm" className="gap-2">
+          <Button size="sm" className="gap-2 shadow-md shadow-primary/20" onClick={() => setIsTaskDialogOpen(true)}>
             <Plus className="h-4 w-4" /> New Task
           </Button>
         </div>
@@ -142,9 +156,17 @@ export default function CalendarPage() {
                       <Badge variant="outline" className="capitalize text-[10px]">{item.item_type}</Badge>
                       <Badge className="text-[10px]">{item.status}</Badge>
                     </div>
-                    <h4 className="font-bold text-sm">{item.title}</h4>
+                    <h4 className="font-bold text-sm text-slate-900">{item.title}</h4>
                     <p className="text-xs text-slate-500">Due: {format(parseISO(item.due_date), 'PPP')}</p>
-                    <Button variant="outline" size="sm" className="w-full mt-2 h-7 text-xs">View Details</Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full mt-2 h-8 text-xs gap-2 group-hover:border-primary/30 transition-colors"
+                      onClick={() => handleViewDetails(item)}
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      View Details
+                    </Button>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -186,6 +208,7 @@ export default function CalendarPage() {
           renderCells()
         )}
       </div>
+      <TaskCreateDialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen} />
     </div>
   );
 }
