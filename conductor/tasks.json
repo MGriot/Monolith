@@ -258,7 +258,7 @@
   {
     "id": "FRONT-012",
     "title": "Create Project Workflow",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 9.1: Frontend Gaps",
     "description": "Implement a global 'Create Project' button and the associated Dialog form to create new projects."

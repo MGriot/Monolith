@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '@/lib/api';
 import {
   Table,
@@ -12,13 +13,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { 
   FolderKanban, 
   ArrowRight, 
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Plus
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 
 interface Project {
   id: string;
@@ -33,7 +43,20 @@ interface Project {
 
 export default function ProjectsListPage() {
   const navigate = useNavigate();
-  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      setIsCreateDialogOpen(true);
+      // Clean up search params after opening
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('create');
+      setSearchParams(newParams);
+    }
+  }, [searchParams, setSearchParams]);
+
   const { data: projects, isLoading, isError } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
@@ -41,6 +64,26 @@ export default function ProjectsListPage() {
       return response.data as Project[];
     },
   });
+
+  const createProjectMutation = useMutation({
+    mutationFn: async (values: ProjectFormValues) => {
+      const formattedValues = {
+        ...values,
+        tags: values.tags ? values.tags.split(',').map(t => t.trim()) : [],
+        start_date: values.start_date ? new Date(values.start_date).toISOString() : null,
+        due_date: values.due_date ? new Date(values.due_date).toISOString() : null,
+      };
+      return api.post('/projects/', formattedValues);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setIsCreateDialogOpen(false);
+    },
+  });
+
+  const handleCreateSubmit = (data: ProjectFormValues) => {
+    createProjectMutation.mutate(data);
+  };
 
   if (isLoading) {
     return (
@@ -66,7 +109,9 @@ export default function ProjectsListPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Projects</h1>
           <p className="text-slate-500">Manage and track all your active projects.</p>
         </div>
-        {/* Placeholder for Create Button (Next Task) */}
+        <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+          <Plus className="w-4 h-4" /> New Project
+        </Button>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -85,7 +130,12 @@ export default function ProjectsListPage() {
             {projects?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-32 text-center text-slate-500">
-                  No projects found. Create one to get started.
+                  <div className="flex flex-col items-center gap-2">
+                    <p>No projects found. Create one to get started.</p>
+                    <Button variant="outline" size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+                      Create your first project
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -141,6 +191,22 @@ export default function ProjectsListPage() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+            <DialogDescription>
+              Enter the project details to get started.
+            </DialogDescription>
+          </DialogHeader>
+          <ProjectForm 
+            onSubmit={handleCreateSubmit} 
+            onCancel={() => setIsCreateDialogOpen(false)} 
+            isLoading={createProjectMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
