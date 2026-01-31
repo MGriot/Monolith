@@ -55,13 +55,6 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
     },
   });
 
-  const handleTaskSubmit = (data: TaskFormValues) => {
-    createProjectMutation.mutate(data);
-  };
-
-  // Wait, I used createProjectMutation instead of createTaskMutation by mistake in thought. 
-  // Let's fix that in the actual code below.
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">

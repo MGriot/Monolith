@@ -12,8 +12,8 @@ import { cn } from "@/lib/utils";
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  status: z.string(),
-  priority: z.string(),
+  status: z.string().min(1, "Status is required"),
+  priority: z.string().min(1, "Priority is required"),
   topic: z.string().optional(),
   type: z.string().optional(),
   start_date: z.string().optional().nullable(),
@@ -21,7 +21,7 @@ const taskSchema = z.object({
   assignee_ids: z.array(z.string()),
   subtasks: z.array(z.object({
     title: z.string().min(1, "Subtask title is required"),
-    status: z.string().default("Todo")
+    status: z.string().min(1, "Subtask status is required")
   })).optional()
 });
 

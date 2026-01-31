@@ -18,7 +18,7 @@ const projectSchema = z.object({
   description: z.string().optional(),
   topic: z.string().min(1, "Topic is required"),
   type: z.string().min(1, "Type is required"),
-  status: z.string().default("Todo"),
+  status: z.string().min(1, "Status is required"),
   start_date: z.string().optional(),
   due_date: z.string().optional(),
   tags: z.string().optional(),
@@ -49,6 +49,9 @@ export default function ProjectForm({
     resolver: zodResolver(projectSchema),
     defaultValues: {
       status: "Todo",
+      name: "",
+      topic: "",
+      type: "",
       ...initialValues,
     },
   });
@@ -79,7 +82,7 @@ export default function ProjectForm({
       <div className="space-y-2">
         <Label htmlFor="status">Status</Label>
         <Select 
-          onValueChange={(value) => setValue("status", value)} 
+          onValueChange={(value: string) => setValue("status", value)} 
           defaultValue={statusValue}
         >
           <SelectTrigger>

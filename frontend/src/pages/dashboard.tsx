@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { 
   FolderKanban, 
@@ -12,9 +12,7 @@ import {
   Activity
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { format, parseISO } from 'date-fns';
-import { Badge } from "@/components/ui/badge";
 
 interface DashboardSummary {
   total_projects: number;
@@ -37,8 +35,6 @@ interface DashboardSummary {
 }
 
 export default function DashboardPage() {
-  const navigate = useNavigate();
-
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: async () => {
