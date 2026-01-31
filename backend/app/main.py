@@ -24,6 +24,13 @@ app.include_router(api_router, prefix="/api/v1")
 app.mount("/mcp", mcp.sse_app)
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
+@app.on_event("startup")
+async def on_startup():
+    from app.db.session import engine, Base
+    import app.models  # Ensure all models are loaded
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "version": "0.1.0"}

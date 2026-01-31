@@ -14,10 +14,17 @@ async def create_user(
     *,
     db: AsyncSession = Depends(deps.get_db),
     user_in: UserCreate,
+    current_user: UserModel = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Create new user.
     """
+    if user_in.is_superuser:
+        if not current_user or not current_user.is_superuser:
+            raise HTTPException(
+                status_code=400,
+                detail="The user doesn't have enough privileges",
+            )
     user = await crud_user.get_by_email(db, email=user_in.email)
     if user:
         raise HTTPException(

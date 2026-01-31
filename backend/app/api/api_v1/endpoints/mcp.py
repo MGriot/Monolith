@@ -5,7 +5,31 @@ from app.schemas.task import TaskCreate, TaskUpdate
 from app.core.enums import Status
 from uuid import UUID
 
+from app.schemas.user import UserCreate
+from app.crud import crud_user
+
 mcp = FastMCP("Monolith Planner")
+
+@mcp.tool()
+async def create_user(email: str, password: str, full_name: str = None, is_superuser: bool = False) -> str:
+    """Create a new user in the system."""
+    async with AsyncSessionLocal() as db:
+        try:
+            # Check if user exists
+            user_exists = await crud_user.get_by_email(db, email=email)
+            if user_exists:
+                return f"User with email '{email}' already exists."
+            
+            user_in = UserCreate(
+                email=email,
+                password=password,
+                full_name=full_name,
+                is_superuser=is_superuser
+            )
+            user_obj = await crud_user.create(db, obj_in=user_in)
+            return f"Successfully created user '{email}' with ID: {user_obj.id}"
+        except Exception as e:
+            return f"Error creating user: {str(e)}"
 
 @mcp.resource("projects://list")
 async def list_projects() -> str:

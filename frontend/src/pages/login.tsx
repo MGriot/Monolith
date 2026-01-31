@@ -42,15 +42,11 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append("username", data.email);
-      formData.append("password", data.password);
+      const params = new URLSearchParams();
+      params.append("username", data.email);
+      params.append("password", data.password);
 
-      const response = await api.post("/login/access-token", formData, {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      });
+      const response = await api.post("/login/access-token", params);
 
       await login(response.data.access_token);
       navigate("/");
