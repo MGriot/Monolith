@@ -61,14 +61,17 @@
 
 ### 4.3 Visualization
 *   **Project Dashboard (Single Project):**
+    *   **Layout:** The main content area (Kanban, Gantt, List) must utilize 100% of the available horizontal and vertical space, adjusting dynamically when the sidebar is toggled or the screen is resized.
     *   **Interactive Tabs:** 
-        *   **Kanban Board:** Drag-and-drop tasks between statuses.
-        *   **Task List View:** A comprehensive table of all tasks and subtasks with expansion support.
-        *   **Gantt Chart:** Interactive timeline of Tasks/Subtasks. Zoom levels (Day, Week, Month).
+        *   **Kanban Board:** Drag-and-drop tasks between statuses. Cards must be color-coded based on `Priority` (e.g., Red for Critical, Blue for Low) and `Status`.
+        *   **Task List View:** A comprehensive hierarchical table of all tasks and subtasks. Metadata (Topic, Assignees, Dates) must be clearly aligned.
+        *   **Gantt Chart:** 
+            *   **Hierarchy:** Must include a toggle/flag to show/hide Subtasks.
+            *   **Color Logic:** Bars must be color-coded based on task `Status` and `Priority`.
+            *   **Timeline:** Interactive zoom levels (Day, Week, Month).
         *   **Activity Heatmap:** A "GitHub-style" graph showing task completion activity over time.
-    *   **Direct Navigation:** All project references (names in lists, cards, breadcrumbs) must be clickable, leading directly to this view.
-    *   **Metadata Header:** Prominent display of Project Topic, Type, Start Date, and Due Date.
-    *   **Management:** Functional "Edit Project" button to modify metadata (name, dates, type).
+    *   **Metadata Header:** High-density, clear display of Project Topic, Type, Start Date, and Due Date using a grid or descriptive icons.
+    *   **Management:** Functional "Edit Project" button and a robust **Attachment System** allowing file uploads and previews (Images/PDFs).
 *   **Global Dashboard (All Projects):**
     *   **Master Gantt:** High-level view of all active projects.
     *   **Master Calendar:** Monthly view of all due dates across projects.

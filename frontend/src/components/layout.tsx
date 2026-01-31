@@ -174,7 +174,7 @@ export default function Layout({ children }: LayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-8 scroll-smooth">
+        <main className="flex-1 overflow-y-auto scroll-smooth">
           {children}
         </main>
       </div>

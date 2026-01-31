@@ -310,5 +310,45 @@
     "priority": "medium",
     "linked_req": "PRD Section 9.1: Frontend Gaps",
     "description": "Made project names clickable across all views to ensure direct access to detail pages."
+  },
+  {
+    "id": "FRONT-017",
+    "title": "Full-Width Layout Fix",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Ensure the project detail tabs (Kanban, Gantt, List) occupy the full available screen width and height."
+  },
+  {
+    "id": "FRONT-018",
+    "title": "Enhanced Gantt: Subtasks & Colors",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Add a flag to toggle subtask visibility in Gantt and implement status/priority-based color coding."
+  },
+  {
+    "id": "FRONT-019",
+    "title": "Project Detail: Hierarchical List & Metadata",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Refine the List tab into a hierarchical table and improve the clarity of project metadata display."
+  },
+  {
+    "id": "FRONT-020",
+    "title": "Attachment System Fix",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Fix the file upload and preview system, ensuring correct pathing and Nginx serving."
+  },
+  {
+    "id": "FRONT-021",
+    "title": "Kanban Color Coding",
+    "status": "done",
+    "priority": "low",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Apply status and priority-based color coding to Kanban cards for better visual hierarchy."
   }
 ]

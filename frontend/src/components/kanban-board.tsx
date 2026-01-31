@@ -279,36 +279,44 @@ function SortableTaskCard({ task, onTaskClick }: { task: Task, onTaskClick?: (ta
 }
 
 function TaskCard({ task, isDragging, dragProps, onClick }: { task: Task, isDragging?: boolean, dragProps?: any, onClick?: () => void }) {
-  const priorityColors: Record<string, string> = {
-    Low: "bg-blue-100 text-blue-700",
-    Medium: "bg-yellow-100 text-yellow-700",
-    High: "bg-orange-100 text-orange-700",
-    Critical: "bg-red-100 text-red-700",
+  const priorityStyles: Record<string, { border: string, badge: string }> = {
+    Low: { border: "border-l-blue-400", badge: "bg-blue-100 text-blue-700" },
+    Medium: { border: "border-l-amber-400", badge: "bg-amber-100 text-amber-700" },
+    High: { border: "border-l-orange-400", badge: "bg-orange-100 text-orange-700" },
+    Critical: { border: "border-l-red-500", badge: "bg-red-100 text-red-700" },
   };
+
+  const style = priorityStyles[task.priority] || priorityStyles.Medium;
+  const isDone = task.status === 'Done' || task.status === 'done';
 
   return (
     <Card 
       className={cn(
-        "mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer group",
-        isDragging && "shadow-xl border-primary/50"
+        "mb-3 shadow-sm hover:shadow-md transition-all cursor-pointer group border-l-4",
+        style.border,
+        isDragging && "shadow-xl border-primary/50",
+        isDone && "bg-slate-50 opacity-80 hover:opacity-100"
       )}
       onClick={onClick}
     >
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-3 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-sm font-semibold leading-tight">{task.title}</CardTitle>
-          <div {...dragProps} className="cursor-grab active:cursor-grabbing text-slate-300 group-hover:text-slate-400">
-            <GripVertical className="w-4 h-4" />
+          <CardTitle className={cn(
+            "text-xs font-bold leading-snug",
+            isDone ? "text-slate-500 line-through" : "text-slate-900"
+          )}>{task.title}</CardTitle>
+          <div {...dragProps} className="cursor-grab active:cursor-grabbing text-slate-300 group-hover:text-slate-400 shrink-0">
+            <GripVertical className="w-3.5 h-3.5" />
           </div>
         </div>
         
         <div className="flex items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 capitalize border-none", priorityColors[task.priority])}>
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 capitalize border-none font-black", style.badge)}>
               {task.priority}
             </Badge>
             {task.topic && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+              <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-slate-100 text-slate-500 font-bold border-none">
                 {task.topic}
               </Badge>
             )}
@@ -318,10 +326,10 @@ function TaskCard({ task, isDragging, dragProps, onClick }: { task: Task, isDrag
             {task.assignees?.map((u) => (
               <div 
                 key={u.id}
-                className="inline-block h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center ring-0"
+                className="inline-block h-5 w-5 rounded-full bg-white border border-slate-200 flex items-center justify-center ring-0 shadow-sm"
                 title={u.full_name || u.email}
               >
-                <UserIcon className="w-2.5 h-2.5 text-slate-500" />
+                <UserIcon className="w-2.5 h-2.5 text-slate-400" />
               </div>
             ))}
           </div>
