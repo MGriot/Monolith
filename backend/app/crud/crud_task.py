@@ -85,6 +85,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         obj_data = obj_in.dict(exclude_unset=True)
         blocker_ids = obj_data.pop("blocked_by_ids", [])
         assignee_ids = obj_data.pop("assignee_ids", [])
+        subtasks_data = obj_data.pop("subtasks", [])
         
         db_obj = self.model(**obj_data)
         
@@ -106,6 +107,16 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         db.add(db_obj)
         await db.commit()
         await db.refresh(db_obj)
+        
+        # Create nested subtasks if any
+        if subtasks_data:
+            from app.schemas.task import SubtaskCreate
+            for st_data in subtasks_data:
+                st_in = SubtaskCreate(
+                    task_id=db_obj.id,
+                    **st_data
+                )
+                await subtask.create(db, obj_in=st_in)
         
         await self.update_project_progress(db, db_obj.project_id)
         if assignee_ids:

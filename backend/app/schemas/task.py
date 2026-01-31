@@ -20,6 +20,10 @@ class SubtaskCreate(SubtaskBase):
     title: str
     task_id: UUID
 
+class SubtaskShortCreate(BaseModel):
+    title: str
+    status: Optional[Status] = Status.TODO
+
 class SubtaskUpdate(SubtaskBase):
     pass
 
@@ -54,6 +58,7 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     title: str
     project_id: UUID
+    subtasks: Optional[List[SubtaskShortCreate]] = []
 
 class TaskUpdate(TaskBase):
     pass

@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
@@ -6,7 +6,7 @@ import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User as UserIcon, Loader2 } from "lucide-react";
+import { User as UserIcon, Loader2, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const taskSchema = z.object({
@@ -19,6 +19,10 @@ const taskSchema = z.object({
   start_date: z.string().optional().nullable(),
   due_date: z.string().optional().nullable(),
   assignee_ids: z.array(z.string()),
+  subtasks: z.array(z.object({
+    title: z.string().min(1, "Subtask title is required"),
+    status: z.string().default("Todo")
+  })).optional()
 });
 
 export type TaskFormValues = z.infer<typeof taskSchema>;
@@ -50,6 +54,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading 
     handleSubmit,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -57,8 +62,14 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading 
       status: "Todo",
       priority: "Medium",
       assignee_ids: [],
+      subtasks: [],
       ...initialValues,
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "subtasks"
   });
 
   const selectedAssignees = watch("assignee_ids") || [];
@@ -178,6 +189,53 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading 
           <Input id="due_date" type="date" {...register("due_date")} />
         </div>
       </div>
+
+      {/* Subtasks Section */}
+      {!initialValues?.title && ( // Only show on creation
+        <div className="space-y-4 border-t pt-4">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-semibold text-slate-900">Initial Subtasks</Label>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              className="h-7 text-[10px] gap-1"
+              onClick={() => append({ title: "", status: "Todo" })}
+            >
+              <Plus className="w-3 h-3" /> Add Subtask
+            </Button>
+          </div>
+          
+          <div className="space-y-2">
+            {fields.map((field, index) => (
+              <div key={field.id} className="flex gap-2 items-start">
+                <div className="flex-1 space-y-1">
+                  <Input
+                    {...register(`subtasks.${index}.title` as const)}
+                    placeholder="Subtask title..."
+                    className="h-8 text-xs"
+                  />
+                  {errors.subtasks?.[index]?.title && (
+                    <p className="text-[10px] text-destructive">{errors.subtasks[index]?.title?.message}</p>
+                  )}
+                </div>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-slate-400 hover:text-destructive"
+                  onClick={() => remove(index)}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ))}
+            {fields.length === 0 && (
+              <p className="text-[10px] text-slate-400 italic">No subtasks added yet.</p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
