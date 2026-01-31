@@ -290,7 +290,7 @@
   {
     "id": "DOCS-001",
     "title": "MCP Documentation",
-    "status": "todo",
+    "status": "done",
     "priority": "low",
     "linked_req": "PRD Section 9.2: Infrastructure & MCP",
     "description": "Document how to connect to the embedded MCP module in the backend container."
