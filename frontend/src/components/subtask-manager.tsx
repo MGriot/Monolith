@@ -21,9 +21,19 @@ interface User {
 interface Subtask {
   id: string;
   title: string;
+  description?: string;
   status: string;
+  priority: string;
+  topic?: string;
+  type?: string;
+  start_date?: string;
+  due_date?: string;
   task_id: string;
+  owner_id?: string;
+  owner?: User;
   assignees?: User[];
+  tags?: string[];
+  attachments?: string[];
 }
 
 interface SubtaskManagerProps {
@@ -32,8 +42,15 @@ interface SubtaskManagerProps {
 
 export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
   const queryClient = useQueryClient();
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [newSubtask, setNewSubtask] = useState({
+    title: "",
+    start_date: "",
+    due_date: "",
+    assignee_ids: [] as string[]
+  });
   const [activeSubtaskMenu, setActiveSubtaskMenu] = useState<string | null>(null);
+  const [editingSubtask, setEditingSubtask] = useState<Subtask | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
 
   const { data: users } = useQuery({
     queryKey: ['users'],
@@ -53,12 +70,19 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (title: string) => {
-      return api.post("/subtasks/", { title, task_id: taskId });
+    mutationFn: async (data: { title: string; start_date?: string; due_date?: string; assignee_ids?: string[] }) => {
+      return api.post("/subtasks/", { 
+        ...data, 
+        task_id: taskId, 
+        priority: "Medium",
+        start_date: data.start_date ? new Date(data.start_date).toISOString() : null,
+        due_date: data.due_date ? new Date(data.due_date).toISOString() : null
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
-      setNewSubtaskTitle("");
+      setNewSubtask({ title: "", start_date: "", due_date: "", assignee_ids: [] });
+      setIsAdding(false);
     },
   });
 
@@ -69,6 +93,7 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      setEditingSubtask(null);
     },
   });
 
@@ -93,10 +118,21 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
     updateMutation.mutate({ subtaskId: subtask.id, data: { assignee_ids: newIds } });
   };
 
+  const toggleNewSubtaskAssignee = (userId: string) => {
+    const current = [...newSubtask.assignee_ids];
+    const index = current.indexOf(userId);
+    if (index > -1) {
+      current.splice(index, 1);
+    } else {
+      current.push(userId);
+    }
+    setNewSubtask({ ...newSubtask, assignee_ids: current });
+  };
+
   const handleAddSubtask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newSubtaskTitle.trim()) {
-      createMutation.mutate(newSubtaskTitle.trim());
+    if (newSubtask.title.trim()) {
+      createMutation.mutate(newSubtask);
     }
   };
 
@@ -118,6 +154,14 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
             {subtasks?.length || 0}
           </span>
         </h4>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-7 text-[10px] gap-1 text-primary hover:text-primary hover:bg-primary/5"
+          onClick={() => setIsAdding(!isAdding)}
+        >
+          <Plus className="w-3 h-3" /> Add Subtask
+        </Button>
       </div>
 
       <div className="space-y-2">
@@ -136,12 +180,35 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
                     });
                   }}
                 />
-                <span className={cn(
-                  "text-sm",
-                  subtask.status === "Done" && "line-through text-slate-400"
-                )}>
-                  {subtask.title}
-                </span>
+                <div className="flex flex-col">
+                  <span 
+                    className={cn(
+                      "text-sm cursor-pointer hover:underline",
+                      subtask.status === "Done" && "line-through text-slate-400"
+                    )}
+                    onClick={() => setEditingSubtask(subtask)}
+                  >
+                    {subtask.title}
+                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={cn(
+                      "text-[8px] font-black uppercase px-1 rounded-sm",
+                      subtask.priority === 'Critical' || subtask.priority === 'High' ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-500"
+                    )}>
+                      {subtask.priority}
+                    </span>
+                    {subtask.start_date && (
+                      <span className="text-[8px] text-slate-400">
+                        Start: {new Date(subtask.start_date).toLocaleDateString()}
+                      </span>
+                    )}
+                    {subtask.due_date && (
+                      <span className="text-[8px] text-slate-400">
+                        Due: {new Date(subtask.due_date).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
                 
                 <div className="flex -space-x-1 ml-2">
                   {subtask.assignees?.map(u => (
@@ -191,23 +258,195 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
         ))}
       </div>
 
-      <form onSubmit={handleAddSubtask} className="flex gap-2">
-        <Input
-          placeholder="Add a subtask..."
-          value={newSubtaskTitle}
-          onChange={(e) => setNewSubtaskTitle(e.target.value)}
-          className="h-8 text-sm"
-          disabled={createMutation.isPending}
-        />
-        <Button 
-          type="submit" 
-          size="sm" 
-          variant="secondary" 
-          disabled={!newSubtaskTitle.trim() || createMutation.isPending}
-        >
-          {createMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-        </Button>
-      </form>
+      {isAdding && (
+        <form onSubmit={handleAddSubtask} className="space-y-3 p-3 border rounded-lg bg-slate-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <Input
+            placeholder="Subtask title..."
+            value={newSubtask.title}
+            onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
+            className="h-8 text-sm bg-white"
+            disabled={createMutation.isPending}
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <div className="flex-1 space-y-1">
+              <Label className="text-[9px] uppercase font-bold text-slate-400">Start Date</Label>
+              <Input
+                type="date"
+                value={newSubtask.start_date}
+                onChange={(e) => setNewSubtask({ ...newSubtask, start_date: e.target.value })}
+                className="h-8 text-[10px] bg-white"
+                disabled={createMutation.isPending}
+              />
+            </div>
+            <div className="flex-1 space-y-1">
+              <Label className="text-[9px] uppercase font-bold text-slate-400">Due Date</Label>
+              <Input
+                type="date"
+                value={newSubtask.due_date}
+                onChange={(e) => setNewSubtask({ ...newSubtask, due_date: e.target.value })}
+                className="h-8 text-[10px] bg-white"
+                disabled={createMutation.isPending}
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-1">
+            <Label className="text-[9px] uppercase font-bold text-slate-400">Assignees</Label>
+            <div className="flex flex-wrap gap-1.5 p-2 bg-white border rounded-md min-h-[40px]">
+              {users?.map(user => (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => toggleNewSubtaskAssignee(user.id)}
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-[9px] border transition-all",
+                    newSubtask.assignee_ids.includes(user.id)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300"
+                  )}
+                >
+                  {user.full_name || user.email}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 text-xs"
+              onClick={() => setIsAdding(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              size="sm" 
+              className="h-7 text-xs"
+              disabled={!newSubtask.title.trim() || createMutation.isPending}
+            >
+              {createMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Add Subtask"}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {!isAdding && subtasks?.length === 0 && (
+        <p className="text-xs text-slate-400 italic text-center py-2">No subtasks yet.</p>
+      )}
+
+      {/* Quick Edit Subtask */}
+      {editingSubtask && (
+        <div className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95 duration-200">
+            <h3 className="font-bold text-lg">Edit Subtask</h3>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-slate-400">Title</Label>
+                <Input 
+                  value={editingSubtask.title}
+                  onChange={(e) => setEditingSubtask({...editingSubtask, title: e.target.value})}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-slate-400">Description</Label>
+                <textarea 
+                  className="w-full min-h-[80px] rounded-md border p-2 text-sm"
+                  value={editingSubtask.description || ""}
+                  onChange={(e) => setEditingSubtask({...editingSubtask, description: e.target.value})}
+                  placeholder="Subtask description..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold text-slate-400">Priority</Label>
+                  <select 
+                    className="w-full h-9 rounded-md border text-sm px-2"
+                    value={editingSubtask.priority}
+                    onChange={(e) => setEditingSubtask({...editingSubtask, priority: e.target.value})}
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold text-slate-400">Status</Label>
+                  <select 
+                    className="w-full h-9 rounded-md border text-sm px-2"
+                    value={editingSubtask.status}
+                    onChange={(e) => setEditingSubtask({...editingSubtask, status: e.target.value})}
+                  >
+                    <option value="Backlog">Backlog</option>
+                    <option value="Todo">Todo</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Review">Review</option>
+                    <option value="Done">Done</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold text-slate-400">Start Date</Label>
+                  <Input 
+                    type="date"
+                    value={editingSubtask.start_date ? editingSubtask.start_date.split('T')[0] : ""}
+                    onChange={(e) => setEditingSubtask({...editingSubtask, start_date: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold text-slate-400">Due Date</Label>
+                  <Input 
+                    type="date"
+                    value={editingSubtask.due_date ? editingSubtask.due_date.split('T')[0] : ""}
+                    onChange={(e) => setEditingSubtask({...editingSubtask, due_date: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold text-slate-400">Topic</Label>
+                  <Input 
+                    placeholder="e.g. Frontend"
+                    value={editingSubtask.topic || ""}
+                    onChange={(e) => setEditingSubtask({...editingSubtask, topic: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold text-slate-400">Type</Label>
+                  <Input 
+                    placeholder="e.g. Fix"
+                    value={editingSubtask.type || ""}
+                    onChange={(e) => setEditingSubtask({...editingSubtask, type: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setEditingSubtask(null)}>Cancel</Button>
+              <Button onClick={() => updateMutation.mutate({ 
+                subtaskId: editingSubtask.id, 
+                data: {
+                  title: editingSubtask.title,
+                  description: editingSubtask.description,
+                  status: editingSubtask.status,
+                  priority: editingSubtask.priority,
+                  start_date: editingSubtask.start_date ? new Date(editingSubtask.start_date).toISOString() : null,
+                  due_date: editingSubtask.due_date ? new Date(editingSubtask.due_date).toISOString() : null,
+                  topic: editingSubtask.topic,
+                  type: editingSubtask.type,
+                } 
+              })} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

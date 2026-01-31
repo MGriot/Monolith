@@ -350,5 +350,21 @@
     "priority": "low",
     "linked_req": "PRD Section 4.3: Visualization",
     "description": "Apply status and priority-based color coding to Kanban cards for better visual hierarchy."
+  },
+  {
+    "id": "FRONT-022",
+    "title": "Subtask Creation: UI Date Integration",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 9.4: Subtask Creation & Metadata Parity",
+    "description": "Ensure start_date and due_date are available in both TaskForm (initial subtasks) and SubtaskManager (quick add)."
+  },
+  {
+    "id": "FRONT-023",
+    "title": "Subtask Creation: Full Metadata Parity",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 9.4: Subtask Creation & Metadata Parity",
+    "description": "Add Assignee selection and Priority to the subtask creation forms to match the user's requirement for 'person' and parity."
   }
 ]

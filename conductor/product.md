@@ -182,7 +182,6 @@ erDiagram
     *   **Improvement:** Documentation should clearly state how to connect an MCP Client to the Backend container (e.g., `docker exec -i monolith_backend mcp-server`).
     *   **Optional:** If distinct scaling is needed, split MCP into a separate service in `docker-compose.yml` sharing the same `backend` image but running a different entrypoint.
 
-### 9.3 Detailed UX Requirements (Additions)
-*   **Global Header:** Must include a primary "Action" button (e.g., "+" Icon) that opens a context menu to Quick Create: Project, Task (needs Project selection), or User.
-*   **Empty States:** All empty states (Roadmap, Project Lists) must have functional "Create" buttons that trigger the respective creation flows.
-*   **Feedback Loops:** Buttons should show loading states (spinners) during API calls (currently partially implemented in TaskForm).
+### 9.4 Subtask Creation & Metadata Parity
+*   **Creation Flow:** The subtask creation UI (both inline in TaskForm and in SubtaskManager) must allow users to specify `start_date` and `due_date` at the moment of creation, not just post-creation editing.
+*   **Metadata Consistency:** Subtask creation must mirror the Task creation experience, ensuring `Priority`, `Topic`, and `Type` can also be optionally set during initial creation.

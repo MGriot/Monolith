@@ -11,9 +11,12 @@ class SubtaskBase(BaseModel):
     topic: Optional[str] = None
     type: Optional[str] = None
     status: Optional[Status] = Status.TODO
+    priority: Optional[Priority] = Priority.MEDIUM
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     tags: Optional[List[str]] = []
+    attachments: Optional[List[str]] = []
+    owner_id: Optional[UUID] = None
     assignee_ids: Optional[List[UUID]] = []
 
 class SubtaskCreate(SubtaskBase):
@@ -23,6 +26,10 @@ class SubtaskCreate(SubtaskBase):
 class SubtaskShortCreate(BaseModel):
     title: str
     status: Optional[Status] = Status.TODO
+    priority: Optional[Priority] = Priority.MEDIUM
+    start_date: Optional[datetime] = None
+    due_date: Optional[datetime] = None
+    assignee_ids: Optional[List[UUID]] = []
 
 class SubtaskUpdate(SubtaskBase):
     pass
@@ -33,6 +40,7 @@ class SubtaskInDBBase(SubtaskBase):
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None
+    owner: Optional[UserSchema] = None
     assignees: List[UserSchema] = []
 
     class Config:
@@ -52,6 +60,7 @@ class TaskBase(BaseModel):
     due_date: Optional[datetime] = None
     tags: Optional[List[str]] = []
     attachments: Optional[List[str]] = []
+    owner_id: Optional[UUID] = None
     blocked_by_ids: Optional[List[UUID]] = []
     assignee_ids: Optional[List[UUID]] = []
 
@@ -69,6 +78,7 @@ class TaskInDBBase(TaskBase):
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None
+    owner: Optional[UserSchema] = None
     assignees: List[UserSchema] = []
 
     class Config:

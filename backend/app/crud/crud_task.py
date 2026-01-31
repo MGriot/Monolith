@@ -113,6 +113,9 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         if subtasks_data:
             from app.schemas.task import SubtaskCreate
             for st_data in subtasks_data:
+                # Inherit owner_id if not provided
+                if "owner_id" not in st_data:
+                    st_data["owner_id"] = db_obj.owner_id
                 st_in = SubtaskCreate(
                     task_id=db_obj.id,
                     **st_data

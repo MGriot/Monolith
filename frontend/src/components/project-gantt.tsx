@@ -17,6 +17,7 @@ interface Subtask {
   id: string;
   title: string;
   status: string;
+  priority: string;
   start_date?: string;
   due_date?: string;
 }
@@ -33,9 +34,11 @@ interface Task {
 
 interface ProjectGanttProps {
   tasks: Task[];
+  projectStartDate?: string;
+  projectDueDate?: string;
 }
 
-export default function ProjectGantt({ tasks }: ProjectGanttProps) {
+export default function ProjectGantt({ tasks, projectStartDate, projectDueDate }: ProjectGanttProps) {
   const [showSubtasks, setShowSubtasks] = useState(false);
 
   const ganttItems = useMemo(() => {
@@ -59,13 +62,23 @@ export default function ProjectGantt({ tasks }: ProjectGanttProps) {
   }, [tasks, showSubtasks]);
 
   const viewWindow = useMemo(() => {
-    if (ganttItems.length === 0) return null;
-    const dates = ganttItems.map(t => parseISO(t.start_date!)).concat(ganttItems.map(t => parseISO(t.due_date!)));
+    const dates: Date[] = [];
+    
+    ganttItems.forEach(item => {
+      if (item.start_date) dates.push(parseISO(item.start_date));
+      if (item.due_date) dates.push(parseISO(item.due_date));
+    });
+
+    if (projectStartDate) dates.push(parseISO(projectStartDate));
+    if (projectDueDate) dates.push(parseISO(projectDueDate));
+
+    if (dates.length === 0) return null;
+
     return {
       start: startOfMonth(min(dates)),
       end: endOfMonth(max(dates)),
     };
-  }, [ganttItems]);
+  }, [ganttItems, projectStartDate, projectDueDate]);
 
   const months = useMemo(() => {
     if (!viewWindow) return [];

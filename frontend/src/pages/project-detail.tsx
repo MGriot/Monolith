@@ -64,6 +64,7 @@ interface Subtask {
   id: string;
   title: string;
   status: string;
+  priority: string;
   due_date?: string;
 }
 
@@ -399,9 +400,15 @@ export default function ProjectDetailPage() {
                             {st.title}
                           </div>
                         </TableCell>
-                        <TableCell colSpan={4}>
-                          <Badge className="text-[8px] h-4 bg-slate-100 text-slate-500 hover:bg-slate-100 border-none px-1.5 font-bold uppercase">{st.status}</Badge>
+                        <TableCell colSpan={2}>
+                          <div className="flex items-center gap-2">
+                            <Badge className="text-[8px] h-4 bg-slate-100 text-slate-500 hover:bg-slate-100 border-none px-1.5 font-bold uppercase">{st.status}</Badge>
+                            <Badge variant={st.priority === 'High' || st.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[8px] h-4 px-1.5 font-black uppercase">
+                              {st.priority}
+                            </Badge>
+                          </div>
                         </TableCell>
+                        <TableCell colSpan={2}></TableCell>
                         <TableCell className="text-right text-[10px] text-slate-400 font-medium">
                           {st.due_date ? new Date(st.due_date).toLocaleDateString() : '-'}
                         </TableCell>
@@ -415,12 +422,20 @@ export default function ProjectDetailPage() {
         </TabsContent>
         
         <TabsContent value="gantt" className="flex-1 overflow-hidden m-0 p-0">
-          <ProjectGantt tasks={tasks || []} />
+          <ProjectGantt 
+            tasks={tasks || []} 
+            projectStartDate={project.start_date}
+            projectDueDate={project.due_date}
+          />
         </TabsContent>
         
         <TabsContent value="activity" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <ProjectHeatmap stats={stats || []} />
+            <ProjectHeatmap 
+              stats={stats || []} 
+              projectStartDate={project.start_date}
+              projectDueDate={project.due_date}
+            />
           </div>
         </TabsContent>
       </Tabs>
