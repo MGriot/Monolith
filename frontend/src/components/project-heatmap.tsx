@@ -2,7 +2,7 @@ import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
-import { subYears, format, parseISO, startOfDay } from 'date-fns';
+import { subYears, format, parseISO } from 'date-fns';
 
 interface Stat {
   date: string;

@@ -36,10 +36,11 @@ interface ProjectGanttProps {
   tasks: Task[];
   projectStartDate?: string;
   projectDueDate?: string;
+  initialShowSubtasks?: boolean;
 }
 
-export default function ProjectGantt({ tasks, projectStartDate, projectDueDate }: ProjectGanttProps) {
-  const [showSubtasks, setShowSubtasks] = useState(false);
+export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, initialShowSubtasks = false }: ProjectGanttProps) {
+  const [showSubtasks, setShowSubtasks] = useState(initialShowSubtasks);
 
   const ganttItems = useMemo(() => {
     const items: (Task | Subtask & { isSubtask: boolean, parentTitle: string })[] = [];

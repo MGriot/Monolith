@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Plus, 
   Trash2, 
@@ -44,6 +45,9 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
   const queryClient = useQueryClient();
   const [newSubtask, setNewSubtask] = useState({
     title: "",
+    priority: "Medium",
+    topic: "",
+    type: "",
     start_date: "",
     due_date: "",
     assignee_ids: [] as string[]
@@ -70,18 +74,25 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { title: string; start_date?: string; due_date?: string; assignee_ids?: string[] }) => {
+    mutationFn: async (data: typeof newSubtask) => {
       return api.post("/subtasks/", { 
         ...data, 
         task_id: taskId, 
-        priority: "Medium",
         start_date: data.start_date ? new Date(data.start_date).toISOString() : null,
         due_date: data.due_date ? new Date(data.due_date).toISOString() : null
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
-      setNewSubtask({ title: "", start_date: "", due_date: "", assignee_ids: [] });
+      setNewSubtask({ 
+        title: "", 
+        priority: "Medium", 
+        topic: "", 
+        type: "", 
+        start_date: "", 
+        due_date: "", 
+        assignee_ids: [] 
+      });
       setIsAdding(false);
     },
   });
@@ -197,6 +208,12 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
                     )}>
                       {subtask.priority}
                     </span>
+                    {subtask.topic && (
+                        <span className="text-[8px] bg-blue-50 text-blue-600 px-1 rounded-sm font-bold">{subtask.topic}</span>
+                    )}
+                    {subtask.type && (
+                        <span className="text-[8px] bg-purple-50 text-purple-600 px-1 rounded-sm font-bold">{subtask.type}</span>
+                    )}
                     {subtask.start_date && (
                       <span className="text-[8px] text-slate-400">
                         Start: {new Date(subtask.start_date).toLocaleDateString()}
@@ -268,8 +285,45 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
             disabled={createMutation.isPending}
             autoFocus
           />
-          <div className="flex gap-2">
-            <div className="flex-1 space-y-1">
+          
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-[9px] uppercase font-bold text-slate-400">Priority</Label>
+              <select 
+                className="w-full h-8 rounded-md border text-[10px] px-2 bg-white"
+                value={newSubtask.priority}
+                onChange={(e) => setNewSubtask({ ...newSubtask, priority: e.target.value })}
+              >
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+                <Label className="text-[9px] uppercase font-bold text-slate-400">Topic</Label>
+                <Input
+                    placeholder="e.g. Frontend"
+                    value={newSubtask.topic}
+                    onChange={(e) => setNewSubtask({ ...newSubtask, topic: e.target.value })}
+                    className="h-8 text-[10px] bg-white"
+                    disabled={createMutation.isPending}
+                />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+             <div className="space-y-1 col-span-1">
+                <Label className="text-[9px] uppercase font-bold text-slate-400">Type</Label>
+                <Input
+                    placeholder="e.g. Fix"
+                    value={newSubtask.type}
+                    onChange={(e) => setNewSubtask({ ...newSubtask, type: e.target.value })}
+                    className="h-8 text-[10px] bg-white"
+                    disabled={createMutation.isPending}
+                />
+            </div>
+            <div className="space-y-1">
               <Label className="text-[9px] uppercase font-bold text-slate-400">Start Date</Label>
               <Input
                 type="date"
@@ -279,7 +333,7 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
                 disabled={createMutation.isPending}
               />
             </div>
-            <div className="flex-1 space-y-1">
+            <div className="space-y-1">
               <Label className="text-[9px] uppercase font-bold text-slate-400">Due Date</Label>
               <Input
                 type="date"
@@ -450,4 +504,3 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
     </div>
   );
 }
-

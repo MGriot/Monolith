@@ -115,6 +115,18 @@ async def list_projects() -> str:
             lines.append(f"- {p.name} (ID: {p.id}, Progress: {p.progress_percent}%, Status: {p.status})")
         return "\n".join(lines)
 
+@mcp.resource("users://list")
+async def list_users() -> str:
+    """List all users in the system."""
+    async with AsyncSessionLocal() as db:
+        users = await crud_user.get_multi(db, limit=1000)
+        if not users:
+            return "No users found."
+        lines = []
+        for u in users:
+            lines.append(f"- {u.email} (ID: {u.id}, Name: {u.full_name}, Is Superuser: {u.is_superuser})")
+        return "\n".join(lines)
+
 @mcp.resource("tasks://list")
 async def list_all_tasks() -> str:
     """List all tasks across all projects."""
