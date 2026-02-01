@@ -25,7 +25,6 @@ import MarkdownRenderer from '@/components/markdown-renderer';
 import { 
   Trello, 
   GanttChart, 
-  Activity,
   Calendar as CalendarIcon,
   Plus,
   List as ListIcon,
