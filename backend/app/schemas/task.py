@@ -80,6 +80,7 @@ class TaskInDBBase(TaskBase):
     completed_at: Optional[datetime] = None
     owner: Optional[UserSchema] = None
     assignees: List[UserSchema] = []
+    subtasks: List[Subtask] = []
 
     class Config:
         from_attributes = True
