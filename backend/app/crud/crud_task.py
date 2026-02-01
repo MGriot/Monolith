@@ -28,7 +28,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         result = await db.execute(
             select(self.model)
             .filter(self.model.project_id == project_id)
-            .options(selectinload(Task.assignees))
+            .options(
+                selectinload(Task.assignees),
+                selectinload(Task.subtasks).selectinload(Subtask.assignees)
+            )
             .offset(skip)
             .limit(limit)
         )

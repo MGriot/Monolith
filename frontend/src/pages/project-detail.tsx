@@ -55,7 +55,10 @@ interface Subtask {
   title: string;
   status: string;
   priority: string;
+  start_date?: string;
   due_date?: string;
+  topic?: string;
+  type?: string;
 }
 
 interface Task {
