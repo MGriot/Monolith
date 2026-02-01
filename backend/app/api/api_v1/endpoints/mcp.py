@@ -234,3 +234,17 @@ async def search_projects(query: str) -> str:
         for p in matches:
             lines.append(f"- {p.name} (ID: {p.id}, Progress: {p.progress_percent}%)")
         return "\n".join(lines)
+
+@mcp.tool()
+async def delete_project(project_id: str) -> str:
+    """Delete a project and all its tasks/subtasks."""
+    async with AsyncSessionLocal() as db:
+        try:
+            project_obj = await crud_project.project.get(db, id=UUID(project_id))
+            if not project_obj:
+                return f"Project with ID {project_id} not found."
+            
+            await crud_project.project.remove(db, id=UUID(project_id))
+            return f"Successfully deleted project '{project_obj.name}' and all its associated data."
+        except Exception as e:
+            return f"Error deleting project: {str(e)}"
