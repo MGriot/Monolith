@@ -178,6 +178,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             active_blockers = await self.check_for_active_blockers(db, db_obj.id, db_obj.blocked_by_ids or [])
             if active_blockers:
                 raise ValueError(f"Task is blocked by unfinished items: {', '.join(active_blockers)}")
+            if db_obj.status != Status.DONE:
+                obj_data["completed_at"] = datetime.utcnow()
+        elif "status" in obj_data and obj_data["status"] != Status.DONE:
+            obj_data["completed_at"] = None
 
         if "blocked_by_ids" in obj_data:
             new_blocker_ids = obj_data["blocked_by_ids"]
@@ -286,6 +290,10 @@ class CRUDSubtask(CRUDBase[Subtask, SubtaskCreate, SubtaskUpdate]):
             active_blockers = await task.check_for_active_blockers(db, db_obj.id, db_obj.blocked_by_ids or [])
             if active_blockers:
                 raise ValueError(f"Subtask is blocked by unfinished items: {', '.join(active_blockers)}")
+            if db_obj.status != Status.DONE:
+                obj_data["completed_at"] = datetime.utcnow()
+        elif "status" in obj_data and obj_data["status"] != Status.DONE:
+            obj_data["completed_at"] = None
 
         if "blocked_by_ids" in obj_data:
             new_ids = obj_data["blocked_by_ids"]

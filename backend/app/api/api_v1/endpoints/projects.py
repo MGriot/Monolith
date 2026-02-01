@@ -87,15 +87,33 @@ async def read_project_statistics(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Simple activity query: count completed tasks per day
-    query = select(
+    # Activity query: count completed tasks AND subtasks per day
+    from app.models.task import Subtask
+    from sqlalchemy import union_all
+
+    task_completions = select(
         func.date(Task.completed_at).label("date"),
-        func.count(Task.id).label("count")
+        Task.id.label("id")
     ).where(
         Task.project_id == project_id,
         Task.completed_at != None
+    )
+
+    subtask_completions = select(
+        func.date(Subtask.completed_at).label("date"),
+        Subtask.id.label("id")
+    ).join(Task, Subtask.task_id == Task.id).where(
+        Task.project_id == project_id,
+        Subtask.completed_at != None
+    )
+
+    combined = union_all(task_completions, subtask_completions).alias("combined")
+    
+    query = select(
+        combined.c.date,
+        func.count(combined.c.id).label("count")
     ).group_by(
-        func.date(Task.completed_at)
+        combined.c.date
     )
 
     result = await db.execute(query)

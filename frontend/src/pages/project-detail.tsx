@@ -165,8 +165,23 @@ export default function ProjectDetailPage() {
     },
   });
 
+  const moveSubtaskMutation = useMutation({
+    mutationFn: async ({ subtaskId, newStatus }: { subtaskId: string; newStatus: string }) => {
+      return api.put(`/subtasks/${subtaskId}`, { status: newStatus });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
+    },
+  });
+
   const handleTaskMove = (taskId: string, newStatus: string) => {
     moveTaskMutation.mutate({ taskId, newStatus });
+  };
+
+  const handleSubtaskMove = (subtaskId: string, newStatus: string) => {
+    moveSubtaskMutation.mutate({ subtaskId, newStatus });
   };
 
   const handleAddTask = (status?: string) => {
@@ -178,6 +193,15 @@ export default function ProjectDetailPage() {
   const handleTaskClick = (task: Task) => {
     setEditingTaskId(task.id);
     setIsTaskDialogOpen(true);
+  };
+
+  const handleSubtaskClick = (subtask: Subtask) => {
+    // Find parent task and open edit dialog
+    const parent = tasks?.find(t => t.id === subtask.task_id);
+    if (parent) {
+        setEditingTaskId(parent.id);
+        setIsTaskDialogOpen(true);
+    }
   };
 
   const handleTaskSubmit = (data: TaskFormValues) => {
@@ -385,8 +409,10 @@ export default function ProjectDetailPage() {
           <KanbanBoard 
             tasks={tasks || []} 
             onTaskMove={handleTaskMove}
+            onSubtaskMove={handleSubtaskMove}
             onAddTask={handleAddTask}
             onTaskClick={handleTaskClick}
+            onSubtaskClick={handleSubtaskClick}
           />
         </TabsContent>
         
