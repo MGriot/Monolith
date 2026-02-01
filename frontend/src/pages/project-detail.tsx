@@ -61,6 +61,7 @@ interface Subtask {
   type?: string;
   blocked_by_ids?: string[];
   sort_index?: number;
+  task_id: string;
 }
 
 interface Task {
