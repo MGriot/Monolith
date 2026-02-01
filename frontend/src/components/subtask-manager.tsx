@@ -272,7 +272,11 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                 </div>
               </div>
               <button 
-                onClick={() => deleteMutation.mutate(subtask.id)}
+                onClick={() => {
+                  if (window.confirm(`Delete subtask "${subtask.title}"?`)) {
+                    deleteMutation.mutate(subtask.id);
+                  }
+                }}
                 className="p-1 text-slate-300 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <Trash2 className="w-4 h-4" />
