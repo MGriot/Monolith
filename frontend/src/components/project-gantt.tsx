@@ -136,7 +136,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col bg-white">
       {/* Gantt Controls */}
       <div className="p-4 border-b flex items-center justify-between bg-slate-50/30">
         <div className="flex items-center space-x-2">
@@ -174,7 +174,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
       </div>
 
       {/* Timeline Content */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="min-h-0">
         {ganttItems.map((item) => {
           const isSubtask = 'isSubtask' in item;
           return (
