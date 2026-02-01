@@ -42,6 +42,24 @@ services:
       - monolith_net
 
   # ---------------------------------------------------------------------------
+  # MCP Server
+  # ---------------------------------------------------------------------------
+  mcp-server:
+    build:
+      context: .
+      dockerfile: mcp/Dockerfile
+    container_name: monolith_mcp
+    restart: always
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-monolith_user}:${POSTGRES_PASSWORD:-monolith_password}@db:5432/${POSTGRES_DB:-monolith_db}
+      SECRET_KEY: ${SECRET_KEY:-changeme_in_prod}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - monolith_net
+
+  # ---------------------------------------------------------------------------
   # Frontend: React (Vite)
   # ---------------------------------------------------------------------------
   frontend:

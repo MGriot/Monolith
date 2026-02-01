@@ -61,24 +61,27 @@
 
 ### 4.3 Visualization
 *   **Project Dashboard (Single Project):**
-    *   **Layout:** The main content area (Kanban, Gantt, List) must utilize 100% of the available horizontal and vertical space, adjusting dynamically when the sidebar is toggled or the screen is resized.
-    *   **Interactive Tabs:** 
+    *   **Layout:** The main content area must utilize 100% of the available horizontal and vertical space.
+    *   **Consolidated Overview (Default View):**
+        *   **Top Section:** Project Metadata (Header) and Progress Bar.
+        *   **Middle Section:** **Gantt Chart** showing the timeline of all Tasks AND Subtasks.
+        *   **Bottom Section:** **Task List View** showing a hierarchical table of all Tasks AND Subtasks.
+    *   **Secondary Views (Tabs):** 
         *   **Kanban Board:** Drag-and-drop tasks between statuses. Cards must be color-coded based on `Priority` (e.g., Red for Critical, Blue for Low) and `Status`.
-        *   **Task List View:** A comprehensive hierarchical table of all tasks and subtasks. Metadata (Topic, Assignees, Dates) must be clearly aligned.
-        *   **Gantt Chart:** 
-            *   **Hierarchy:** Must include a toggle/flag to show/hide Subtasks.
-            *   **Color Logic:** Bars must be color-coded based on task `Status` and `Priority`.
-            *   **Timeline:** Interactive zoom levels (Day, Week, Month).
         *   **Activity Heatmap:** A "GitHub-style" graph showing task completion activity over time.
-    *   **Metadata Header:** High-density, clear display of Project Topic, Type, Start Date, and Due Date using a grid or descriptive icons.
+    *   **Gantt Chart Details:** 
+        *   **Hierarchy:** Must include a toggle/flag to show/hide Subtasks.
+        *   **Color Logic:** Bars must be color-coded based on task `Status` and `Priority`.
+        *   **Timeline:** Interactive zoom levels (Day, Week, Month).
     *   **Management:** Functional "Edit Project" button and a robust **Attachment System** allowing file uploads and previews (Images/PDFs).
 *   **Global Dashboard (All Projects):**
     *   **Master Gantt:** High-level view of all active projects.
     *   **Master Calendar:** Monthly view of all due dates across projects.
 
 ### 4.4 MCP Module (AI Integration)
-*   **Architecture:** Embedded within the Backend (FastAPI) service to share Database sessions and business logic.
-*   **Access:** Exposed via standard MCP protocol (Stdio/SSE) on the backend container.
+*   **Architecture:** **Dedicated container service (`mcp-server`)** sharing the database connection but independent from the API backend.
+*   **Location:** Source code must reside in a dedicated `mcp/` directory with its own `Dockerfile`.
+*   **Access:** Exposed via standard MCP protocol (Stdio/SSE) on the independent container.
 *   **Resources:** Expose `projects://`, `tasks://` as readable resources.
 *   **Tools:** Expose `create_task`, `update_status`, `search_projects`, `create_user`, `update_project`, `create_subtask` as executable tools for AI agents.
   
@@ -178,9 +181,7 @@ erDiagram
 
 ### 9.2 Infrastructure & MCP
 *   **MCP Container Visibility:** Users noted the absence of a dedicated MCP container. 
-    *   **Clarification:** The MCP module is currently *embedded* within the `backend` container (`backend/app/api/api_v1/endpoints/mcp.py`) to leverage the shared Async SQLAlchemy session.
-    *   **Improvement:** Documentation should clearly state how to connect an MCP Client to the Backend container (e.g., `docker exec -i monolith_backend mcp-server`).
-    *   **Optional:** If distinct scaling is needed, split MCP into a separate service in `docker-compose.yml` sharing the same `backend` image but running a different entrypoint.
+    *   **Requirement:** Split MCP into a separate service in `docker-compose.yml` with its own `Dockerfile` in a dedicated `mcp/` directory to allow independent agent access and scaling.
 
 ### 9.4 Subtask Creation & Metadata Parity
 *   **Creation Flow:** The subtask creation UI (both inline in TaskForm and in SubtaskManager) must allow users to specify `start_date` and `due_date` at the moment of creation, not just post-creation editing.

@@ -366,5 +366,29 @@
     "priority": "medium",
     "linked_req": "PRD Section 9.4: Subtask Creation & Metadata Parity",
     "description": "Add Assignee selection and Priority to the subtask creation forms to match the user's requirement for 'person' and parity."
+  },
+  {
+    "id": "INFRA-002",
+    "title": "Dedicated MCP Service",
+    "status": "done",
+    "priority": "critical",
+    "linked_req": "PRD Section 9.2: Infrastructure & MCP",
+    "description": "Extract MCP module to a dedicated `mcp/` directory with its own Dockerfile and add as a separate service in docker-compose.yml."
+  },
+  {
+    "id": "FRONT-024",
+    "title": "Project Detail Layout Refactor",
+    "status": "done",
+    "priority": "critical",
+    "linked_req": "PRD Section 4.3: Visualization",
+    "description": "Refactor ProjectDetailPage to display Gantt Chart (with subtasks) and Task List (with subtasks) stacked vertically as the default view."
+  },
+  {
+    "id": "FRONT-025",
+    "title": "Subtask Creation Enhanced Metadata",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 9.4: Subtask Creation & Metadata Parity",
+    "description": "Enhance subtask creation forms to include Priority, Topic, and Type fields explicitly during creation."
   }
 ]

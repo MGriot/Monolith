@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import api from '@/lib/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -15,6 +15,7 @@ import {
 import KanbanBoard from '@/components/kanban-board';
 import ProjectGantt from '@/components/project-gantt';
 import ProjectHeatmap from '@/components/project-heatmap';
+import ProjectTaskList from '@/components/project-task-list';
 import TaskForm from '@/components/task-form';
 import type { TaskFormValues } from '@/components/task-form';
 import SubtaskManager from '@/components/subtask-manager';
@@ -29,23 +30,12 @@ import {
   Plus,
   List as ListIcon,
   Settings as SettingsIcon,
-  ChevronDown,
-  ChevronRight,
-  User as UserIcon,
-  FolderKanban
+  FolderKanban,
+  LayoutDashboard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { cn } from '@/lib/utils';
 
 interface Project {
   id: string;
@@ -91,7 +81,6 @@ export default function ProjectDetailPage() {
   const [isProjectEditDialogOpen, setIsProjectEditDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [initialStatus, setInitialStatus] = useState<string>("Todo");
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
   const { data: project, isLoading: isProjectLoading } = useQuery({
     queryKey: ['project', id],
@@ -191,16 +180,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const toggleTaskExpansion = (taskId: string) => {
-    const newExpanded = new Set(expandedTasks);
-    if (newExpanded.has(taskId)) {
-      newExpanded.delete(taskId);
-    } else {
-      newExpanded.add(taskId);
-    }
-    setExpandedTasks(newExpanded);
-  };
-
   if (isProjectLoading || isTasksLoading || isStatsLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -297,17 +276,14 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="kanban" className="flex-1 flex flex-col min-h-0 bg-white">
+      <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0 bg-white">
         <div className="px-6 py-2 border-b border-slate-100 bg-white">
           <TabsList className="flex bg-transparent p-0 gap-6 h-10">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
+              <LayoutDashboard className="w-3.5 h-3.5" /> Overview
+            </TabsTrigger>
             <TabsTrigger value="kanban" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
               <Trello className="w-3.5 h-3.5" /> Kanban
-            </TabsTrigger>
-            <TabsTrigger value="list" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
-              <ListIcon className="w-3.5 h-3.5" /> Task List
-            </TabsTrigger>
-            <TabsTrigger value="gantt" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
-              <GanttChart className="w-3.5 h-3.5" /> Gantt
             </TabsTrigger>
             <TabsTrigger value="activity" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
               <Activity className="w-3.5 h-3.5" /> Activity
@@ -315,117 +291,41 @@ export default function ProjectDetailPage() {
           </TabsList>
         </div>
         
+        <TabsContent value="overview" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30 space-y-6">
+          {/* Gantt Chart Section */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <GanttChart className="w-4 h-4 text-slate-500" />
+                Project Timeline
+              </h3>
+            </div>
+            <div className="h-[400px]">
+              <ProjectGantt 
+                tasks={tasks || []} 
+                projectStartDate={project.start_date}
+                projectDueDate={project.due_date}
+                initialShowSubtasks={true}
+              />
+            </div>
+          </div>
+
+          {/* Task List Section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2 px-1">
+              <ListIcon className="w-4 h-4 text-slate-500" />
+              Tasks & Subtasks
+            </h3>
+            <ProjectTaskList tasks={tasks || []} onTaskClick={handleTaskClick} />
+          </div>
+        </TabsContent>
+
         <TabsContent value="kanban" className="flex-1 overflow-hidden m-0 p-6 bg-slate-50/30">
           <KanbanBoard 
             tasks={tasks || []} 
             onTaskMove={handleTaskMove}
             onAddTask={handleAddTask}
             onTaskClick={handleTaskClick}
-          />
-        </TabsContent>
-
-        <TabsContent value="list" className="flex-1 overflow-auto m-0 p-0">
-          <Table>
-            <TableHeader className="sticky top-0 bg-white z-10 shadow-sm">
-              <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b">
-                <TableHead className="w-10"></TableHead>
-                <TableHead className="min-w-[200px] text-[10px] font-black uppercase tracking-widest">Task</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-widest">Topic</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-widest">Status</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-widest">Priority</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-widest">Assignees</TableHead>
-                <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Due Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tasks?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-slate-500 italic text-sm">
-                    No tasks found in this project.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                tasks?.map((task) => (
-                  <React.Fragment key={task.id}>
-                    <TableRow 
-                      className="hover:bg-slate-50/50 transition-colors cursor-pointer group border-b"
-                      onClick={() => handleTaskClick(task)}
-                    >
-                      <TableCell onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTaskExpansion(task.id);
-                      }}>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400">
-                          {expandedTasks.has(task.id) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="font-semibold text-slate-900 text-sm">{task.title}</TableCell>
-                      <TableCell>
-                        {task.topic && <Badge variant="secondary" className="text-[9px] font-bold bg-slate-100 text-slate-600 border-none px-1.5">{task.topic}</Badge>}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn(
-                          "capitalize text-[9px] font-bold px-1.5 h-5",
-                          task.status === 'Done' || task.status === 'done' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white"
-                        )}>{task.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={task.priority === 'High' || task.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[9px] font-black px-1.5 h-5">
-                          {task.priority}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex -space-x-1.5 overflow-hidden">
-                          {task.assignees?.map((u) => (
-                            <div 
-                              key={u.id}
-                              className="inline-block h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center shrink-0 shadow-sm"
-                              title={u.full_name || u.email}
-                            >
-                              <UserIcon className="w-2.5 h-2.5 text-slate-500" />
-                            </div>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right text-[11px] font-bold text-slate-500">
-                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
-                      </TableCell>
-                    </TableRow>
-                    {expandedTasks.has(task.id) && task.subtasks?.map(st => (
-                      <TableRow key={st.id} className="bg-slate-50/20 border-b border-l-4 border-l-primary/20">
-                        <TableCell></TableCell>
-                        <TableCell className="pl-8 text-xs text-slate-600 py-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                            {st.title}
-                          </div>
-                        </TableCell>
-                        <TableCell colSpan={2}>
-                          <div className="flex items-center gap-2">
-                            <Badge className="text-[8px] h-4 bg-slate-100 text-slate-500 hover:bg-slate-100 border-none px-1.5 font-bold uppercase">{st.status}</Badge>
-                            <Badge variant={st.priority === 'High' || st.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[8px] h-4 px-1.5 font-black uppercase">
-                              {st.priority}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell colSpan={2}></TableCell>
-                        <TableCell className="text-right text-[10px] text-slate-400 font-medium">
-                          {st.due_date ? new Date(st.due_date).toLocaleDateString() : '-'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </React.Fragment>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TabsContent>
-        
-        <TabsContent value="gantt" className="flex-1 overflow-hidden m-0 p-0">
-          <ProjectGantt 
-            tasks={tasks || []} 
-            projectStartDate={project.start_date}
-            projectDueDate={project.due_date}
           />
         </TabsContent>
         

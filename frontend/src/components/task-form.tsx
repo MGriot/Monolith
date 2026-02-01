@@ -312,19 +312,6 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading 
           </div>
         </div>
       )}
-                  onClick={() => remove(index)}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            ))}
-            {fields.length === 0 && (
-              <p className="text-[10px] text-slate-400 italic">No subtasks added yet.</p>
-            )}
-          </div>
-        </div>
-      )}
-
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel

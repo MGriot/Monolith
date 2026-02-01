@@ -1,12 +1,9 @@
-# Current Stage: Subtask Metadata Parity
+# Current Stage: Refactor Complete
 
 **Status:** ✅ Complete
-**Focus:** Ensuring subtasks have full metadata parity (Dates, Assignees, Priority) during the creation flow.
-
-## Active Goals
-- None.
+**Focus:** Waiting for next directive.
 
 ## Recent History
-- [x] Subtask Creation: Full Metadata Parity (FRONT-023)
-- [x] Subtask Creation: UI Date Integration (FRONT-022)
-- [x] Kanban Color Coding (FRONT-021)
+- [x] Subtask Creation Enhanced Metadata (FRONT-025)
+- [x] Project Detail Layout Refactor (FRONT-024)
+- [x] Dedicated MCP Service (INFRA-002)
