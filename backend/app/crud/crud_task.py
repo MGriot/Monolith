@@ -17,10 +17,14 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             .filter(self.model.id == id)
             .options(
                 selectinload(Task.assignees),
-                selectinload(Task.subtasks).selectinload(Subtask.assignees)
+                selectinload(Task.subtasks.and_(True)).selectinload(Subtask.assignees) # This doesn't actually sort
             )
         )
-        return result.scalars().first()
+        # Wait, I'll just sort them in Python or use a better loader
+        obj = result.scalars().first()
+        if obj and obj.subtasks:
+            obj.subtasks.sort(key=lambda x: (x.sort_index or 0, x.created_at))
+        return obj
 
     async def get_multi_by_project(
         self, db: AsyncSession, *, project_id: UUID, skip: int = 0, limit: int = 100
@@ -28,6 +32,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         result = await db.execute(
             select(self.model)
             .filter(self.model.project_id == project_id)
+            .order_by(self.model.sort_index.asc(), self.model.created_at.asc())
             .options(
                 selectinload(Task.assignees),
                 selectinload(Task.subtasks).selectinload(Subtask.assignees)
@@ -35,7 +40,11 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             .offset(skip)
             .limit(limit)
         )
-        return result.scalars().all()
+        tasks = result.scalars().all()
+        for t in tasks:
+            if t.subtasks:
+                t.subtasks.sort(key=lambda x: (x.sort_index or 0, x.created_at))
+        return tasks
 
     async def update_project_progress(self, db: AsyncSession, project_id: UUID):
         from app.crud.crud_project import project as project_crud
@@ -98,6 +107,17 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         assignee_ids = obj_data.pop("assignee_ids", [])
         subtasks_data = obj_data.pop("subtasks", [])
         
+        # Calculate next sort_index if not provided
+        if "sort_index" not in obj_data:
+            result = await db.execute(
+                select(self.model.sort_index)
+                .filter(self.model.project_id == obj_data["project_id"])
+                .order_by(self.model.sort_index.desc())
+                .limit(1)
+            )
+            max_idx = result.scalar()
+            obj_data["sort_index"] = (max_idx or 0) + 10
+            
         db_obj = self.model(**obj_data)
         
         if assignee_ids:
@@ -196,6 +216,7 @@ class CRUDSubtask(CRUDBase[Subtask, SubtaskCreate, SubtaskUpdate]):
         result = await db.execute(
             select(self.model)
             .filter(self.model.task_id == task_id)
+            .order_by(self.model.sort_index.asc(), self.model.created_at.asc())
             .options(selectinload(Subtask.assignees))
             .offset(skip)
             .limit(limit)
@@ -225,6 +246,17 @@ class CRUDSubtask(CRUDBase[Subtask, SubtaskCreate, SubtaskUpdate]):
         obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True))
         assignee_ids = obj_data.pop("assignee_ids", [])
         
+        # Calculate next sort_index if not provided
+        if "sort_index" not in obj_data:
+            result = await db.execute(
+                select(self.model.sort_index)
+                .filter(self.model.task_id == obj_data["task_id"])
+                .order_by(self.model.sort_index.desc())
+                .limit(1)
+            )
+            max_idx = result.scalar()
+            obj_data["sort_index"] = (max_idx or 0) + 10
+
         db_obj = self.model(**obj_data)
         
         if assignee_ids:

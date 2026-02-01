@@ -186,6 +186,54 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleReorderTask = (taskId: string, direction: 'up' | 'down') => {
+    if (!tasks) return;
+    const index = tasks.findIndex(t => t.id === taskId);
+    if (index === -1) return;
+
+    if (direction === 'up' && index > 0) {
+      const prevTask = tasks[index - 1];
+      const newIndex = (prevTask.sort_index || 0) - 1;
+      updateTaskMutation.mutate({ taskId, data: { sort_index: newIndex } });
+    } else if (direction === 'down' && index < tasks.length - 1) {
+      const nextTask = tasks[index + 1];
+      const newIndex = (nextTask.sort_index || 0) + 1;
+      updateTaskMutation.mutate({ taskId, data: { sort_index: newIndex } });
+    }
+  };
+
+  const handleReorderSubtask = (subtaskId: string, direction: 'up' | 'down') => {
+    if (!tasks) return;
+    // Find parent task and subtask
+    let parentTask: Task | undefined;
+    let stIndex = -1;
+    
+    for (const t of tasks) {
+      const idx = t.subtasks?.findIndex(st => st.id === subtaskId);
+      if (idx !== undefined && idx !== -1) {
+        parentTask = t;
+        stIndex = idx;
+        break;
+      }
+    }
+
+    if (!parentTask || !parentTask.subtasks) return;
+
+    if (direction === 'up' && stIndex > 0) {
+      const prevSt = parentTask.subtasks[stIndex - 1];
+      const newIndex = (prevSt.sort_index || 0) - 1;
+      api.put(`/subtasks/${subtaskId}`, { sort_index: newIndex }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+      });
+    } else if (direction === 'down' && stIndex < parentTask.subtasks.length - 1) {
+      const nextSt = parentTask.subtasks[stIndex + 1];
+      const newIndex = (nextSt.sort_index || 0) + 1;
+      api.put(`/subtasks/${subtaskId}`, { sort_index: newIndex }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+      });
+    }
+  };
+
   if (isProjectLoading || isTasksLoading || isStatsLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -322,7 +370,12 @@ export default function ProjectDetailPage() {
               <ListIcon className="w-4 h-4 text-slate-500" />
               Tasks & Subtasks
             </h3>
-            <ProjectTaskList tasks={tasks || []} onTaskClick={handleTaskClick} />
+            <ProjectTaskList 
+              tasks={tasks || []} 
+              onTaskClick={handleTaskClick} 
+              onReorderTask={handleReorderTask}
+              onReorderSubtask={handleReorderSubtask}
+            />
           </div>
         </TabsContent>
 
