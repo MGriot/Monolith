@@ -37,10 +37,17 @@
 
 ### 4.1 Hierarchy & Data Management
 *   **Structure:** Strict `Project -> Task -> Subtask` hierarchy.
+*   **WBS (Work Breakdown Structure):** 
+    *   Implementation of a **Unified WBS Entity**. Tasks and Subtasks must be exposed through a shared interface/object that generates a hierarchical WBS code (e.g., `1.1`, `1.1.2`) based on their `sort_index` and parent relation.
 *   **CRUD Operations:** Full Create/Read/Update/Delete for all three levels.
-*   **Dependencies:** 
-    *   Support `Finish-to-Start` dependencies between Tasks and Subtasks.
-    *   Visual warning if a dependency blocks completion.
+*   **Advanced Dependencies:** 
+    *   Support for the four standard relationship types:
+        1.  **FS (Finish-to-Start):** Successor cannot start until Predecessor finishes.
+        2.  **SS (Start-to-Start):** Successor cannot start until Predecessor starts.
+        3.  **FF (Finish-to-Finish):** Successor cannot finish until Predecessor finishes.
+        4.  **SF (Start-to-Finish):** Successor cannot finish until Predecessor starts.
+    *   **Leads & Lags:** Ability to set an offset duration (in days) on any dependency (e.g., FS + 2 days lag).
+    *   **Critical Path Method (CPM):** Automated calculation of the longest path of planned activities to the end of the project.
 *   **Status Propagation (Automated Logic):**
     *   If all *Subtasks* are `Completed`, parent *Task* moves to `Completed`.
     *   If any *Subtask* is `In Progress`, parent *Task* moves to `In Progress`.
@@ -53,11 +60,15 @@
     *   `Topic` & `Type` (e.g., Topic: "Backend", Type: "Feature" or "Bug")
     *   `Status` (Backlog, Todo, In Progress, Review, Done)
     *   `Priority` (Low, Medium, High, Critical)
+    *   `Is Milestone:` (Boolean) If true, the item represents a zero-duration significant event.
+    *   `Deadline:` (DateTime) A hard constraint date, separate from the planned `due_date`.
     *   `Owner` (User ID) & `Assignees` (List[User ID] - Required for all levels)
     *   `Dates` (Required for all levels): `created_at`, `updated_at`, `start_date`, `due_date`, `completed_at`.
     *   `Tags` (Array of strings - Required for all levels)
     *   `Attachments` (File URLs - Local Volume)
-*   **Dependency Fields:** `blocked_by` (List of IDs), `blocking` (List of IDs).
+*   **Dependency Fields:** 
+    *   `blocked_by` (List of Objects: `{id, type: ENUM(FS, SS, FF, SF), lag: Integer}`)
+    *   `blocking` (List of IDs).
 
 ### 4.3 Visualization
 *   **Project Dashboard (Single Project):**
@@ -71,7 +82,13 @@
         *   **Activity Heatmap:** A "GitHub-style" graph showing task completion activity over time.
     *   **Gantt Chart Details:** 
         *   **Hierarchy:** Must include a toggle/flag to show/hide Subtasks.
-        *   **Color Logic:** Bars must be color-coded based on task `Status` and `Priority`.
+        *   **Color Logic:** 
+            *   Bars must be color-coded based on task `Status` and `Priority`.
+            *   **Critical Path Highlight:** Items on the critical path should have a distinct border or glow (e.g., Red glow).
+        *   **Visual Cues & Alerts:** 
+            *   **Overdue Warning:** If `current_date > due_date` and `status != DONE`, display a warning icon (⚠️) on the Gantt bar and in the list view.
+            *   **Milestone Marker:** Milestones must be represented as diamond-shaped markers (◆) instead of bars.
+            *   **Deadline Indicator:** Show a vertical line or small marker on the timeline for items with an explicit `Deadline`.
         *   **Timeline:** Interactive zoom levels (Day, Week, Month).
     *   **Management:** Functional "Edit Project" button and a robust **Attachment System** allowing file uploads and previews (Images/PDFs).
 *   **Global Dashboard (All Projects):**
@@ -102,7 +119,7 @@ erDiagram
     User ||--o{ Task : assigned_to
     Project ||--|{ Task : contains
     Task ||--o{ Subtask : contains
-    Task ||--o{ Task : depends_on
+    Task ||--o{ Dependency : has_predecessor
     
     Project {
         uuid id
@@ -125,6 +142,8 @@ erDiagram
         string type
         enum status
         enum priority
+        boolean is_milestone
+        datetime deadline_at
         datetime created_at
         datetime start_date
         datetime due_date
@@ -139,11 +158,21 @@ erDiagram
         string topic
         string type
         enum status
+        boolean is_milestone
+        datetime deadline_at
         datetime created_at
         datetime start_date
         datetime due_date
         string[] tags
         uuid[] assignees
+    }
+
+    Dependency {
+        uuid id
+        uuid task_id
+        uuid predecessor_id
+        enum type
+        integer lag_days
     }
 ```
 
