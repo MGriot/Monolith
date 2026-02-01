@@ -185,4 +185,26 @@ erDiagram
 
 ### 9.4 Subtask Creation & Metadata Parity
 *   **Creation Flow:** The subtask creation UI (both inline in TaskForm and in SubtaskManager) must allow users to specify `start_date` and `due_date` at the moment of creation, not just post-creation editing.
-*   **Metadata Consistency:** Subtask creation must mirror the Task creation experience, ensuring `Priority`, `Topic`, and `Type` can also be optionally set during initial creation.
+*   **Circular Dependencies:** Validate for cycles (DAG check) before saving dependency links.
+    *   **Gantt Visibility:** Disable complex Gantt on mobile; default to List/Card view.
+
+## 10. Addendum: Orthogonal Stepped Lines (Gantt Visualization)
+
+### 10.1 Conceptual Description
+Visual connections in the Gantt chart must follow an **Orthogonal Connector** pattern, using only 90-degree vertical and horizontal segments.
+
+#### A. Hierarchy Connector (Parent -> First Subtask)
+*   **Purpose:** Visualizes ownership and initialization scope.
+*   **Visual Path:** Starts at the **Start-Left** edge of the Parent Task bar -> Drops **Vertically Down** to the row of the first Subtask -> Moves **Horizontally Right** to touch the **Start-Left** edge of the Subtask.
+
+#### B. Dependency Connector (Predecessor -> Successor)
+*   **Purpose:** Visualizes a classic "Finish-to-Start" (Blocking) dependency.
+*   **Visual Path:** Starts at the **End-Right** edge of the Predecessor -> Drops **Vertically Down** halfway toward the Successor's row -> Moves **Horizontally Right/Left** to align with the start of the Successor -> Drops **Vertically Down** to connect to the **Start-Left** edge of the Successor.
+
+### 10.2 Technical Implementation
+*   **Coordinate System:** Calculate `(x1, y1)` from Predecessor End and `(x2, y2)` from Successor Start.
+*   **SVG Path Logic:** Use `M` (Move), `V` (Vertical), and `H` (Horizontal) commands.
+*   **Sharpness:** Apply `shapeRendering: "crispEdges"` to ensure lines remain sharp on all displays.
+*   **Color Matching:** Line color must match the Predecessor's priority/status color.
+*   **Z-Index:** Dependency layer must sit behind task bars.
+
