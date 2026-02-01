@@ -219,96 +219,97 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
 
         {/* Timeline Content */}
         <div className="relative">
-            {/* Dependency Lines Layer */}
-            <svg 
-                className="absolute inset-0 pointer-events-none z-10" 
-                viewBox={`0 0 1000 ${svgHeight}`}
-                preserveAspectRatio="none"
-                style={{ width: '100%', height: `${svgHeight}px` }}
-            >
-                <defs>
-                    <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="12" refY="4" orient="auto">
-                        <polygon points="0 0, 12 4, 0 8" fill="#94a3b8" />
-                    </marker>
-                </defs>
+            {/* Dependency Lines Layer - Offset by 256px (w-64) to align with timeline */}
+            <div className="absolute inset-0 left-64 pointer-events-none z-10 overflow-hidden">
+                <svg 
+                    className="w-full h-full" 
+                    viewBox={`0 0 1000 ${svgHeight}`}
+                    preserveAspectRatio="none"
+                >
+                    <defs>
+                        <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                            <polygon points="0 0, 6 2, 0 4" fill="#94a3b8" />
+                        </marker>
+                    </defs>
 
-                {/* Hierarchy Lines (Parent -> First Subtask) */}
-                {tasks.map(task => {
-                    if (!showSubtasks || !task.subtasks || task.subtasks.length === 0) return null;
-                    if (!task.start_date || !task.due_date) return null;
+                    {/* Hierarchy Lines (Parent -> First Subtask) */}
+                    {tasks.map(task => {
+                        if (!showSubtasks || !task.subtasks || task.subtasks.length === 0) return null;
+                        if (!task.start_date || !task.due_date) return null;
 
-                    const parentItem = ganttItems.find(i => i.id === task.id);
-                    if (!parentItem) return null;
+                        const parentItem = ganttItems.find(i => i.id === task.id);
+                        if (!parentItem) return null;
 
-                    // Find the first subtask that actually has dates and is in ganttItems
-                    const firstSubtask = task.subtasks.find(st => st.start_date && st.due_date);
-                    if (!firstSubtask) return null;
+                        // Find the first subtask that actually has dates and is in ganttItems
+                        const firstSubtask = task.subtasks.find(st => st.start_date && st.due_date);
+                        if (!firstSubtask) return null;
 
-                    const subtaskItem = ganttItems.find(i => i.id === firstSubtask.id);
-                    if (!subtaskItem) return null;
+                        const subtaskItem = ganttItems.find(i => i.id === firstSubtask.id);
+                        if (!subtaskItem) return null;
 
-                    const startX = getPosition(task.start_date) * 10;
-                    const startY = parentItem.rowIndex * rowHeight + (rowHeight / 2);
-                    const endX = getPosition(firstSubtask.start_date!) * 10;
-                    const endY = subtaskItem.rowIndex * rowHeight + (rowHeight / 2);
+                        const startX = getPosition(task.start_date) * 10;
+                        const startY = parentItem.rowIndex * rowHeight + (rowHeight / 2);
+                        const endX = getPosition(firstSubtask.start_date!) * 10;
+                        const endY = subtaskItem.rowIndex * rowHeight + (rowHeight / 2);
 
-                    const color = getPriorityColorHex(task);
+                        const color = getPriorityColorHex(task);
 
-                    // Path: Start at Parent Start-Left -> Down to Subtask Row -> Right to Subtask Start-Left
-                    return (
-                        <path 
-                            key={`hier-${task.id}`}
-                            d={`M ${startX} ${startY} V ${endY} H ${endX}`}
-                            fill="none"
-                            stroke={color}
-                            strokeWidth="1.5"
-                            strokeOpacity="0.4"
-                            strokeDasharray="4 2"
-                            shapeRendering="crispEdges"
-                        />
-                    );
-                })}
-
-                {/* Dependency Lines (Predecessor -> Successor) */}
-                {ganttItems.map((item) => {
-                    if (!item.blocked_by_ids || item.blocked_by_ids.length === 0) return null;
-                    
-                    return item.blocked_by_ids.map(blockerId => {
-                        const blocker = ganttItems.find(i => i.id === blockerId);
-                        if (!blocker) return null;
-
-                        // Start at end of blocker (using 1000-unit scale for X)
-                        const startX = getPosition(blocker.due_date!) * 10;
-                        const startY = blocker.rowIndex * rowHeight + (rowHeight / 2);
-                        
-                        // End at start of current item
-                        const endX = getPosition(item.start_date!) * 10;
-                        const endY = item.rowIndex * rowHeight + (rowHeight / 2);
-
-                        // Path: horizontal out -> vertical to row -> horizontal in
-                        const yMid = startY + (endY - startY) / 2;
-                        const color = getPriorityColorHex(blocker);
-
+                        // Path: Start at Parent Start-Left -> Down to Subtask Row -> Right to Subtask Start-Left
                         return (
                             <path 
-                                key={`${item.id}-${blockerId}`}
-                                d={`M ${startX} ${startY} V ${yMid} H ${endX} V ${endY}`}
+                                key={`hier-${task.id}`}
+                                d={`M ${startX} ${startY} V ${endY} H ${endX}`}
                                 fill="none"
                                 stroke={color}
-                                strokeWidth="2"
-                                strokeOpacity="0.6"
+                                strokeWidth="1.5"
+                                strokeOpacity="0.3"
+                                strokeDasharray="4 2"
                                 shapeRendering="crispEdges"
-                                markerEnd="url(#arrowhead)"
                             />
                         );
-                    });
-                })}
-            </svg>
+                    })}
+
+                    {/* Dependency Lines (Predecessor -> Successor) */}
+                    {ganttItems.map((item) => {
+                        if (!item.blocked_by_ids || item.blocked_by_ids.length === 0) return null;
+                        
+                        return item.blocked_by_ids.map(blockerId => {
+                            const blocker = ganttItems.find(i => i.id === blockerId);
+                            if (!blocker) return null;
+
+                            // Start at end of blocker (using 1000-unit scale for X)
+                            const startX = getPosition(blocker.due_date!) * 10;
+                            const startY = blocker.rowIndex * rowHeight + (rowHeight / 2);
+                            
+                            // End at start of current item
+                            const endX = getPosition(item.start_date!) * 10;
+                            const endY = item.rowIndex * rowHeight + (rowHeight / 2);
+
+                            // Path: horizontal out -> vertical to row -> horizontal in
+                            const yMid = startY + (endY - startY) / 2;
+                            const color = getPriorityColorHex(blocker);
+
+                            return (
+                                <path 
+                                    key={`${item.id}-${blockerId}`}
+                                    d={`M ${startX} ${startY} V ${yMid} H ${endX} V ${endY}`}
+                                    fill="none"
+                                    stroke={color}
+                                    strokeWidth="1.5"
+                                    strokeOpacity="0.5"
+                                    shapeRendering="crispEdges"
+                                    markerEnd="url(#arrowhead)"
+                                />
+                            );
+                        });
+                    })}
+                </svg>
+            </div>
 
             {/* Today Line */}
             {todayPos >= 0 && todayPos <= 100 && (
                 <div 
-                    className="absolute top-0 bottom-0 w-px bg-red-400 z-20 pointer-events-none opacity-50"
+                    className="absolute top-0 bottom-0 w-px bg-red-400 z-20 pointer-events-none opacity-50 ml-64"
                     style={{ left: `${todayPos}%` }}
                 >
                     <div className="bg-red-400 text-white text-[8px] font-bold px-1 py-0.5 rounded-b-sm whitespace-nowrap">
