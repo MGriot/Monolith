@@ -18,6 +18,7 @@ class SubtaskBase(BaseModel):
     attachments: Optional[List[str]] = []
     owner_id: Optional[UUID] = None
     assignee_ids: Optional[List[UUID]] = []
+    blocked_by_ids: Optional[List[UUID]] = []
 
 class SubtaskCreate(SubtaskBase):
     title: str
@@ -42,6 +43,7 @@ class SubtaskInDBBase(SubtaskBase):
     completed_at: Optional[datetime] = None
     owner: Optional[UserSchema] = None
     assignees: List[UserSchema] = []
+    blocked_by_ids: List[UUID] = []
 
     class Config:
         from_attributes = True

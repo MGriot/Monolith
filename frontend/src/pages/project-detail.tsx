@@ -59,6 +59,7 @@ interface Subtask {
   due_date?: string;
   topic?: string;
   type?: string;
+  blocked_by_ids?: string[];
 }
 
 interface Task {
@@ -407,10 +408,20 @@ export default function ProjectDetailPage() {
           />
           {editingTask && (
             <>
-              <SubtaskManager taskId={editingTask.id} />
+              <SubtaskManager 
+                taskId={editingTask.id} 
+                allPossibleBlockers={[
+                    ...(tasks || []).map(t => ({ id: t.id, title: t.title, blocked_by_ids: t.blocked_by_ids })),
+                    ...(tasks || []).flatMap(t => (t.subtasks || []).map(st => ({ id: st.id, title: `Sub: ${st.title}`, blocked_by_ids: st.blocked_by_ids })))
+                ]}
+              />
               <DependencyManager 
-                currentTask={editingTask} 
-                allTasks={tasks || []} 
+                item={editingTask} 
+                allPossibleBlockers={[
+                    ...(tasks || []).map(t => ({ id: t.id, title: t.title, blocked_by_ids: t.blocked_by_ids })),
+                    ...(tasks || []).flatMap(t => (t.subtasks || []).map(st => ({ id: st.id, title: `Sub: ${st.title}`, blocked_by_ids: st.blocked_by_ids })))
+                ]}
+                type="task"
               />
               <AttachmentManager 
                 taskId={editingTask.id}

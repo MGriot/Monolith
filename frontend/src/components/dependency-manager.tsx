@@ -11,51 +11,53 @@ import {
   Plus
 } from "lucide-react";
 
-interface Task {
+interface BaseItem {
   id: string;
   title: string;
   blocked_by_ids?: string[];
 }
 
 interface DependencyManagerProps {
-  currentTask: Task;
-  allTasks: Task[];
+  item: BaseItem;
+  allPossibleBlockers: BaseItem[];
+  type: "task" | "subtask";
 }
 
-export default function DependencyManager({ currentTask, allTasks }: DependencyManagerProps) {
+export default function DependencyManager({ item, allPossibleBlockers, type }: DependencyManagerProps) {
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
 
-  const updateTaskMutation = useMutation({
+  const updateMutation = useMutation({
     mutationFn: async (blockedByIds: string[]) => {
-      return api.put(`/tasks/${currentTask.id}`, { blocked_by_ids: blockedByIds });
+      const endpoint = type === "task" ? `/tasks/${item.id}` : `/subtasks/${item.id}`;
+      return api.put(endpoint, { blocked_by_ids: blockedByIds });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['subtasks'] });
       setIsAdding(false);
     },
   });
 
-  const handleAddDependency = (taskId: string) => {
-    const currentDeps = currentTask.blocked_by_ids || [];
-    if (!currentDeps.includes(taskId)) {
-      updateTaskMutation.mutate([...currentDeps, taskId]);
+  const handleAddDependency = (blockerId: string) => {
+    const currentDeps = item.blocked_by_ids || [];
+    if (!currentDeps.includes(blockerId)) {
+      updateMutation.mutate([...currentDeps, blockerId]);
     }
   };
 
-  const handleRemoveDependency = (taskId: string) => {
-    const currentDeps = currentTask.blocked_by_ids || [];
-    updateTaskMutation.mutate(currentDeps.filter(id => id !== taskId));
+  const handleRemoveDependency = (blockerId: string) => {
+    const currentDeps = item.blocked_by_ids || [];
+    updateMutation.mutate(currentDeps.filter(id => id !== blockerId));
   };
 
-  // Filter out current task and already added dependencies to show in "available" list
-  const availableTasks = allTasks.filter(t => 
-    t.id !== currentTask.id && 
-    !(currentTask.blocked_by_ids || []).includes(t.id)
+  const availableBlockers = allPossibleBlockers.filter(b => 
+    b.id !== item.id && 
+    !(item.blocked_by_ids || []).includes(b.id)
   );
 
-  const blockedByTasks = allTasks.filter(t => 
-    (currentTask.blocked_by_ids || []).includes(t.id)
+  const blockedByItems = allPossibleBlockers.filter(b => 
+    (item.blocked_by_ids || []).includes(b.id)
   );
 
   return (
@@ -65,7 +67,7 @@ export default function DependencyManager({ currentTask, allTasks }: DependencyM
           <LinkIcon className="w-4 h-4 text-slate-400" />
           Dependencies
           <span className="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-            {blockedByTasks.length}
+            {blockedByItems.length}
           </span>
         </h4>
         {!isAdding && (
@@ -80,17 +82,17 @@ export default function DependencyManager({ currentTask, allTasks }: DependencyM
         )}
       </div>
 
-      {blockedByTasks.length > 0 ? (
+      {blockedByItems.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {blockedByTasks.map(task => (
+          {blockedByItems.map(b => (
             <Badge 
-              key={task.id} 
+              key={b.id} 
               variant="secondary" 
               className="pl-2 pr-1 py-1 gap-1 flex items-center"
             >
-              <span className="max-w-[150px] truncate">{task.title}</span>
+              <span className="max-w-[150px] truncate">{b.title}</span>
               <button 
-                onClick={() => handleRemoveDependency(task.id)}
+                onClick={() => handleRemoveDependency(b.id)}
                 className="hover:bg-slate-200 rounded-full p-0.5 transition-colors"
               >
                 <X className="w-3 h-3" />
@@ -105,7 +107,7 @@ export default function DependencyManager({ currentTask, allTasks }: DependencyM
       {isAdding && (
         <div className="space-y-2 border rounded-lg p-3 bg-slate-50/50">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-slate-500">Select Task to depend on:</span>
+            <span className="text-xs font-medium text-slate-500">Select Item to depend on:</span>
             <Button 
               variant="ghost" 
               size="sm" 
@@ -117,28 +119,28 @@ export default function DependencyManager({ currentTask, allTasks }: DependencyM
           </div>
           
           <div className="max-h-[150px] overflow-y-auto space-y-1">
-            {availableTasks.length > 0 ? (
-              availableTasks.map(task => (
+            {availableBlockers.length > 0 ? (
+              availableBlockers.map(b => (
                 <button
-                  key={task.id}
-                  onClick={() => handleAddDependency(task.id)}
+                  key={b.id}
+                  onClick={() => handleAddDependency(b.id)}
                   className="w-full text-left px-2 py-1.5 text-xs hover:bg-white rounded border border-transparent hover:border-slate-200 transition-all flex items-center justify-between group"
                 >
-                  <span className="truncate flex-1">{task.title}</span>
+                  <span className="truncate flex-1">{b.title}</span>
                   <Plus className="w-3 h-3 text-slate-300 group-hover:text-primary" />
                 </button>
               ))
             ) : (
               <div className="flex flex-col items-center justify-center py-4 text-slate-400 gap-1">
                 <AlertCircle className="w-4 h-4" />
-                <span className="text-[10px]">No other tasks available</span>
+                <span className="text-[10px]">No other items available</span>
               </div>
             )}
           </div>
         </div>
       )}
       
-      {updateTaskMutation.isPending && (
+      {updateMutation.isPending && (
         <div className="flex items-center gap-2 text-[10px] text-slate-400">
           <Loader2 className="w-3 h-3 animate-spin" />
           Updating dependencies...
