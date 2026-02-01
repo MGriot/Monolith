@@ -31,7 +31,9 @@ import {
   List as ListIcon,
   Settings as SettingsIcon,
   FolderKanban,
-  LayoutDashboard
+  LayoutDashboard,
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -96,6 +98,19 @@ export default function ProjectDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['tasks', id] });
       queryClient.invalidateQueries({ queryKey: ['project', id] });
       setIsTaskDialogOpen(false);
+    },
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      return api.delete(`/tasks/${taskId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
+      setIsTaskDialogOpen(false);
+      setEditingTaskId(null);
     },
   });
 
@@ -450,6 +465,29 @@ export default function ProjectDetailPage() {
             onCancel={() => setIsTaskDialogOpen(false)}
             isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
           />
+
+          {editingTask && (
+            <div className="pt-6 border-t mt-6 flex justify-between items-center">
+              <div className="text-xs text-slate-400">
+                Created at {new Date(editingTask.id ? parseInt(editingTask.id.substring(0,8), 16) * 1000 : Date.now()).toLocaleDateString()}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 h-8"
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to delete the task "${editingTask.title}"?`)) {
+                    deleteTaskMutation.mutate(editingTask.id);
+                  }
+                }}
+                disabled={deleteTaskMutation.isPending}
+              >
+                {deleteTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                Delete Task
+              </Button>
+            </div>
+          )}
+
           {editingTask && (
             <>
               <SubtaskManager 

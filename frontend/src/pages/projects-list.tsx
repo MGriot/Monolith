@@ -25,7 +25,9 @@ import {
   ArrowRight, 
   Calendar,
   AlertCircle,
-  Plus
+  Plus,
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
@@ -46,6 +48,7 @@ export default function ProjectsListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
@@ -81,8 +84,23 @@ export default function ProjectsListPage() {
     },
   });
 
+  const deleteProjectMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      return api.delete(`/projects/${projectId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setProjectToDelete(null);
+    },
+  });
+
   const handleCreateSubmit = (data: ProjectFormValues) => {
     createProjectMutation.mutate(data);
+  };
+
+  const handleDeleteProject = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    setProjectToDelete(project);
   };
 
   if (isLoading) {
@@ -175,15 +193,25 @@ export default function ProjectsListPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="gap-2 text-slate-500 hover:text-primary"
-                      onClick={() => navigate(`/projects/${project.id}`)}
-                    >
-                      View
-                      <ArrowRight className="w-3 h-3" />
-                    </Button>
+                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-slate-400 hover:text-destructive"
+                        onClick={(e) => handleDeleteProject(e, project)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="gap-2 text-slate-500 hover:text-primary h-8"
+                        onClick={() => navigate(`/projects/${project.id}`)}
+                      >
+                        View
+                        <ArrowRight className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -191,6 +219,36 @@ export default function ProjectsListPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              Delete Project
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Are you sure you want to delete <span className="font-bold text-slate-900">"{projectToDelete?.name}"</span>? 
+              This will permanently remove all associated tasks, subtasks, and files. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" onClick={() => setProjectToDelete(null)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => projectToDelete && deleteProjectMutation.mutate(projectToDelete.id)}
+              disabled={deleteProjectMutation.isPending}
+              className="gap-2"
+            >
+              {deleteProjectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Delete Project
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
