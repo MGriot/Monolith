@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import DependencyManager from "@/components/dependency-manager";
+
 interface User {
   id: string;
   full_name: string;
@@ -35,13 +37,15 @@ interface Subtask {
   assignees?: User[];
   tags?: string[];
   attachments?: string[];
+  blocked_by_ids?: string[];
 }
 
 interface SubtaskManagerProps {
   taskId: string;
+  allPossibleBlockers: { id: string; title: string; blocked_by_ids?: string[] }[];
 }
 
-export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
+export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskManagerProps) {
   const queryClient = useQueryClient();
   const [newSubtask, setNewSubtask] = useState({
     title: "",
@@ -480,6 +484,13 @@ export default function SubtaskManager({ taskId }: SubtaskManagerProps) {
                 </div>
               </div>
             </div>
+
+            <DependencyManager 
+                item={editingSubtask}
+                allPossibleBlockers={allPossibleBlockers}
+                type="subtask"
+            />
+
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setEditingSubtask(null)}>Cancel</Button>
               <Button onClick={() => updateMutation.mutate({ 

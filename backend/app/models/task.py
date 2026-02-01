@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 from app.db.session import Base
 from app.core.enums import Status, Priority
 
-# Association Tables
+# Association Tables for Assignees (these are still useful)
 task_assignees = Table(
     "task_assignees",
     Base.metadata,
@@ -19,13 +19,6 @@ subtask_assignees = Table(
     Base.metadata,
     Column("subtask_id", UUID(as_uuid=True), ForeignKey("subtasks.id"), primary_key=True),
     Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
-)
-
-task_dependencies = Table(
-    "task_dependencies",
-    Base.metadata,
-    Column("blocker_id", UUID(as_uuid=True), ForeignKey("tasks.id"), primary_key=True),
-    Column("blocked_id", UUID(as_uuid=True), ForeignKey("tasks.id"), primary_key=True)
 )
 
 class Task(Base):
@@ -50,22 +43,16 @@ class Task(Base):
     completed_at = Column(DateTime, nullable=True)
     
     tags = Column(ARRAY(String), default=[])
-    attachments = Column(ARRAY(String), default=[]) # File URLs
+    attachments = Column(ARRAY(String), default=[])
+    
+    # Unified dependency storage
+    blocked_by_ids = Column(ARRAY(UUID(as_uuid=True)), default=[])
     
     # Relationships
     project = relationship("Project", back_populates="tasks")
-    subtasks = relationship("Subtask", back_populates="task", cascade="all, delete-orphan")
+    subtasks = relationship("Subtask", back_populates="task", cascade="all, delete-orphan", foreign_keys="Subtask.task_id")
     owner = relationship("User", foreign_keys=[owner_id])
     assignees = relationship("User", secondary=task_assignees, backref="assigned_tasks")
-    
-    # Dependencies: blocked_tasks (tasks blocked by this one), blocking_tasks (tasks blocking this one)
-    blocked_tasks = relationship(
-        "Task",
-        secondary=task_dependencies,
-        primaryjoin=id==task_dependencies.c.blocker_id,
-        secondaryjoin=id==task_dependencies.c.blocked_id,
-        backref="blocking_tasks"
-    )
 
 class Subtask(Base):
     __tablename__ = "subtasks"
@@ -91,7 +78,10 @@ class Subtask(Base):
     tags = Column(ARRAY(String), default=[])
     attachments = Column(ARRAY(String), default=[])
     
+    # Unified dependency storage
+    blocked_by_ids = Column(ARRAY(UUID(as_uuid=True)), default=[])
+    
     # Relationships
-    task = relationship("Task", back_populates="subtasks")
+    task = relationship("Task", back_populates="subtasks", foreign_keys=[task_id])
     owner = relationship("User", foreign_keys=[owner_id])
     assignees = relationship("User", secondary=subtask_assignees, backref="assigned_subtasks")
