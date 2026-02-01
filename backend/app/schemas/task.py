@@ -43,7 +43,7 @@ class SubtaskInDBBase(SubtaskBase):
     completed_at: Optional[datetime] = None
     owner: Optional[UserSchema] = None
     assignees: List[UserSchema] = []
-    blocked_by_ids: List[UUID] = []
+    blocked_by_ids: Optional[List[UUID]] = []
 
     class Config:
         from_attributes = True

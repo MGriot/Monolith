@@ -112,7 +112,8 @@ async def list_projects() -> str:
             return "No projects found."
         lines = []
         for p in projects:
-            lines.append(f"- {p.name} (ID: {p.id}, Progress: {p.progress_percent}%, Status: {p.status})")
+            status_val = p.status.value if hasattr(p.status, 'value') else str(p.status)
+            lines.append(f"- {p.name} (ID: {p.id}, Owner: {p.owner_id}, Progress: {p.progress_percent}%, Status: {status_val}, Start: {p.start_date}, Due: {p.due_date})")
         return "\n".join(lines)
 
 @mcp.resource("users://list")
