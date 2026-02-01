@@ -340,9 +340,6 @@ export default function ProjectDetailPage() {
             <TabsTrigger value="kanban" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
               <Trello className="w-3.5 h-3.5" /> Kanban
             </TabsTrigger>
-            <TabsTrigger value="activity" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
-              <Activity className="w-3.5 h-3.5" /> Activity
-            </TabsTrigger>
           </TabsList>
         </div>
         
@@ -380,8 +377,10 @@ export default function ProjectDetailPage() {
             />
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <ProjectHeatmap stats={stats || []} />
+          <div className="flex justify-center">
+            <div className="w-full max-w-4xl bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <ProjectHeatmap stats={stats || []} />
+            </div>
           </div>
         </TabsContent>
 
@@ -394,12 +393,6 @@ export default function ProjectDetailPage() {
             onTaskClick={handleTaskClick}
             onSubtaskClick={handleSubtaskClick}
           />
-        </TabsContent>
-        
-        <TabsContent value="activity" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <ProjectHeatmap stats={stats || []} />
-          </div>
         </TabsContent>
       </Tabs>
 

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { format, parseISO } from 'date-fns';
+import ProjectHeatmap from '@/components/project-heatmap';
 
 interface DashboardSummary {
   total_projects: number;
@@ -32,6 +33,7 @@ interface DashboardSummary {
     completed_at: string;
     project_id: string;
   }[];
+  global_activity: { date: string; count: number }[];
 }
 
 export default function DashboardPage() {
@@ -241,6 +243,22 @@ export default function DashboardPage() {
           <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
         </Link>
       </div>
+
+      {/* Global Activity Heatmap */}
+      <Card className="border-slate-200 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-semibold">System-wide Activity</CardTitle>
+              <CardDescription>Consolidated task completions across all projects over the last year.</CardDescription>
+            </div>
+            <Activity className="h-4 w-4 text-slate-400" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ProjectHeatmap stats={data?.global_activity || []} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
