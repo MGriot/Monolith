@@ -17,44 +17,17 @@ import {
   ArrowDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface Subtask {
-  id: string;
-  title: string;
-  status: string;
-  priority: string;
-  start_date?: string;
-  due_date?: string;
-  topic?: string;
-  type?: string;
-  sort_index?: number;
-}
-
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: string;
-  topic?: string;
-  type?: string;
-  start_date?: string;
-  due_date?: string;
-  blocked_by_ids?: string[];
-  attachments?: string[];
-  assignees?: { id: string; full_name: string; email: string }[];
-  subtasks?: Subtask[];
-  sort_index?: number;
-}
+import { Task, Subtask } from '@/types';
 
 interface ProjectTaskListProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
+  onSubtaskClick?: (subtask: Subtask) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
   onReorderSubtask?: (subtaskId: string, direction: 'up' | 'down') => void;
 }
 
-export default function ProjectTaskList({ tasks, onTaskClick, onReorderTask, onReorderSubtask }: ProjectTaskListProps) {
+export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, onReorderTask, onReorderSubtask }: ProjectTaskListProps) {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
   const toggleTaskExpansion = (taskId: string) => {
@@ -85,7 +58,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onReorderTask, onR
         <TableBody>
           {tasks.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="h-32 text-center text-slate-500 italic text-sm">
+              <TableCell colSpan={8} className="h-32 text-center text-slate-500 italic text-sm">
                 No tasks found in this project.
               </TableCell>
             </TableRow>
@@ -161,7 +134,11 @@ export default function ProjectTaskList({ tasks, onTaskClick, onReorderTask, onR
                   </TableCell>
                 </TableRow>
                 {expandedTasks.has(task.id) && task.subtasks?.map(st => (
-                  <TableRow key={st.id} className="bg-slate-50/30 border-b border-slate-100">
+                  <TableRow 
+                    key={st.id} 
+                    className="bg-slate-50/30 border-b border-slate-100 hover:bg-slate-100/50 cursor-pointer"
+                    onClick={() => onSubtaskClick?.(st)}
+                  >
                     <TableCell></TableCell>
                     <TableCell className="pl-8 text-xs text-slate-600 py-2">
                       <div className="flex items-center gap-2 relative">

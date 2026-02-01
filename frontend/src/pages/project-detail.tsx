@@ -36,50 +36,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  progress_percent: number;
-  start_date: string;
-  due_date: string;
-  topic: string;
-  type: string;
-  tags?: string[];
-}
-
-interface Subtask {
-  id: string;
-  title: string;
-  status: string;
-  priority: string;
-  start_date?: string;
-  due_date?: string;
-  topic?: string;
-  type?: string;
-  blocked_by_ids?: string[];
-  sort_index?: number;
-  task_id: string;
-}
-
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: string;
-  topic?: string;
-  type?: string;
-  start_date?: string;
-  due_date?: string;
-  blocked_by_ids?: string[];
-  attachments?: string[];
-  assignees?: { id: string; full_name: string; email: string }[];
-  subtasks?: Subtask[];
-  sort_index?: number;
-}
+import { Project, Task, Subtask } from '@/types';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -198,10 +155,12 @@ export default function ProjectDetailPage() {
 
   const handleSubtaskClick = (subtask: Subtask) => {
     // Find parent task and open edit dialog
-    const parent = tasks?.find(t => t.id === subtask.task_id);
-    if (parent) {
-        setEditingTaskId(parent.id);
-        setIsTaskDialogOpen(true);
+    if (subtask.task_id) {
+        const parent = tasks?.find(t => t.id === subtask.task_id);
+        if (parent) {
+            setEditingTaskId(parent.id);
+            setIsTaskDialogOpen(true);
+        }
     }
   };
 
@@ -400,6 +359,7 @@ export default function ProjectDetailPage() {
             <ProjectTaskList 
               tasks={tasks || []} 
               onTaskClick={handleTaskClick} 
+              onSubtaskClick={handleSubtaskClick}
               onReorderTask={handleReorderTask}
               onReorderSubtask={handleReorderSubtask}
             />

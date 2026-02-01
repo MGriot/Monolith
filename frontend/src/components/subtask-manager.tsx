@@ -14,34 +14,9 @@ import {
   ArrowDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { User, Subtask } from "@/types";
 
 import DependencyManager from "@/components/dependency-manager";
-
-interface User {
-  id: string;
-  full_name: string;
-  email: string;
-}
-
-interface Subtask {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: string;
-  topic?: string;
-  type?: string;
-  start_date?: string;
-  due_date?: string;
-  task_id: string;
-  owner_id?: string;
-  owner?: User;
-  assignees?: User[];
-  tags?: string[];
-  attachments?: string[];
-  blocked_by_ids?: string[];
-  sort_index?: number;
-}
 
 interface SubtaskManagerProps {
   taskId: string;
