@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   DndContext, 
   DragOverlay, 
@@ -104,7 +104,7 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
       'Review': [],
       'Done': []
     };
-    kanbanItems.forEach(item => {
+    kanbanItems.forEach((item: KanbanItem) => {
       if (newItems[item.status]) {
         newItems[item.status].push(item.id);
       }
@@ -146,7 +146,6 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
     setItems((prev) => {
       const activeItems = prev[activeContainer];
       const overItems = prev[overContainer];
-      const activeIndex = activeItems.indexOf(active.id as string);
       const overIndex = overItems.indexOf(overId as string);
 
       let newIndex;
@@ -193,7 +192,7 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
         }));
         
         if (activeContainer !== overContainer) {
-          const movedItem = kanbanItems.find(i => i.id === active.id);
+          const movedItem = kanbanItems.find((i: KanbanItem) => i.id === active.id);
           if (movedItem) {
             if (movedItem.type === 'task') {
               onTaskMove(movedItem.id, overContainer);
@@ -226,7 +225,7 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
               itemIds={items[col.id] || []} 
               kanbanItems={kanbanItems}
               onAddTask={onAddTask}
-              onItemClick={(item) => {
+              onItemClick={(item: KanbanItem) => {
                 if (item.type === 'task') {
                     onTaskClick?.(tasks.find(t => t.id === item.id)!);
                 } else {
@@ -250,7 +249,7 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
       }}>
         {activeId ? (
           <TaskCard 
-            item={kanbanItems.find(i => i.id === activeId)!} 
+            item={kanbanItems.find((i: KanbanItem) => i.id === activeId)!} 
             isDragging 
           />
         ) : null}
@@ -295,7 +294,7 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, onAddTask, onItemClick 
       <SortableContext id={id} items={itemIds} strategy={verticalListSortingStrategy}>
         <div className="flex-1 bg-slate-50/50 rounded-xl p-3 border border-slate-100 min-h-[400px]">
           {itemIds.map((itemId) => {
-            const item = kanbanItems.find(i => i.id === itemId);
+            const item = kanbanItems.find((i: KanbanItem) => i.id === itemId);
             if (!item) return null;
             return (
                 <SortableTaskCard 
