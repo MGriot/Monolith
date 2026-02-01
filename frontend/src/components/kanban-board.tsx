@@ -24,25 +24,7 @@ import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MoreVertical, GripVertical, Plus, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface Subtask {
-  id: string;
-  title: string;
-  status: string;
-  priority: string;
-  task_id: string;
-  assignees?: { id: string; full_name: string; email: string }[];
-}
-
-interface Task {
-  id: string;
-  title: string;
-  status: string;
-  priority: string;
-  topic?: string;
-  assignees?: { id: string; full_name: string; email: string }[];
-  subtasks?: Subtask[];
-}
+import { Task, Subtask } from '@/types';
 
 interface KanbanItem {
   id: string;

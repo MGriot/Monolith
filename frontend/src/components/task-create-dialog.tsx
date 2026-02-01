@@ -17,11 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import TaskForm, { type TaskFormValues } from '@/components/task-form';
-
-interface Project {
-  id: string;
-  name: string;
-}
+import { Project } from '@/types';
 
 interface TaskCreateDialogProps {
   open: boolean;

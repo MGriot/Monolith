@@ -19,29 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut } from 'lucide-react';
-
-interface Subtask {
-  id: string;
-  title: string;
-  status: string;
-  priority: string;
-  start_date?: string;
-  due_date?: string;
-  blocked_by_ids?: string[];
-  sort_index?: number;
-}
-
-interface Task {
-  id: string;
-  title: string;
-  status: string;
-  priority: string;
-  start_date?: string;
-  due_date?: string;
-  blocked_by_ids?: string[];
-  subtasks?: Subtask[];
-  sort_index?: number;
-}
+import { Task, Subtask } from '@/types';
 
 interface ProjectGanttProps {
   tasks: Task[];
