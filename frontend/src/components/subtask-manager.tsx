@@ -14,7 +14,7 @@ import {
   ArrowDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { User, Subtask } from "@/types";
+import type { User, Subtask } from "@/types";
 
 import DependencyManager from "@/components/dependency-manager";
 

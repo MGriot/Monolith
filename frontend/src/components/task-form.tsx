@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User as UserIcon, Loader2, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { User } from "@/types";
+import type { User } from "@/types";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),

@@ -24,7 +24,7 @@ import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MoreVertical, GripVertical, Plus, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task, Subtask } from '@/types';
+import type { Task, Subtask } from '@/types';
 
 interface KanbanItem {
   id: string;

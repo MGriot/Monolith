@@ -36,7 +36,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
-import { Project, Task, Subtask } from '@/types';
+import type { Project, Task, Subtask } from '@/types';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
