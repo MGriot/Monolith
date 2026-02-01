@@ -25,6 +25,15 @@ import { Badge } from '@/components/ui/badge';
 import { MoreVertical, GripVertical, Plus, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+interface Subtask {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  task_id: string;
+  assignees?: { id: string; full_name: string; email: string }[];
+}
+
 interface Task {
   id: string;
   title: string;
@@ -32,13 +41,27 @@ interface Task {
   priority: string;
   topic?: string;
   assignees?: { id: string; full_name: string; email: string }[];
+  subtasks?: Subtask[];
+}
+
+interface KanbanItem {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  topic?: string;
+  assignees?: { id: string; full_name: string; email: string }[];
+  type: 'task' | 'subtask';
+  parentId?: string;
 }
 
 interface KanbanBoardProps {
   tasks: Task[];
   onTaskMove: (taskId: string, newStatus: string) => void;
+  onSubtaskMove: (subtaskId: string, newStatus: string) => void;
   onAddTask?: (status: string) => void;
   onTaskClick?: (task: Task) => void;
+  onSubtaskClick?: (subtask: Subtask) => void;
 }
 
 const COLUMNS = [
@@ -48,7 +71,7 @@ const COLUMNS = [
   { id: 'Done', title: 'Done' }
 ];
 
-export default function KanbanBoard({ tasks, onTaskMove, onAddTask, onTaskClick }: KanbanBoardProps) {
+export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTask, onTaskClick, onSubtaskClick }: KanbanBoardProps) {
   const [items, setItems] = useState<Record<string, string[]>>({
     'Backlog': [],
     'Todo': [],
@@ -58,6 +81,21 @@ export default function KanbanBoard({ tasks, onTaskMove, onAddTask, onTaskClick 
   });
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  // Flatten tasks/subtasks based on user rule
+  const kanbanItems = useMemo(() => {
+    const list: KanbanItem[] = [];
+    tasks.forEach(task => {
+      if (!task.subtasks || task.subtasks.length === 0) {
+        list.push({ ...task, type: 'task' });
+      } else {
+        task.subtasks.forEach(st => {
+          list.push({ ...st, type: 'subtask', topic: task.topic, parentId: task.id });
+        });
+      }
+    });
+    return list;
+  }, [tasks]);
+
   useEffect(() => {
     const newItems: Record<string, string[]> = {
       'Backlog': [],
@@ -66,13 +104,13 @@ export default function KanbanBoard({ tasks, onTaskMove, onAddTask, onTaskClick 
       'Review': [],
       'Done': []
     };
-    tasks.forEach(task => {
-      if (newItems[task.status]) {
-        newItems[task.status].push(task.id);
+    kanbanItems.forEach(item => {
+      if (newItems[item.status]) {
+        newItems[item.status].push(item.id);
       }
     });
     setItems(newItems);
-  }, [tasks]);
+  }, [kanbanItems]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -125,7 +163,7 @@ export default function KanbanBoard({ tasks, onTaskMove, onAddTask, onTaskClick 
         [activeContainer]: activeItems.filter((item) => item !== active.id),
         [overContainer]: [
           ...overItems.slice(0, newIndex),
-          items[activeContainer][activeIndex],
+          active.id as string,
           ...overItems.slice(newIndex, overItems.length)
         ]
       };
@@ -149,13 +187,20 @@ export default function KanbanBoard({ tasks, onTaskMove, onAddTask, onTaskClick 
       const overIndex = items[overContainer].indexOf(overId as string);
 
       if (activeIndex !== overIndex || activeContainer !== overContainer) {
-        setItems((items) => ({
-          ...items,
-          [overContainer]: arrayMove(items[overContainer], activeIndex, overIndex)
+        setItems((prev) => ({
+          ...prev,
+          [overContainer]: arrayMove(prev[overContainer], activeIndex, overIndex)
         }));
         
         if (activeContainer !== overContainer) {
-          onTaskMove(active.id as string, overContainer);
+          const movedItem = kanbanItems.find(i => i.id === active.id);
+          if (movedItem) {
+            if (movedItem.type === 'task') {
+              onTaskMove(movedItem.id, overContainer);
+            } else {
+              onSubtaskMove(movedItem.id, overContainer);
+            }
+          }
         }
       }
     }
@@ -178,10 +223,18 @@ export default function KanbanBoard({ tasks, onTaskMove, onAddTask, onTaskClick 
               key={col.id} 
               id={col.id} 
               title={col.title} 
-              taskIds={items[col.id] || []} 
-              tasks={tasks}
+              itemIds={items[col.id] || []} 
+              kanbanItems={kanbanItems}
               onAddTask={onAddTask}
-              onTaskClick={onTaskClick}
+              onItemClick={(item) => {
+                if (item.type === 'task') {
+                    onTaskClick?.(tasks.find(t => t.id === item.id)!);
+                } else {
+                    // For subtasks, we might want to click the parent or just show subtask
+                    // Logic depends on requirement, but user asked to fix kanban
+                    onSubtaskClick?.(item as any);
+                }
+              }}
             />
           ))}
         </div>
@@ -197,7 +250,7 @@ export default function KanbanBoard({ tasks, onTaskMove, onAddTask, onTaskClick 
       }}>
         {activeId ? (
           <TaskCard 
-            task={tasks.find(t => t.id === activeId)!} 
+            item={kanbanItems.find(i => i.id === activeId)!} 
             isDragging 
           />
         ) : null}
@@ -209,20 +262,20 @@ export default function KanbanBoard({ tasks, onTaskMove, onAddTask, onTaskClick 
 interface KanbanColumnProps {
   id: string;
   title: string;
-  taskIds: string[];
-  tasks: Task[];
+  itemIds: string[];
+  kanbanItems: KanbanItem[];
   onAddTask?: (status: string) => void;
-  onTaskClick?: (task: Task) => void;
+  onItemClick: (item: KanbanItem) => void;
 }
 
-function KanbanColumn({ id, title, taskIds, tasks, onAddTask, onTaskClick }: KanbanColumnProps) {
+function KanbanColumn({ id, title, itemIds, kanbanItems, onAddTask, onItemClick }: KanbanColumnProps) {
   return (
     <div className="flex flex-col w-80 shrink-0">
       <div className="flex items-center justify-between mb-4 px-2">
         <h3 className="font-semibold text-slate-700 flex items-center gap-2">
           {title}
           <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
-            {taskIds.length}
+            {itemIds.length}
           </span>
         </h3>
         <div className="flex items-center gap-1">
@@ -239,22 +292,26 @@ function KanbanColumn({ id, title, taskIds, tasks, onAddTask, onTaskClick }: Kan
         </div>
       </div>
       
-      <SortableContext id={id} items={taskIds} strategy={verticalListSortingStrategy}>
+      <SortableContext id={id} items={itemIds} strategy={verticalListSortingStrategy}>
         <div className="flex-1 bg-slate-50/50 rounded-xl p-3 border border-slate-100 min-h-[400px]">
-          {taskIds.map((taskId) => (
-            <SortableTaskCard 
-              key={taskId} 
-              task={tasks.find(t => t.id === taskId)!} 
-              onTaskClick={onTaskClick}
-            />
-          ))}
+          {itemIds.map((itemId) => {
+            const item = kanbanItems.find(i => i.id === itemId);
+            if (!item) return null;
+            return (
+                <SortableTaskCard 
+                  key={itemId} 
+                  item={item} 
+                  onClick={() => onItemClick(item)}
+                />
+            );
+          })}
         </div>
       </SortableContext>
     </div>
   );
 }
 
-function SortableTaskCard({ task, onTaskClick }: { task: Task, onTaskClick?: (task: Task) => void }) {
+function SortableTaskCard({ item, onClick }: { item: KanbanItem, onClick?: () => void }) {
   const {
     attributes,
     listeners,
@@ -262,7 +319,7 @@ function SortableTaskCard({ task, onTaskClick }: { task: Task, onTaskClick?: (ta
     transform,
     transition,
     isDragging
-  } = useSortable({ id: task.id });
+  } = useSortable({ id: item.id });
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -272,15 +329,15 @@ function SortableTaskCard({ task, onTaskClick }: { task: Task, onTaskClick?: (ta
   return (
     <div ref={setNodeRef} style={style} className={cn(isDragging && "opacity-0")}>
       <TaskCard 
-        task={task} 
+        item={item} 
         dragProps={{ ...attributes, ...listeners }} 
-        onClick={() => onTaskClick?.(task)}
+        onClick={onClick}
       />
     </div>
   );
 }
 
-function TaskCard({ task, isDragging, dragProps, onClick }: { task: Task, isDragging?: boolean, dragProps?: any, onClick?: () => void }) {
+function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, isDragging?: boolean, dragProps?: any, onClick?: () => void }) {
   const priorityStyles: Record<string, { border: string, badge: string }> = {
     Low: { border: "border-l-blue-400", badge: "bg-blue-100 text-blue-700" },
     Medium: { border: "border-l-amber-400", badge: "bg-amber-100 text-amber-700" },
@@ -288,8 +345,8 @@ function TaskCard({ task, isDragging, dragProps, onClick }: { task: Task, isDrag
     Critical: { border: "border-l-red-500", badge: "bg-red-100 text-red-700" },
   };
 
-  const style = priorityStyles[task.priority] || priorityStyles.Medium;
-  const isDone = task.status === 'Done' || task.status === 'done';
+  const style = priorityStyles[item.priority] || priorityStyles.Medium;
+  const isDone = item.status === 'Done' || item.status === 'done';
 
   return (
     <Card 
@@ -303,10 +360,15 @@ function TaskCard({ task, isDragging, dragProps, onClick }: { task: Task, isDrag
     >
       <CardContent className="p-3 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className={cn(
-            "text-xs font-bold leading-snug",
-            isDone ? "text-slate-500 line-through" : "text-slate-900"
-          )}>{task.title}</CardTitle>
+          <div className="flex flex-col gap-0.5">
+            {item.type === 'subtask' && (
+                <span className="text-[8px] font-black text-primary uppercase">Subtask</span>
+            )}
+            <CardTitle className={cn(
+                "text-xs font-bold leading-snug",
+                isDone ? "text-slate-500 line-through" : "text-slate-900"
+            )}>{item.title}</CardTitle>
+          </div>
           <div {...dragProps} className="cursor-grab active:cursor-grabbing text-slate-300 group-hover:text-slate-400 shrink-0">
             <GripVertical className="w-3.5 h-3.5" />
           </div>
@@ -315,17 +377,17 @@ function TaskCard({ task, isDragging, dragProps, onClick }: { task: Task, isDrag
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 capitalize border-none font-black", style.badge)}>
-              {task.priority}
+              {item.priority}
             </Badge>
-            {task.topic && (
+            {item.topic && (
               <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-slate-100 text-slate-500 font-bold border-none">
-                {task.topic}
+                {item.topic}
               </Badge>
             )}
           </div>
           
           <div className="flex -space-x-1.5 overflow-hidden">
-            {task.assignees?.map((u) => (
+            {item.assignees?.map((u) => (
               <div 
                 key={u.id}
                 className="inline-block h-5 w-5 rounded-full bg-white border border-slate-200 flex items-center justify-center ring-0 shadow-sm"
