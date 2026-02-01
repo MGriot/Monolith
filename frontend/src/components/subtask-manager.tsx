@@ -531,6 +531,3 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
     </div>
   );
 }
-    </div>
-  );
-}
