@@ -29,6 +29,7 @@ interface Task {
   priority: string;
   start_date?: string;
   due_date?: string;
+  blocked_by_ids?: string[];
   subtasks?: Subtask[];
 }
 
@@ -39,21 +40,24 @@ interface ProjectGanttProps {
   initialShowSubtasks?: boolean;
 }
 
+type GanttItem = (Task | (Subtask & { isSubtask: boolean, parentTitle: string, parentId: string })) & { rowIndex: number };
+
 export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, initialShowSubtasks = false }: ProjectGanttProps) {
   const [showSubtasks, setShowSubtasks] = useState(initialShowSubtasks);
 
   const ganttItems = useMemo(() => {
-    const items: (Task | Subtask & { isSubtask: boolean, parentTitle: string })[] = [];
+    const items: GanttItem[] = [];
+    let currentRow = 0;
     
     tasks.forEach(task => {
       if (task.start_date && task.due_date) {
-        items.push(task);
+        items.push({ ...task, rowIndex: currentRow++ });
       }
       
       if (showSubtasks && task.subtasks) {
         task.subtasks.forEach(st => {
           if (st.start_date && st.due_date) {
-            items.push({ ...st, isSubtask: true, parentTitle: task.title });
+            items.push({ ...st, isSubtask: true, parentTitle: task.title, parentId: task.id, rowIndex: currentRow++ });
           }
         });
       }
@@ -75,10 +79,10 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
 
     if (dates.length === 0) return null;
 
-    return {
-      start: startOfMonth(min(dates)),
-      end: endOfMonth(max(dates)),
-    };
+    const start = startOfMonth(min(dates));
+    const end = endOfMonth(max(dates));
+
+    return { start, end };
   }, [ganttItems, projectStartDate, projectDueDate]);
 
   const months = useMemo(() => {
@@ -112,14 +116,14 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
   const getPosition = (dateStr: string) => {
     const date = parseISO(dateStr);
     const daysFromStart = differenceInDays(date, viewWindow.start);
-    return Math.max(0, Math.min(100, (daysFromStart / totalDays) * 100));
+    return (daysFromStart / totalDays) * 100;
   };
 
   const getWidth = (startStr: string, endStr: string) => {
     const start = parseISO(startStr);
     const end = parseISO(endStr);
     const duration = differenceInDays(end, start) + 1;
-    return Math.max(1, (duration / totalDays) * 100);
+    return (duration / totalDays) * 100;
   };
 
   const getBarColor = (item: any) => {
@@ -135,10 +139,23 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
     }
   };
 
+  const getProgressWidth = (status: string) => {
+    const s = status.toLowerCase();
+    if (s === 'done') return '100%';
+    if (s === 'in progress' || s === 'review') return '50%';
+    return '0%';
+  };
+
+  const isMilestone = (item: any) => {
+    return item.start_date === item.due_date;
+  };
+
+  const todayPos = getPosition(new Date().toISOString());
+
   return (
-    <div className="flex flex-col bg-white">
+    <div className="flex flex-col bg-white overflow-x-auto">
       {/* Gantt Controls */}
-      <div className="p-4 border-b flex items-center justify-between bg-slate-50/30">
+      <div className="p-4 border-b flex items-center justify-between bg-slate-50/30 sticky left-0">
         <div className="flex items-center space-x-2">
           <Switch 
             id="show-subtasks" 
@@ -147,86 +164,168 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
           />
           <Label htmlFor="show-subtasks" className="text-sm font-medium">Include Subtasks</Label>
         </div>
-        <div className="text-[10px] text-slate-400 font-mono">
-          {format(viewWindow.start, 'MMM yyyy')} - {format(viewWindow.end, 'MMM yyyy')}
-        </div>
-      </div>
-
-      {/* Timeline Header */}
-      <div className="flex border-b border-slate-200 bg-slate-50/50 sticky top-0 z-10">
-        <div className="w-64 border-r border-slate-200 p-3 flex-shrink-0 font-bold text-[10px] text-slate-500 uppercase tracking-widest">
-          Label
-        </div>
-        <div className="flex-1 relative h-10 flex items-center">
-          {months.map((month) => {
-            const left = (differenceInDays(month, viewWindow.start) / totalDays) * 100;
-            return (
-              <div 
-                key={month.toISOString()} 
-                className="absolute border-l border-slate-200 h-full flex items-center pl-2 text-[10px] font-bold text-slate-400 uppercase"
-                style={{ left: `${left}%` }}
-              >
-                {format(month, 'MMM')}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Timeline Content */}
-      <div className="min-h-0">
-        {ganttItems.map((item) => {
-          const isSubtask = 'isSubtask' in item;
-          return (
-            <div key={item.id} className={cn(
-              "flex border-b border-slate-100 hover:bg-slate-50/50 transition-colors group",
-              isSubtask && "bg-slate-50/20"
-            )}>
-              <div className="w-64 border-r border-slate-200 p-3 flex-shrink-0 flex flex-col justify-center min-w-0">
-                <span className={cn(
-                  "text-xs font-semibold truncate",
-                  isSubtask ? "text-slate-500 pl-4 border-l-2 border-l-slate-200" : "text-slate-900"
-                )}>
-                  {item.title}
-                </span>
-                {isSubtask && (
-                  <span className="text-[9px] text-slate-400 pl-4">Parent: {(item as any).parentTitle}</span>
-                )}
-              </div>
-              <div className="flex-1 relative h-14 py-4 min-w-[800px]">
-                {/* Grid lines */}
-                {months.map((month) => {
-                  const left = (differenceInDays(month, viewWindow.start) / totalDays) * 100;
-                  return (
-                    <div 
-                      key={month.toISOString()} 
-                      className="absolute top-0 bottom-0 border-l border-slate-100 h-full"
-                      style={{ left: `${left}%` }}
-                    />
-                  );
-                })}
-                
-                {/* Bar */}
-                <div 
-                  className={cn(
-                    "absolute h-6 rounded shadow-sm transition-all group-hover:scale-[1.01] flex items-center px-2 border-l-4",
-                    getBarColor(item),
-                    isSubtask ? "opacity-70 h-4" : "opacity-100"
-                  )}
-                  style={{ 
-                    left: `${getPosition(item.start_date!)}%`, 
-                    width: `${getWidth(item.start_date!, item.due_date!)}%`,
-                    top: isSubtask ? '20px' : '16px'
-                  }}
-                >
-                  <span className="text-[9px] font-black text-white truncate drop-shadow-sm">
-                    {Math.round(getWidth(item.start_date!, item.due_date!) / 100 * totalDays)}d
-                  </span>
-                </div>
-              </div>
+        <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-emerald-500" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase">Done</span>
             </div>
-          );
-        })}
+            <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-red-500" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase">Critical</span>
+            </div>
+            <div className="text-[10px] text-slate-400 font-mono">
+                {format(viewWindow.start, 'MMM yyyy')} - {format(viewWindow.end, 'MMM yyyy')}
+            </div>
+        </div>
+      </div>
+
+      <div className="relative flex-1 min-w-[1000px]">
+        {/* Timeline Header */}
+        <div className="flex border-b border-slate-200 bg-slate-50/50 sticky top-0 z-20">
+            <div className="w-64 border-r border-slate-200 p-3 flex-shrink-0 font-bold text-[10px] text-slate-500 uppercase tracking-widest bg-slate-50/50 sticky left-0 z-30">
+            Task
+            </div>
+            <div className="flex-1 relative h-10 flex items-center">
+            {months.map((month) => {
+                const left = (differenceInDays(month, viewWindow.start) / totalDays) * 100;
+                return (
+                <div 
+                    key={month.toISOString()} 
+                    className="absolute border-l border-slate-200 h-full flex items-center pl-2 text-[10px] font-bold text-slate-400 uppercase"
+                    style={{ left: `${left}%` }}
+                >
+                    {format(month, 'MMM')}
+                </div>
+                );
+            })}
+            </div>
+        </div>
+
+        {/* Timeline Content */}
+        <div className="relative">
+            {/* Dependency Lines Layer */}
+            <svg 
+                className="absolute inset-0 pointer-events-none z-10" 
+                style={{ width: '100%', height: `${ganttItems.length * 56}px` }}
+            >
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                    </marker>
+                </defs>
+                {ganttItems.map((item) => {
+                    if (!('blocked_by_ids' in item) || !item.blocked_by_ids) return null;
+                    
+                    return item.blocked_by_ids.map(blockerId => {
+                        const blocker = ganttItems.find(i => i.id === blockerId);
+                        if (!blocker) return null;
+
+                        const startX = `${getPosition(blocker.due_date!)}%`;
+                        const startY = blocker.rowIndex * 56 + 28;
+                        const endX = `${getPosition(item.start_date!)}%`;
+                        const endY = item.rowIndex * 56 + 28;
+
+                        return (
+                            <path 
+                                key={`${item.id}-${blockerId}`}
+                                d={`M ${startX} ${startY} L ${startX} ${startY + 15} L ${endX} ${startY + 15} L ${endX} ${endY}`}
+                                fill="none"
+                                stroke="#cbd5e1"
+                                strokeWidth="1.5"
+                                markerEnd="url(#arrowhead)"
+                            />
+                        );
+                    });
+                })}
+            </svg>
+
+            {/* Today Line */}
+            {todayPos >= 0 && todayPos <= 100 && (
+                <div 
+                    className="absolute top-0 bottom-0 w-px bg-red-400 z-20 pointer-events-none opacity-50"
+                    style={{ left: `${todayPos}%` }}
+                >
+                    <div className="bg-red-400 text-white text-[8px] font-bold px-1 py-0.5 rounded-b-sm whitespace-nowrap">
+                        TODAY
+                    </div>
+                </div>
+            )}
+
+            {ganttItems.map((item) => {
+            const isSub = 'isSubtask' in item;
+            const milestone = isMilestone(item);
+            
+            return (
+                <div key={item.id} className={cn(
+                "flex border-b border-slate-100 hover:bg-slate-50/50 transition-colors group relative",
+                isSub && "bg-slate-50/20"
+                )}>
+                <div className="w-64 border-r border-slate-200 p-3 flex-shrink-0 flex flex-col justify-center min-w-0 sticky left-0 bg-inherit z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                    <span className={cn(
+                    "text-xs font-semibold truncate",
+                    isSub ? "text-slate-500 pl-4 border-l-2 border-l-slate-200" : "text-slate-900"
+                    )}>
+                    {item.title}
+                    </span>
+                    {isSub && (
+                    <span className="text-[9px] text-slate-400 pl-4 truncate">Parent: {(item as any).parentTitle}</span>
+                    )}
+                </div>
+                <div className="flex-1 relative h-14 py-4">
+                    {/* Grid lines */}
+                    {months.map((month) => {
+                    const left = (differenceInDays(month, viewWindow.start) / totalDays) * 100;
+                    return (
+                        <div 
+                        key={month.toISOString()} 
+                        className="absolute top-0 bottom-0 border-l border-slate-100 h-full"
+                        style={{ left: `${left}%` }}
+                        />
+                    );
+                    })}
+                    
+                    {/* Bar or Milestone */}
+                    {milestone ? (
+                        <div 
+                            className={cn(
+                                "absolute w-4 h-4 rotate-45 border-2 border-white shadow-md z-10",
+                                getBarColor(item)
+                            )}
+                            style={{ 
+                                left: `calc(${getPosition(item.start_date!)}% - 8px)`,
+                                top: '20px'
+                            }}
+                            title={`${item.title} (Milestone)`}
+                        />
+                    ) : (
+                        <div 
+                            className={cn(
+                                "absolute h-6 rounded shadow-sm transition-all group-hover:scale-[1.01] flex items-center px-2 border-l-4 border-white/20 overflow-hidden",
+                                getBarColor(item),
+                                isSub ? "opacity-80 h-4 mt-1" : "opacity-100"
+                            )}
+                            style={{ 
+                                left: `${getPosition(item.start_date!)}%`, 
+                                width: `${getWidth(item.start_date!, item.due_date!)}%`,
+                                top: isSub ? '20px' : '16px'
+                            }}
+                        >
+                            {/* Progress Fill */}
+                            <div 
+                                className="absolute left-0 top-0 bottom-0 bg-black/10 transition-all"
+                                style={{ width: getProgressWidth(item.status) }}
+                            />
+                            
+                            <span className="text-[9px] font-black text-white truncate drop-shadow-sm z-10">
+                                {Math.round(getWidth(item.start_date!, item.due_date!) / 100 * totalDays)}d
+                            </span>
+                        </div>
+                    )}
+                </div>
+                </div>
+            );
+            })}
+        </div>
       </div>
     </div>
   );
