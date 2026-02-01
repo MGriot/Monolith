@@ -20,6 +20,7 @@ interface Subtask {
   priority: string;
   start_date?: string;
   due_date?: string;
+  blocked_by_ids?: string[];
 }
 
 interface Task {
@@ -151,6 +152,8 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
   };
 
   const todayPos = getPosition(new Date().toISOString());
+  const rowHeight = 56;
+  const svgHeight = ganttItems.length * rowHeight;
 
   return (
     <div className="flex flex-col bg-white overflow-x-auto">
@@ -206,32 +209,41 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
             {/* Dependency Lines Layer */}
             <svg 
                 className="absolute inset-0 pointer-events-none z-10" 
-                style={{ width: '100%', height: `${ganttItems.length * 56}px` }}
+                viewBox={`0 0 1000 ${svgHeight}`}
+                preserveAspectRatio="none"
+                style={{ width: '100%', height: `${svgHeight}px` }}
             >
                 <defs>
-                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                    <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="12" refY="4" orient="auto">
+                        <polygon points="0 0, 12 4, 0 8" fill="#94a3b8" />
                     </marker>
                 </defs>
                 {ganttItems.map((item) => {
-                    if (!('blocked_by_ids' in item) || !item.blocked_by_ids) return null;
+                    if (!item.blocked_by_ids || item.blocked_by_ids.length === 0) return null;
                     
                     return item.blocked_by_ids.map(blockerId => {
                         const blocker = ganttItems.find(i => i.id === blockerId);
                         if (!blocker) return null;
 
-                        const startX = `${getPosition(blocker.due_date!)}%`;
-                        const startY = blocker.rowIndex * 56 + 28;
-                        const endX = `${getPosition(item.start_date!)}%`;
-                        const endY = item.rowIndex * 56 + 28;
+                        // Start at end of blocker (using 1000-unit scale for X)
+                        const startX = getPosition(blocker.due_date!) * 10;
+                        const startY = blocker.rowIndex * rowHeight + (rowHeight / 2);
+                        
+                        // End at start of current item
+                        const endX = getPosition(item.start_date!) * 10;
+                        const endY = item.rowIndex * rowHeight + (rowHeight / 2);
+
+                        // Path: horizontal out -> vertical to row -> horizontal in
+                        const midX = startX + (endX - startX) / 2;
 
                         return (
                             <path 
                                 key={`${item.id}-${blockerId}`}
-                                d={`M ${startX} ${startY} L ${startX} ${startY + 15} L ${endX} ${startY + 15} L ${endX} ${endY}`}
+                                d={`M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`}
                                 fill="none"
-                                stroke="#cbd5e1"
-                                strokeWidth="1.5"
+                                stroke="#94a3b8"
+                                strokeWidth="2"
+                                strokeOpacity="0.6"
                                 markerEnd="url(#arrowhead)"
                             />
                         );

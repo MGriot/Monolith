@@ -35,6 +35,8 @@ export default function DependencyManager({ item, allPossibleBlockers, type }: D
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['subtasks'] });
+      queryClient.invalidateQueries({ queryKey: ['project'] });
+      queryClient.invalidateQueries({ queryKey: ['project-stats'] });
       setIsAdding(false);
     },
   });
