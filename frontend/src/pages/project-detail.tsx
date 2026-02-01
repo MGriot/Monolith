@@ -364,6 +364,10 @@ export default function ProjectDetailPage() {
               onReorderSubtask={handleReorderSubtask}
             />
           </div>
+
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <ProjectHeatmap stats={stats || []} />
+          </div>
         </TabsContent>
 
         <TabsContent value="kanban" className="flex-1 overflow-hidden m-0 p-6 bg-slate-50/30">
@@ -379,11 +383,7 @@ export default function ProjectDetailPage() {
         
         <TabsContent value="activity" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <ProjectHeatmap 
-              stats={stats || []} 
-              projectStartDate={project.start_date}
-              projectDueDate={project.due_date}
-            />
+            <ProjectHeatmap stats={stats || []} />
           </div>
         </TabsContent>
       </Tabs>

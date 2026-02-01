@@ -11,13 +11,11 @@ interface Stat {
 
 interface ProjectHeatmapProps {
   stats: Stat[];
-  projectStartDate?: string;
-  projectDueDate?: string;
 }
 
-export default function ProjectHeatmap({ stats, projectStartDate, projectDueDate }: ProjectHeatmapProps) {
-  const endDate = projectDueDate ? parseISO(projectDueDate) : new Date();
-  const startDate = projectStartDate ? parseISO(projectStartDate) : subYears(endDate, 1);
+export default function ProjectHeatmap({ stats }: ProjectHeatmapProps) {
+  const endDate = new Date();
+  const startDate = subYears(endDate, 1);
 
   return (
     <div className="py-4">

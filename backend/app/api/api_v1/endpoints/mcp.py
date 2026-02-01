@@ -41,14 +41,20 @@ async def create_project(
     type: str = None, 
     description: str = None,
     start_date: str = None,
-    due_date: str = None
+    due_date: str = None,
+    owner_id: str = None
 ) -> str:
     """Create a new project. Dates in ISO format (YYYY-MM-DD)."""
     async with AsyncSessionLocal() as db:
         try:
-            users = await crud_user.get_multi(db, limit=1)
-            if not users:
-                return "Error: No users found in system. Create a user first."
+            target_owner_id = None
+            if owner_id:
+                target_owner_id = UUID(owner_id)
+            else:
+                users = await crud_user.get_multi(db, limit=1)
+                if not users:
+                    return "Error: No users found in system. Create a user first."
+                target_owner_id = users[0].id
             
             project_in = ProjectCreate(
                 name=name,
@@ -59,7 +65,7 @@ async def create_project(
                 due_date=datetime.fromisoformat(due_date) if due_date else None
             )
             project_obj = await crud_project.project.create_with_owner(
-                db, obj_in=project_in, owner_id=users[0].id
+                db, obj_in=project_in, owner_id=target_owner_id
             )
             return f"Successfully created project '{name}' with ID: {project_obj.id}"
         except Exception as e:
