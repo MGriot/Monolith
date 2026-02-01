@@ -402,7 +402,7 @@
   {
     "id": "FRONT-026",
     "title": "Gantt: Orthogonal Hierarchy Connectors",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 10.1.A",
     "description": "Implement vertical-to-horizontal stepped lines connecting Parent tasks to their first subtask."
@@ -410,7 +410,7 @@
   {
     "id": "FRONT-027",
     "title": "Gantt: Orthogonal Dependency Connectors",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 10.1.B",
     "description": "Implement Finish-to-Start stepped lines (Z-shape) connecting blockers to dependent tasks/subtasks."
@@ -418,7 +418,7 @@
   {
     "id": "FRONT-028",
     "title": "Gantt: Visual Polishing (Color & Sharpness)",
-    "status": "todo",
+    "status": "done",
     "priority": "low",
     "linked_req": "PRD Section 10.2",
     "description": "Apply dynamic color matching and crispEdges rendering to all Gantt connectors."

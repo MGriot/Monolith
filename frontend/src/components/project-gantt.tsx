@@ -140,6 +140,19 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
     }
   };
 
+  const getPriorityColorHex = (item: any) => {
+    if (item.status === 'Done' || item.status === 'done') return "#10b981"; // emerald-500
+    
+    const priority = item.priority || 'Medium';
+    switch (priority) {
+      case 'Critical': return "#ef4444"; // red-500
+      case 'High': return "#f97316"; // orange-500
+      case 'Medium': return "#f59e0b"; // amber-500
+      case 'Low': return "#3b82f6"; // blue-500
+      default: return "#64748b"; // slate-500
+    }
+  };
+
   const getProgressWidth = (status: string) => {
     const s = status.toLowerCase();
     if (s === 'done') return '100%';
@@ -218,6 +231,45 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                         <polygon points="0 0, 12 4, 0 8" fill="#94a3b8" />
                     </marker>
                 </defs>
+
+                {/* Hierarchy Lines (Parent -> First Subtask) */}
+                {tasks.map(task => {
+                    if (!showSubtasks || !task.subtasks || task.subtasks.length === 0) return null;
+                    if (!task.start_date || !task.due_date) return null;
+
+                    const parentItem = ganttItems.find(i => i.id === task.id);
+                    if (!parentItem) return null;
+
+                    // Find the first subtask that actually has dates and is in ganttItems
+                    const firstSubtask = task.subtasks.find(st => st.start_date && st.due_date);
+                    if (!firstSubtask) return null;
+
+                    const subtaskItem = ganttItems.find(i => i.id === firstSubtask.id);
+                    if (!subtaskItem) return null;
+
+                    const startX = getPosition(task.start_date) * 10;
+                    const startY = parentItem.rowIndex * rowHeight + (rowHeight / 2);
+                    const endX = getPosition(firstSubtask.start_date!) * 10;
+                    const endY = subtaskItem.rowIndex * rowHeight + (rowHeight / 2);
+
+                    const color = getPriorityColorHex(task);
+
+                    // Path: Start at Parent Start-Left -> Down to Subtask Row -> Right to Subtask Start-Left
+                    return (
+                        <path 
+                            key={`hier-${task.id}`}
+                            d={`M ${startX} ${startY} V ${endY} H ${endX}`}
+                            fill="none"
+                            stroke={color}
+                            strokeWidth="1.5"
+                            strokeOpacity="0.4"
+                            strokeDasharray="4 2"
+                            shapeRendering="crispEdges"
+                        />
+                    );
+                })}
+
+                {/* Dependency Lines (Predecessor -> Successor) */}
                 {ganttItems.map((item) => {
                     if (!item.blocked_by_ids || item.blocked_by_ids.length === 0) return null;
                     
@@ -234,16 +286,18 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                         const endY = item.rowIndex * rowHeight + (rowHeight / 2);
 
                         // Path: horizontal out -> vertical to row -> horizontal in
-                        const midX = startX + (endX - startX) / 2;
+                        const yMid = startY + (endY - startY) / 2;
+                        const color = getPriorityColorHex(blocker);
 
                         return (
                             <path 
                                 key={`${item.id}-${blockerId}`}
-                                d={`M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`}
+                                d={`M ${startX} ${startY} V ${yMid} H ${endX} V ${endY}`}
                                 fill="none"
-                                stroke="#94a3b8"
+                                stroke={color}
                                 strokeWidth="2"
                                 strokeOpacity="0.6"
+                                shapeRendering="crispEdges"
                                 markerEnd="url(#arrowhead)"
                             />
                         );
