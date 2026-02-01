@@ -60,6 +60,7 @@ interface Subtask {
   topic?: string;
   type?: string;
   blocked_by_ids?: string[];
+  sort_index?: number;
 }
 
 interface Task {
@@ -76,6 +77,7 @@ interface Task {
   attachments?: string[];
   assignees?: { id: string; full_name: string; email: string }[];
   subtasks?: Subtask[];
+  sort_index?: number;
 }
 
 export default function ProjectDetailPage() {

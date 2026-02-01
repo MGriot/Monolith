@@ -19,13 +19,15 @@ const taskSchema = z.object({
   start_date: z.string().optional().nullable(),
   due_date: z.string().optional().nullable(),
   assignee_ids: z.array(z.string()),
+  sort_index: z.number().optional(),
   subtasks: z.array(z.object({
     title: z.string().min(1, "Subtask title is required"),
     status: z.string().min(1, "Subtask status is required"),
     priority: z.string().min(1, "Subtask priority is required"),
     start_date: z.string().optional().nullable(),
     due_date: z.string().optional().nullable(),
-    assignee_ids: z.array(z.string()).optional()
+    assignee_ids: z.array(z.string()).optional(),
+    sort_index: z.number().optional()
   })).optional()
 });
 

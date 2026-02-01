@@ -40,6 +40,7 @@ interface Subtask {
   tags?: string[];
   attachments?: string[];
   blocked_by_ids?: string[];
+  sort_index?: number;
 }
 
 interface SubtaskManagerProps {
