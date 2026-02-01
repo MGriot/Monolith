@@ -245,20 +245,22 @@ export default function DashboardPage() {
       </div>
 
       {/* Global Activity Heatmap */}
-      <Card className="border-slate-200 shadow-sm">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-semibold">System-wide Activity</CardTitle>
-              <CardDescription>Consolidated task completions across all projects over the last year.</CardDescription>
+      <div className="flex justify-center">
+        <Card className="w-full max-w-4xl border-slate-200 shadow-sm">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-semibold">System-wide Activity</CardTitle>
+                <CardDescription>Consolidated task completions across all projects over the last year.</CardDescription>
+              </div>
+              <Activity className="h-4 w-4 text-slate-400" />
             </div>
-            <Activity className="h-4 w-4 text-slate-400" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ProjectHeatmap stats={data?.global_activity || []} />
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <ProjectHeatmap stats={data?.global_activity || []} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
