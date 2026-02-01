@@ -58,6 +58,7 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
   });
   const [activeSubtaskMenu, setActiveSubtaskMenu] = useState<string | null>(null);
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+  const [draftSubtask, setDraftSubtask] = useState<Subtask | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
   const { data: users } = useQuery({
@@ -78,6 +79,11 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
   });
 
   const editingSubtask = subtasks?.find(st => st.id === editingSubtaskId) || null;
+
+  const handleOpenEdit = (subtask: Subtask) => {
+    setEditingSubtaskId(subtask.id);
+    setDraftSubtask(subtask);
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof newSubtask) => {
@@ -204,7 +210,7 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                       "text-sm cursor-pointer hover:underline",
                       subtask.status === "Done" && "line-through text-slate-400"
                     )}
-                    onClick={() => setEditingSubtaskId(subtask.id)}
+                    onClick={() => handleOpenEdit(subtask)}
                   >
                     {subtask.title}
                   </span>
@@ -400,7 +406,7 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
       )}
 
       {/* Quick Edit Subtask */}
-      {editingSubtask && (
+      {editingSubtask && draftSubtask && (
         <div className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95 duration-200">
             <h3 className="font-bold text-lg">Edit Subtask</h3>
@@ -408,16 +414,16 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
               <div className="space-y-1">
                 <Label className="text-[10px] uppercase font-bold text-slate-400">Title</Label>
                 <Input 
-                  value={editingSubtask.title}
-                  onChange={(e) => setEditingSubtask({...editingSubtask, title: e.target.value})}
+                  value={draftSubtask.title}
+                  onChange={(e) => setDraftSubtask({...draftSubtask, title: e.target.value})}
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-[10px] uppercase font-bold text-slate-400">Description</Label>
                 <textarea 
                   className="w-full min-h-[80px] rounded-md border p-2 text-sm"
-                  value={editingSubtask.description || ""}
-                  onChange={(e) => setEditingSubtask({...editingSubtask, description: e.target.value})}
+                  value={draftSubtask.description || ""}
+                  onChange={(e) => setDraftSubtask({...draftSubtask, description: e.target.value})}
                   placeholder="Subtask description..."
                 />
               </div>
@@ -426,8 +432,8 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                   <Label className="text-[10px] uppercase font-bold text-slate-400">Priority</Label>
                   <select 
                     className="w-full h-9 rounded-md border text-sm px-2"
-                    value={editingSubtask.priority}
-                    onChange={(e) => setEditingSubtask({...editingSubtask, priority: e.target.value})}
+                    value={draftSubtask.priority}
+                    onChange={(e) => setDraftSubtask({...draftSubtask, priority: e.target.value})}
                   >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
@@ -439,8 +445,8 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                   <Label className="text-[10px] uppercase font-bold text-slate-400">Status</Label>
                   <select 
                     className="w-full h-9 rounded-md border text-sm px-2"
-                    value={editingSubtask.status}
-                    onChange={(e) => setEditingSubtask({...editingSubtask, status: e.target.value})}
+                    value={draftSubtask.status}
+                    onChange={(e) => setDraftSubtask({...draftSubtask, status: e.target.value})}
                   >
                     <option value="Backlog">Backlog</option>
                     <option value="Todo">Todo</option>
@@ -455,16 +461,16 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                   <Label className="text-[10px] uppercase font-bold text-slate-400">Start Date</Label>
                   <Input 
                     type="date"
-                    value={editingSubtask.start_date ? editingSubtask.start_date.split('T')[0] : ""}
-                    onChange={(e) => setEditingSubtask({...editingSubtask, start_date: e.target.value})}
+                    value={draftSubtask.start_date ? draftSubtask.start_date.split('T')[0] : ""}
+                    onChange={(e) => setDraftSubtask({...draftSubtask, start_date: e.target.value})}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px] uppercase font-bold text-slate-400">Due Date</Label>
                   <Input 
                     type="date"
-                    value={editingSubtask.due_date ? editingSubtask.due_date.split('T')[0] : ""}
-                    onChange={(e) => setEditingSubtask({...editingSubtask, due_date: e.target.value})}
+                    value={draftSubtask.due_date ? draftSubtask.due_date.split('T')[0] : ""}
+                    onChange={(e) => setDraftSubtask({...draftSubtask, due_date: e.target.value})}
                   />
                 </div>
               </div>
@@ -473,16 +479,16 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                   <Label className="text-[10px] uppercase font-bold text-slate-400">Topic</Label>
                   <Input 
                     placeholder="e.g. Frontend"
-                    value={editingSubtask.topic || ""}
-                    onChange={(e) => setEditingSubtask({...editingSubtask, topic: e.target.value})}
+                    value={draftSubtask.topic || ""}
+                    onChange={(e) => setDraftSubtask({...draftSubtask, topic: e.target.value})}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px] uppercase font-bold text-slate-400">Type</Label>
                   <Input 
                     placeholder="e.g. Fix"
-                    value={editingSubtask.type || ""}
-                    onChange={(e) => setEditingSubtask({...editingSubtask, type: e.target.value})}
+                    value={draftSubtask.type || ""}
+                    onChange={(e) => setDraftSubtask({...draftSubtask, type: e.target.value})}
                   />
                 </div>
               </div>
@@ -495,22 +501,26 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
             />
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setEditingSubtaskId(null)}>Cancel</Button>
+              <Button variant="outline" onClick={() => {
+                setEditingSubtaskId(null);
+                setDraftSubtask(null);
+              }}>Cancel</Button>
               <Button onClick={() => {
                 updateMutation.mutate({ 
                   subtaskId: editingSubtask.id, 
                   data: {
-                    title: editingSubtask.title,
-                    description: editingSubtask.description,
-                    status: editingSubtask.status,
-                    priority: editingSubtask.priority,
-                    start_date: editingSubtask.start_date ? new Date(editingSubtask.start_date).toISOString() : null,
-                    due_date: editingSubtask.due_date ? new Date(editingSubtask.due_date).toISOString() : null,
-                    topic: editingSubtask.topic,
-                    type: editingSubtask.type,
+                    title: draftSubtask.title,
+                    description: draftSubtask.description,
+                    status: draftSubtask.status,
+                    priority: draftSubtask.priority,
+                    start_date: draftSubtask.start_date ? new Date(draftSubtask.start_date).toISOString() : null,
+                    due_date: draftSubtask.due_date ? new Date(draftSubtask.due_date).toISOString() : null,
+                    topic: draftSubtask.topic,
+                    type: draftSubtask.type,
                   } 
                 });
                 setEditingSubtaskId(null);
+                setDraftSubtask(null);
               }} disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
@@ -518,6 +528,9 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
           </div>
         </div>
       )}
+    </div>
+  );
+}
     </div>
   );
 }
