@@ -83,7 +83,7 @@ export default function ProjectDetailPage() {
   const queryClient = useQueryClient();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isProjectEditDialogOpen, setIsProjectEditDialogOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [initialStatus, setInitialStatus] = useState<string>("Todo");
 
   const { data: project, isLoading: isProjectLoading } = useQuery({
@@ -101,6 +101,8 @@ export default function ProjectDetailPage() {
       return response.data as Task[];
     },
   });
+
+  const editingTask = tasks?.find(t => t.id === editingTaskId) || null;
 
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ['project-stats', id],
@@ -146,7 +148,7 @@ export default function ProjectDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['project', id] });
       queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
       setIsTaskDialogOpen(false);
-      setEditingTask(null);
+      setEditingTaskId(null);
     },
   });
 
@@ -166,19 +168,19 @@ export default function ProjectDetailPage() {
   };
 
   const handleAddTask = (status?: string) => {
-    setEditingTask(null);
+    setEditingTaskId(null);
     setInitialStatus(status || "Todo");
     setIsTaskDialogOpen(true);
   };
 
   const handleTaskClick = (task: Task) => {
-    setEditingTask(task);
+    setEditingTaskId(task.id);
     setIsTaskDialogOpen(true);
   };
 
   const handleTaskSubmit = (data: TaskFormValues) => {
-    if (editingTask) {
-      updateTaskMutation.mutate({ taskId: editingTask.id, data });
+    if (editingTaskId) {
+      updateTaskMutation.mutate({ taskId: editingTaskId, data });
     } else {
       createTaskMutation.mutate(data);
     }

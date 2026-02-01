@@ -57,7 +57,7 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
     assignee_ids: [] as string[]
   });
   const [activeSubtaskMenu, setActiveSubtaskMenu] = useState<string | null>(null);
-  const [editingSubtask, setEditingSubtask] = useState<Subtask | null>(null);
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
   const { data: users } = useQuery({
@@ -76,6 +76,8 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
     },
     enabled: !!taskId,
   });
+
+  const editingSubtask = subtasks?.find(st => st.id === editingSubtaskId) || null;
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof newSubtask) => {
@@ -108,7 +110,8 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      setEditingSubtask(null);
+      // Keep editingSubtaskId set if we want to keep dialog open after a simple field update,
+      // but if the user finishes editing (e.g. clicks save), we clear it elsewhere.
     },
   });
 
@@ -201,7 +204,7 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                       "text-sm cursor-pointer hover:underline",
                       subtask.status === "Done" && "line-through text-slate-400"
                     )}
-                    onClick={() => setEditingSubtask(subtask)}
+                    onClick={() => setEditingSubtaskId(subtask.id)}
                   >
                     {subtask.title}
                   </span>
@@ -492,20 +495,23 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
             />
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setEditingSubtask(null)}>Cancel</Button>
-              <Button onClick={() => updateMutation.mutate({ 
-                subtaskId: editingSubtask.id, 
-                data: {
-                  title: editingSubtask.title,
-                  description: editingSubtask.description,
-                  status: editingSubtask.status,
-                  priority: editingSubtask.priority,
-                  start_date: editingSubtask.start_date ? new Date(editingSubtask.start_date).toISOString() : null,
-                  due_date: editingSubtask.due_date ? new Date(editingSubtask.due_date).toISOString() : null,
-                  topic: editingSubtask.topic,
-                  type: editingSubtask.type,
-                } 
-              })} disabled={updateMutation.isPending}>
+              <Button variant="outline" onClick={() => setEditingSubtaskId(null)}>Cancel</Button>
+              <Button onClick={() => {
+                updateMutation.mutate({ 
+                  subtaskId: editingSubtask.id, 
+                  data: {
+                    title: editingSubtask.title,
+                    description: editingSubtask.description,
+                    status: editingSubtask.status,
+                    priority: editingSubtask.priority,
+                    start_date: editingSubtask.start_date ? new Date(editingSubtask.start_date).toISOString() : null,
+                    due_date: editingSubtask.due_date ? new Date(editingSubtask.due_date).toISOString() : null,
+                    topic: editingSubtask.topic,
+                    type: editingSubtask.type,
+                  } 
+                });
+                setEditingSubtaskId(null);
+              }} disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>
