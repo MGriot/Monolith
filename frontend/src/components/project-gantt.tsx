@@ -129,6 +129,18 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
     }
   }, [viewWindow, zoomLevel]);
 
+  const minorTicks = useMemo(() => {
+    if (!viewWindow || zoomLevel === 'day') return [];
+    const interval = { start: viewWindow.start, end: viewWindow.end };
+    
+    switch (zoomLevel) {
+      case 'week': return eachDayOfInterval(interval);
+      case 'month': return eachWeekOfInterval(interval);
+      case 'year': return eachMonthOfInterval(interval);
+      default: return [];
+    }
+  }, [viewWindow, zoomLevel]);
+
   if (!viewWindow || ganttItems.length === 0) {
     return (
       <div className="flex flex-col h-full items-center justify-center p-8 space-y-4 text-center">
@@ -141,15 +153,22 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
   }
 
   const totalDays = differenceInDays(viewWindow.end, viewWindow.start) + 1;
-  const containerWidth = totalDays * ZOOM_CONFIG[zoomLevel].scale;
+  const dayWidth = ZOOM_CONFIG[zoomLevel].scale;
+  const containerWidth = totalDays * dayWidth;
 
-  const getPosition = (dateStr: string) => {
+  const getPositionPx = (dateStr: string) => {
+    const date = parseISO(dateStr);
+    const daysFromStart = differenceInDays(date, viewWindow.start);
+    return daysFromStart * dayWidth;
+  };
+
+  const getPositionPercent = (dateStr: string) => {
     const date = parseISO(dateStr);
     const daysFromStart = differenceInDays(date, viewWindow.start);
     return (daysFromStart / totalDays) * 100;
   };
 
-  const getWidth = (startStr: string, endStr: string) => {
+  const getWidthPercent = (startStr: string, endStr: string) => {
     const start = parseISO(startStr);
     const end = parseISO(endStr);
     const duration = differenceInDays(end, start) + 1;
@@ -200,7 +219,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
     if (direction === 'out' && currentIndex < levels.length - 1) setZoomLevel(levels[currentIndex + 1]);
   };
 
-  const todayPos = getPosition(new Date().toISOString());
+  const todayPos = getPositionPercent(new Date().toISOString());
   const rowHeight = 56;
   const svgHeight = ganttItems.length * rowHeight;
 
@@ -250,8 +269,21 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                 Task
                 </div>
                 <div className="flex-1 relative h-10 flex items-center">
+                {/* Minor Ticks */}
+                {minorTicks?.map((tick) => {
+                    const left = getPositionPercent(tick.toISOString());
+                    return (
+                        <div 
+                            key={`minor-${tick.toISOString()}`} 
+                            className="absolute border-l border-slate-200/50 h-2 bottom-0"
+                            style={{ left: `${left}%` }}
+                        />
+                    );
+                })}
+                
+                {/* Major Ticks */}
                 {timeTicks?.map((tick) => {
-                    const left = (differenceInDays(tick, viewWindow.start) / totalDays) * 100;
+                    const left = getPositionPercent(tick.toISOString());
                     let label = format(tick, 'MMM');
                     if (zoomLevel === 'day') label = format(tick, 'dd MMM');
                     if (zoomLevel === 'week') label = `W${format(tick, 'ww')}`;
@@ -276,7 +308,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                 <div className="absolute inset-0 left-64 pointer-events-none z-10 overflow-hidden">
                     <svg 
                         className="w-full h-full" 
-                        viewBox={`0 0 1000 ${svgHeight}`}
+                        viewBox={`0 0 ${containerWidth} ${svgHeight}`}
                         preserveAspectRatio="none"
                     >
                         <defs>
@@ -300,9 +332,9 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                             const subtaskItem = ganttItems.find(i => i.id === firstSubtask.id);
                             if (!subtaskItem) return null;
 
-                            const startX = getPosition(task.start_date) * 10;
+                            const startX = getPositionPx(task.start_date);
                             const startY = parentItem.rowIndex * rowHeight + (rowHeight / 2);
-                            const endX = getPosition(firstSubtask.start_date!) * 10;
+                            const endX = getPositionPx(firstSubtask.start_date!);
                             const endY = subtaskItem.rowIndex * rowHeight + (rowHeight / 2);
 
                             const color = getPriorityColorHex(task);
@@ -329,9 +361,9 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 const blocker = ganttItems.find(i => i.id === blockerId);
                                 if (!blocker) return null;
 
-                                const startX = getPosition(blocker.due_date!) * 10;
+                                const startX = getPositionPx(blocker.due_date!);
                                 const startY = blocker.rowIndex * rowHeight + (rowHeight / 2);
-                                const endX = getPosition(item.start_date!) * 10;
+                                const endX = getPositionPx(item.start_date!);
                                 const endY = item.rowIndex * rowHeight + (rowHeight / 2);
 
                                 const yMid = startY + (endY - startY) / 2;
@@ -389,7 +421,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                     <div className="flex-1 relative h-14 py-4">
                         {/* Grid lines */}
                         {timeTicks?.map((tick) => {
-                        const left = (differenceInDays(tick, viewWindow.start) / totalDays) * 100;
+                        const left = getPositionPercent(tick.toISOString());
                         return (
                             <div 
                             key={tick.toISOString()} 
@@ -407,7 +439,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                     getBarColor(item)
                                 )}
                                 style={{ 
-                                    left: `calc(${getPosition(item.start_date!)}% - 8px)`,
+                                    left: `calc(${getPositionPercent(item.start_date!)}% - 8px)`,
                                     top: '20px'
                                 }}
                                 title={`${item.title} (Milestone)`}
@@ -420,8 +452,8 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                     isSub ? "opacity-80 h-4 mt-1" : "opacity-100"
                                 )}
                                 style={{ 
-                                    left: `${getPosition(item.start_date!)}%`, 
-                                    width: `${getWidth(item.start_date!, item.due_date!)}%`,
+                                    left: `${getPositionPercent(item.start_date!)}%`, 
+                                    width: `${getWidthPercent(item.start_date!, item.due_date!)}%`,
                                     top: isSub ? '20px' : '16px'
                                 }}
                             >
@@ -432,7 +464,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 />
                                 
                                 <span className="text-[9px] font-black text-white truncate drop-shadow-sm z-10">
-                                    {Math.round(getWidth(item.start_date!, item.due_date!) / 100 * totalDays)}d
+                                    {Math.round(getWidthPercent(item.start_date!, item.due_date!) / 100 * totalDays)}d
                                 </span>
                             </div>
                         )}
