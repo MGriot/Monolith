@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, ForeignKey, Table, Enum as SAEnum
+from sqlalchemy import Column, String, DateTime, ForeignKey, Table, Enum as SAEnum, Integer
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 from app.db.session import Base
@@ -47,6 +47,7 @@ class Task(Base):
     
     # Unified dependency storage
     blocked_by_ids = Column(ARRAY(UUID(as_uuid=True)), default=[])
+    sort_index = Column(Integer, default=0)
     
     # Relationships
     project = relationship("Project", back_populates="tasks")
@@ -80,6 +81,7 @@ class Subtask(Base):
     
     # Unified dependency storage
     blocked_by_ids = Column(ARRAY(UUID(as_uuid=True)), default=[])
+    sort_index = Column(Integer, default=0)
     
     # Relationships
     task = relationship("Task", back_populates="subtasks", foreign_keys=[task_id])

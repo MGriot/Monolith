@@ -12,7 +12,9 @@ import {
 import { 
   ChevronDown,
   ChevronRight,
-  User as UserIcon
+  User as UserIcon,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +27,7 @@ interface Subtask {
   due_date?: string;
   topic?: string;
   type?: string;
+  sort_index?: number;
 }
 
 interface Task {
@@ -41,14 +44,17 @@ interface Task {
   attachments?: string[];
   assignees?: { id: string; full_name: string; email: string }[];
   subtasks?: Subtask[];
+  sort_index?: number;
 }
 
 interface ProjectTaskListProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
+  onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
+  onReorderSubtask?: (subtaskId: string, direction: 'up' | 'down') => void;
 }
 
-export default function ProjectTaskList({ tasks, onTaskClick }: ProjectTaskListProps) {
+export default function ProjectTaskList({ tasks, onTaskClick, onReorderTask, onReorderSubtask }: ProjectTaskListProps) {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
   const toggleTaskExpansion = (taskId: string) => {
@@ -72,6 +78,7 @@ export default function ProjectTaskList({ tasks, onTaskClick }: ProjectTaskListP
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Status</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Priority</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Assignees</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center w-20">Order</TableHead>
             <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-slate-500">Due Date</TableHead>
           </TableRow>
         </TableHeader>
@@ -125,6 +132,30 @@ export default function ProjectTaskList({ tasks, onTaskClick }: ProjectTaskListP
                       ))}
                     </div>
                   </TableCell>
+                  <TableCell className="py-2">
+                    <div className="flex items-center justify-center gap-1">
+                      {onReorderTask && (
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-slate-400 hover:text-primary"
+                            onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'up'); }}
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-slate-400 hover:text-primary"
+                            onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'down'); }}
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right text-[11px] font-bold text-slate-500 py-2">
                     {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
                   </TableCell>
@@ -147,7 +178,31 @@ export default function ProjectTaskList({ tasks, onTaskClick }: ProjectTaskListP
                         </Badge>
                       </div>
                     </TableCell>
-                    <TableCell colSpan={2} className="py-2"></TableCell>
+                    <TableCell className="py-2">
+                      <div className="flex items-center justify-center gap-1">
+                        {onReorderSubtask && (
+                          <>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-5 w-5 text-slate-300 hover:text-primary"
+                              onClick={(e) => { e.stopPropagation(); onReorderSubtask(st.id, 'up'); }}
+                            >
+                              <ArrowUp className="w-3 h-3" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-5 w-5 text-slate-300 hover:text-primary"
+                              onClick={(e) => { e.stopPropagation(); onReorderSubtask(st.id, 'down'); }}
+                            >
+                              <ArrowDown className="w-3 h-3" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell colSpan={1} className="py-2"></TableCell>
                     <TableCell className="text-right text-[10px] text-slate-400 font-medium py-2">
                       {st.due_date ? new Date(st.due_date).toLocaleDateString() : '-'}
                     </TableCell>

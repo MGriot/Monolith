@@ -9,7 +9,9 @@ import {
   Trash2, 
   Loader2,
   ChevronRight,
-  User as UserIcon
+  User as UserIcon,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -160,6 +162,22 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
     }
   };
 
+  const handleReorder = (subtaskId: string, direction: 'up' | 'down') => {
+    if (!subtasks) return;
+    const index = subtasks.findIndex(st => st.id === subtaskId);
+    if (index === -1) return;
+
+    if (direction === 'up' && index > 0) {
+      const prevSt = subtasks[index - 1];
+      const newIndex = (prevSt.sort_index || 0) - 1;
+      updateMutation.mutate({ subtaskId, data: { sort_index: newIndex } });
+    } else if (direction === 'down' && index < subtasks.length - 1) {
+      const nextSt = subtasks[index + 1];
+      const newIndex = (nextSt.sort_index || 0) + 1;
+      updateMutation.mutate({ subtaskId, data: { sort_index: newIndex } });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-4">
@@ -240,6 +258,25 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                   </div>
                 </div>
                 
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 text-slate-400"
+                    onClick={() => handleReorder(subtask.id, 'up')}
+                  >
+                    <ArrowUp className="w-3 h-3" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 text-slate-400"
+                    onClick={() => handleReorder(subtask.id, 'down')}
+                  >
+                    <ArrowDown className="w-3 h-3" />
+                  </Button>
+                </div>
+
                 <div className="flex -space-x-1 ml-2">
                   {subtask.assignees?.map(u => (
                     <div 
