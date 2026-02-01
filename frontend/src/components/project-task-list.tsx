@@ -17,7 +17,7 @@ import {
   ArrowDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task, Subtask } from '@/types';
+import type { Task, Subtask } from '@/types';
 
 interface ProjectTaskListProps {
   tasks: Task[];

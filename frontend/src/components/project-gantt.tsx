@@ -19,7 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut } from 'lucide-react';
-import { Task, Subtask } from '@/types';
+import type { Task, Subtask } from '@/types';
 
 interface ProjectGanttProps {
   tasks: Task[];
