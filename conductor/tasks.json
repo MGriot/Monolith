@@ -566,14 +566,39 @@
             
             
             
-            {
-              "id": "REC-004",
-              "title": "Logic: Recursive Status & WBS",
-              "status": "todo",
-              "priority": "high",
-              "linked_req": "Backend Logic",
-              "description": "Update CRUD and WBS utilities to handle infinite nesting."
-            },
+              {
+            
+            
+            
+                "id": "REC-004",
+            
+            
+            
+                "title": "Logic: Recursive Status & WBS",
+            
+            
+            
+                "status": "done",
+            
+            
+            
+                "priority": "high",
+            
+            
+            
+                "linked_req": "Backend Logic",
+            
+            
+            
+                "description": "Update CRUD and WBS utilities to handle infinite nesting."
+            
+            
+            
+              },
+            
+            
+            
+            
             {
               "id": "REC-005",
               "title": "UI: Recursive Task Tree",

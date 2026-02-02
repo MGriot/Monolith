@@ -6,13 +6,16 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.crud.base import CRUDBase
-from app.models.task import Task, Subtask
-from app.schemas.task import TaskCreate, TaskUpdate, SubtaskCreate, SubtaskUpdate
+from app.models.task import Task
+from app.schemas.task import TaskCreate, TaskUpdate
 from app.core.enums import Status
 from app.core.utils import clean_dict_datetimes
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[Task]:
+        # Using a recursive loader or just loading immediate children
+        # For full tree, we might need a recursive CTE or just load levels as needed.
+        # But for 'get' by ID, we usually want the task and its immediate subtasks.
         result = await db.execute(
             select(self.model)
             .filter(self.model.id == id)
@@ -20,7 +23,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 selectinload(Task.assignees),
                 selectinload(Task.blocked_by),
                 selectinload(Task.blocking),
-                selectinload(Task.subtasks).selectinload(Subtask.assignees)
+                selectinload(Task.subtasks).selectinload(Task.assignees)
             )
         )
         obj = result.scalars().first()
@@ -29,17 +32,24 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return obj
 
     async def get_multi_by_project(
-        self, db: AsyncSession, *, project_id: UUID, skip: int = 0, limit: int = 100
+        self, db: AsyncSession, *, project_id: UUID, skip: int = 0, limit: int = 100, parent_id: Optional[UUID] = None
     ) -> List[Task]:
+        query = select(self.model).filter(self.model.project_id == project_id)
+        
+        if parent_id:
+            query = query.filter(self.model.parent_id == parent_id)
+        else:
+            # Only top-level tasks by default
+            query = query.filter(self.model.parent_id == None)
+            
         result = await db.execute(
-            select(self.model)
-            .filter(self.model.project_id == project_id)
+            query
             .order_by(self.model.sort_index.asc(), self.model.created_at.asc())
             .options(
                 selectinload(Task.assignees),
                 selectinload(Task.blocked_by),
                 selectinload(Task.blocking),
-                selectinload(Task.subtasks).selectinload(Subtask.assignees)
+                selectinload(Task.subtasks).selectinload(Task.assignees) # Only one level deep for multi
             )
             .offset(skip)
             .limit(limit)
@@ -53,7 +63,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     async def update_project_progress(self, db: AsyncSession, project_id: UUID):
         from app.crud.crud_project import project as project_crud
         
-        tasks = await self.get_multi_by_project(db, project_id=project_id, limit=1000)
+        # Get only top-level tasks for the project to calculate overall progress
+        tasks = await self.get_multi_by_project(db, project_id=project_id, limit=1000, parent_id=None)
         if not tasks:
             return
 
@@ -72,6 +83,32 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if abs(project_obj.progress_percent - progress) > 0.01:
                 await project_crud.update(db, db_obj=project_obj, obj_in={"progress_percent": progress})
 
+    async def update_parent_status_recursive(self, db: AsyncSession, parent_id: UUID):
+        """
+        Updates the status of a parent task based on its children's status.
+        Bubbles up to the root.
+        """
+        # Load parent with its children
+        parent = await self.get(db, id=parent_id)
+        if not parent or not parent.subtasks:
+            return
+
+        total = len(parent.subtasks)
+        done_count = sum(1 for s in parent.subtasks if s.status == Status.DONE)
+        in_progress_count = sum(1 for s in parent.subtasks if s.status in [Status.IN_PROGRESS, Status.REVIEW])
+        
+        new_status = Status.TODO
+        if done_count == total:
+            new_status = Status.DONE
+        elif in_progress_count > 0 or done_count > 0:
+            new_status = Status.IN_PROGRESS
+        
+        if parent.status != new_status:
+            # Use direct update to avoid triggering another loop if not needed, 
+            # but we NEED to bubble up, so we call update which calls this again.
+            await self.update(db, db_obj=parent, obj_in={"status": new_status})
+            # The .update() call will handle the next level up if parent.parent_id exists.
+
     async def is_blocked_by_recursive(self, db: AsyncSession, item_id: UUID, blocker_candidate_id: UUID, visited: set) -> bool:
         if item_id == blocker_candidate_id:
             return True
@@ -87,20 +124,18 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if await self.is_blocked_by_recursive(db, pred_id, blocker_candidate_id, visited):
                 return True
                 
-        # Fallback to old blocked_by_ids for items not yet migrated or simple subtasks
-        for model in [Task, Subtask]:
-            res = await db.execute(select(model.blocked_by_ids).filter(model.id == item_id))
-            row = res.first()
-            if row and row[0]:
-                for b_id in row[0]:
-                    if await self.is_blocked_by_recursive(db, b_id, blocker_candidate_id, visited):
-                        return True
+        # Fallback to old blocked_by_ids
+        res = await db.execute(select(Task.blocked_by_ids).filter(Task.id == item_id))
+        row = res.first()
+        if row and row[0]:
+            for b_id in row[0]:
+                if await self.is_blocked_by_recursive(db, b_id, blocker_candidate_id, visited):
+                    return True
         return False
 
     async def check_for_active_blockers(self, db: AsyncSession, item_id: UUID) -> List[str]:
         active_blocker_titles = []
         
-        # Check new Dependency table
         from app.models.dependency import Dependency
         res = await db.execute(
             select(Task)
@@ -112,26 +147,16 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if t.status != Status.DONE:
                 active_blocker_titles.append(t.title)
         
-        # Also check Subtasks as blockers (using old blocked_by_ids for now if they are not in Dependency table)
-        # Note: Dependency table currently links Task -> Task. 
-        # If we want Subtask -> Subtask dependencies in the table, we might need a polymorphic Dependency or another table.
-        # For now, let's stick to the current Task-focused dependency table but keep the subtask logic.
-        
+        # Check legacy field
         res = await db.execute(select(Task.blocked_by_ids).filter(Task.id == item_id))
         row = res.first()
-        if not row:
-            res = await db.execute(select(Subtask.blocked_by_ids).filter(Subtask.id == item_id))
-            row = res.first()
-            
         if row and row[0]:
             for b_id in row[0]:
-                for model in [Task, Subtask]:
-                    res = await db.execute(select(model).filter(model.id == b_id))
-                    obj = res.scalars().first()
-                    if obj and obj.status != Status.DONE:
-                        if obj.title not in active_blocker_titles:
-                            active_blocker_titles.append(obj.title)
-                        break
+                res = await db.execute(select(Task).filter(Task.id == b_id))
+                obj = res.scalars().first()
+                if obj and obj.status != Status.DONE:
+                    if obj.title not in active_blocker_titles:
+                        active_blocker_titles.append(obj.title)
                         
         return active_blocker_titles
 
@@ -140,11 +165,12 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         assignee_ids = obj_data.pop("assignee_ids", [])
         subtasks_data = obj_data.pop("subtasks", [])
         
-        # Calculate next sort_index if not provided
+        # Calculate next sort_index
         if "sort_index" not in obj_data:
             result = await db.execute(
                 select(self.model.sort_index)
                 .filter(self.model.project_id == obj_data["project_id"])
+                .filter(self.model.parent_id == obj_data.get("parent_id"))
                 .order_by(self.model.sort_index.desc())
                 .limit(1)
             )
@@ -156,52 +182,58 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         if assignee_ids:
             from app.models.user import User
             res = await db.execute(select(User).filter(User.id.in_(assignee_ids)))
-            users = res.scalars().all()
-            db_obj.assignees = users
+            db_obj.assignees = res.scalars().all()
 
         db.add(db_obj)
         await db.commit()
         await db.refresh(db_obj)
         
+        # Handle recursive subtasks
         if subtasks_data:
-            from app.schemas.task import SubtaskCreate
             for st_data in subtasks_data:
-                if "owner_id" not in st_data:
-                    st_data["owner_id"] = db_obj.owner_id
-                st_in = SubtaskCreate(
-                    task_id=db_obj.id,
+                # Recursively call create? 
+                # Better to use a simpler loop for TaskShortCreate
+                st_create = TaskCreate(
+                    project_id=db_obj.project_id,
+                    parent_id=db_obj.id,
+                    owner_id=db_obj.owner_id,
                     **st_data
                 )
-                await subtask.create(db, obj_in=st_in)
+                await self.create(db, obj_in=st_create)
         
-        await self.update_project_progress(db, db_obj.project_id)
+        if db_obj.parent_id:
+            await self.update_parent_status_recursive(db, db_obj.parent_id)
+        else:
+            await self.update_project_progress(db, db_obj.project_id)
+            
         if assignee_ids:
             await self.notify_assignees(db, db_obj.id, assignee_ids, db_obj.title)
             
         return db_obj
 
-    async def notify_assignees(self, db: AsyncSession, item_id: UUID, user_ids: List[UUID], item_title: str, is_subtask: bool = False):
+    async def notify_assignees(self, db: AsyncSession, item_id: UUID, user_ids: List[UUID], item_title: str):
         from app.crud.crud_notification import notification as notification_crud
         from app.schemas.notification import NotificationCreate
-        
-        link = f"/tasks/{item_id}" if not is_subtask else f"/subtasks/{item_id}"
-        item_type = "Task" if not is_subtask else "Subtask"
         
         for user_id in user_ids:
             await notification_crud.create(
                 db,
                 obj_in=NotificationCreate(
                     user_id=user_id,
-                    title=f"New Assignment: {item_type}",
-                    message=f"You have been assigned to {item_type.lower()} '{item_title}'.",
+                    title="New Assignment",
+                    message=f"You have been assigned to task '{item_title}'.",
                     type="assignment",
-                    link=link
+                    link=f"/tasks/{item_id}"
                 )
             )
 
     async def update(
         self, db: AsyncSession, *, db_obj: Task, obj_in: Union[TaskUpdate, Dict[str, Any]]
     ) -> Task:
+        # Capture IDs early to avoid lazy-loading issues during async operations
+        project_id = db_obj.project_id
+        parent_id = db_obj.parent_id
+        
         if isinstance(obj_in, TaskUpdate):
             obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True))
         else:
@@ -237,125 +269,30 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 await self.notify_assignees(db, db_obj.id, added_ids, db_obj.title)
 
         db_obj = await super().update(db, db_obj=db_obj, obj_in=obj_data)
-        await self.update_project_progress(db, db_obj.project_id)
+        
+        if parent_id:
+            await self.update_parent_status_recursive(db, parent_id)
+        
+        await self.update_project_progress(db, project_id)
         return db_obj
 
     async def remove(self, db: AsyncSession, *, id: UUID) -> Task:
+        # Load object first to get parent/project info
+        db_obj = await self.get(db, id=id)
+        if not db_obj:
+            return None
+            
+        parent_id = db_obj.parent_id
+        project_id = db_obj.project_id
+        
         obj = await super().remove(db, id=id)
-        if obj:
-            await self.update_project_progress(db, obj.project_id)
-        return obj
-
-class CRUDSubtask(CRUDBase[Subtask, SubtaskCreate, SubtaskUpdate]):
-    async def get_multi_by_task(
-        self, db: AsyncSession, *, task_id: UUID, skip: int = 0, limit: int = 100
-    ) -> List[Subtask]:
-        result = await db.execute(
-            select(self.model)
-            .filter(self.model.task_id == task_id)
-            .order_by(self.model.sort_index.asc(), self.model.created_at.asc())
-            .options(selectinload(Subtask.assignees))
-            .offset(skip)
-            .limit(limit)
-        )
-        return result.scalars().all()
-
-    async def update_parent_task_status(self, db: AsyncSession, task_id: UUID):
-        subtasks = await self.get_multi_by_task(db, task_id=task_id, limit=1000)
-        if not subtasks:
-            return
-
-        total = len(subtasks)
-        done_count = sum(1 for s in subtasks if s.status == Status.DONE)
-        in_progress_count = sum(1 for s in subtasks if s.status in [Status.IN_PROGRESS, Status.REVIEW])
         
-        new_status = Status.TODO
-        if done_count == total:
-            new_status = Status.DONE
-        elif in_progress_count > 0 or done_count > 0:
-            new_status = Status.IN_PROGRESS
+        if parent_id:
+            await self.update_parent_status_recursive(db, parent_id)
         
-        task_obj = await task.get(db, id=task_id)
-        if task_obj and task_obj.status != new_status:
-            await task.update(db, db_obj=task_obj, obj_in={"status": new_status})
-
-    async def create(self, db: AsyncSession, *, obj_in: SubtaskCreate) -> Subtask:
-        obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True))
-        assignee_ids = obj_data.pop("assignee_ids", [])
-        
-        # Calculate next sort_index if not provided
-        if "sort_index" not in obj_data:
-            result = await db.execute(
-                select(self.model.sort_index)
-                .filter(self.model.task_id == obj_data["task_id"])
-                .order_by(self.model.sort_index.desc())
-                .limit(1)
-            )
-            max_idx = result.scalar()
-            obj_data["sort_index"] = (max_idx or 0) + 10
-
-        db_obj = self.model(**obj_data)
-        
-        if assignee_ids:
-            from app.models.user import User
-            res = await db.execute(select(User).filter(User.id.in_(assignee_ids)))
-            db_obj.assignees = res.scalars().all()
-
-        db.add(db_obj)
-        await db.commit()
-        await db.refresh(db_obj)
-        
-        await self.update_parent_task_status(db, db_obj.task_id)
-        if assignee_ids:
-            await task.notify_assignees(db, db_obj.id, assignee_ids, db_obj.title, is_subtask=True)
-            
-        return db_obj
-
-    async def update(
-        self, db: AsyncSession, *, db_obj: Subtask, obj_in: Union[SubtaskUpdate, Dict[str, Any]]
-    ) -> Subtask:
-        if isinstance(obj_in, SubtaskUpdate):
-            obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True))
-        else:
-            obj_data = clean_dict_datetimes(obj_in)
-        
-        if obj_data.get("status") == Status.DONE:
-            active_blockers = await task.check_for_active_blockers(db, db_obj.id)
-            if active_blockers:
-                raise ValueError(f"Subtask is blocked by unfinished items: {', '.join(active_blockers)}")
-            if db_obj.status != Status.DONE:
-                obj_data["completed_at"] = datetime.utcnow()
-        elif "status" in obj_data and obj_data["status"] != Status.DONE:
-            obj_data["completed_at"] = None
-
-        if "blocked_by_ids" in obj_data:
-            new_ids = obj_data["blocked_by_ids"]
-            for b_id in new_ids:
-                if b_id == db_obj.id:
-                    raise ValueError("Item cannot block itself")
-                if await task.is_blocked_by_recursive(db, b_id, db_obj.id, set()):
-                    raise ValueError(f"Circular dependency detected with item ID: {b_id}")
-
-        if "assignee_ids" in obj_data:
-            new_ids = obj_data.pop("assignee_ids")
-            current_ids = [u.id for u in db_obj.assignees]
-            added_ids = [uid for uid in new_ids if uid not in current_ids]
-            
-            from app.models.user import User
-            res = await db.execute(select(User).filter(User.id.in_(new_ids)))
-            db_obj.assignees = res.scalars().all()
-            
-            if added_ids:
-                await task.notify_assignees(db, db_obj.id, added_ids, db_obj.title, is_subtask=True)
-
-        db_obj = await super().update(db, db_obj=db_obj, obj_in=obj_data)
-        await self.update_parent_task_status(db, db_obj.task_id)
-        return db_obj
-
-    async def remove(self, db: AsyncSession, *, id: UUID) -> Subtask:
-        obj = await super().remove(db, id=id)
-        await self.update_parent_task_status(db, obj.task_id)
+        await self.update_project_progress(db, project_id)
         return obj
 
 task = CRUDTask(Task)
-subtask = CRUDSubtask(Subtask)
+# Point subtask to task for backward compatibility during migration
+subtask = task

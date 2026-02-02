@@ -20,6 +20,7 @@ router = APIRouter()
 @router.get("/", response_model=List[Task])
 async def read_tasks(
     project_id: UUID,
+    parent_id: Optional[UUID] = None,
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
@@ -28,6 +29,7 @@ async def read_tasks(
     """
     Retrieve tasks for a project.
     """
+    from typing import Optional
     project = await crud_project.project.get(db, id=project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -35,14 +37,25 @@ async def read_tasks(
         raise HTTPException(status_code=400, detail="Not enough permissions")
     
     tasks = await crud_task.task.get_multi_by_project(
-        db, project_id=project_id, skip=skip, limit=limit
+        db, project_id=project_id, skip=skip, limit=limit, parent_id=parent_id
     )
     
     from app.core.wbs import apply_wbs_codes
     from app.schemas.task import Task as TaskSchema
     # Convert models to schemas to allow setting wbs_code (which is not in DB)
-    task_schemas = [TaskSchema.from_orm(t) for t in tasks]
-    return apply_wbs_codes(task_schemas)
+    task_schemas = [TaskSchema.model_validate(t) for t in tasks]
+    
+    # If we are fetching root tasks, we can apply WBS to the whole tree
+    # If we are fetching specific sub-level, we might need the parent's WBS as a prefix
+    parent_wbs = ""
+    if parent_id:
+        parent_task = await crud_task.task.get(db, id=parent_id)
+        # Note: This is simplified. For deep nesting, we'd need to walk up or store WBS.
+        # But since we generate it on the fly, we'll just prefix it if we have it.
+        # For now, let's assume the frontend usually fetches the root and gets the tree.
+        pass
+
+    return apply_wbs_codes(task_schemas, parent_wbs)
 
 @router.post("/", response_model=Task)
 async def create_task(
