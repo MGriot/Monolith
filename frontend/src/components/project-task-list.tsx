@@ -21,11 +21,12 @@ import {
 import { cn } from '@/lib/utils';
 import type { Task } from '@/types';
 
-interface ProjectTaskListProps {
+export interface ProjectTaskListProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onSubtaskClick?: (subtask: Task) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
+  onReorderSubtask?: (subtaskId: string, direction: 'up' | 'down') => void;
 }
 
 interface RecursiveRowProps {
@@ -34,9 +35,10 @@ interface RecursiveRowProps {
   onTaskClick: (task: Task) => void;
   onSubtaskClick?: (subtask: Task) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
+  onReorderSubtask?: (subtaskId: string, direction: 'up' | 'down') => void;
 }
 
-function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onReorderTask }: RecursiveRowProps) {
+function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onReorderTask, onReorderSubtask }: RecursiveRowProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = task.subtasks && task.subtasks.length > 0;
 
@@ -72,7 +74,8 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onReorderT
                     <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                 </div>
             )}
-            {task.is_milestone && <Milestone className={cn("w-3.5 h-3.5 text-blue-500 shrink-0", level > 0 && "w-3 h-3 text-blue-400")} />}            <span className={cn(level > 0 && "text-xs text-slate-600 font-medium")}>{task.title}</span>
+            {task.is_milestone && <Milestone className={cn("w-3.5 h-3.5 text-blue-500 shrink-0", level > 0 && "w-3 h-3 text-blue-400")} />}
+            <span className={cn(level > 0 && "text-xs text-slate-600 font-medium")}>{task.title}</span>
           </div>
         </TableCell>
         <TableCell className="py-2">
@@ -104,13 +107,17 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onReorderT
         </TableCell>
         <TableCell className="py-2">
           <div className="flex items-center justify-center gap-1">
-            {onReorderTask && (
+            {(onReorderTask || onReorderSubtask) && (
               <>
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   className="h-6 w-6 text-slate-400 hover:text-primary"
-                  onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'up'); }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if (level === 0) onReorderTask?.(task.id, 'up');
+                    else onReorderSubtask ? onReorderSubtask(task.id, 'up') : onReorderTask?.(task.id, 'up');
+                  }}
                 >
                   <ArrowUp className="w-3.5 h-3.5" />
                 </Button>
@@ -118,7 +125,11 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onReorderT
                   variant="ghost" 
                   size="icon" 
                   className="h-6 w-6 text-slate-400 hover:text-primary"
-                  onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'down'); }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if (level === 0) onReorderTask?.(task.id, 'down');
+                    else onReorderSubtask ? onReorderSubtask(task.id, 'down') : onReorderTask?.(task.id, 'down');
+                  }}
                 >
                   <ArrowDown className="w-3.5 h-3.5" />
                 </Button>
@@ -148,13 +159,14 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onReorderT
             onTaskClick={onTaskClick}
             onSubtaskClick={onSubtaskClick}
             onReorderTask={onReorderTask}
+            onReorderSubtask={onReorderSubtask}
         />
       ))}
     </>
   );
 }
 
-export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, onReorderTask }: ProjectTaskListProps) {
+export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, onReorderTask, onReorderSubtask }: ProjectTaskListProps) {
   return (
     <div className="rounded-md border border-slate-200 bg-white overflow-hidden shadow-sm">
       <Table>
@@ -187,6 +199,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
                 onTaskClick={onTaskClick}
                 onSubtaskClick={onSubtaskClick}
                 onReorderTask={onReorderTask}
+                onReorderSubtask={onReorderSubtask}
               />
             ))
           )}
