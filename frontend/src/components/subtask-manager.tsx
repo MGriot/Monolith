@@ -121,8 +121,8 @@ export default function SubtaskManager({ taskId, projectId, allPossibleBlockers 
     },
   });
 
-  const toggleAssignee = (subtask: Subtask, userId: string) => {
-    const currentIds = subtask.assignees?.map(u => u.id) || [];
+  const toggleAssignee = (subtask: Task, userId: string) => {
+    const currentIds = subtask.assignees?.map((u: User) => u.id) || [];
     const index = currentIds.indexOf(userId);
     let newIds = [...currentIds];
     if (index > -1) {

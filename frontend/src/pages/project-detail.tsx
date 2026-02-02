@@ -156,10 +156,10 @@ export default function ProjectDetailPage() {
     setIsTaskDialogOpen(true);
   };
 
-  const handleSubtaskClick = (subtask: Subtask) => {
+  const handleSubtaskClick = (subtask: Task) => {
     // Find parent task and open edit dialog
-    if (subtask.task_id) {
-        const parent = tasks?.find(t => t.id === subtask.task_id);
+    if (subtask.parent_id) {
+        const parent = tasks?.find(t => t.id === subtask.parent_id);
         if (parent) {
             setEditingTaskId(parent.id);
             setIsTaskDialogOpen(true);

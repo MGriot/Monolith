@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
 import {
@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
+import {
   ChevronDown,
   ChevronRight,
   User as UserIcon,
@@ -24,6 +24,7 @@ import type { Task } from '@/types';
 interface ProjectTaskListProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
+  onSubtaskClick?: (subtask: Task) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
 }
 
@@ -31,10 +32,11 @@ interface RecursiveRowProps {
   task: Task;
   level: number;
   onTaskClick: (task: Task) => void;
+  onSubtaskClick?: (subtask: Task) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
 }
 
-function RecursiveTaskRow({ task, level, onTaskClick, onReorderTask }: RecursiveRowProps) {
+function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onReorderTask }: RecursiveRowProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = task.subtasks && task.subtasks.length > 0;
 
@@ -45,7 +47,10 @@ function RecursiveTaskRow({ task, level, onTaskClick, onReorderTask }: Recursive
             "hover:bg-slate-50/50 transition-colors cursor-pointer group border-b border-slate-100",
             level > 0 && "bg-slate-50/20"
         )}
-        onClick={() => onTaskClick(task)}
+        onClick={() => {
+            if (level === 0) onTaskClick(task);
+            else onSubtaskClick ? onSubtaskClick(task) : onTaskClick(task);
+        }}
       >
         <TableCell className="py-2" onClick={(e) => {
           if (hasChildren) {
@@ -67,8 +72,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onReorderTask }: Recursive
                     <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                 </div>
             )}
-            {task.is_milestone && <Milestone className={cn("w-3.5 h-3.5 text-blue-500 shrink-0", level > 0 && "w-3 h-3 text-blue-400")} />}
-            <span className={cn(level > 0 && "text-xs text-slate-600 font-medium")}>{task.title}</span>
+            {task.is_milestone && <Milestone className={cn("w-3.5 h-3.5 text-blue-500 shrink-0", level > 0 && "w-3 h-3 text-blue-400")} />}            <span className={cn(level > 0 && "text-xs text-slate-600 font-medium")}>{task.title}</span>
           </div>
         </TableCell>
         <TableCell className="py-2">
@@ -142,6 +146,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onReorderTask }: Recursive
             task={sub} 
             level={level + 1} 
             onTaskClick={onTaskClick}
+            onSubtaskClick={onSubtaskClick}
             onReorderTask={onReorderTask}
         />
       ))}
@@ -149,7 +154,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onReorderTask }: Recursive
   );
 }
 
-export default function ProjectTaskList({ tasks, onTaskClick, onReorderTask }: ProjectTaskListProps) {
+export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, onReorderTask }: ProjectTaskListProps) {
   return (
     <div className="rounded-md border border-slate-200 bg-white overflow-hidden shadow-sm">
       <Table>
@@ -180,6 +185,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onReorderTask }: P
                 task={task} 
                 level={0} 
                 onTaskClick={onTaskClick}
+                onSubtaskClick={onSubtaskClick}
                 onReorderTask={onReorderTask}
               />
             ))
