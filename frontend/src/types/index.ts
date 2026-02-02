@@ -4,6 +4,14 @@ export interface User {
   email: string;
 }
 
+export interface Dependency {
+  id: string;
+  successor_id: string;
+  predecessor_id: string;
+  type: string;
+  lag_days: number;
+}
+
 export interface Subtask {
   id: string;
   title: string;
@@ -17,9 +25,12 @@ export interface Subtask {
   topic?: string;
   type?: string;
   blocked_by_ids?: string[];
+  blocked_by?: Dependency[];
+  blocking?: Dependency[];
   sort_index?: number;
   task_id?: string;
   assignees?: User[];
+  wbs_code?: string;
 }
 
 export interface Task {
@@ -35,11 +46,14 @@ export interface Task {
   deadline_at?: string;
   is_milestone?: boolean;
   blocked_by_ids?: string[];
+  blocked_by?: Dependency[];
+  blocking?: Dependency[];
   attachments?: string[];
   assignees?: User[];
   subtasks?: Subtask[];
   sort_index?: number;
   project_id?: string;
+  wbs_code?: string;
 }
 
 export interface Project {

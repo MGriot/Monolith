@@ -67,6 +67,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading 
     defaultValues: {
       status: "Todo",
       priority: "Medium",
+      is_milestone: false,
       assignee_ids: [],
       subtasks: [],
       ...initialValues,
@@ -239,7 +240,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading 
               variant="outline" 
               size="sm" 
               className="h-7 text-[10px] gap-1"
-              onClick={() => append({ title: "", status: "Todo", priority: "Medium", assignee_ids: [] })}
+              onClick={() => append({ title: "", status: "Todo", priority: "Medium", is_milestone: false, assignee_ids: [] })}
             >
               <Plus className="w-3 h-3" /> Add Subtask
             </Button>
