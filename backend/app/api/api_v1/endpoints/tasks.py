@@ -37,7 +37,12 @@ async def read_tasks(
     tasks = await crud_task.task.get_multi_by_project(
         db, project_id=project_id, skip=skip, limit=limit
     )
-    return tasks
+    
+    from app.core.wbs import apply_wbs_codes
+    from app.schemas.task import Task as TaskSchema
+    # Convert models to schemas to allow setting wbs_code (which is not in DB)
+    task_schemas = [TaskSchema.from_orm(t) for t in tasks]
+    return apply_wbs_codes(task_schemas)
 
 @router.post("/", response_model=Task)
 async def create_task(
