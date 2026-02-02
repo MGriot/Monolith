@@ -12,27 +12,6 @@ export interface Dependency {
   lag_days: number;
 }
 
-export interface Subtask {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: string;
-  start_date?: string;
-  due_date?: string;
-  deadline_at?: string;
-  is_milestone?: boolean;
-  topic?: string;
-  type?: string;
-  blocked_by_ids?: string[];
-  blocked_by?: Dependency[];
-  blocking?: Dependency[];
-  sort_index?: number;
-  task_id?: string;
-  assignees?: User[];
-  wbs_code?: string;
-}
-
 export interface Task {
   id: string;
   title: string;
@@ -50,11 +29,15 @@ export interface Task {
   blocking?: Dependency[];
   attachments?: string[];
   assignees?: User[];
-  subtasks?: Subtask[];
+  subtasks?: Task[];
   sort_index?: number;
   project_id?: string;
+  parent_id?: string;
   wbs_code?: string;
 }
+
+// Deprecated: use Task
+export type Subtask = Task;
 
 export interface Project {
   id: string;

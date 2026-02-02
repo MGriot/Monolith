@@ -66,26 +66,26 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
   });
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Flatten tasks/subtasks based on user rule
+  // Flatten tasks recursively
   const kanbanItems = useMemo(() => {
     const list: KanbanItem[] = [];
-    tasks.forEach(task => {
-      if (!task.subtasks || task.subtasks.length === 0) {
-        list.push({ ...task, type: 'task' });
-      } else {
-        task.subtasks.forEach(st => {
-          list.push({ 
-            ...st, 
-            type: 'subtask', 
-            topic: task.topic, 
-            parentId: task.id,
-            wbs_code: st.wbs_code,
-            is_milestone: st.is_milestone,
-            deadline_at: st.deadline_at
-          });
+    
+    const flatten = (taskList: Task[], parent?: Task) => {
+        taskList.forEach(task => {
+            list.push({ 
+                ...task, 
+                type: task.parent_id ? 'subtask' : 'task', 
+                topic: task.topic || parent?.topic, 
+                parentId: task.parent_id || undefined 
+            } as any);
+            
+            if (task.subtasks && task.subtasks.length > 0) {
+                flatten(task.subtasks, task);
+            }
         });
-      }
-    });
+    };
+
+    flatten(tasks);
     return list;
   }, [tasks]);
 

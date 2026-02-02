@@ -137,23 +137,12 @@ export default function ProjectDetailPage() {
     },
   });
 
-  const moveSubtaskMutation = useMutation({
-    mutationFn: async ({ subtaskId, newStatus }: { subtaskId: string; newStatus: string }) => {
-      return api.put(`/subtasks/${subtaskId}`, { status: newStatus });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
-    },
-  });
-
   const handleTaskMove = (taskId: string, newStatus: string) => {
     moveTaskMutation.mutate({ taskId, newStatus });
   };
 
   const handleSubtaskMove = (subtaskId: string, newStatus: string) => {
-    moveSubtaskMutation.mutate({ subtaskId, newStatus });
+    moveTaskMutation.mutate({ taskId: subtaskId, newStatus });
   };
 
   const handleAddTask = (status?: string) => {
@@ -237,13 +226,13 @@ export default function ProjectDetailPage() {
     if (direction === 'up' && stIndex > 0) {
       const prevSt = parentTask.subtasks[stIndex - 1];
       const newIndex = (prevSt.sort_index || 0) - 1;
-      api.put(`/subtasks/${subtaskId}`, { sort_index: newIndex }).then(() => {
+      api.put(`/tasks/${subtaskId}`, { sort_index: newIndex }).then(() => {
         queryClient.invalidateQueries({ queryKey: ['tasks', id] });
       });
     } else if (direction === 'down' && stIndex < parentTask.subtasks.length - 1) {
       const nextSt = parentTask.subtasks[stIndex + 1];
       const newIndex = (nextSt.sort_index || 0) + 1;
-      api.put(`/subtasks/${subtaskId}`, { sort_index: newIndex }).then(() => {
+      api.put(`/tasks/${subtaskId}`, { sort_index: newIndex }).then(() => {
         queryClient.invalidateQueries({ queryKey: ['tasks', id] });
       });
     }
@@ -502,18 +491,33 @@ export default function ProjectDetailPage() {
               <SubtaskManager 
                 taskId={editingTask.id} 
                 projectId={id!}
-                allPossibleBlockers={(tasks || []).flatMap(t => [
-                    { id: t.id, title: t.title, blocked_by_ids: t.blocked_by_ids },
-                    ...(t.subtasks || []).map(st => ({ id: st.id, title: `${t.title} > ${st.title}`, blocked_by_ids: st.blocked_by_ids }))
-                ])}
+                allPossibleBlockers={(() => {
+                    const flat: any[] = [];
+                    const recurse = (list: Task[], prefix = "") => {
+                        list.forEach(t => {
+                            const title = prefix ? `${prefix} > ${t.title}` : t.title;
+                            flat.push({ id: t.id, title, blocked_by_ids: t.blocked_by_ids });
+                            if (t.subtasks) recurse(t.subtasks, title);
+                        });
+                    };
+                    recurse(tasks || []);
+                    return flat;
+                })()}
               />
               <DependencyManager 
                 item={editingTask} 
-                allPossibleBlockers={(tasks || []).flatMap(t => [
-                    { id: t.id, title: t.title, blocked_by_ids: t.blocked_by_ids },
-                    ...(t.subtasks || []).map(st => ({ id: st.id, title: `${t.title} > ${st.title}`, blocked_by_ids: st.blocked_by_ids }))
-                ])}
-                type="task"
+                allPossibleBlockers={(() => {
+                    const flat: any[] = [];
+                    const recurse = (list: Task[], prefix = "") => {
+                        list.forEach(t => {
+                            const title = prefix ? `${prefix} > ${t.title}` : t.title;
+                            flat.push({ id: t.id, title, blocked_by_ids: t.blocked_by_ids });
+                            if (t.subtasks) recurse(t.subtasks, title);
+                        });
+                    };
+                    recurse(tasks || []);
+                    return flat;
+                })()}
               />
               <AttachmentManager 
                 taskId={editingTask.id}

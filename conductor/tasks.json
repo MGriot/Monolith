@@ -599,13 +599,13 @@
             
             
             
-            {
-              "id": "REC-005",
-              "title": "UI: Recursive Task Tree",
-              "status": "todo",
-              "priority": "high",
-              "linked_req": "Frontend",
-              "description": "Update Task List and Gantt to support N-level nesting."
-            }
-          ]
-          
+              {
+                "id": "REC-005",
+                "title": "UI: Recursive Task Tree",
+                "status": "done",
+                "priority": "high",
+                "linked_req": "Frontend",
+                "description": "Update Task List and Gantt to support N-level nesting."
+              }
+            ]
+            
