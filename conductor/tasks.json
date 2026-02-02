@@ -541,14 +541,31 @@
               },
             
             
-            {
-              "id": "REC-003",
-              "title": "Schema: Recursive Pydantic Task",
-              "status": "todo",
-              "priority": "high",
-              "linked_req": "API",
-              "description": "Unify Task and Subtask schemas into a single recursive model."
-            },
+              {
+            
+            
+                "id": "REC-003",
+            
+            
+                "title": "Schema: Recursive Pydantic Task",
+            
+            
+                "status": "done",
+            
+            
+                "priority": "high",
+            
+            
+                "linked_req": "API",
+            
+            
+                "description": "Unify Task and Subtask schemas into a single recursive model."
+            
+            
+              },
+            
+            
+            
             {
               "id": "REC-004",
               "title": "Logic: Recursive Status & WBS",
