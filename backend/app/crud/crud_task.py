@@ -18,10 +18,11 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             .filter(self.model.id == id)
             .options(
                 selectinload(Task.assignees),
-                selectinload(Task.subtasks.and_(True)).selectinload(Subtask.assignees) # This doesn't actually sort
+                selectinload(Task.blocked_by),
+                selectinload(Task.blocking),
+                selectinload(Task.subtasks).selectinload(Subtask.assignees)
             )
         )
-        # Wait, I'll just sort them in Python or use a better loader
         obj = result.scalars().first()
         if obj and obj.subtasks:
             obj.subtasks.sort(key=lambda x: (x.sort_index or 0, x.created_at))
@@ -36,6 +37,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             .order_by(self.model.sort_index.asc(), self.model.created_at.asc())
             .options(
                 selectinload(Task.assignees),
+                selectinload(Task.blocked_by),
+                selectinload(Task.blocking),
                 selectinload(Task.subtasks).selectinload(Subtask.assignees)
             )
             .offset(skip)
@@ -76,7 +79,15 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             return False
         visited.add(item_id)
         
-        # Check both Task and Subtask tables for blocked_by_ids
+        # Check Dependency table (preferred)
+        from app.models.dependency import Dependency
+        res = await db.execute(select(Dependency.predecessor_id).filter(Dependency.successor_id == item_id))
+        predecessors = res.scalars().all()
+        for pred_id in predecessors:
+            if await self.is_blocked_by_recursive(db, pred_id, blocker_candidate_id, visited):
+                return True
+                
+        # Fallback to old blocked_by_ids for items not yet migrated or simple subtasks
         for model in [Task, Subtask]:
             res = await db.execute(select(model.blocked_by_ids).filter(model.id == item_id))
             row = res.first()
@@ -86,21 +97,42 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                         return True
         return False
 
-    async def check_for_active_blockers(self, db: AsyncSession, item_id: UUID, blocked_by_ids: List[UUID]) -> List[str]:
+    async def check_for_active_blockers(self, db: AsyncSession, item_id: UUID) -> List[str]:
         active_blocker_titles = []
-        if not blocked_by_ids:
-            return []
+        
+        # Check new Dependency table
+        from app.models.dependency import Dependency
+        res = await db.execute(
+            select(Task)
+            .join(Dependency, Task.id == Dependency.predecessor_id)
+            .filter(Dependency.successor_id == item_id)
+        )
+        tasks = res.scalars().all()
+        for t in tasks:
+            if t.status != Status.DONE:
+                active_blocker_titles.append(t.title)
+        
+        # Also check Subtasks as blockers (using old blocked_by_ids for now if they are not in Dependency table)
+        # Note: Dependency table currently links Task -> Task. 
+        # If we want Subtask -> Subtask dependencies in the table, we might need a polymorphic Dependency or another table.
+        # For now, let's stick to the current Task-focused dependency table but keep the subtask logic.
+        
+        res = await db.execute(select(Task.blocked_by_ids).filter(Task.id == item_id))
+        row = res.first()
+        if not row:
+            res = await db.execute(select(Subtask.blocked_by_ids).filter(Subtask.id == item_id))
+            row = res.first()
             
-        for b_id in blocked_by_ids:
-            found = False
-            for model in [Task, Subtask]:
-                res = await db.execute(select(model).filter(model.id == b_id))
-                obj = res.scalars().first()
-                if obj:
-                    found = True
-                    if obj.status != Status.DONE:
-                        active_blocker_titles.append(obj.title)
-                    break
+        if row and row[0]:
+            for b_id in row[0]:
+                for model in [Task, Subtask]:
+                    res = await db.execute(select(model).filter(model.id == b_id))
+                    obj = res.scalars().first()
+                    if obj and obj.status != Status.DONE:
+                        if obj.title not in active_blocker_titles:
+                            active_blocker_titles.append(obj.title)
+                        break
+                        
         return active_blocker_titles
 
     async def create(self, db: AsyncSession, *, obj_in: TaskCreate) -> Task:
@@ -176,7 +208,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             obj_data = clean_dict_datetimes(obj_in)
         
         if obj_data.get("status") == Status.DONE:
-            active_blockers = await self.check_for_active_blockers(db, db_obj.id, db_obj.blocked_by_ids or [])
+            active_blockers = await self.check_for_active_blockers(db, db_obj.id)
             if active_blockers:
                 raise ValueError(f"Task is blocked by unfinished items: {', '.join(active_blockers)}")
             if db_obj.status != Status.DONE:
@@ -288,7 +320,7 @@ class CRUDSubtask(CRUDBase[Subtask, SubtaskCreate, SubtaskUpdate]):
             obj_data = clean_dict_datetimes(obj_in)
         
         if obj_data.get("status") == Status.DONE:
-            active_blockers = await task.check_for_active_blockers(db, db_obj.id, db_obj.blocked_by_ids or [])
+            active_blockers = await task.check_for_active_blockers(db, db_obj.id)
             if active_blockers:
                 raise ValueError(f"Subtask is blocked by unfinished items: {', '.join(active_blockers)}")
             if db_obj.status != Status.DONE:

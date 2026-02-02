@@ -474,14 +474,39 @@
       
       
       
-      {
-        "id": "CORE-004",
-        "title": "CRUD: Advanced Dependency Management",
-        "status": "todo",
-        "priority": "high",
-        "linked_req": "PRD Section 4.1",
-        "description": "Implement dependency creation/deletion with validation and cycle detection."
-      },
+        {
+      
+      
+      
+          "id": "CORE-004",
+      
+      
+      
+          "title": "CRUD: Advanced Dependency Management",
+      
+      
+      
+          "status": "done",
+      
+      
+      
+          "priority": "high",
+      
+      
+      
+          "linked_req": "PRD Section 4.1",
+      
+      
+      
+          "description": "Implement dependency creation/deletion with validation and cycle detection."
+      
+      
+      
+        },
+      
+      
+      
+      
       {
         "id": "CORE-005",
         "title": "Logic: WBS Generation",
