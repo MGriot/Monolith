@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
-import type { User, Subtask } from "@/types";
+import type { User, Task } from "@/types";
 
 import DependencyManager from "@/components/dependency-manager";
 
@@ -41,7 +41,7 @@ export default function SubtaskManager({ taskId, projectId, allPossibleBlockers 
   });
   const [activeSubtaskMenu, setActiveSubtaskMenu] = useState<string | null>(null);
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
-  const [draftSubtask, setDraftSubtask] = useState<Subtask | null>(null);
+  const [draftSubtask, setDraftSubtask] = useState<Task | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
   const { data: users } = useQuery({
@@ -55,8 +55,8 @@ export default function SubtaskManager({ taskId, projectId, allPossibleBlockers 
   const { data: subtasks, isLoading } = useQuery({
     queryKey: ['subtasks', taskId],
     queryFn: async () => {
-      const response = await api.get(`/subtasks/?task_id=${taskId}`);
-      return response.data as Subtask[];
+      const response = await api.get(`/tasks/?parent_id=${taskId}&project_id=${projectId}`);
+      return response.data as Task[];
     },
     enabled: !!taskId,
   });
@@ -65,16 +65,17 @@ export default function SubtaskManager({ taskId, projectId, allPossibleBlockers 
 
   const formatDate = (d?: string | null) => (d && d.trim()) ? new Date(d).toISOString() : null;
 
-  const handleOpenEdit = (subtask: Subtask) => {
+  const handleOpenEdit = (subtask: Task) => {
     setEditingSubtaskId(subtask.id);
     setDraftSubtask(subtask);
   };
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof newSubtask) => {
-      return api.post("/subtasks/", { 
+      return api.post("/tasks/", { 
         ...data, 
-        task_id: taskId, 
+        project_id: projectId,
+        parent_id: taskId, 
         start_date: formatDate(data.start_date),
         due_date: formatDate(data.due_date),
         deadline_at: formatDate(data.deadline_at)
@@ -100,7 +101,7 @@ export default function SubtaskManager({ taskId, projectId, allPossibleBlockers 
 
   const updateMutation = useMutation({
     mutationFn: async ({ subtaskId, data }: { subtaskId: string; data: any }) => {
-      return api.put(`/subtasks/${subtaskId}`, data);
+      return api.put(`/tasks/${subtaskId}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
@@ -112,7 +113,7 @@ export default function SubtaskManager({ taskId, projectId, allPossibleBlockers 
 
   const deleteMutation = useMutation({
     mutationFn: async (subtaskId: string) => {
-      return api.delete(`/subtasks/${subtaskId}`);
+      return api.delete(`/tasks/${subtaskId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
@@ -569,7 +570,6 @@ export default function SubtaskManager({ taskId, projectId, allPossibleBlockers 
             <DependencyManager 
                 item={editingSubtask}
                 allPossibleBlockers={allPossibleBlockers}
-                type="subtask"
             />
 
             <div className="flex justify-end gap-2 pt-4">

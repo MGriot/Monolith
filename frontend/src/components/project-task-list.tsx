@@ -19,29 +19,137 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Task, Subtask } from '@/types';
+import type { Task } from '@/types';
 
 interface ProjectTaskListProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
-  onSubtaskClick?: (subtask: Subtask) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
-  onReorderSubtask?: (subtaskId: string, direction: 'up' | 'down') => void;
 }
 
-export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, onReorderTask, onReorderSubtask }: ProjectTaskListProps) {
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+interface RecursiveRowProps {
+  task: Task;
+  level: number;
+  onTaskClick: (task: Task) => void;
+  onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
+}
 
-  const toggleTaskExpansion = (taskId: string) => {
-    const newExpanded = new Set(expandedTasks);
-    if (newExpanded.has(taskId)) {
-      newExpanded.delete(taskId);
-    } else {
-      newExpanded.add(taskId);
-    }
-    setExpandedTasks(newExpanded);
-  };
+function RecursiveTaskRow({ task, level, onTaskClick, onReorderTask }: RecursiveRowProps) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const hasChildren = task.subtasks && task.subtasks.length > 0;
 
+  return (
+    <>
+      <TableRow 
+        className={cn(
+            "hover:bg-slate-50/50 transition-colors cursor-pointer group border-b border-slate-100",
+            level > 0 && "bg-slate-50/20"
+        )}
+        onClick={() => onTaskClick(task)}
+      >
+        <TableCell className="py-2" onClick={(e) => {
+          if (hasChildren) {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }
+        }}>
+          {hasChildren && (
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-primary hover:bg-primary/10">
+              {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </Button>
+          )}
+        </TableCell>
+        <TableCell className="text-[10px] font-black text-slate-400 py-2">{task.wbs_code}</TableCell>
+        <TableCell className="font-semibold text-slate-900 text-sm py-2">
+          <div className="flex items-center gap-2" style={{ paddingLeft: `${level * 16}px` }}>
+            {level > 0 && (
+                <div className="flex items-center gap-2 mr-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                </div>
+            )}
+            {task.is_milestone && <Milestone className={cn("w-3.5 h-3.5 text-blue-500 shrink-0", level > 0 && "w-3 h-3 text-blue-400")} />}
+            <span className={cn(level > 0 && "text-xs text-slate-600 font-medium")}>{task.title}</span>
+          </div>
+        </TableCell>
+        <TableCell className="py-2">
+          {task.topic && <Badge variant="secondary" className="text-[9px] font-bold bg-slate-100 text-slate-600 border-none px-1.5">{task.topic}</Badge>}
+        </TableCell>
+        <TableCell className="py-2">
+          <Badge variant="outline" className={cn(
+            "capitalize text-[9px] font-bold px-1.5 h-5",
+            task.status === 'Done' || task.status === 'done' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white"
+          )}>{task.status}</Badge>
+        </TableCell>
+        <TableCell className="py-2">
+          <Badge variant={task.priority === 'High' || task.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[9px] font-black px-1.5 h-5">
+            {task.priority}
+          </Badge>
+        </TableCell>
+        <TableCell className="py-2">
+          <div className="flex -space-x-1.5 overflow-hidden">
+            {task.assignees?.map((u) => (
+              <div 
+                key={u.id}
+                className="inline-block h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center shrink-0 shadow-sm"
+                title={u.full_name || u.email}
+              >
+                <UserIcon className="w-2.5 h-2.5 text-slate-500" />
+              </div>
+            ))}
+          </div>
+        </TableCell>
+        <TableCell className="py-2">
+          <div className="flex items-center justify-center gap-1">
+            {onReorderTask && (
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6 text-slate-400 hover:text-primary"
+                  onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'up'); }}
+                >
+                  <ArrowUp className="w-3.5 h-3.5" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6 text-slate-400 hover:text-primary"
+                  onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'down'); }}
+                >
+                  <ArrowDown className="w-3.5 h-3.5" />
+                </Button>
+              </>
+            )}
+          </div>
+        </TableCell>
+        <TableCell className="text-right py-2">
+          <div className="flex flex-col items-end">
+            <span className={cn("font-bold text-slate-500", level === 0 ? "text-[11px]" : "text-[10px]")}>
+              {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+            </span>
+            {task.deadline_at && (
+              <span className="text-[9px] font-black text-red-500 flex items-center gap-0.5">
+                <AlertTriangle className="w-2.5 h-2.5" />
+                {new Date(task.deadline_at).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+        </TableCell>
+      </TableRow>
+      {hasChildren && isExpanded && task.subtasks?.map(sub => (
+        <RecursiveTaskRow 
+            key={sub.id} 
+            task={sub} 
+            level={level + 1} 
+            onTaskClick={onTaskClick}
+            onReorderTask={onReorderTask}
+        />
+      ))}
+    </>
+  );
+}
+
+export default function ProjectTaskList({ tasks, onTaskClick, onReorderTask }: ProjectTaskListProps) {
   return (
     <div className="rounded-md border border-slate-200 bg-white overflow-hidden shadow-sm">
       <Table>
@@ -67,157 +175,13 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
             </TableRow>
           ) : (
             tasks.map((task) => (
-              <React.Fragment key={task.id}>
-                <TableRow 
-                  className="hover:bg-slate-50/50 transition-colors cursor-pointer group border-b border-slate-100"
-                  onClick={() => onTaskClick(task)}
-                >
-                  <TableCell className="py-2" onClick={(e) => {
-                    e.stopPropagation();
-                    toggleTaskExpansion(task.id);
-                  }}>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-primary hover:bg-primary/10">
-                      {expandedTasks.has(task.id) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </Button>
-                  </TableCell>
-                  <TableCell className="text-[10px] font-black text-slate-400 py-2">{task.wbs_code}</TableCell>
-                  <TableCell className="font-semibold text-slate-900 text-sm py-2">
-                    <div className="flex items-center gap-2">
-                      {task.is_milestone && <Milestone className="w-3.5 h-3.5 text-blue-500 shrink-0" />}
-                      {task.title}
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    {task.topic && <Badge variant="secondary" className="text-[9px] font-bold bg-slate-100 text-slate-600 border-none px-1.5">{task.topic}</Badge>}
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <Badge variant="outline" className={cn(
-                      "capitalize text-[9px] font-bold px-1.5 h-5",
-                      task.status === 'Done' || task.status === 'done' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white"
-                    )}>{task.status}</Badge>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <Badge variant={task.priority === 'High' || task.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[9px] font-black px-1.5 h-5">
-                      {task.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <div className="flex -space-x-1.5 overflow-hidden">
-                      {task.assignees?.map((u) => (
-                        <div 
-                          key={u.id}
-                          className="inline-block h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center shrink-0 shadow-sm"
-                          title={u.full_name || u.email}
-                        >
-                          <UserIcon className="w-2.5 h-2.5 text-slate-500" />
-                        </div>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <div className="flex items-center justify-center gap-1">
-                      {onReorderTask && (
-                        <>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 text-slate-400 hover:text-primary"
-                            onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'up'); }}
-                          >
-                            <ArrowUp className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 text-slate-400 hover:text-primary"
-                            onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'down'); }}
-                          >
-                            <ArrowDown className="w-3.5 h-3.5" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right py-2">
-                    <div className="flex flex-col items-end">
-                      <span className="text-[11px] font-bold text-slate-500">
-                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
-                      </span>
-                      {task.deadline_at && (
-                        <span className="text-[9px] font-black text-red-500 flex items-center gap-0.5">
-                          <AlertTriangle className="w-2.5 h-2.5" />
-                          {new Date(task.deadline_at).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-                {expandedTasks.has(task.id) && task.subtasks?.map(st => (
-                  <TableRow 
-                    key={st.id} 
-                    className="bg-slate-50/30 border-b border-slate-100 hover:bg-slate-100/50 cursor-pointer"
-                    onClick={() => onSubtaskClick?.(st)}
-                  >
-                    <TableCell></TableCell> {/* Expand Column */}
-                    <TableCell className="text-[9px] font-bold text-slate-400 py-2">{st.wbs_code}</TableCell>
-                    <TableCell className="pl-8 text-xs text-slate-600 py-2">
-                      <div className="flex items-center gap-2 relative">
-                        <div className="absolute -left-4 top-1/2 w-3 h-[1px] bg-slate-300" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                        {st.is_milestone && <Milestone className="w-3 h-3 text-blue-400 shrink-0" />}
-                        {st.title}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-2"></TableCell> {/* Topic Column */}
-                    <TableCell className="py-2">
-                      <Badge className="text-[8px] h-4 bg-slate-100 text-slate-500 hover:bg-slate-100 border-none px-1.5 font-bold uppercase">{st.status}</Badge>
-                    </TableCell>
-                    <TableCell className="py-2">
-                      <Badge variant={st.priority === 'High' || st.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[8px] h-4 px-1.5 font-black uppercase">
-                        {st.priority}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-2"></TableCell> {/* Assignees Column */}
-                    <TableCell className="py-2">
-                      <div className="flex items-center justify-center gap-1">
-                        {onReorderSubtask && (
-                          <>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-5 w-5 text-slate-300 hover:text-primary"
-                              onClick={(e) => { e.stopPropagation(); onReorderSubtask(st.id, 'up'); }}
-                            >
-                              <ArrowUp className="w-3 h-3" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-5 w-5 text-slate-300 hover:text-primary"
-                              onClick={(e) => { e.stopPropagation(); onReorderSubtask(st.id, 'down'); }}
-                            >
-                              <ArrowDown className="w-3 h-3" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right py-2">
-                      <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          {st.due_date ? new Date(st.due_date).toLocaleDateString() : '-'}
-                        </span>
-                        {st.deadline_at && (
-                          <span className="text-[8px] font-bold text-red-400 flex items-center gap-0.5">
-                            <AlertTriangle className="w-2 h-2" />
-                            {new Date(st.deadline_at).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </React.Fragment>
+              <RecursiveTaskRow 
+                key={task.id} 
+                task={task} 
+                level={0} 
+                onTaskClick={onTaskClick}
+                onReorderTask={onReorderTask}
+              />
             ))
           )}
         </TableBody>

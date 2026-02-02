@@ -46,24 +46,27 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
     const items: GanttItem[] = [];
     let currentRow = 0;
     
-    // Sort tasks and subtasks by sort_index before mapping to rows
-    const sortedTasks = [...tasks].sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
-
-    sortedTasks.forEach(task => {
-      if (task.start_date && task.due_date) {
-        items.push({ ...task, rowIndex: currentRow++ });
-      }
-      
-      if (showSubtasks && task.subtasks) {
-        const sortedSubtasks = [...task.subtasks].sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
-        sortedSubtasks.forEach(st => {
-          if (st.start_date && st.due_date) {
-            items.push({ ...st, isSubtask: true, parentTitle: task.title, parentId: task.id, rowIndex: currentRow++ });
-          }
+    const flattenTasks = (taskList: Task[], level: number = 0, parent?: Task) => {
+        const sorted = [...taskList].sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
+        
+        sorted.forEach(task => {
+            if (task.start_date && task.due_date) {
+                items.push({ 
+                    ...task, 
+                    isSubtask: level > 0, 
+                    parentTitle: parent?.title || "",
+                    parentId: parent?.id || "",
+                    rowIndex: currentRow++ 
+                } as any);
+            }
+            
+            if (showSubtasks && task.subtasks && task.subtasks.length > 0) {
+                flattenTasks(task.subtasks, level + 1, task);
+            }
         });
-      }
-    });
-    
+    };
+
+    flattenTasks(tasks);
     return items;
   }, [tasks, showSubtasks]);
 
@@ -295,42 +298,51 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                             </marker>
                         </defs>
 
-                        {/* Hierarchy Lines (Parent -> First Subtask) */}
-                        {tasks.map(task => {
-                            if (!showSubtasks || !task.subtasks || task.subtasks.length === 0) return null;
-                            if (!task.start_date || !task.due_date) return null;
+                        {/* Hierarchy Lines (Parent -> First Child) - Recursive */}
+                        {(() => {
+                            const lines: React.ReactNode[] = [];
+                            const drawHierarchy = (taskList: Task[]) => {
+                                taskList.forEach(task => {
+                                    if (!showSubtasks || !task.subtasks || task.subtasks.length === 0) return;
+                                    if (!task.start_date || !task.due_date) return;
 
-                            const parentItem = ganttItems.find(i => i.id === task.id);
-                            if (!parentItem) return null;
+                                    const parentItem = ganttItems.find(i => i.id === task.id);
+                                    if (!parentItem) return;
 
-                            // Find the first subtask that actually has dates and is in ganttItems
-                            const firstSubtask = task.subtasks.find(st => st.start_date && st.due_date);
-                            if (!firstSubtask) return null;
+                                    const firstChild = task.subtasks.find(st => st.start_date && st.due_date);
+                                    if (!firstChild) return;
 
-                            const subtaskItem = ganttItems.find(i => i.id === firstSubtask.id);
-                            if (!subtaskItem) return null;
+                                    const childItem = ganttItems.find(i => i.id === firstChild.id);
+                                    if (!childItem) return;
 
-                            const startX = getPositionPx(task.start_date);
-                            const startY = parentItem.rowIndex * rowHeight + (rowHeight / 2);
-                            const endX = getPositionPx(firstSubtask.start_date!);
-                            const endY = subtaskItem.rowIndex * rowHeight + (rowHeight / 2);
+                                    const startX = getPositionPx(task.start_date);
+                                    const startY = (parentItem as any).rowIndex * rowHeight + (rowHeight / 2);
+                                    const endX = getPositionPx(firstChild.start_date!);
+                                    const endY = (childItem as any).rowIndex * rowHeight + (rowHeight / 2);
 
-                            const color = getPriorityColorHex(task);
-                            const stub = 12;
+                                    const color = getPriorityColorHex(task);
+                                    const stub = 12;
 
-                            return (
-                                <path 
-                                    key={`hier-${task.id}`}
-                                    d={`M ${startX} ${startY} H ${startX - stub} V ${endY} H ${endX}`}
-                                    fill="none"
-                                    stroke={color}
-                                    strokeWidth="1.5"
-                                    strokeOpacity="0.3"
-                                    strokeDasharray="4 2"
-                                    shapeRendering="crispEdges"
-                                />
-                            );
-                        })}
+                                    lines.push(
+                                        <path 
+                                            key={`hier-${task.id}`}
+                                            d={`M ${startX} ${startY} H ${startX - stub} V ${endY} H ${endX}`}
+                                            fill="none"
+                                            stroke={color}
+                                            strokeWidth="1.5"
+                                            strokeOpacity="0.3"
+                                            strokeDasharray="4 2"
+                                            shapeRendering="crispEdges"
+                                        />
+                                    );
+                                    
+                                    // Recurse
+                                    drawHierarchy(task.subtasks);
+                                });
+                            };
+                            drawHierarchy(tasks);
+                            return lines;
+                        })()}
 
                         {/* Dependency Lines (Predecessor -> Successor) */}
                         {ganttItems.map((item) => {

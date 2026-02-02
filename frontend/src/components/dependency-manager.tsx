@@ -20,16 +20,15 @@ interface BaseItem {
 interface DependencyManagerProps {
   item: BaseItem;
   allPossibleBlockers: BaseItem[];
-  type: "task" | "subtask";
 }
 
-export default function DependencyManager({ item, allPossibleBlockers, type }: DependencyManagerProps) {
+export default function DependencyManager({ item, allPossibleBlockers }: DependencyManagerProps) {
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
 
   const updateMutation = useMutation({
     mutationFn: async (blockedByIds: string[]) => {
-      const endpoint = type === "task" ? `/tasks/${item.id}` : `/subtasks/${item.id}`;
+      const endpoint = `/tasks/${item.id}`;
       return api.put(endpoint, { blocked_by_ids: blockedByIds });
     },
     onSuccess: () => {
