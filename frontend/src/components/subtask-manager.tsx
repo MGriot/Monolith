@@ -267,7 +267,7 @@ export default function SubtaskManager({ taskId, projectId, allPossibleBlockers 
                 </div>
 
                 <div className="flex -space-x-1 ml-2">
-                  {subtask.assignees?.map(u => (
+                  {subtask.assignees?.map((u: User) => (
                     <div 
                       key={u.id}
                       className="w-5 h-5 rounded-full bg-slate-200 border border-white flex items-center justify-center"
