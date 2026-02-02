@@ -8,7 +8,7 @@
 **Monolith** is a high-performance, dockerized project management platform built for technical teams. It enforces a strict **Project → Task → Subtask** hierarchy and provides advanced high-density visualizations to turn complex roadmaps into actionable plans.
 
 ---
-![docs\img\image.png](docs\img\image.png)
+![docs/img/image.png](docs/img/image.png)
 
 ## 🚀 Key Features
 
