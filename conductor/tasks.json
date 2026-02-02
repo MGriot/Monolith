@@ -513,7 +513,48 @@
           "status": "done",
           "priority": "medium",
           "linked_req": "PRD Section 4.1",
-          "description": "Implement dynamic WBS code generation for project hierarchies."
-        }
-      ]
-      
+              "description": "Implement dynamic WBS code generation for project hierarchies."
+            },
+              {
+                "id": "REC-001",
+                "title": "Model: Unified Recursive Task",
+                "status": "done",
+                "priority": "high",
+                "linked_req": "PRD Section 4.1 (Modified)",
+                "description": "Add parent_id to Task model and merge Subtask attributes. Support self-referencing hierarchy."
+              },
+            
+            {
+              "id": "REC-002",
+              "title": "Migration: Merge Subtask Data",
+              "status": "todo",
+              "priority": "high",
+              "linked_req": "Infra",
+              "description": "Script to migrate existing subtasks into the unified tasks table."
+            },
+            {
+              "id": "REC-003",
+              "title": "Schema: Recursive Pydantic Task",
+              "status": "todo",
+              "priority": "high",
+              "linked_req": "API",
+              "description": "Unify Task and Subtask schemas into a single recursive model."
+            },
+            {
+              "id": "REC-004",
+              "title": "Logic: Recursive Status & WBS",
+              "status": "todo",
+              "priority": "high",
+              "linked_req": "Backend Logic",
+              "description": "Update CRUD and WBS utilities to handle infinite nesting."
+            },
+            {
+              "id": "REC-005",
+              "title": "UI: Recursive Task Tree",
+              "status": "todo",
+              "priority": "high",
+              "linked_req": "Frontend",
+              "description": "Update Task List and Gantt to support N-level nesting."
+            }
+          ]
+          

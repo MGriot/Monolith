@@ -26,6 +26,7 @@ class Task(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     
     title = Column(String, index=True, nullable=False)
@@ -54,7 +55,9 @@ class Task(Base):
     
     # Relationships
     project = relationship("Project", back_populates="tasks")
-    subtasks = relationship("Subtask", back_populates="task", cascade="all, delete-orphan", foreign_keys="Subtask.task_id")
+    parent = relationship("Task", remote_side=[id], back_populates="subtasks")
+    subtasks = relationship("Task", back_populates="parent", cascade="all, delete-orphan")
+    
     owner = relationship("User", foreign_keys=[owner_id])
     assignees = relationship("User", secondary=task_assignees, backref="assigned_tasks")
     
@@ -93,6 +96,6 @@ class Subtask(Base):
     sort_index = Column(Integer, default=0)
     
     # Relationships
-    task = relationship("Task", back_populates="subtasks", foreign_keys=[task_id])
+    task = relationship("Task", foreign_keys=[task_id])
     owner = relationship("User", foreign_keys=[owner_id])
     assignees = relationship("User", secondary=subtask_assignees, backref="assigned_subtasks")
