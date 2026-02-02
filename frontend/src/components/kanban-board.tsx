@@ -22,7 +22,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreVertical, GripVertical, Plus, User as UserIcon } from 'lucide-react';
+import { MoreVertical, GripVertical, Plus, User as UserIcon, Milestone, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Task, Subtask } from '@/types';
 
@@ -32,6 +32,9 @@ interface KanbanItem {
   status: string;
   priority: string;
   topic?: string;
+  wbs_code?: string;
+  is_milestone?: boolean;
+  deadline_at?: string;
   assignees?: { id: string; full_name: string; email: string }[];
   type: 'task' | 'subtask';
   parentId?: string;
@@ -71,7 +74,15 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
         list.push({ ...task, type: 'task' });
       } else {
         task.subtasks.forEach(st => {
-          list.push({ ...st, type: 'subtask', topic: task.topic, parentId: task.id });
+          list.push({ 
+            ...st, 
+            type: 'subtask', 
+            topic: task.topic, 
+            parentId: task.id,
+            wbs_code: st.wbs_code,
+            is_milestone: st.is_milestone,
+            deadline_at: st.deadline_at
+          });
         });
       }
     });
@@ -342,19 +353,32 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
       <CardContent className="p-3 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5">
-            {item.type === 'subtask' && (
-                <span className="text-[8px] font-black text-primary uppercase">Subtask</span>
-            )}
+            <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-[8px] font-black text-slate-400">{item.wbs_code}</span>
+                {item.type === 'subtask' && (
+                    <span className="text-[8px] font-black text-primary uppercase">Subtask</span>
+                )}
+            </div>
             <CardTitle className={cn(
-                "text-xs font-bold leading-snug",
+                "text-xs font-bold leading-snug flex items-center gap-1.5",
                 isDone ? "text-slate-500 line-through" : "text-slate-900"
-            )}>{item.title}</CardTitle>
+            )}>
+                {item.is_milestone && <Milestone className="w-3 h-3 text-blue-500 shrink-0" />}
+                {item.title}
+            </CardTitle>
           </div>
           <div {...dragProps} className="cursor-grab active:cursor-grabbing text-slate-300 group-hover:text-slate-400 shrink-0">
             <GripVertical className="w-3.5 h-3.5" />
           </div>
         </div>
         
+        {item.deadline_at && (
+            <div className="flex items-center gap-1 text-[9px] font-black text-red-500">
+                <AlertTriangle className="w-2.5 h-2.5" />
+                {new Date(item.deadline_at).toLocaleDateString()}
+            </div>
+        )}
+
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 capitalize border-none font-black", style.badge)}>

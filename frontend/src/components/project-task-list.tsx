@@ -14,7 +14,9 @@ import {
   ChevronRight,
   User as UserIcon,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Milestone,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Task, Subtask } from '@/types';
@@ -46,19 +48,20 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
         <TableHeader className="bg-slate-50">
           <TableRow className="border-b border-slate-100 hover:bg-slate-50">
             <TableHead className="w-10"></TableHead>
+            <TableHead className="w-16 text-[10px] font-black uppercase tracking-widest text-slate-500">WBS</TableHead>
             <TableHead className="min-w-[200px] text-[10px] font-black uppercase tracking-widest text-slate-500">Task</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Topic</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Status</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Priority</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Assignees</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center w-20">Order</TableHead>
-            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-slate-500">Due Date</TableHead>
+            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-slate-500">Due / Deadline</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {tasks.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="h-32 text-center text-slate-500 italic text-sm">
+              <TableCell colSpan={9} className="h-32 text-center text-slate-500 italic text-sm">
                 No tasks found in this project.
               </TableCell>
             </TableRow>
@@ -77,7 +80,13 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
                       {expandedTasks.has(task.id) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </Button>
                   </TableCell>
-                  <TableCell className="font-semibold text-slate-900 text-sm py-2">{task.title}</TableCell>
+                  <TableCell className="text-[10px] font-black text-slate-400 py-2">{task.wbs_code}</TableCell>
+                  <TableCell className="font-semibold text-slate-900 text-sm py-2">
+                    <div className="flex items-center gap-2">
+                      {task.is_milestone && <Milestone className="w-3.5 h-3.5 text-blue-500 shrink-0" />}
+                      {task.title}
+                    </div>
+                  </TableCell>
                   <TableCell className="py-2">
                     {task.topic && <Badge variant="secondary" className="text-[9px] font-bold bg-slate-100 text-slate-600 border-none px-1.5">{task.topic}</Badge>}
                   </TableCell>
@@ -129,8 +138,18 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right text-[11px] font-bold text-slate-500 py-2">
-                    {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                  <TableCell className="text-right py-2">
+                    <div className="flex flex-col items-end">
+                      <span className="text-[11px] font-bold text-slate-500">
+                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                      </span>
+                      {task.deadline_at && (
+                        <span className="text-[9px] font-black text-red-500 flex items-center gap-0.5">
+                          <AlertTriangle className="w-2.5 h-2.5" />
+                          {new Date(task.deadline_at).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
                 {expandedTasks.has(task.id) && task.subtasks?.map(st => (
@@ -140,10 +159,12 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
                     onClick={() => onSubtaskClick?.(st)}
                   >
                     <TableCell></TableCell>
+                    <TableCell className="text-[9px] font-bold text-slate-400 py-2">{st.wbs_code}</TableCell>
                     <TableCell className="pl-8 text-xs text-slate-600 py-2">
                       <div className="flex items-center gap-2 relative">
                         <div className="absolute -left-4 top-1/2 w-3 h-[1px] bg-slate-300" />
                         <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                        {st.is_milestone && <Milestone className="w-3 h-3 text-blue-400 shrink-0" />}
                         {st.title}
                       </div>
                     </TableCell>
@@ -180,8 +201,17 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
                       </div>
                     </TableCell>
                     <TableCell colSpan={1} className="py-2"></TableCell>
-                    <TableCell className="text-right text-[10px] text-slate-400 font-medium py-2">
-                      {st.due_date ? new Date(st.due_date).toLocaleDateString() : '-'}
+                    <TableCell className="text-right py-2">
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {st.due_date ? new Date(st.due_date).toLocaleDateString() : '-'}
+                        </span>
+                        {st.deadline_at && (
+                          <span className="text-[8px] font-bold text-red-400 flex items-center gap-0.5">
+                            {new Date(st.deadline_at).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

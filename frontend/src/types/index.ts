@@ -12,6 +12,8 @@ export interface Subtask {
   priority: string;
   start_date?: string;
   due_date?: string;
+  deadline_at?: string;
+  is_milestone?: boolean;
   topic?: string;
   type?: string;
   blocked_by_ids?: string[];
@@ -30,6 +32,8 @@ export interface Task {
   type?: string;
   start_date?: string;
   due_date?: string;
+  deadline_at?: string;
+  is_milestone?: boolean;
   blocked_by_ids?: string[];
   attachments?: string[];
   assignees?: User[];

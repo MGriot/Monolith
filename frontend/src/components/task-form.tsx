@@ -6,7 +6,8 @@ import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User as UserIcon, Loader2, Plus, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { User as UserIcon, Loader2, Plus, Trash2, Milestone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { User } from "@/types";
 
@@ -17,16 +18,20 @@ const taskSchema = z.object({
   priority: z.string().min(1, "Priority is required"),
   topic: z.string().optional(),
   type: z.string().optional(),
+  is_milestone: z.boolean().optional(),
   start_date: z.string().optional().nullable(),
   due_date: z.string().optional().nullable(),
+  deadline_at: z.string().optional().nullable(),
   assignee_ids: z.array(z.string()),
   sort_index: z.number().optional(),
   subtasks: z.array(z.object({
     title: z.string().min(1, "Subtask title is required"),
     status: z.string().min(1, "Subtask status is required"),
     priority: z.string().min(1, "Subtask priority is required"),
+    is_milestone: z.boolean().optional(),
     start_date: z.string().optional().nullable(),
     due_date: z.string().optional().nullable(),
+    deadline_at: z.string().optional().nullable(),
     assignee_ids: z.array(z.string()).optional(),
     sort_index: z.number().optional()
   })).optional()
@@ -206,6 +211,24 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading 
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="deadline_at">Hard Deadline</Label>
+          <Input id="deadline_at" type="date" {...register("deadline_at")} />
+        </div>
+        <div className="flex items-center space-x-2 pt-8">
+          <Switch
+            id="is_milestone"
+            checked={watch("is_milestone")}
+            onCheckedChange={(checked) => setValue("is_milestone", checked)}
+          />
+          <Label htmlFor="is_milestone" className="flex items-center gap-1.5 cursor-pointer">
+            <Milestone className="w-3.5 h-3.5 text-blue-500" />
+            Mark as Milestone
+          </Label>
+        </div>
+      </div>
+
       {/* Subtasks Section */}
       {!initialValues?.title && ( // Only show on creation
         <div className="space-y-4 border-t pt-4">
@@ -277,6 +300,28 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading 
                         {...register(`subtasks.${index}.due_date` as const)}
                         className="h-8 text-[10px] bg-white px-1"
                       />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold text-slate-400">Hard Deadline</Label>
+                      <Input
+                        type="date"
+                        {...register(`subtasks.${index}.deadline_at` as const)}
+                        className="h-8 text-[10px] bg-white px-1"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2 pt-4">
+                      <Switch
+                        id={`st-milestone-${index}`}
+                        checked={watch(`subtasks.${index}.is_milestone`)}
+                        onCheckedChange={(checked) => setValue(`subtasks.${index}.is_milestone`, checked)}
+                        className="h-4 w-7 scale-75"
+                      />
+                      <Label htmlFor={`st-milestone-${index}`} className="text-[9px] font-bold text-slate-500 cursor-pointer">
+                        Milestone
+                      </Label>
                     </div>
                   </div>
                 </div>

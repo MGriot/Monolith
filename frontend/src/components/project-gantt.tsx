@@ -187,7 +187,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
   };
 
   const isMilestone = (item: any) => {
-    return item.start_date === item.due_date;
+    return item.is_milestone || item.start_date === item.due_date;
   };
 
   const handleZoom = (direction: 'in' | 'out') => {
@@ -386,14 +386,17 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                     isSub && "bg-slate-50/20"
                     )}>
                     <div className="w-64 border-r border-slate-200 p-3 flex-shrink-0 flex flex-col justify-center min-w-0 sticky left-0 bg-inherit z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                        <span className={cn(
-                        "text-xs font-semibold truncate",
-                        isSub ? "text-slate-500 pl-4 border-l-2 border-l-slate-200" : "text-slate-900"
-                        )}>
-                        {item.title}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[8px] font-black text-slate-400 w-6 shrink-0">{item.wbs_code}</span>
+                            <span className={cn(
+                            "text-xs font-semibold truncate",
+                            isSub ? "text-slate-500 pl-2 border-l-2 border-l-slate-200" : "text-slate-900"
+                            )}>
+                            {item.title}
+                            </span>
+                        </div>
                         {isSub && (
-                        <span className="text-[9px] text-slate-400 pl-4 truncate">Parent: {(item as any).parentTitle}</span>
+                        <span className="text-[9px] text-slate-400 pl-8 truncate">Parent: {(item as any).parentTitle}</span>
                         )}
                     </div>
                     <div className="flex-1 relative h-14 py-4">
