@@ -449,14 +449,31 @@
         },
       
       
-      {
-        "id": "CORE-003",
-        "title": "Logic: Cycle Detection Utility",
-        "status": "todo",
-        "priority": "high",
-        "linked_req": "PRD Section 8",
-        "description": "Implement graph-based cycle detection for dependencies."
-      },
+        {
+      
+      
+          "id": "CORE-003",
+      
+      
+          "title": "Logic: Cycle Detection Utility",
+      
+      
+          "status": "done",
+      
+      
+          "priority": "high",
+      
+      
+          "linked_req": "PRD Section 8",
+      
+      
+          "description": "Implement graph-based cycle detection for dependencies."
+      
+      
+        },
+      
+      
+      
       {
         "id": "CORE-004",
         "title": "CRUD: Advanced Dependency Management",
