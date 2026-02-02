@@ -524,14 +524,23 @@
                 "description": "Add parent_id to Task model and merge Subtask attributes. Support self-referencing hierarchy."
               },
             
-            {
-              "id": "REC-002",
-              "title": "Migration: Merge Subtask Data",
-              "status": "todo",
-              "priority": "high",
-              "linked_req": "Infra",
-              "description": "Script to migrate existing subtasks into the unified tasks table."
-            },
+              {
+            
+                "id": "REC-002",
+            
+                "title": "Migration: Merge Subtask Data",
+            
+                "status": "done",
+            
+                "priority": "high",
+            
+                "linked_req": "Infra",
+            
+                "description": "Script to migrate existing subtasks into the unified tasks table."
+            
+              },
+            
+            
             {
               "id": "REC-003",
               "title": "Schema: Recursive Pydantic Task",
