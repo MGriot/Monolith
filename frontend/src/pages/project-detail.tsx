@@ -179,16 +179,18 @@ export default function ProjectDetailPage() {
   };
 
   const handleTaskSubmit = (data: TaskFormValues) => {
+    const formatDate = (d?: string | null) => (d && d.trim()) ? new Date(d).toISOString() : null;
+
     const formattedData = {
       ...data,
-      start_date: data.start_date ? new Date(data.start_date).toISOString() : null,
-      due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
-      deadline_at: data.deadline_at ? new Date(data.deadline_at).toISOString() : null,
+      start_date: formatDate(data.start_date),
+      due_date: formatDate(data.due_date),
+      deadline_at: formatDate(data.deadline_at),
       subtasks: data.subtasks?.map(st => ({
         ...st,
-        start_date: st.start_date ? new Date(st.start_date).toISOString() : null,
-        due_date: st.due_date ? new Date(st.due_date).toISOString() : null,
-        deadline_at: st.deadline_at ? new Date(st.deadline_at).toISOString() : null,
+        start_date: formatDate(st.start_date),
+        due_date: formatDate(st.due_date),
+        deadline_at: formatDate(st.deadline_at),
       }))
     };
 
@@ -499,6 +501,7 @@ export default function ProjectDetailPage() {
             <>
               <SubtaskManager 
                 taskId={editingTask.id} 
+                projectId={id!}
                 allPossibleBlockers={(tasks || []).flatMap(t => [
                     { id: t.id, title: t.title, blocked_by_ids: t.blocked_by_ids },
                     ...(t.subtasks || []).map(st => ({ id: st.id, title: `${t.title} > ${st.title}`, blocked_by_ids: st.blocked_by_ids }))

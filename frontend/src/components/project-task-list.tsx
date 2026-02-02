@@ -158,7 +158,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
                     className="bg-slate-50/30 border-b border-slate-100 hover:bg-slate-100/50 cursor-pointer"
                     onClick={() => onSubtaskClick?.(st)}
                   >
-                    <TableCell></TableCell>
+                    <TableCell></TableCell> {/* Expand Column */}
                     <TableCell className="text-[9px] font-bold text-slate-400 py-2">{st.wbs_code}</TableCell>
                     <TableCell className="pl-8 text-xs text-slate-600 py-2">
                       <div className="flex items-center gap-2 relative">
@@ -168,14 +168,16 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
                         {st.title}
                       </div>
                     </TableCell>
-                    <TableCell colSpan={2} className="py-2">
-                      <div className="flex items-center gap-2">
-                        <Badge className="text-[8px] h-4 bg-slate-100 text-slate-500 hover:bg-slate-100 border-none px-1.5 font-bold uppercase">{st.status}</Badge>
-                        <Badge variant={st.priority === 'High' || st.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[8px] h-4 px-1.5 font-black uppercase">
-                          {st.priority}
-                        </Badge>
-                      </div>
+                    <TableCell className="py-2"></TableCell> {/* Topic Column */}
+                    <TableCell className="py-2">
+                      <Badge className="text-[8px] h-4 bg-slate-100 text-slate-500 hover:bg-slate-100 border-none px-1.5 font-bold uppercase">{st.status}</Badge>
                     </TableCell>
+                    <TableCell className="py-2">
+                      <Badge variant={st.priority === 'High' || st.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[8px] h-4 px-1.5 font-black uppercase">
+                        {st.priority}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-2"></TableCell> {/* Assignees Column */}
                     <TableCell className="py-2">
                       <div className="flex items-center justify-center gap-1">
                         {onReorderSubtask && (
@@ -200,7 +202,6 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
                         )}
                       </div>
                     </TableCell>
-                    <TableCell colSpan={1} className="py-2"></TableCell>
                     <TableCell className="text-right py-2">
                       <div className="flex flex-col items-end">
                         <span className="text-[10px] text-slate-400 font-medium">
@@ -208,6 +209,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
                         </span>
                         {st.deadline_at && (
                           <span className="text-[8px] font-bold text-red-400 flex items-center gap-0.5">
+                            <AlertTriangle className="w-2 h-2" />
                             {new Date(st.deadline_at).toLocaleDateString()}
                           </span>
                         )}

@@ -22,10 +22,11 @@ import DependencyManager from "@/components/dependency-manager";
 
 interface SubtaskManagerProps {
   taskId: string;
+  projectId: string;
   allPossibleBlockers: { id: string; title: string; blocked_by_ids?: string[] }[];
 }
 
-export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskManagerProps) {
+export default function SubtaskManager({ taskId, projectId, allPossibleBlockers }: SubtaskManagerProps) {
   const queryClient = useQueryClient();
   const [newSubtask, setNewSubtask] = useState({
     title: "",
@@ -62,6 +63,8 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
 
   const editingSubtask = subtasks?.find(st => st.id === editingSubtaskId) || null;
 
+  const formatDate = (d?: string | null) => (d && d.trim()) ? new Date(d).toISOString() : null;
+
   const handleOpenEdit = (subtask: Subtask) => {
     setEditingSubtaskId(subtask.id);
     setDraftSubtask(subtask);
@@ -72,13 +75,14 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
       return api.post("/subtasks/", { 
         ...data, 
         task_id: taskId, 
-        start_date: data.start_date ? new Date(data.start_date).toISOString() : null,
-        due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
-        deadline_at: data.deadline_at ? new Date(data.deadline_at).toISOString() : null
+        start_date: formatDate(data.start_date),
+        due_date: formatDate(data.due_date),
+        deadline_at: formatDate(data.deadline_at)
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       setNewSubtask({ 
         title: "", 
         priority: "Medium", 
@@ -100,7 +104,7 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       // Keep editingSubtaskId set if we want to keep dialog open after a simple field update,
       // but if the user finishes editing (e.g. clicks save), we clear it elsewhere.
     },
@@ -112,6 +116,7 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
     },
   });
 
@@ -580,9 +585,9 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                     description: draftSubtask.description,
                     status: draftSubtask.status,
                     priority: draftSubtask.priority,
-                    start_date: draftSubtask.start_date ? new Date(draftSubtask.start_date).toISOString() : null,
-                    due_date: draftSubtask.due_date ? new Date(draftSubtask.due_date).toISOString() : null,
-                    deadline_at: draftSubtask.deadline_at ? new Date(draftSubtask.deadline_at).toISOString() : null,
+                    start_date: formatDate(draftSubtask.start_date),
+                    due_date: formatDate(draftSubtask.due_date),
+                    deadline_at: formatDate(draftSubtask.deadline_at),
                     is_milestone: draftSubtask.is_milestone,
                     topic: draftSubtask.topic,
                     type: draftSubtask.type,
