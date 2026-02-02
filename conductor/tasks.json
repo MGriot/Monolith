@@ -432,14 +432,23 @@
           "description": "Create Dependency model and add is_milestone, deadline_at to Task/Subtask."
         },
       
-      {
-        "id": "CORE-002",
-        "title": "Schema Update: Advanced Dependencies",
-        "status": "todo",
-        "priority": "high",
-        "linked_req": "PRD Section 4.2",
-        "description": "Update Pydantic schemas to support FS/SS/FF/SF dependency objects and new metadata fields."
-      },
+        {
+      
+          "id": "CORE-002",
+      
+          "title": "Schema Update: Advanced Dependencies",
+      
+          "status": "done",
+      
+          "priority": "high",
+      
+          "linked_req": "PRD Section 4.2",
+      
+          "description": "Update Pydantic schemas to support FS/SS/FF/SF dependency objects and new metadata fields."
+      
+        },
+      
+      
       {
         "id": "CORE-003",
         "title": "Logic: Cycle Detection Utility",

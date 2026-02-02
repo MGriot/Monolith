@@ -2,8 +2,23 @@ from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel
-from app.core.enums import Status, Priority
+from app.core.enums import Status, Priority, DependencyType
 from app.schemas.user import User as UserSchema
+
+class DependencyBase(BaseModel):
+    successor_id: UUID
+    predecessor_id: UUID
+    type: DependencyType = DependencyType.FS
+    lag_days: int = 0
+
+class DependencyCreate(DependencyBase):
+    pass
+
+class Dependency(DependencyBase):
+    id: UUID
+
+    class Config:
+        from_attributes = True
 
 class SubtaskBase(BaseModel):
     title: Optional[str] = None
@@ -12,6 +27,8 @@ class SubtaskBase(BaseModel):
     type: Optional[str] = None
     status: Optional[Status] = Status.TODO
     priority: Optional[Priority] = Priority.MEDIUM
+    is_milestone: Optional[bool] = False
+    deadline_at: Optional[datetime] = None
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     tags: Optional[List[str]] = []
@@ -29,6 +46,8 @@ class SubtaskShortCreate(BaseModel):
     title: str
     status: Optional[Status] = Status.TODO
     priority: Optional[Priority] = Priority.MEDIUM
+    is_milestone: Optional[bool] = False
+    deadline_at: Optional[datetime] = None
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     assignee_ids: Optional[List[UUID]] = []
@@ -59,6 +78,8 @@ class TaskBase(BaseModel):
     type: Optional[str] = None
     status: Optional[Status] = Status.TODO
     priority: Optional[Priority] = Priority.MEDIUM
+    is_milestone: Optional[bool] = False
+    deadline_at: Optional[datetime] = None
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     tags: Optional[List[str]] = []
@@ -85,6 +106,8 @@ class TaskInDBBase(TaskBase):
     owner: Optional[UserSchema] = None
     assignees: List[UserSchema] = []
     subtasks: List[Subtask] = []
+    blocked_by: List[Dependency] = []
+    blocking: List[Dependency] = []
 
     class Config:
         from_attributes = True
