@@ -12,3 +12,9 @@ class Priority(str, Enum):
     MEDIUM = "Medium"
     HIGH = "High"
     CRITICAL = "Critical"
+
+class DependencyType(str, Enum):
+    FS = "FS"
+    SS = "SS"
+    FF = "FF"
+    SF = "SF"

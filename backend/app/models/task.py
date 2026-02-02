@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, ForeignKey, Table, Enum as SAEnum, Integer
+from sqlalchemy import Column, String, DateTime, ForeignKey, Table, Enum as SAEnum, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 from app.db.session import Base
@@ -36,6 +36,9 @@ class Task(Base):
     status = Column(SAEnum(Status), default=Status.TODO)
     priority = Column(SAEnum(Priority), default=Priority.MEDIUM)
     
+    is_milestone = Column(Boolean, default=False)
+    deadline_at = Column(DateTime, nullable=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     start_date = Column(DateTime, nullable=True)
@@ -54,6 +57,9 @@ class Task(Base):
     subtasks = relationship("Subtask", back_populates="task", cascade="all, delete-orphan", foreign_keys="Subtask.task_id")
     owner = relationship("User", foreign_keys=[owner_id])
     assignees = relationship("User", secondary=task_assignees, backref="assigned_tasks")
+    
+    blocked_by = relationship("Dependency", foreign_keys="Dependency.successor_id", back_populates="successor")
+    blocking = relationship("Dependency", foreign_keys="Dependency.predecessor_id", back_populates="predecessor")
 
 class Subtask(Base):
     __tablename__ = "subtasks"
@@ -69,6 +75,9 @@ class Subtask(Base):
     
     status = Column(SAEnum(Status), default=Status.TODO)
     priority = Column(SAEnum(Priority), default=Priority.MEDIUM)
+    
+    is_milestone = Column(Boolean, default=False)
+    deadline_at = Column(DateTime, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -421,6 +421,48 @@
     "status": "done",
     "priority": "low",
     "linked_req": "PRD Section 10.2",
-    "description": "Apply dynamic color matching and crispEdges rendering to all Gantt connectors."
-  }
-]
+        "description": "Apply dynamic color matching and crispEdges rendering to all Gantt connectors."
+      },
+        {
+          "id": "CORE-001",
+          "title": "Model Update: Dependencies & Metadata",
+          "status": "done",
+          "priority": "high",
+          "linked_req": "PRD Section 4.1 & 4.2",
+          "description": "Create Dependency model and add is_milestone, deadline_at to Task/Subtask."
+        },
+      
+      {
+        "id": "CORE-002",
+        "title": "Schema Update: Advanced Dependencies",
+        "status": "todo",
+        "priority": "high",
+        "linked_req": "PRD Section 4.2",
+        "description": "Update Pydantic schemas to support FS/SS/FF/SF dependency objects and new metadata fields."
+      },
+      {
+        "id": "CORE-003",
+        "title": "Logic: Cycle Detection Utility",
+        "status": "todo",
+        "priority": "high",
+        "linked_req": "PRD Section 8",
+        "description": "Implement graph-based cycle detection for dependencies."
+      },
+      {
+        "id": "CORE-004",
+        "title": "CRUD: Advanced Dependency Management",
+        "status": "todo",
+        "priority": "high",
+        "linked_req": "PRD Section 4.1",
+        "description": "Implement dependency creation/deletion with validation and cycle detection."
+      },
+      {
+        "id": "CORE-005",
+        "title": "Logic: WBS Generation",
+        "status": "todo",
+        "priority": "medium",
+        "linked_req": "PRD Section 4.1",
+        "description": "Implement dynamic WBS code generation for project hierarchies."
+      }
+    ]
+    
