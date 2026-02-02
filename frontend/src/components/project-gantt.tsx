@@ -316,11 +316,12 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                             const endY = subtaskItem.rowIndex * rowHeight + (rowHeight / 2);
 
                             const color = getPriorityColorHex(task);
+                            const stub = 12;
 
                             return (
                                 <path 
                                     key={`hier-${task.id}`}
-                                    d={`M ${startX} ${startY} V ${endY} H ${endX}`}
+                                    d={`M ${startX} ${startY} H ${startX - stub} V ${endY} H ${endX}`}
                                     fill="none"
                                     stroke={color}
                                     strokeWidth="1.5"
@@ -339,18 +340,26 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 const blocker = ganttItems.find(i => i.id === blockerId);
                                 if (!blocker) return null;
 
-                                const startX = getPositionPx(blocker.due_date!);
+                                const startX = getPositionPx(blocker.due_date!) + dayWidth;
                                 const startY = blocker.rowIndex * rowHeight + (rowHeight / 2);
                                 const endX = getPositionPx(item.start_date!);
                                 const endY = item.rowIndex * rowHeight + (rowHeight / 2);
 
-                                const yMid = startY + (endY - startY) / 2;
                                 const color = getPriorityColorHex(blocker);
+                                const stub = 12;
+
+                                let path = "";
+                                if (endX > startX + (stub * 2)) {
+                                    const midX = (startX + endX) / 2;
+                                    path = `M ${startX} ${startY} H ${midX} V ${endY} H ${endX}`;
+                                } else {
+                                    path = `M ${startX} ${startY} H ${startX + stub} V ${endY} H ${endX}`;
+                                }
 
                                 return (
                                     <path 
                                         key={`${item.id}-${blockerId}`}
-                                        d={`M ${startX} ${startY} V ${yMid} H ${endX} V ${endY}`}
+                                        d={path}
                                         fill="none"
                                         stroke={color}
                                         strokeWidth="1.5"
