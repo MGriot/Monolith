@@ -11,9 +11,11 @@ import {
   ChevronRight,
   User as UserIcon,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Milestone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import type { User, Subtask } from "@/types";
 
 import DependencyManager from "@/components/dependency-manager";
@@ -30,8 +32,10 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
     priority: "Medium",
     topic: "",
     type: "",
+    is_milestone: false,
     start_date: "",
     due_date: "",
+    deadline_at: "",
     assignee_ids: [] as string[]
   });
   const [activeSubtaskMenu, setActiveSubtaskMenu] = useState<string | null>(null);
@@ -69,7 +73,8 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
         ...data, 
         task_id: taskId, 
         start_date: data.start_date ? new Date(data.start_date).toISOString() : null,
-        due_date: data.due_date ? new Date(data.due_date).toISOString() : null
+        due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
+        deadline_at: data.deadline_at ? new Date(data.deadline_at).toISOString() : null
       });
     },
     onSuccess: () => {
@@ -79,8 +84,10 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
         priority: "Medium", 
         topic: "", 
         type: "", 
+        is_milestone: false,
         start_date: "", 
         due_date: "", 
+        deadline_at: "",
         assignee_ids: [] 
       });
       setIsAdding(false);
@@ -342,7 +349,7 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
              <div className="space-y-1 col-span-1">
                 <Label className="text-[9px] uppercase font-bold text-slate-400">Type</Label>
                 <Input
@@ -373,6 +380,28 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                 disabled={createMutation.isPending}
               />
             </div>
+            <div className="space-y-1">
+              <Label className="text-[9px] uppercase font-bold text-slate-400">Deadline</Label>
+              <Input
+                type="date"
+                value={newSubtask.deadline_at}
+                onChange={(e) => setNewSubtask({ ...newSubtask, deadline_at: e.target.value })}
+                className="h-8 text-[10px] bg-white"
+                disabled={createMutation.isPending}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 pt-1">
+            <Switch
+              id="new-st-milestone"
+              checked={newSubtask.is_milestone}
+              onCheckedChange={(checked) => setNewSubtask({ ...newSubtask, is_milestone: checked })}
+              className="h-4 w-7 scale-75"
+            />
+            <Label htmlFor="new-st-milestone" className="text-[9px] font-black uppercase text-slate-500 cursor-pointer flex items-center gap-1">
+              <Milestone className="w-3 h-3 text-blue-500" /> Milestone
+            </Label>
           </div>
           
           <div className="space-y-1">
@@ -509,6 +538,27 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                   />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold text-slate-400">Hard Deadline</Label>
+                  <Input 
+                    type="date"
+                    value={draftSubtask.deadline_at ? draftSubtask.deadline_at.split('T')[0] : ""}
+                    onChange={(e) => setDraftSubtask({...draftSubtask, deadline_at: e.target.value})}
+                  />
+                </div>
+                <div className="flex items-center space-x-2 pt-6">
+                  <Switch
+                    id="edit-st-milestone"
+                    checked={draftSubtask.is_milestone}
+                    onCheckedChange={(checked) => setDraftSubtask({ ...draftSubtask, is_milestone: checked })}
+                  />
+                  <Label htmlFor="edit-st-milestone" className="text-[10px] font-black uppercase text-slate-500 cursor-pointer flex items-center gap-1">
+                    <Milestone className="w-3.5 h-3.5 text-blue-500" /> Milestone
+                  </Label>
+                </div>
+              </div>
             </div>
 
             <DependencyManager 
@@ -532,6 +582,8 @@ export default function SubtaskManager({ taskId, allPossibleBlockers }: SubtaskM
                     priority: draftSubtask.priority,
                     start_date: draftSubtask.start_date ? new Date(draftSubtask.start_date).toISOString() : null,
                     due_date: draftSubtask.due_date ? new Date(draftSubtask.due_date).toISOString() : null,
+                    deadline_at: draftSubtask.deadline_at ? new Date(draftSubtask.deadline_at).toISOString() : null,
+                    is_milestone: draftSubtask.is_milestone,
                     topic: draftSubtask.topic,
                     type: draftSubtask.type,
                   } 

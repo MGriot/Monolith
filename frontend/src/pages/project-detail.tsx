@@ -179,10 +179,23 @@ export default function ProjectDetailPage() {
   };
 
   const handleTaskSubmit = (data: TaskFormValues) => {
+    const formattedData = {
+      ...data,
+      start_date: data.start_date ? new Date(data.start_date).toISOString() : null,
+      due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
+      deadline_at: data.deadline_at ? new Date(data.deadline_at).toISOString() : null,
+      subtasks: data.subtasks?.map(st => ({
+        ...st,
+        start_date: st.start_date ? new Date(st.start_date).toISOString() : null,
+        due_date: st.due_date ? new Date(st.due_date).toISOString() : null,
+        deadline_at: st.deadline_at ? new Date(st.deadline_at).toISOString() : null,
+      }))
+    };
+
     if (editingTaskId) {
-      updateTaskMutation.mutate({ taskId: editingTaskId, data });
+      updateTaskMutation.mutate({ taskId: editingTaskId, data: formattedData });
     } else {
-      createTaskMutation.mutate(data);
+      createTaskMutation.mutate(formattedData);
     }
   };
 
@@ -447,8 +460,10 @@ export default function ProjectDetailPage() {
               priority: editingTask.priority,
               topic: editingTask.topic,
               type: editingTask.type,
+              is_milestone: editingTask.is_milestone,
               start_date: editingTask.start_date ? editingTask.start_date.split('T')[0] : '',
               due_date: editingTask.due_date ? editingTask.due_date.split('T')[0] : '',
+              deadline_at: editingTask.deadline_at ? editingTask.deadline_at.split('T')[0] : '',
               assignee_ids: editingTask.assignees?.map(u => u.id) || [],
             } : {
               status: initialStatus
@@ -484,17 +499,17 @@ export default function ProjectDetailPage() {
             <>
               <SubtaskManager 
                 taskId={editingTask.id} 
-                allPossibleBlockers={[
-                    ...(tasks || []).map(t => ({ id: t.id, title: t.title, blocked_by_ids: t.blocked_by_ids })),
-                    ...(tasks || []).flatMap(t => (t.subtasks || []).map(st => ({ id: st.id, title: `Sub: ${st.title}`, blocked_by_ids: st.blocked_by_ids })))
-                ]}
+                allPossibleBlockers={(tasks || []).flatMap(t => [
+                    { id: t.id, title: t.title, blocked_by_ids: t.blocked_by_ids },
+                    ...(t.subtasks || []).map(st => ({ id: st.id, title: `${t.title} > ${st.title}`, blocked_by_ids: st.blocked_by_ids }))
+                ])}
               />
               <DependencyManager 
                 item={editingTask} 
-                allPossibleBlockers={[
-                    ...(tasks || []).map(t => ({ id: t.id, title: t.title, blocked_by_ids: t.blocked_by_ids })),
-                    ...(tasks || []).flatMap(t => (t.subtasks || []).map(st => ({ id: st.id, title: `Sub: ${st.title}`, blocked_by_ids: st.blocked_by_ids })))
-                ]}
+                allPossibleBlockers={(tasks || []).flatMap(t => [
+                    { id: t.id, title: t.title, blocked_by_ids: t.blocked_by_ids },
+                    ...(t.subtasks || []).map(st => ({ id: st.id, title: `${t.title} > ${st.title}`, blocked_by_ids: st.blocked_by_ids }))
+                ])}
                 type="task"
               />
               <AttachmentManager 
