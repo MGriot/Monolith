@@ -37,6 +37,7 @@ class SubtaskBase(BaseModel):
     assignee_ids: Optional[List[UUID]] = []
     blocked_by_ids: Optional[List[UUID]] = []
     sort_index: Optional[int] = 0
+    wbs_code: Optional[str] = None
 
 class SubtaskCreate(SubtaskBase):
     title: str
@@ -88,6 +89,7 @@ class TaskBase(BaseModel):
     blocked_by_ids: Optional[List[UUID]] = []
     assignee_ids: Optional[List[UUID]] = []
     sort_index: Optional[int] = 0
+    wbs_code: Optional[str] = None
 
 class TaskCreate(TaskBase):
     title: str

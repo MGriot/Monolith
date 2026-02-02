@@ -507,13 +507,13 @@
       
       
       
-      {
-        "id": "CORE-005",
-        "title": "Logic: WBS Generation",
-        "status": "todo",
-        "priority": "medium",
-        "linked_req": "PRD Section 4.1",
-        "description": "Implement dynamic WBS code generation for project hierarchies."
-      }
-    ]
-    
+        {
+          "id": "CORE-005",
+          "title": "Logic: WBS Generation",
+          "status": "done",
+          "priority": "medium",
+          "linked_req": "PRD Section 4.1",
+          "description": "Implement dynamic WBS code generation for project hierarchies."
+        }
+      ]
+      
