@@ -1,11 +1,13 @@
-# Current Stage: Core Backend Enhancements Complete
+# Current Stage: Recursive Task Refactor
 
-**Status:** ✅ Complete
-**Focus:** Waiting for next directive.
+**Status:** 🏗️ In Progress
+**Focus:** [REC-002] Migration: Merge Subtask Data
+
+## Active Task
+- [ ] [REC-002] Migration: Merge Subtask Data
 
 ## Recent History
-- [x] [CORE-005] Logic: WBS Generation (2026-02-02)
-- [x] [CORE-004] CRUD: Advanced Dependency Management (2026-02-02)
-- [x] [CORE-003] Logic: Cycle Detection Utility (2026-02-02)
-- [x] [CORE-002] Schema Update: Advanced Dependencies (2026-02-02)
-- [x] [CORE-001] Model Update: Dependencies & Metadata (2026-02-02)
+- [x] [REC-001] Model: Unified Recursive Task (2026-02-02)
+- [x] Backend Foundations (CORE-001-005)
+- [x] Improved Gantt Connectors
+- [x] Front-end Sync (Milestones, Deadlines)

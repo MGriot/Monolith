@@ -21,15 +21,11 @@ def test_models_exist():
     assert isinstance(task.deadline_at, datetime)
     print("Task model check passed.")
 
-    # Test Subtask attributes
-    subtask = Subtask(
-        title="Test Subtask",
-        is_milestone=False,
-        deadline_at=None
-    )
-    assert subtask.title == "Test Subtask"
-    assert subtask.is_milestone is False
-    print("Subtask model check passed.")
+    # Test Recursive Task
+    parent_task = Task(id=uuid.uuid4(), title="Parent", project_id=uuid.uuid4())
+    child_task = Task(title="Child", parent=parent_task, project_id=parent_task.project_id)
+    assert child_task.parent == parent_task
+    print("Recursive Task relation check passed.")
 
     # Test Dependency attributes
     dep = Dependency(
