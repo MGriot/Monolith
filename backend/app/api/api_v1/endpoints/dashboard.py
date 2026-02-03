@@ -81,34 +81,19 @@ async def get_dashboard_summary(
     recent_activity = res.scalars().all()
 
     # 5. Global Activity (for heatmap)
-    from app.models.task import Subtask
-    from sqlalchemy import union_all
-
-    task_completions = select(
+    # Using unified Task model
+    activity_query = select(
         func.date(Task.completed_at).label("date"),
-        Task.id.label("id")
+        func.count(Task.id).label("count")
     ).where(
         Task.completed_at != None
     )
 
-    subtask_completions = select(
-        func.date(Subtask.completed_at).label("date"),
-        Subtask.id.label("id")
-    ).where(
-        Subtask.completed_at != None
-    )
-
     if not current_user.is_superuser:
-        task_completions = task_completions.join(Project).where(Project.owner_id == current_user.id)
-        subtask_completions = subtask_completions.join(Task).join(Project).where(Project.owner_id == current_user.id)
+        activity_query = activity_query.join(Project).where(Project.owner_id == current_user.id)
 
-    combined = union_all(task_completions, subtask_completions).alias("combined")
-    
-    global_activity_query = select(
-        combined.c.date,
-        func.count(combined.c.id).label("count")
-    ).group_by(
-        combined.c.date
+    global_activity_query = activity_query.group_by(
+        func.date(Task.completed_at)
     )
 
     res = await db.execute(global_activity_query)

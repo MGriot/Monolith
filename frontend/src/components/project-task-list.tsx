@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight,
   User as UserIcon,
+  Plus,
   ArrowUp,
   ArrowDown,
   Milestone,
@@ -25,6 +26,7 @@ export interface ProjectTaskListProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onSubtaskClick?: (subtask: Task) => void;
+  onAddSubtask?: (parentTask: Task) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
   onReorderSubtask?: (subtaskId: string, direction: 'up' | 'down') => void;
 }
@@ -34,11 +36,12 @@ interface RecursiveRowProps {
   level: number;
   onTaskClick: (task: Task) => void;
   onSubtaskClick?: (subtask: Task) => void;
+  onAddSubtask?: (parentTask: Task) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
   onReorderSubtask?: (subtaskId: string, direction: 'up' | 'down') => void;
 }
 
-function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onReorderTask, onReorderSubtask }: RecursiveRowProps) {
+function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onReorderSubtask }: RecursiveRowProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = task.subtasks && task.subtasks.length > 0;
 
@@ -77,6 +80,20 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onReorderT
             {task.is_milestone && <Milestone className={cn("w-3.5 h-3.5 text-blue-500 shrink-0", level > 0 && "w-3 h-3 text-blue-400")} />}
             <span className={cn(level > 0 && "text-xs text-slate-600 font-medium")}>{task.title}</span>
           </div>
+        </TableCell>
+        <TableCell className="py-2 text-right">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-7 w-7 text-slate-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => {
+                  e.stopPropagation();
+                  onAddSubtask?.(task);
+              }}
+              title="Add Subtask"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </Button>
         </TableCell>
         <TableCell className="py-2">
           {task.topic && <Badge variant="secondary" className="text-[9px] font-bold bg-slate-100 text-slate-600 border-none px-1.5">{task.topic}</Badge>}
@@ -158,6 +175,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onReorderT
             level={level + 1} 
             onTaskClick={onTaskClick}
             onSubtaskClick={onSubtaskClick}
+            onAddSubtask={onAddSubtask}
             onReorderTask={onReorderTask}
             onReorderSubtask={onReorderSubtask}
         />
@@ -166,7 +184,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onReorderT
   );
 }
 
-export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, onReorderTask, onReorderSubtask }: ProjectTaskListProps) {
+export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onReorderSubtask }: ProjectTaskListProps) {
   return (
     <div className="rounded-md border border-slate-200 bg-white overflow-hidden shadow-sm">
       <Table>
@@ -175,6 +193,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
             <TableHead className="w-10"></TableHead>
             <TableHead className="w-16 text-[10px] font-black uppercase tracking-widest text-slate-500">WBS</TableHead>
             <TableHead className="min-w-[200px] text-[10px] font-black uppercase tracking-widest text-slate-500">Task</TableHead>
+            <TableHead className="w-10"></TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Topic</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Status</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Priority</TableHead>
@@ -186,7 +205,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
         <TableBody>
           {tasks.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="h-32 text-center text-slate-500 italic text-sm">
+              <TableCell colSpan={10} className="h-32 text-center text-slate-500 italic text-sm">
                 No tasks found in this project.
               </TableCell>
             </TableRow>
@@ -198,6 +217,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
                 level={0} 
                 onTaskClick={onTaskClick}
                 onSubtaskClick={onSubtaskClick}
+                onAddSubtask={onAddSubtask}
                 onReorderTask={onReorderTask}
                 onReorderSubtask={onReorderSubtask}
               />

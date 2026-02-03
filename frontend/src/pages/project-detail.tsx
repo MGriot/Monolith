@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import api from '@/lib/api';
@@ -18,7 +18,6 @@ import ProjectHeatmap from '@/components/project-heatmap';
 import ProjectTaskList from '@/components/project-task-list';
 import TaskForm from '@/components/task-form';
 import type { TaskFormValues } from '@/components/task-form';
-import SubtaskManager from '@/components/subtask-manager';
 import DependencyManager from '@/components/dependency-manager';
 import AttachmentManager from '@/components/attachment-manager';
 import MarkdownRenderer from '@/components/markdown-renderer';
@@ -32,7 +31,8 @@ import {
   FolderKanban,
   LayoutDashboard,
   Trash2,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -41,18 +41,21 @@ import type { Project, Task } from '@/types';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isProjectEditDialogOpen, setIsProjectEditDialogOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [parentTaskId, setParentTaskId] = useState<string | null>(null);
   const [initialStatus, setInitialStatus] = useState<string>("Todo");
 
-  const { data: project, isLoading: isProjectLoading } = useQuery({
+  const { data: project, isLoading: isProjectLoading, error: projectError } = useQuery({
     queryKey: ['project', id],
     queryFn: async () => {
       const response = await api.get(`/projects/${id}`);
       return response.data as Project;
     },
+    retry: false,
   });
 
   const { data: tasks, isLoading: isTasksLoading } = useQuery({
@@ -63,7 +66,19 @@ export default function ProjectDetailPage() {
     },
   });
 
-  const editingTask = tasks?.find(t => t.id === editingTaskId) || null;
+  // Recursive find to handle deep WBS hierarchy
+  const findTaskRecursive = (taskList: Task[], taskId: string): Task | null => {
+    for (const task of taskList) {
+      if (task.id === taskId) return task;
+      if (task.subtasks && task.subtasks.length > 0) {
+        const found = findTaskRecursive(task.subtasks, taskId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const editingTask = tasks && editingTaskId ? findTaskRecursive(tasks, editingTaskId) : null;
 
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ['project-stats', id],
@@ -147,24 +162,28 @@ export default function ProjectDetailPage() {
 
   const handleAddTask = (status?: string) => {
     setEditingTaskId(null);
+    setParentTaskId(null);
     setInitialStatus(status || "Todo");
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleAddSubtask = (parentTask: Task) => {
+    setEditingTaskId(null);
+    setParentTaskId(parentTask.id);
+    setInitialStatus("Todo");
     setIsTaskDialogOpen(true);
   };
 
   const handleTaskClick = (task: Task) => {
     setEditingTaskId(task.id);
+    setParentTaskId(task.parent_id || null);
     setIsTaskDialogOpen(true);
   };
 
   const handleSubtaskClick = (subtask: Task) => {
-    // Find parent task and open edit dialog
-    if (subtask.parent_id) {
-        const parent = tasks?.find(t => t.id === subtask.parent_id);
-        if (parent) {
-            setEditingTaskId(parent.id);
-            setIsTaskDialogOpen(true);
-        }
-    }
+    setEditingTaskId(subtask.id);
+    setParentTaskId(subtask.parent_id || null);
+    setIsTaskDialogOpen(true);
   };
 
   const handleTaskSubmit = (data: TaskFormValues) => {
@@ -175,12 +194,7 @@ export default function ProjectDetailPage() {
       start_date: formatDate(data.start_date),
       due_date: formatDate(data.due_date),
       deadline_at: formatDate(data.deadline_at),
-      subtasks: data.subtasks?.map(st => ({
-        ...st,
-        start_date: formatDate(st.start_date),
-        due_date: formatDate(st.due_date),
-        deadline_at: formatDate(st.deadline_at),
-      }))
+      parent_id: data.parent_id === undefined ? parentTaskId : data.parent_id
     };
 
     if (editingTaskId) {
@@ -246,8 +260,28 @@ export default function ProjectDetailPage() {
     );
   }
 
+  if (projectError) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center h-64 gap-4">
+        <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+        </div>
+        <div className="text-center">
+            <h2 className="text-xl font-bold text-slate-900">Access Denied</h2>
+            <p className="text-slate-500">You do not have permission to view this project or it does not exist.</p>
+        </div>
+        <Button onClick={() => navigate('/projects')}>Back to Projects</Button>
+      </div>
+    );
+  }
+
   if (!project) {
-    return <div className="p-8">Project not found.</div>;
+    return (
+        <div className="p-8 flex flex-col items-center justify-center h-64 gap-4">
+          <p className="text-slate-500">Project not found.</p>
+          <Button onClick={() => navigate('/projects')}>Back to Projects</Button>
+        </div>
+      );
   }
 
   return (
@@ -375,6 +409,7 @@ export default function ProjectDetailPage() {
               tasks={tasks || []} 
               onTaskClick={handleTaskClick} 
               onSubtaskClick={handleSubtaskClick}
+              onAddSubtask={handleAddSubtask}
               onReorderTask={handleReorderTask}
               onReorderSubtask={handleReorderSubtask}
             />
@@ -456,12 +491,16 @@ export default function ProjectDetailPage() {
               due_date: editingTask.due_date ? editingTask.due_date.split('T')[0] : '',
               deadline_at: editingTask.deadline_at ? editingTask.deadline_at.split('T')[0] : '',
               assignee_ids: editingTask.assignees?.map(u => u.id) || [],
+              parent_id: editingTask.parent_id
             } : {
-              status: initialStatus
+              status: initialStatus,
+              parent_id: parentTaskId
             }}
             onSubmit={handleTaskSubmit}
             onCancel={() => setIsTaskDialogOpen(false)}
             isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
+            allTasks={tasks || []}
+            editingTaskId={editingTaskId}
           />
 
           {editingTask && (
@@ -488,22 +527,6 @@ export default function ProjectDetailPage() {
 
           {editingTask && (
             <>
-              <SubtaskManager 
-                taskId={editingTask.id} 
-                projectId={id!}
-                allPossibleBlockers={(() => {
-                    const flat: any[] = [];
-                    const recurse = (list: Task[], prefix = "") => {
-                        list.forEach(t => {
-                            const title = prefix ? `${prefix} > ${t.title}` : t.title;
-                            flat.push({ id: t.id, title, blocked_by_ids: t.blocked_by_ids });
-                            if (t.subtasks) recurse(t.subtasks, title);
-                        });
-                    };
-                    recurse(tasks || []);
-                    return flat;
-                })()}
-              />
               <DependencyManager 
                 item={editingTask} 
                 allPossibleBlockers={(() => {
