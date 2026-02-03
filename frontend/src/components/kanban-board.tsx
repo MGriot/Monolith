@@ -220,10 +220,8 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
               onAddTask={onAddTask}
               onItemClick={(item: KanbanItem) => {
                 if (item.type === 'task') {
-                    onTaskClick?.(tasks.find(t => t.id === item.id)!);
+                    onTaskClick?.(item as any);
                 } else {
-                    // For subtasks, we might want to click the parent or just show subtask
-                    // Logic depends on requirement, but user asked to fix kanban
                     onSubtaskClick?.(item as any);
                 }
               }}

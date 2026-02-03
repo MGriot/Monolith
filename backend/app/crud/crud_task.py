@@ -20,10 +20,16 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             select(self.model)
             .filter(self.model.id == id)
             .options(
+                selectinload(Task.owner),
                 selectinload(Task.assignees),
                 selectinload(Task.blocked_by),
                 selectinload(Task.blocking),
-                selectinload(Task.subtasks).selectinload(Task.assignees)
+                selectinload(Task.subtasks).options(
+                    selectinload(Task.owner),
+                    selectinload(Task.assignees),
+                    selectinload(Task.blocked_by),
+                    selectinload(Task.blocking)
+                )
             )
         )
         obj = result.scalars().first()
@@ -46,10 +52,41 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             query
             .order_by(self.model.sort_index.asc(), self.model.created_at.asc())
             .options(
+                selectinload(Task.owner),
                 selectinload(Task.assignees),
                 selectinload(Task.blocked_by),
                 selectinload(Task.blocking),
-                selectinload(Task.subtasks).selectinload(Task.assignees) # Only one level deep for multi
+                selectinload(Task.subtasks).options(
+                    selectinload(Task.owner),
+                    selectinload(Task.assignees),
+                    selectinload(Task.blocked_by),
+                    selectinload(Task.blocking),
+                    selectinload(Task.subtasks).options(
+                        selectinload(Task.owner),
+                        selectinload(Task.assignees),
+                        selectinload(Task.blocked_by),
+                        selectinload(Task.blocking),
+                        selectinload(Task.subtasks).options(
+                            selectinload(Task.owner),
+                            selectinload(Task.assignees),
+                            selectinload(Task.blocked_by),
+                            selectinload(Task.blocking),
+                            selectinload(Task.subtasks).options(
+                                 selectinload(Task.owner),
+                                 selectinload(Task.assignees),
+                                 selectinload(Task.blocked_by),
+                                 selectinload(Task.blocking),
+                                 selectinload(Task.subtasks).options(
+                                     selectinload(Task.owner),
+                                     selectinload(Task.assignees),
+                                     selectinload(Task.blocked_by),
+                                     selectinload(Task.blocking),
+                                     selectinload(Task.subtasks)
+                                 )
+                            )
+                        )
+                    )
+                )
             )
             .offset(skip)
             .limit(limit)
@@ -209,7 +246,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         if assignee_ids:
             await self.notify_assignees(db, db_obj.id, assignee_ids, db_obj.title)
             
-        return db_obj
+        # Refetch to get all relationships loaded
+        return await self.get(db, db_obj.id)
 
     async def notify_assignees(self, db: AsyncSession, item_id: UUID, user_ids: List[UUID], item_title: str):
         from app.crud.crud_notification import notification as notification_crud
@@ -274,7 +312,9 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             await self.update_parent_status_recursive(db, parent_id)
         
         await self.update_project_progress(db, project_id)
-        return db_obj
+        
+        # Refetch to get all relationships loaded
+        return await self.get(db, db_obj.id)
 
     async def remove(self, db: AsyncSession, *, id: UUID) -> Task:
         # Load object first to get parent/project info

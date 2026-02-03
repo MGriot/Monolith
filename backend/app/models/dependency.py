@@ -11,10 +11,10 @@ class Dependency(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     # The task that is blocked (Successor)
-    successor_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=False)
+    successor_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
     
     # The task that is doing the blocking (Predecessor)
-    predecessor_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=False)
+    predecessor_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
     
     type = Column(SAEnum(DependencyType), default=DependencyType.FS, nullable=False)
     lag_days = Column(Integer, default=0, nullable=False)

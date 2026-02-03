@@ -7,6 +7,7 @@ from datetime import datetime
 from app.api import deps
 from app.models.project import Project
 from app.models.task import Task, Subtask
+from app.models.user import User
 from app.schemas.calendar import CalendarResponse, CalendarItem
 from app.core.utils import make_naive
 
@@ -15,12 +16,12 @@ router = APIRouter()
 @router.get("/", response_model=CalendarResponse)
 async def get_calendar_events(
     db: AsyncSession = Depends(deps.get_db),
-    current_user: Any = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user),
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
 ) -> Any:
     """
-    Get all projects, tasks, and subtasks with due dates.
+    Get all projects and tasks with due dates, filtered by owner.
     """
     start_date = make_naive(start_date)
     end_date = make_naive(end_date)
@@ -29,6 +30,9 @@ async def get_calendar_events(
     
     # Fetch Projects
     project_query = select(Project).where(Project.due_date != None)
+    if not current_user.is_superuser:
+        project_query = project_query.where(Project.owner_id == current_user.id)
+        
     if start_date:
         project_query = project_query.where(Project.due_date >= start_date)
     if end_date:
@@ -46,8 +50,11 @@ async def get_calendar_events(
             due_date=p.due_date
         ))
 
-    # Fetch Tasks
+    # Fetch Tasks (All levels)
     task_query = select(Task).where(Task.due_date != None)
+    if not current_user.is_superuser:
+        task_query = task_query.join(Project).where(Project.owner_id == current_user.id)
+        
     if start_date:
         task_query = task_query.where(Task.due_date >= start_date)
     if end_date:
@@ -56,37 +63,17 @@ async def get_calendar_events(
     result = await db.execute(task_query)
     tasks = result.scalars().all()
     for t in tasks:
+        # Determine if it's a root task or child for UI labeling if needed
+        item_type = "task" if not t.parent_id else "subtask"
         items.append(CalendarItem(
             id=t.id,
             title=t.title,
-            item_type="task",
+            item_type=item_type,
             status=t.status,
             start_date=t.start_date,
             due_date=t.due_date,
-            project_id=t.project_id
-        ))
-
-    # Fetch Subtasks
-    subtask_query = select(Subtask, Task.project_id).join(Task, Subtask.task_id == Task.id).where(Subtask.due_date != None)
-    if start_date:
-        subtask_query = subtask_query.where(Subtask.due_date >= start_date)
-    if end_date:
-        subtask_query = subtask_query.where(Subtask.due_date <= end_date)
-    
-    result = await db.execute(subtask_query)
-    subtasks_data = result.all()
-    for st_row in subtasks_data:
-        st = st_row[0]
-        p_id = st_row[1]
-        items.append(CalendarItem(
-            id=st.id,
-            title=st.title,
-            item_type="subtask",
-            status=st.status,
-            start_date=st.start_date,
-            due_date=st.due_date,
-            task_id=st.task_id,
-            project_id=p_id
+            project_id=t.project_id,
+            task_id=t.parent_id
         ))
 
     return {"items": items}
