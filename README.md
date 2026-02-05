@@ -28,7 +28,7 @@
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** React 18, TypeScript, Tailwind CSS, Shadcn/UI, Lucide Icons.
+- **Frontend:** React 19, TypeScript, Tailwind CSS, Shadcn/UI, Lucide Icons.
 - **Backend:** FastAPI, SQLAlchemy (Async), PostgreSQL.
 - **Infrastructure:** Docker & Docker Compose, Nginx.
 - **AI Integration:** Model Context Protocol (MCP).
@@ -52,7 +52,19 @@ docker-compose up -d --build
 
 ### 3. Default Credentials
 - **Superuser:** `admin@admin.com`
+- **Password:** `admin123`
 - **Test User:** `tester@example.com`
+- **Password:** `tester123`
+
+---
+
+## 📚 Documentation
+
+- [Getting Started Guide](docs/tutorials/getting-started.md)
+- [Administrator Guide](docs/how-to/admin-guide.md)
+- [Hierarchy & Status Logic](docs/explanation/hierarchy-logic.md)
+- [System Architecture](docs/explanation/architecture.md)
+- [MCP Connection Guide](docs/how-to/setup-mcp.md)
 
 ---
 

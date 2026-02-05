@@ -12,12 +12,19 @@ docker-compose up -d --build
 Open your browser and navigate to `http://localhost:8080`.
 Log in with the default administrator credentials:
 - **Email:** `admin@admin.com`
-- **Password:** (Set during initial deployment, usually part of the `.env` or database init)
+- **Password:** `admin123` (Initial default)
 
-## 3. Create a Project
+## 3. Configure Metadata (Admins Only)
+Before creating projects, an administrator should define global categories:
+1. Navigate to the **Metadata** page in the sidebar.
+2. Under **Topics**, create labels like "Frontend", "Marketing", or "DevOps".
+3. Under **Work Types**, create labels like "Feature", "Bug", or "Research".
+4. Colors assigned to Topics will be reflected in the project headers and Gantt bars.
+
+## 4. Create a Project
 1. Click the **"New Project"** button on the Dashboard or Projects page.
 2. Enter a name (e.g., "Mars Rover Deployment").
-3. Assign a **Topic** (e.g., "Space") and **Type** (e.g., "Hardware").
+3. Select a **Topic** and **Type** from the managed dropdowns.
 4. Set a Start and Due date to enable Gantt features.
 
 ## 4. Build the Hierarchy

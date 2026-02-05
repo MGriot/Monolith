@@ -8,8 +8,8 @@ The Monolith MCP server exposes the following tools for AI interaction.
 Creates a new root project.
 - **Parameters:**
     - `name` (string): Project title.
-    - `topic` (string, optional): Category.
-    - `type` (string, optional): Nature of work.
+    - `topic` (string, optional): Category (Plain text).
+    - `type` (string, optional): Nature of work (Plain text).
     - `description` (string, optional): Markdown supported.
     - `owner_id` (uuid, optional): Target user ID.
 
