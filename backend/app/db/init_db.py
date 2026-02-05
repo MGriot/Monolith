@@ -21,7 +21,7 @@ async def seed_users():
         # Create Admin
         admin = User(
             email="admin@admin.com",
-            hashed_password=get_password_hash("admin"),
+            hashed_password=get_password_hash("admin123"),
             full_name="Admin User",
             is_superuser=True,
             is_active=True
@@ -30,8 +30,8 @@ async def seed_users():
         
         # Create Tester
         tester = User(
-            email="tester@tester.com",
-            hashed_password=get_password_hash("tester"),
+            email="tester@example.com",
+            hashed_password=get_password_hash("tester123"),
             full_name="Tester User",
             is_superuser=False,
             is_active=True
@@ -39,7 +39,7 @@ async def seed_users():
         db.add(tester)
         
         await db.commit()
-        logger.info("Database seeded with admin@admin.com and tester@tester.com")
+        logger.info("Database seeded with admin@admin.com and tester@example.com")
 
 async def reset_db():
     """
