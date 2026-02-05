@@ -45,7 +45,7 @@ const ZOOM_CONFIG = {
  * Generates a path with fixed-dimension corners to prevent distortion during zoom.
  */
 const getOrthogonalPath = (
-  type: 'dependency' | 'hierarchy', 
+  startSide: 'left' | 'right', 
   x1: number, 
   y1: number, 
   x2: number, 
@@ -54,47 +54,47 @@ const getOrthogonalPath = (
   const r = 10; // Fixed radius for curves (px)
   const indent = 20; // Fixed indentation distance to the left (px)
 
-  // 1. HIERARCHY LINES (Parent -> Child)
-  if (type === 'hierarchy') {
-    if (Math.abs(y2 - y1) < 2 * r) {
-      return `M ${x1} ${y1} H ${x1 - indent} V ${y2} H ${x2}`;
+  // 1. EXITING LEFT (Hierarchy or Start-to-Start)
+  if (startSide === 'left') {
+    const verticalLineX = x1 - indent;
+    const ry = y2 > y1 ? r : -r; 
+    const hasSpace = Math.abs(y2 - y1) > r * 2;
+
+    if (!hasSpace) {
+      return `M ${x1} ${y1} H ${verticalLineX} V ${y2} H ${x2}`;
     }
 
     return `
-      M ${x1} ${y1}                  
-      H ${x1 - indent + r}           
-      Q ${x1 - indent} ${y1} ${x1 - indent} ${y1 + r} 
-      V ${y2 - r}                    
-      Q ${x1 - indent} ${y2} ${x1 - indent + r} ${y2} 
+      M ${x1} ${y1}
+      H ${verticalLineX + r}
+      Q ${verticalLineX} ${y1} ${verticalLineX} ${y1 + ry}
+      V ${y2 - ry}
+      Q ${verticalLineX} ${y2} ${verticalLineX + (x2 > verticalLineX ? r : -r)} ${y2}
       H ${x2}
     `.replace(/\s+/g, ' ');
   }
 
-  // 2. DEPENDENCY LINES (Predecessor -> Successor)
-  const buffer = 20;
-  
-  if (x2 < x1 + buffer) {
-    const midY = y1 + (y2 - y1) / 2;
-    return `
-        M ${x1} ${y1} 
-        H ${x1 + buffer} 
-        V ${midY} 
-        H ${x2 - buffer} 
-        V ${y2} 
-        H ${x2}
-    `.replace(/\s+/g, ' ');
-  } else {
-    const dirY = y2 > y1 ? 1 : -1;
-    const corner = Math.min(Math.abs(y2 - y1) / 2, r);
+  // 2. EXITING RIGHT (Standard Dependency)
+  else {
+    const buffer = 20; 
+    const isBackwards = x2 < x1 + buffer;
 
-    return `
-      M ${x1} ${y1} 
-      H ${x1 + buffer - corner} 
-      Q ${x1 + buffer} ${y1} ${x1 + buffer} ${y1 + corner * dirY} 
-      V ${y2 - corner * dirY} 
-      Q ${x1 + buffer} ${y2} ${x1 + buffer + corner} ${y2} 
-      H ${x2}
-    `.replace(/\s+/g, ' ');
+    if (!isBackwards) {
+       const midX = x1 + buffer;
+       const ry = y2 > y1 ? r : -r;
+       
+       return `
+         M ${x1} ${y1}
+         H ${midX - r}
+         Q ${midX} ${y1} ${midX} ${y1 + ry}
+         V ${y2 - ry}
+         Q ${midX} ${y2} ${midX + r} ${y2}
+         H ${x2}
+       `.replace(/\s+/g, ' ');
+    }
+    
+    const midY = (y1 + y2) / 2;
+    return `M ${x1} ${y1} H ${x1 + buffer} V ${midY} H ${x2 - buffer} V ${y2} H ${x2}`;
   }
 };
 
@@ -429,7 +429,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                     lines.push(
                                         <path 
                                             key={`hier-${task.id}`}
-                                            d={getOrthogonalPath('hierarchy', startX, startY, endX, endY)}
+                                            d={getOrthogonalPath('left', startX, startY, endX, endY)}
                                             fill="none"
                                             stroke="#cbd5e1"
                                             strokeWidth="2"
@@ -459,10 +459,18 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 const baseStartX = getPositionPx(blocker.due_date!) + dayWidth;
                                 // Add lag
                                 const lagOffset = (dep.lag_days || 0) * dayWidth;
-                                const startX = baseStartX + lagOffset;
+                                
+                                const taskStart = getPositionPx(item.start_date!);
+                                const blockerEnd = baseStartX + lagOffset;
+                                const blockerStart = getPositionPx(blocker.start_date!);
+
+                                // Smart Anchor Logic
+                                const isBackwards = taskStart < blockerEnd + 20;
+                                const startX = isBackwards ? blockerStart : blockerEnd;
+                                const startSide = isBackwards ? 'left' : 'right';
                                 
                                 const startY = blocker.rowIndex * rowHeight + (rowHeight / 2);
-                                const endX = getPositionPx(item.start_date!);
+                                const endX = taskStart;
                                 const endY = item.rowIndex * rowHeight + (rowHeight / 2);
 
                                 const color = getPriorityColorHex(blocker);
@@ -470,7 +478,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 return (
                                     <path 
                                         key={`${item.id}-${dep.predecessor_id}`}
-                                        d={getOrthogonalPath('dependency', startX, startY, endX, endY)}
+                                        d={getOrthogonalPath(startSide, startX, startY, endX, endY)}
                                         fill="none"
                                         stroke={color}
                                         strokeWidth={showCriticalPath && item.is_critical && blocker.is_critical ? "2.5" : "1.5"}
