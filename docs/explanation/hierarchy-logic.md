@@ -12,7 +12,8 @@ To prevent manual work, Monolith automatically calculates progress based on the 
 
 ### Subtask to Task
 - If **any** subtask is "In Progress", the parent Task becomes "In Progress".
-- If **all** subtasks are "Done", the parent Task becomes "Done".
+- If **all** subtasks are "Done", the parent Task attempts to become "Done".
+- **Smart Blocker Logic:** If a parent task is blocked by another task, it will remain "In Progress" even if all its subtasks are complete, preventing dependency violations.
 - If a task has no subtasks, its status is managed manually.
 
 ### Task to Project
