@@ -152,7 +152,12 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         
         new_status = Status.TODO
         if done_count == total:
-            new_status = Status.DONE
+            # Check if parent itself is blocked before moving to DONE
+            active_blockers = await self.check_for_active_blockers(db, parent_id)
+            if active_blockers:
+                new_status = Status.IN_PROGRESS
+            else:
+                new_status = Status.DONE
         elif in_progress_count > 0 or done_count > 0:
             new_status = Status.IN_PROGRESS
         
