@@ -69,8 +69,11 @@ async def create_task(
     if not task_in.owner_id:
         task_in.owner_id = current_user.id
         
-    task_obj = await crud_task.task.create(db=db, obj_in=task_in)
-    return task_obj
+    try:
+        task_obj = await crud_task.task.create(db=db, obj_in=task_in)
+        return task_obj
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/{task_id}", response_model=Task)
 async def read_task(
@@ -110,8 +113,11 @@ async def update_task(
     if not current_user.is_superuser and (project.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     
-    task_obj = await crud_task.task.update(db=db, db_obj=task_obj, obj_in=task_in)
-    return task_obj
+    try:
+        task_obj = await crud_task.task.update(db=db, db_obj=task_obj, obj_in=task_in)
+        return task_obj
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete("/{task_id}", response_model=Task)
 async def delete_task(
