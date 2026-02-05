@@ -41,18 +41,47 @@ const ZOOM_CONFIG = {
   year: { scale: 2, label: 'Years' }
 };
 
-const getCurvedPath = (x1: number, y1: number, x2: number, y2: number, r: number = 12) => {
-    const midX = (x1 + x2) / 2;
-    const ry = y2 > y1 ? r : -r;
-    const rx = x2 > x1 ? r : -r;
-    
-    // Check if vertical distance is enough for two curves
-    if (Math.abs(y2 - y1) < r * 2) {
-        // Just use a single curve or S-shape if possible, but keep it simple for now
-        return `M ${x1} ${y1} H ${midX} V ${y2} H ${x2}`;
-    }
-    
-    return `M ${x1} ${y1} H ${midX - rx} Q ${midX} ${y1} ${midX} ${y1 + ry} V ${y2 - ry} Q ${midX} ${y2} ${midX + rx} ${y2} H ${x2}`;
+/**
+ * Generates an orthogonal path (90-degree angles).
+ * 
+ * @param type - 'dependency' (End-to-Start) or 'hierarchy' (Parent-to-Child)
+ * @param x1 - Start X
+ * @param y1 - Start Y
+ * @param x2 - End X
+ * @param y2 - End Y
+ * @param r - Corner radius
+ */
+const getOrthogonalPath = (
+  type: 'dependency' | 'hierarchy', 
+  x1: number, 
+  y1: number, 
+  x2: number, 
+  y2: number, 
+  r: number = 5
+) => {
+  if (type === 'hierarchy') {
+    const corner = Math.abs(y2 - y1) < r ? 0 : r;
+    return `M ${x1} ${y1} V ${y2 - corner} a ${corner} ${corner} 0 0 0 ${corner} ${corner} H ${x2}`;
+  }
+
+  const buffer = 20;
+  const isBackwards = x2 < x1 + buffer;
+
+  if (isBackwards) {
+    const midY = (y1 + y2) / 2;
+    return `M ${x1} ${y1} H ${x1 + buffer} V ${midY} H ${x2 - buffer} V ${y2} H ${x2}`;
+  } else {
+    const corner = Math.min(Math.abs(y2 - y1) / 2, r);
+    const dirY = y2 > y1 ? 1 : -1;
+    return `
+      M ${x1} ${y1} 
+      H ${x1 + buffer - corner} 
+      q ${corner} 0 ${corner} ${corner * dirY} 
+      V ${y2 - (corner * dirY)} 
+      q 0 ${corner * dirY} ${corner} ${corner * dirY} 
+      H ${x2}
+    `.replace(/\s+/g, ' ');
+  }
 };
 
 export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, initialShowSubtasks = false }: ProjectGanttProps) {
@@ -353,6 +382,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                         className="w-full h-full" 
                         viewBox={`0 0 ${containerWidth} ${svgHeight}`}
                         preserveAspectRatio="none"
+                        shapeRendering="geometricPrecision"
                     >
                         <defs>
                             <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
@@ -387,12 +417,11 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                     lines.push(
                                         <path 
                                             key={`hier-${task.id}`}
-                                            d={getCurvedPath(startX, startY, endX, endY)}
+                                            d={getOrthogonalPath('hierarchy', startX + 10, startY + 5, endX, endY)}
                                             fill="none"
                                             stroke={color}
                                             strokeWidth="1.5"
-                                            strokeOpacity="0.3"
-                                            strokeDasharray="4 2"
+                                            strokeOpacity="0.4"
                                         />
                                     );
                                     
@@ -428,13 +457,13 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 return (
                                     <path 
                                         key={`${item.id}-${dep.predecessor_id}`}
-                                        d={getCurvedPath(startX, startY, endX, endY)}
+                                        d={getOrthogonalPath('dependency', startX, startY, endX, endY)}
                                         fill="none"
                                         stroke={color}
                                         strokeWidth={showCriticalPath && item.is_critical && blocker.is_critical ? "2.5" : "1.5"}
                                         strokeOpacity={showCriticalPath && item.is_critical && blocker.is_critical ? "1" : "0.5"}
                                         markerEnd="url(#arrowhead)"
-                                        className={cn(showCriticalPath && item.is_critical && blocker.is_critical && "animate-pulse")}
+                                        className={cn("transition-all duration-300", showCriticalPath && item.is_critical && blocker.is_critical && "animate-pulse")}
                                     />
                                 );
                             });
