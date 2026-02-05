@@ -1,7 +1,8 @@
-from typing import List
+from typing import List, Optional, Any
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 from app.crud.base import CRUDBase
 from app.models.project import Project
@@ -9,6 +10,31 @@ from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.core.utils import clean_dict_datetimes
 
 class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
+    async def get(self, db: AsyncSession, id: Any) -> Optional[Project]:
+        result = await db.execute(
+            select(self.model)
+            .filter(self.model.id == id)
+            .options(
+                selectinload(Project.topic_ref),
+                selectinload(Project.type_ref)
+            )
+        )
+        return result.scalars().first()
+
+    async def get_multi(
+        self, db: AsyncSession, *, skip: int = 0, limit: int = 100
+    ) -> List[Project]:
+        result = await db.execute(
+            select(self.model)
+            .options(
+                selectinload(Project.topic_ref),
+                selectinload(Project.type_ref)
+            )
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
     async def create_with_owner(
         self, db: AsyncSession, *, obj_in: ProjectCreate, owner_id: UUID
     ) -> Project:
@@ -17,7 +43,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         db.add(db_obj)
         await db.commit()
         await db.refresh(db_obj)
-        return db_obj
+        return await self.get(db, id=db_obj.id)
 
     async def get_multi_by_owner(
         self, db: AsyncSession, *, owner_id: UUID, skip: int = 0, limit: int = 100
@@ -25,6 +51,10 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         result = await db.execute(
             select(self.model)
             .filter(self.model.owner_id == owner_id)
+            .options(
+                selectinload(Project.topic_ref),
+                selectinload(Project.type_ref)
+            )
             .offset(skip)
             .limit(limit)
         )

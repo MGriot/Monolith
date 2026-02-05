@@ -24,11 +24,15 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 selectinload(Task.assignees),
                 selectinload(Task.blocked_by),
                 selectinload(Task.blocking),
+                selectinload(Task.topic_ref),
+                selectinload(Task.type_ref),
                 selectinload(Task.subtasks).options(
                     selectinload(Task.owner),
                     selectinload(Task.assignees),
                     selectinload(Task.blocked_by),
-                    selectinload(Task.blocking)
+                    selectinload(Task.blocking),
+                    selectinload(Task.topic_ref),
+                    selectinload(Task.type_ref)
                 )
             )
         )
@@ -56,31 +60,43 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 selectinload(Task.assignees),
                 selectinload(Task.blocked_by),
                 selectinload(Task.blocking),
+                selectinload(Task.topic_ref),
+                selectinload(Task.type_ref),
                 selectinload(Task.subtasks).options(
                     selectinload(Task.owner),
                     selectinload(Task.assignees),
                     selectinload(Task.blocked_by),
                     selectinload(Task.blocking),
+                    selectinload(Task.topic_ref),
+                    selectinload(Task.type_ref),
                     selectinload(Task.subtasks).options(
                         selectinload(Task.owner),
                         selectinload(Task.assignees),
                         selectinload(Task.blocked_by),
                         selectinload(Task.blocking),
+                        selectinload(Task.topic_ref),
+                        selectinload(Task.type_ref),
                         selectinload(Task.subtasks).options(
                             selectinload(Task.owner),
                             selectinload(Task.assignees),
                             selectinload(Task.blocked_by),
                             selectinload(Task.blocking),
+                            selectinload(Task.topic_ref),
+                            selectinload(Task.type_ref),
                             selectinload(Task.subtasks).options(
                                  selectinload(Task.owner),
                                  selectinload(Task.assignees),
                                  selectinload(Task.blocked_by),
                                  selectinload(Task.blocking),
+                                 selectinload(Task.topic_ref),
+                                 selectinload(Task.type_ref),
                                  selectinload(Task.subtasks).options(
                                      selectinload(Task.owner),
                                      selectinload(Task.assignees),
                                      selectinload(Task.blocked_by),
                                      selectinload(Task.blocking),
+                                     selectinload(Task.topic_ref),
+                                     selectinload(Task.type_ref),
                                      selectinload(Task.subtasks)
                                  )
                             )
