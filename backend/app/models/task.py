@@ -34,6 +34,10 @@ class Task(Base):
     topic = Column(String, index=True)
     type = Column(String, index=True)
     
+    # New FK fields
+    topic_id = Column(UUID(as_uuid=True), ForeignKey("topics.id"), nullable=True)
+    type_id = Column(UUID(as_uuid=True), ForeignKey("work_types.id"), nullable=True)
+    
     status = Column(SAEnum(Status), default=Status.TODO)
     priority = Column(SAEnum(Priority), default=Priority.MEDIUM)
     
@@ -63,6 +67,9 @@ class Task(Base):
     
     blocked_by = relationship("Dependency", foreign_keys="Dependency.successor_id", back_populates="successor")
     blocking = relationship("Dependency", foreign_keys="Dependency.predecessor_id", back_populates="predecessor")
+
+    topic_ref = relationship("Topic")
+    type_ref = relationship("WorkType")
 
 class Subtask(Base):
     __tablename__ = "subtasks"

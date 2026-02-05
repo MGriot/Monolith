@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { 
   format, 
   differenceInDays, 
@@ -13,12 +13,15 @@ import {
   parseISO,
   min,
   max,
+  isPast,
 } from 'date-fns';
+import { toPng } from 'html-to-image';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut } from 'lucide-react';
+import { ZoomIn, ZoomOut, AlertTriangle, Download } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Task, Subtask } from '@/types';
 
 interface ProjectGanttProps {
@@ -38,9 +41,49 @@ const ZOOM_CONFIG = {
   year: { scale: 2, label: 'Years' }
 };
 
+const getCurvedPath = (x1: number, y1: number, x2: number, y2: number, r: number = 12) => {
+    const midX = (x1 + x2) / 2;
+    const ry = y2 > y1 ? r : -r;
+    const rx = x2 > x1 ? r : -r;
+    
+    // Check if vertical distance is enough for two curves
+    if (Math.abs(y2 - y1) < r * 2) {
+        // Just use a single curve or S-shape if possible, but keep it simple for now
+        return `M ${x1} ${y1} H ${midX} V ${y2} H ${x2}`;
+    }
+    
+    return `M ${x1} ${y1} H ${midX - rx} Q ${midX} ${y1} ${midX} ${y1 + ry} V ${y2 - ry} Q ${midX} ${y2} ${midX + rx} ${y2} H ${x2}`;
+};
+
 export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, initialShowSubtasks = false }: ProjectGanttProps) {
   const [showSubtasks, setShowSubtasks] = useState(initialShowSubtasks);
+  const [showCriticalPath, setShowCriticalPath] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('month');
+  const [isExporting, setIsExporting] = useState(false);
+  const ganttRef = useRef<HTMLDivElement>(null);
+
+  const exportGantt = async () => {
+    if (!ganttRef.current) return;
+    setIsExporting(true);
+    try {
+      const dataUrl = await toPng(ganttRef.current, { 
+        backgroundColor: '#ffffff',
+        style: {
+            overflow: 'visible'
+        }
+      });
+      const link = document.createElement('a');
+      link.download = `gantt-export-${format(new Date(), 'yyyy-MM-dd')}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success('Gantt exported as PNG');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to export Gantt');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const ganttItems = useMemo(() => {
     const items: GanttItem[] = [];
@@ -111,13 +154,14 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
   }, [viewWindow, zoomLevel]);
 
   const minorTicks = useMemo(() => {
-    if (!viewWindow || zoomLevel === 'day') return [];
+    if (!viewWindow) return [];
     const interval = { start: viewWindow.start, end: viewWindow.end };
     
     switch (zoomLevel) {
       case 'week': return eachDayOfInterval(interval);
       case 'month': return eachWeekOfInterval(interval);
       case 'year': return eachMonthOfInterval(interval);
+      case 'day': return []; // No minor ticks for day view yet
       default: return [];
     }
   }, [viewWindow, zoomLevel]);
@@ -217,6 +261,14 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                 />
                 <Label htmlFor="show-subtasks" className="text-sm font-medium">Include Subtasks</Label>
             </div>
+            <div className="flex items-center space-x-2">
+                <Switch 
+                    id="show-cpm" 
+                    checked={showCriticalPath} 
+                    onCheckedChange={setShowCriticalPath} 
+                />
+                <Label htmlFor="show-cpm" className="text-sm font-medium text-red-500">Critical Path</Label>
+            </div>
             <div className="flex items-center gap-1 border rounded-md bg-white p-1">
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleZoom('in')} disabled={zoomLevel === 'day'}>
                     <ZoomIn className="w-4 h-4" />
@@ -226,6 +278,16 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                     <ZoomOut className="w-4 h-4" />
                 </Button>
             </div>
+            <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-9 gap-2" 
+                onClick={exportGantt}
+                disabled={isExporting}
+            >
+                <Download className="w-3.5 h-3.5" />
+                {isExporting ? 'Exporting...' : 'Export PNG'}
+            </Button>
         </div>
         <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
@@ -242,8 +304,8 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
         </div>
       </div>
 
-      <div className="overflow-x-auto relative">
-        <div style={{ width: `${containerWidth + 256}px` }} className="relative min-w-full">
+      <div className="overflow-x-auto relative" ref={ganttRef}>
+        <div style={{ width: `${containerWidth + 256}px` }} className="relative min-w-full bg-white">
             {/* Timeline Header */}
             <div className="flex border-b border-slate-200 bg-slate-50/50 sticky top-0 z-20">
                 <div className="w-64 border-r border-slate-200 p-3 flex-shrink-0 font-bold text-[10px] text-slate-500 uppercase tracking-widest bg-slate-50/50 sticky left-0 z-30">
@@ -321,18 +383,16 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                     const endY = (childItem as any).rowIndex * rowHeight + (rowHeight / 2);
 
                                     const color = getPriorityColorHex(task);
-                                    const stub = 12;
-
+                                    
                                     lines.push(
                                         <path 
                                             key={`hier-${task.id}`}
-                                            d={`M ${startX} ${startY} H ${startX - stub} V ${endY} H ${endX}`}
+                                            d={getCurvedPath(startX, startY, endX, endY)}
                                             fill="none"
                                             stroke={color}
                                             strokeWidth="1.5"
                                             strokeOpacity="0.3"
                                             strokeDasharray="4 2"
-                                            shapeRendering="crispEdges"
                                         />
                                     );
                                     
@@ -346,38 +406,35 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
 
                         {/* Dependency Lines (Predecessor -> Successor) */}
                         {ganttItems.map((item) => {
-                            if (!item.blocked_by_ids || item.blocked_by_ids.length === 0) return null;
+                            const dependencies = item.blocked_by || [];
+                            if (dependencies.length === 0) return null;
                             
-                            return item.blocked_by_ids.map(blockerId => {
-                                const blocker = ganttItems.find(i => i.id === blockerId);
+                            return dependencies.map(dep => {
+                                const blocker = ganttItems.find(i => i.id === dep.predecessor_id);
                                 if (!blocker) return null;
 
-                                const startX = getPositionPx(blocker.due_date!) + dayWidth;
+                                // Base start at predecessor end
+                                const baseStartX = getPositionPx(blocker.due_date!) + dayWidth;
+                                // Add lag
+                                const lagOffset = (dep.lag_days || 0) * dayWidth;
+                                const startX = baseStartX + lagOffset;
+                                
                                 const startY = blocker.rowIndex * rowHeight + (rowHeight / 2);
                                 const endX = getPositionPx(item.start_date!);
                                 const endY = item.rowIndex * rowHeight + (rowHeight / 2);
 
                                 const color = getPriorityColorHex(blocker);
-                                const stub = 12;
-
-                                let path = "";
-                                if (endX > startX + (stub * 2)) {
-                                    const midX = (startX + endX) / 2;
-                                    path = `M ${startX} ${startY} H ${midX} V ${endY} H ${endX}`;
-                                } else {
-                                    path = `M ${startX} ${startY} H ${startX + stub} V ${endY} H ${endX}`;
-                                }
 
                                 return (
                                     <path 
-                                        key={`${item.id}-${blockerId}`}
-                                        d={path}
+                                        key={`${item.id}-${dep.predecessor_id}`}
+                                        d={getCurvedPath(startX, startY, endX, endY)}
                                         fill="none"
                                         stroke={color}
-                                        strokeWidth="1.5"
-                                        strokeOpacity="0.5"
-                                        shapeRendering="crispEdges"
+                                        strokeWidth={showCriticalPath && item.is_critical && blocker.is_critical ? "2.5" : "1.5"}
+                                        strokeOpacity={showCriticalPath && item.is_critical && blocker.is_critical ? "1" : "0.5"}
                                         markerEnd="url(#arrowhead)"
+                                        className={cn(showCriticalPath && item.is_critical && blocker.is_critical && "animate-pulse")}
                                     />
                                 );
                             });
@@ -388,10 +445,10 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                 {/* Today Line */}
                 {todayPos >= 0 && todayPos <= 100 && (
                     <div 
-                        className="absolute top-0 bottom-0 w-px bg-red-400 z-20 pointer-events-none opacity-50 ml-64"
+                        className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-30 pointer-events-none ml-64"
                         style={{ left: `${todayPos}%` }}
                     >
-                        <div className="bg-red-400 text-white text-[8px] font-bold px-1 py-0.5 rounded-b-sm whitespace-nowrap">
+                        <div className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap ml-[-1px]">
                             TODAY
                         </div>
                     </div>
@@ -400,6 +457,8 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                 {ganttItems.map((item) => {
                 const isSub = 'isSubtask' in item;
                 const milestone = isMilestone(item);
+                const overdue = (item.status !== 'Done' && item.status !== 'done') && item.due_date && isPast(parseISO(item.due_date));
+                const hasDeadline = !!item.deadline_at;
                 
                 return (
                     <div key={item.id} className={cn(
@@ -410,10 +469,11 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                         <div className="flex items-center gap-2">
                             <span className="text-[8px] font-black text-slate-400 w-6 shrink-0">{item.wbs_code}</span>
                             <span className={cn(
-                            "text-xs font-semibold truncate",
+                            "text-xs font-semibold truncate flex items-center gap-1",
                             isSub ? "text-slate-500 pl-2 border-l-2 border-l-slate-200" : "text-slate-900"
                             )}>
                             {item.title}
+                            {overdue && <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />}
                             </span>
                         </div>
                         {isSub && (
@@ -421,7 +481,19 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                         )}
                     </div>
                     <div className="flex-1 relative h-14 py-4">
-                        {/* Grid lines */}
+                        {/* Minor Grid lines */}
+                        {minorTicks?.map((tick) => {
+                        const left = getPositionPercent(tick.toISOString());
+                        return (
+                            <div 
+                            key={`minor-grid-${tick.toISOString()}`} 
+                            className="absolute top-0 bottom-0 border-l border-slate-50/50 h-full"
+                            style={{ left: `${left}%` }}
+                            />
+                        );
+                        })}
+
+                        {/* Major Grid lines */}
                         {timeTicks?.map((tick) => {
                         const left = getPositionPercent(tick.toISOString());
                         return (
@@ -432,6 +504,15 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                             />
                         );
                         })}
+
+                        {/* Deadline Indicator */}
+                        {hasDeadline && (
+                            <div 
+                                className="absolute top-0 bottom-0 w-0.5 bg-purple-500 z-10 pointer-events-none opacity-40"
+                                style={{ left: `${getPositionPercent(item.deadline_at!)}%` }}
+                                title={`Deadline: ${format(parseISO(item.deadline_at!), 'PPP')}`}
+                            />
+                        )}
                         
                         {/* Bar or Milestone */}
                         {milestone ? (
@@ -451,7 +532,9 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 className={cn(
                                     "absolute h-6 rounded shadow-sm transition-all group-hover:scale-[1.01] flex items-center px-2 border-l-4 border-white/20 overflow-hidden",
                                     getBarColor(item),
-                                    isSub ? "opacity-80 h-4 mt-1" : "opacity-100"
+                                    isSub ? "opacity-80 h-4 mt-1" : "opacity-100",
+                                    overdue && "ring-2 ring-red-500 ring-offset-1",
+                                    showCriticalPath && item.is_critical && "ring-2 ring-red-400 ring-offset-2 animate-pulse"
                                 )}
                                 style={{ 
                                     left: `${getPositionPercent(item.start_date!)}%`, 
@@ -468,6 +551,12 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 <span className="text-[9px] font-black text-white truncate drop-shadow-sm z-10">
                                     {Math.round(getWidthPercent(item.start_date!, item.due_date!) / 100 * totalDays)}d
                                 </span>
+                                
+                                {overdue && (
+                                    <div className="absolute right-1 top-1 text-[8px] animate-pulse">
+                                        ⚠️
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

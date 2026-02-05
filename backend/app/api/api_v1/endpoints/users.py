@@ -1,10 +1,11 @@
 from typing import Any, List
 from fastapi import APIRouter, Body, Depends, HTTPException, status
+from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
 from app.crud import crud_user
-from app.schemas.user import User, UserCreate
+from app.schemas.user import User, UserCreate, UserUpdate
 from app.models.user import User as UserModel
 
 router = APIRouter()
@@ -55,3 +56,25 @@ async def read_user_me(
     Get current user.
     """
     return current_user
+
+@router.put("/me", response_model=User)
+async def update_user_me(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    password: str = Body(None),
+    full_name: str = Body(None),
+    email: EmailStr = Body(None),
+    current_user: UserModel = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Update own user.
+    """
+    current_user_data = UserUpdate()
+    if password is not None:
+        current_user_data.password = password
+    if full_name is not None:
+        current_user_data.full_name = full_name
+    if email is not None:
+        current_user_data.email = email
+    user = await crud_user.update(db, db_obj=current_user, obj_in=current_user_data)
+    return user

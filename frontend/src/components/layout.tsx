@@ -11,7 +11,7 @@ import {
   User as UserIcon,
   Users,
   Plus,
-  Search
+  Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -27,19 +27,22 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
-  { icon: FolderKanban, label: 'Projects', href: '/projects' },
-  { icon: CalendarIcon, label: 'Calendar', href: '/calendar' },
-  { icon: GanttChart, label: 'Roadmap', href: '/roadmap' },
-  { icon: Users, label: 'Team', href: '/users' },
-];
-
 export default function Layout({ children }: LayoutProps) {
   const { logout, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isTaskCreateOpen, setIsTaskCreateOpen] = useState(false);
+
+  const filteredNavItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
+    { icon: FolderKanban, label: 'Projects', href: '/projects' },
+    { icon: CalendarIcon, label: 'Calendar', href: '/calendar' },
+    { icon: GanttChart, label: 'Roadmap', href: '/roadmap' },
+    ...(user?.is_superuser ? [
+      { icon: Users, label: 'Team', href: '/users' },
+      { icon: Database, label: 'Metadata', href: '/admin/metadata' }
+    ] : []),
+  ];
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -64,7 +67,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
         
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {filteredNavItems.map((item) => {
             const isActive = location.pathname === item.href || (item.href !== '/' && location.pathname.startsWith(item.href));
             return (
               <Link
@@ -112,14 +115,6 @@ export default function Layout({ children }: LayoutProps) {
             <h2 className="text-sm font-semibold text-slate-900 capitalize">
               {getPageTitle()}
             </h2>
-            <div className="hidden md:flex items-center bg-slate-100 border-none rounded-full px-3 py-1.5 gap-2 w-64">
-              <Search className="w-3.5 h-3.5 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search projects..." 
-                className="bg-transparent border-none text-xs focus:ring-0 w-full placeholder:text-slate-400"
-              />
-            </div>
           </div>
           
           <div className="flex items-center gap-3">

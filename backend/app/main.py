@@ -28,8 +28,12 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads"
 async def on_startup():
     from app.db.session import engine, Base
     import app.models  # Ensure all models are loaded
+    from app.db.init_db import seed_users
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    
+    await seed_users()
 
 @app.get("/api/health")
 async def health_check():

@@ -4,11 +4,15 @@ from uuid import UUID
 from pydantic import BaseModel
 from app.core.enums import Status
 
+from .metadata import Topic, WorkType
+
 class ProjectBase(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     topic: Optional[str] = None
     type: Optional[str] = None
+    topic_id: Optional[UUID] = None
+    type_id: Optional[UUID] = None
     status: Optional[Status] = Status.TODO
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
@@ -31,4 +35,5 @@ class ProjectInDBBase(ProjectBase):
         from_attributes = True
 
 class Project(ProjectInDBBase):
-    pass
+    topic_ref: Optional[Topic] = None
+    type_ref: Optional[WorkType] = None

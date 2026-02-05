@@ -78,7 +78,12 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
                 </div>
             )}
             {task.is_milestone && <Milestone className={cn("w-3.5 h-3.5 text-blue-500 shrink-0", level > 0 && "w-3 h-3 text-blue-400")} />}
-            <span className={cn(level > 0 && "text-xs text-slate-600 font-medium")}>{task.title}</span>
+            <span className={cn(level > 0 && "text-xs text-slate-600 font-medium", "flex items-center gap-1.5")}>
+              {task.title}
+              {task.status !== 'Done' && task.status !== 'done' && task.due_date && new Date(task.due_date) < new Date() && (
+                <AlertTriangle className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+              )}
+            </span>
           </div>
         </TableCell>
         <TableCell className="py-2 text-right">

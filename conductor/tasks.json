@@ -421,191 +421,230 @@
     "status": "done",
     "priority": "low",
     "linked_req": "PRD Section 10.2",
-        "description": "Apply dynamic color matching and crispEdges rendering to all Gantt connectors."
-      },
-        {
-          "id": "CORE-001",
-          "title": "Model Update: Dependencies & Metadata",
-          "status": "done",
-          "priority": "high",
-          "linked_req": "PRD Section 4.1 & 4.2",
-          "description": "Create Dependency model and add is_milestone, deadline_at to Task/Subtask."
-        },
-      
-        {
-      
-          "id": "CORE-002",
-      
-          "title": "Schema Update: Advanced Dependencies",
-      
-          "status": "done",
-      
-          "priority": "high",
-      
-          "linked_req": "PRD Section 4.2",
-      
-          "description": "Update Pydantic schemas to support FS/SS/FF/SF dependency objects and new metadata fields."
-      
-        },
-      
-      
-        {
-      
-      
-          "id": "CORE-003",
-      
-      
-          "title": "Logic: Cycle Detection Utility",
-      
-      
-          "status": "done",
-      
-      
-          "priority": "high",
-      
-      
-          "linked_req": "PRD Section 8",
-      
-      
-          "description": "Implement graph-based cycle detection for dependencies."
-      
-      
-        },
-      
-      
-      
-        {
-      
-      
-      
-          "id": "CORE-004",
-      
-      
-      
-          "title": "CRUD: Advanced Dependency Management",
-      
-      
-      
-          "status": "done",
-      
-      
-      
-          "priority": "high",
-      
-      
-      
-          "linked_req": "PRD Section 4.1",
-      
-      
-      
-          "description": "Implement dependency creation/deletion with validation and cycle detection."
-      
-      
-      
-        },
-      
-      
-      
-      
-        {
-          "id": "CORE-005",
-          "title": "Logic: WBS Generation",
-          "status": "done",
-          "priority": "medium",
-          "linked_req": "PRD Section 4.1",
-              "description": "Implement dynamic WBS code generation for project hierarchies."
-            },
-              {
-                "id": "REC-001",
-                "title": "Model: Unified Recursive Task",
-                "status": "done",
-                "priority": "high",
-                "linked_req": "PRD Section 4.1 (Modified)",
-                "description": "Add parent_id to Task model and merge Subtask attributes. Support self-referencing hierarchy."
-              },
-            
-              {
-            
-                "id": "REC-002",
-            
-                "title": "Migration: Merge Subtask Data",
-            
-                "status": "done",
-            
-                "priority": "high",
-            
-                "linked_req": "Infra",
-            
-                "description": "Script to migrate existing subtasks into the unified tasks table."
-            
-              },
-            
-            
-              {
-            
-            
-                "id": "REC-003",
-            
-            
-                "title": "Schema: Recursive Pydantic Task",
-            
-            
-                "status": "done",
-            
-            
-                "priority": "high",
-            
-            
-                "linked_req": "API",
-            
-            
-                "description": "Unify Task and Subtask schemas into a single recursive model."
-            
-            
-              },
-            
-            
-            
-              {
-            
-            
-            
-                "id": "REC-004",
-            
-            
-            
-                "title": "Logic: Recursive Status & WBS",
-            
-            
-            
-                "status": "done",
-            
-            
-            
-                "priority": "high",
-            
-            
-            
-                "linked_req": "Backend Logic",
-            
-            
-            
-                "description": "Update CRUD and WBS utilities to handle infinite nesting."
-            
-            
-            
-              },
-            
-            
-            
-            
-              {
-                "id": "REC-005",
-                "title": "UI: Recursive Task Tree",
-                "status": "done",
-                "priority": "high",
-                "linked_req": "Frontend",
-                "description": "Update Task List and Gantt to support N-level nesting."
-              }
-            ]
-            
+    "description": "Apply dynamic color matching and crispEdges rendering to all Gantt connectors."
+  },
+  {
+    "id": "CORE-001",
+    "title": "Model Update: Dependencies & Metadata",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 4.1 & 4.2",
+    "description": "Create Dependency model and add is_milestone, deadline_at to Task/Subtask."
+  },
+  {
+    "id": "CORE-002",
+    "title": "Schema Update: Advanced Dependencies",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 4.2",
+    "description": "Update Pydantic schemas to support FS/SS/FF/SF dependency objects and new metadata fields."
+  },
+  {
+    "id": "CORE-003",
+    "title": "Logic: Cycle Detection Utility",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 8",
+    "description": "Implement graph-based cycle detection for dependencies."
+  },
+  {
+    "id": "CORE-004",
+    "title": "CRUD: Advanced Dependency Management",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 4.1",
+    "description": "Implement dependency creation/deletion with validation and cycle detection."
+  },
+  {
+    "id": "CORE-005",
+    "title": "Logic: WBS Generation",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.1",
+    "description": "Implement dynamic WBS code generation for project hierarchies."
+  },
+  {
+    "id": "REC-001",
+    "title": "Model: Unified Recursive Task",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 4.1 (Modified)",
+    "description": "Add parent_id to Task model and merge Subtask attributes. Support self-referencing hierarchy."
+  },
+  {
+    "id": "REC-002",
+    "title": "Migration: Merge Subtask Data",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Infra",
+    "description": "Script to migrate existing subtasks into the unified tasks table."
+  },
+  {
+    "id": "REC-003",
+    "title": "Schema: Recursive Pydantic Task",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "API",
+    "description": "Unify Task and Subtask schemas into a single recursive model."
+  },
+  {
+    "id": "REC-004",
+    "title": "Logic: Recursive Status & WBS",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Backend Logic",
+    "description": "Update CRUD and WBS utilities to handle infinite nesting."
+  },
+  {
+    "id": "REC-005",
+    "title": "UI: Recursive Task Tree",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Frontend",
+    "description": "Update Task List and Gantt to support N-level nesting."
+  },
+  {
+    "id": "BACK-012",
+    "title": "API: User Update Endpoint",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Settings Page Completion",
+    "description": "Implement update method in crud_user and PUT /users/me endpoint for profile/password updates.",
+    "verification_method": "Test with curl or Postman: PUT /api/v1/users/me"
+  },
+  {
+    "id": "FRONT-029",
+    "title": "UI: Remove Header Search Bar",
+    "status": "done",
+    "priority": "low",
+    "linked_req": "UI Cleanup",
+    "description": "Remove the non-functional search bar from the Layout header component.",
+    "verification_method": "Visually verify header in browser."
+  },
+  {
+    "id": "FRONT-030",
+    "title": "UI: Settings Page & Route",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Settings Page Completion",
+    "description": "Create SettingsPage component and register /settings route in App.tsx.",
+    "verification_method": "Navigate to /settings and verify page loads."
+  },
+  {
+    "id": "FRONT-031",
+    "title": "UI: Profile & Password Forms",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Settings Page Completion",
+    "description": "Implement forms for updating full name and password in the Settings page.",
+    "verification_method": "Submit form and verify successful update via API/UI."
+  },
+  {
+    "id": "UX-002",
+    "title": "Visual Alerts & Markers",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.3: Visual Cues",
+    "description": "Implement Overdue warnings (⚠️), Deadline indicators, and properly rendered Milestone markers in Gantt and List views.",
+    "verification_method": "Set a task due date in the past and verify warning icon appears."
+  },
+  {
+    "id": "BACK-013",
+    "title": "Logic: Critical Path Method (CPM)",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.1: CPM",
+    "description": "Implement backend logic to calculate the critical path for a project based on task durations and dependencies.",
+    "verification_method": "Unit test with a known dependency graph and check if critical path matches expected result."
+  },
+  {
+    "id": "FRONT-032",
+    "title": "Gantt: CPM & Lags",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.3 & 10.1",
+    "description": "Visualize the critical path in Gantt (glow/color) and incorporate dependency lags into line rendering.",
+    "verification_method": "Toggle CPM view and verify critical path items are highlighted."
+  },
+  {
+    "id": "BACK-014",
+    "title": "Backend: Metadata Models (Topic & WorkType)",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Admin Metadata Requirements",
+    "description": "Create Topic and WorkType SQLAlchemy models and CRUD logic.",
+    "verification_method": "Check DB tables for topics and work_types."
+  },
+  {
+    "id": "BACK-015",
+    "title": "Backend: Model & Schema Refactor (FKs)",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Admin Metadata Requirements",
+    "description": "Update Project and Task models to use topic_id and type_id foreign keys. Update Pydantic schemas.",
+    "verification_method": "Check API response for projects/tasks to see resolved metadata."
+  },
+  {
+    "id": "BACK-016",
+    "title": "Backend: Metadata Migration Script",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "Admin Metadata Requirements",
+    "description": "Script to migrate existing string-based topic/type data to the new FK-based system.",
+    "verification_method": "Run migration and verify data integrity in DB."
+  },
+  {
+    "id": "FRONT-033",
+    "title": "UI: Admin Metadata Management",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Admin Metadata Requirements",
+    "description": "Implement a page for admins to manage (CRUD) Topics and WorkTypes.",
+    "verification_method": "Access /admin/metadata as admin and perform CRUD."
+  },
+  {
+    "id": "FRONT-034",
+    "title": "UI: Dynamic Metadata Dropdowns",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Admin Metadata Requirements",
+    "description": "Update Project and Task forms to use dropdowns fetching from the new metadata APIs.",
+    "verification_method": "Open Create Task form and verify dropdowns are populated."
+  },
+  {
+    "id": "FRONT-035",
+    "title": "UI: Admin User Management Enhancements",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "Admin User Management Requirements",
+    "description": "Add Reset Password and Admin Toggle to the Users page. Restrict page access to admins only.",
+    "verification_method": "Verify only admin can access /users and perform actions."
+  },
+  {
+    "id": "UX-003",
+    "title": "Gantt: TODAY Label & Curved Connectors",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "Gantt Improvements",
+    "description": "Fix 'TODAY' label clipping and implement smooth curved orthogonal connectors.",
+    "verification_method": "Visually verify curved lines and clear Today label in Gantt."
+  },
+  {
+    "id": "UX-004",
+    "title": "Gantt: Minor Ticks & Subdivisions",
+    "status": "done",
+    "priority": "low",
+    "linked_req": "Gantt Improvements",
+    "description": "Implement minor ticks (e.g., weeks within month view) for better timeline subdivision.",
+    "verification_method": "Zoom to month level and verify lighter week ticks."
+  },
+  {
+    "id": "UX-005",
+    "title": "Gantt: Export as PNG",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "Gantt Improvements",
+    "description": "Implement 'Export PNG' button using html-to-image to save the current Gantt view.",
+    "verification_method": "Click Export and verify PNG is downloaded."
+  }
+]

@@ -8,6 +8,8 @@ import CalendarPage from "./pages/calendar";
 import RoadmapPage from "./pages/roadmap";
 import ProjectDetailPage from "./pages/project-detail";
 import UsersPage from "./pages/users";
+import SettingsPage from "./pages/settings";
+import AdminMetadataPage from "./pages/admin-metadata";
 
 import DashboardPage from "./pages/dashboard";
 import ProjectsListPage from "./pages/projects-list";
@@ -46,6 +48,8 @@ function App() {
             <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
             <Route path="/roadmap" element={<PrivateRoute><RoadmapPage /></PrivateRoute>} />
             <Route path="/users" element={<PrivateRoute><UsersPage /></PrivateRoute>} />
+            <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+            <Route path="/admin/metadata" element={<PrivateRoute><AdminMetadataPage /></PrivateRoute>} />
           </Routes>
         </Router>
       </AuthProvider>

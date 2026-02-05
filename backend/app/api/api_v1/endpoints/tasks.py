@@ -41,21 +41,14 @@ async def read_tasks(
     )
     
     from app.core.wbs import apply_wbs_codes
+    from app.core.cpm import calculate_cpm
     from app.schemas.task import Task as TaskSchema
     # Convert models to schemas to allow setting wbs_code (which is not in DB)
     task_schemas = [TaskSchema.model_validate(t) for t in tasks]
     
-    # If we are fetching root tasks, we can apply WBS to the whole tree
-    # If we are fetching specific sub-level, we might need the parent's WBS as a prefix
-    parent_wbs = ""
-    if parent_id:
-        parent_task = await crud_task.task.get(db, id=parent_id)
-        # Note: This is simplified. For deep nesting, we'd need to walk up or store WBS.
-        # But since we generate it on the fly, we'll just prefix it if we have it.
-        # For now, let's assume the frontend usually fetches the root and gets the tree.
-        pass
-
-    return apply_wbs_codes(task_schemas, parent_wbs)
+    # Apply WBS and CPM
+    task_schemas = apply_wbs_codes(task_schemas, "")
+    return calculate_cpm(task_schemas)
 
 @router.post("/", response_model=Task)
 async def create_task(
