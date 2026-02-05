@@ -42,43 +42,57 @@ const ZOOM_CONFIG = {
 };
 
 /**
- * Generates an orthogonal path (90-degree angles).
- * 
- * @param type - 'dependency' (End-to-Start) or 'hierarchy' (Parent-to-Child)
- * @param x1 - Start X
- * @param y1 - Start Y
- * @param x2 - End X
- * @param y2 - End Y
- * @param r - Corner radius
+ * Generates a path with fixed-dimension corners to prevent distortion during zoom.
  */
 const getOrthogonalPath = (
   type: 'dependency' | 'hierarchy', 
   x1: number, 
   y1: number, 
   x2: number, 
-  y2: number, 
-  r: number = 5
+  y2: number
 ) => {
+  const r = 10; // Fixed radius for curves (px)
+  const indent = 20; // Fixed indentation distance to the left (px)
+
+  // 1. HIERARCHY LINES (Parent -> Child)
   if (type === 'hierarchy') {
-    const corner = Math.abs(y2 - y1) < r ? 0 : r;
-    return `M ${x1} ${y1} V ${y2 - corner} a ${corner} ${corner} 0 0 0 ${corner} ${corner} H ${x2}`;
+    if (Math.abs(y2 - y1) < 2 * r) {
+      return `M ${x1} ${y1} H ${x1 - indent} V ${y2} H ${x2}`;
+    }
+
+    return `
+      M ${x1} ${y1}                  
+      H ${x1 - indent + r}           
+      Q ${x1 - indent} ${y1} ${x1 - indent} ${y1 + r} 
+      V ${y2 - r}                    
+      Q ${x1 - indent} ${y2} ${x1 - indent + r} ${y2} 
+      H ${x2}
+    `.replace(/\s+/g, ' ');
   }
 
+  // 2. DEPENDENCY LINES (Predecessor -> Successor)
   const buffer = 20;
-  const isBackwards = x2 < x1 + buffer;
-
-  if (isBackwards) {
-    const midY = (y1 + y2) / 2;
-    return `M ${x1} ${y1} H ${x1 + buffer} V ${midY} H ${x2 - buffer} V ${y2} H ${x2}`;
+  
+  if (x2 < x1 + buffer) {
+    const midY = y1 + (y2 - y1) / 2;
+    return `
+        M ${x1} ${y1} 
+        H ${x1 + buffer} 
+        V ${midY} 
+        H ${x2 - buffer} 
+        V ${y2} 
+        H ${x2}
+    `.replace(/\s+/g, ' ');
   } else {
-    const corner = Math.min(Math.abs(y2 - y1) / 2, r);
     const dirY = y2 > y1 ? 1 : -1;
+    const corner = Math.min(Math.abs(y2 - y1) / 2, r);
+
     return `
       M ${x1} ${y1} 
       H ${x1 + buffer - corner} 
-      q ${corner} 0 ${corner} ${corner * dirY} 
-      V ${y2 - (corner * dirY)} 
-      q 0 ${corner * dirY} ${corner} ${corner * dirY} 
+      Q ${x1 + buffer} ${y1} ${x1 + buffer} ${y1 + corner * dirY} 
+      V ${y2 - corner * dirY} 
+      Q ${x1 + buffer} ${y2} ${x1 + buffer + corner} ${y2} 
       H ${x2}
     `.replace(/\s+/g, ' ');
   }
@@ -417,11 +431,12 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                     lines.push(
                                         <path 
                                             key={`hier-${task.id}`}
-                                            d={getOrthogonalPath('hierarchy', startX + 10, startY + 5, endX, endY)}
+                                            d={getOrthogonalPath('hierarchy', startX, startY, endX, endY)}
                                             fill="none"
-                                            stroke={color}
-                                            strokeWidth="1.5"
-                                            strokeOpacity="0.4"
+                                            stroke="#cbd5e1"
+                                            strokeWidth="2"
+                                            vectorEffect="non-scaling-stroke"
+                                            strokeLinecap="round"
                                         />
                                     );
                                     
@@ -462,6 +477,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                         stroke={color}
                                         strokeWidth={showCriticalPath && item.is_critical && blocker.is_critical ? "2.5" : "1.5"}
                                         strokeOpacity={showCriticalPath && item.is_critical && blocker.is_critical ? "1" : "0.5"}
+                                        vectorEffect="non-scaling-stroke"
                                         markerEnd="url(#arrowhead)"
                                         className={cn("transition-all duration-300", showCriticalPath && item.is_critical && blocker.is_critical && "animate-pulse")}
                                     />
