@@ -7,17 +7,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { User as UserIcon, Loader2, Milestone } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { User, Task } from "@/types";
+import type { User, Task, Topic, WorkType } from "@/types";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional().nullable(),
   status: z.string().min(1, "Status is required"),
   priority: z.string().min(1, "Priority is required"),
-  topic: z.string().optional().nullable(),
-  type: z.string().optional().nullable(),
+  topic_id: z.string().optional().nullable(),
+  type_id: z.string().optional().nullable(),
   is_milestone: z.boolean().optional(),
   start_date: z.string().optional().nullable(),
   due_date: z.string().optional().nullable(),
@@ -47,6 +54,16 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
     },
   });
 
+  const { data: topics } = useQuery({
+    queryKey: ['metadata', 'topics'],
+    queryFn: async () => (await api.get('/metadata/topics')).data,
+  });
+
+  const { data: workTypes } = useQuery({
+    queryKey: ['metadata', 'work-types'],
+    queryFn: async () => (await api.get('/metadata/work-types')).data,
+  });
+
   const {
     register,
     handleSubmit,
@@ -61,12 +78,16 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
       is_milestone: false,
       assignee_ids: [],
       parent_id: null,
+      topic_id: null,
+      type_id: null,
       ...initialValues,
     },
   });
 
   const selectedAssignees = watch("assignee_ids") || [];
   const selectedParentId = watch("parent_id");
+  const topicId = watch("topic_id");
+  const typeId = watch("type_id");
 
   const toggleAssignee = (userId: string) => {
     const current = [...selectedAssignees];
@@ -225,11 +246,35 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="topic">Topic</Label>
-          <Input id="topic" placeholder="e.g. Backend" {...register("topic")} />
+          <Select 
+            onValueChange={(value: string) => setValue("topic_id", value)} 
+            value={topicId || ""}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Topic" />
+            </SelectTrigger>
+            <SelectContent>
+              {topics?.map((t: Topic) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="type">Type</Label>
-          <Input id="type" placeholder="e.g. Feature" {...register("type")} />
+          <Select 
+            onValueChange={(value: string) => setValue("type_id", value)} 
+            value={typeId || ""}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Type" />
+            </SelectTrigger>
+            <SelectContent>
+              {workTypes?.map((t: WorkType) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

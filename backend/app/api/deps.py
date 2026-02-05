@@ -50,3 +50,12 @@ async def get_current_user_optional(
         return None
     
     return await crud_user.get(db, id=token_data.sub)
+
+async def get_current_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=400, detail="The user doesn't have enough privileges"
+        )
+    return current_user

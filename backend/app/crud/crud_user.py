@@ -35,6 +35,27 @@ async def authenticate(db: AsyncSession, email: str, password: str) -> Optional[
         return None
     return user
 
+async def update(
+    db: AsyncSession, *, db_obj: User, obj_in: Union[UserUpdate, Dict[str, Any]]
+) -> User:
+    if isinstance(obj_in, dict):
+        update_data = obj_in
+    else:
+        update_data = obj_in.model_dump(exclude_unset=True)
+    if update_data.get("password"):
+        hashed_password = get_password_hash(update_data["password"])
+        del update_data["password"]
+        update_data["hashed_password"] = hashed_password
+    
+    for field in update_data:
+        if hasattr(db_obj, field):
+            setattr(db_obj, field, update_data[field])
+    
+    db.add(db_obj)
+    await db.commit()
+    await db.refresh(db_obj)
+    return db_obj
+
 async def get_multi(
     db: AsyncSession, *, skip: int = 0, limit: int = 100
 ) -> list[User]:

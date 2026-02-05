@@ -33,10 +33,14 @@ async def get_calendar_events(
     if not current_user.is_superuser:
         project_query = project_query.where(Project.owner_id == current_user.id)
         
-    if start_date:
-        project_query = project_query.where(Project.due_date >= start_date)
-    if end_date:
-        project_query = project_query.where(Project.due_date <= end_date)
+    if start_date and end_date:
+        # Overlap logic: (effective_start <= range_end) AND (due_date >= range_start)
+        from sqlalchemy import func
+        project_query = project_query.where(
+            func.coalesce(Project.start_date, Project.due_date) <= end_date
+        ).where(
+            Project.due_date >= start_date
+        )
     
     result = await db.execute(project_query)
     projects = result.scalars().all()
@@ -55,10 +59,14 @@ async def get_calendar_events(
     if not current_user.is_superuser:
         task_query = task_query.join(Project).where(Project.owner_id == current_user.id)
         
-    if start_date:
-        task_query = task_query.where(Task.due_date >= start_date)
-    if end_date:
-        task_query = task_query.where(Task.due_date <= end_date)
+    if start_date and end_date:
+        # Overlap logic: (effective_start <= range_end) AND (due_date >= range_start)
+        from sqlalchemy import func
+        task_query = task_query.where(
+            func.coalesce(Task.start_date, Task.due_date) <= end_date
+        ).where(
+            Task.due_date >= start_date
+        )
     
     result = await db.execute(task_query)
     tasks = result.scalars().all()

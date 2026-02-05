@@ -33,7 +33,13 @@ export interface Task {
   sort_index?: number;
   project_id?: string;
   parent_id?: string;
+  topic_id?: string;
+  type_id?: string;
+  topic_ref?: Topic;
+  type_ref?: WorkType;
   wbs_code?: string;
+  is_critical?: boolean;
+  slack_days?: number;
 }
 
 // Deprecated: use Task
@@ -49,5 +55,23 @@ export interface Project {
   due_date: string;
   topic: string;
   type: string;
+  topic_id?: string;
+  type_id?: string;
+  topic_ref?: Topic;
+  type_ref?: WorkType;
   tags?: string[];
+}
+
+export interface Topic {
+  id: string;
+  name: string;
+  color: string;
+  is_active: boolean;
+}
+
+export interface WorkType {
+  id: string;
+  name: string;
+  icon?: string;
+  is_active: boolean;
 }

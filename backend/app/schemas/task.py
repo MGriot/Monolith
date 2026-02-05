@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 from app.core.enums import Status, Priority, DependencyType
 from app.schemas.user import User as UserSchema
+from app.schemas.metadata import Topic, WorkType
 
 class DependencyBase(BaseModel):
     successor_id: UUID
@@ -23,6 +24,8 @@ class TaskBase(BaseModel):
     description: Optional[str] = None
     topic: Optional[str] = None
     type: Optional[str] = None
+    topic_id: Optional[UUID] = None
+    type_id: Optional[UUID] = None
     status: Optional[Status] = Status.TODO
     priority: Optional[Priority] = Priority.MEDIUM
     is_milestone: Optional[bool] = False
@@ -36,6 +39,8 @@ class TaskBase(BaseModel):
     assignee_ids: Optional[List[UUID]] = []
     sort_index: Optional[int] = 0
     wbs_code: Optional[str] = None
+    is_critical: Optional[bool] = False
+    slack_days: Optional[int] = 0
 
 class TaskShortCreate(BaseModel):
     title: str
@@ -74,6 +79,8 @@ class Task(TaskInDBBase):
     subtasks: List["Task"] = []
     blocked_by: List[Dependency] = []
     blocking: List[Dependency] = []
+    topic_ref: Optional[Topic] = None
+    type_ref: Optional[WorkType] = None
 
 # For recursive models in Pydantic V2
 Task.model_rebuild()

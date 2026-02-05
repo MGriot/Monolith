@@ -310,7 +310,9 @@ export default function ProjectDetailPage() {
                 </div>
                 <div className="flex flex-col min-w-0">
                   <Label className="text-[8px] uppercase text-slate-400 font-black leading-none mb-1">Topic</Label>
-                  <p className="text-xs font-bold text-slate-700 truncate">{project.topic || 'General'}</p>
+                  <p className="text-xs font-bold text-slate-700 truncate" style={{ color: project.topic_ref?.color }}>
+                    {project.topic_ref?.name || project.topic || 'General'}
+                  </p>
                 </div>
               </div>
               <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center gap-2.5">
@@ -319,7 +321,7 @@ export default function ProjectDetailPage() {
                 </div>
                 <div className="flex flex-col min-w-0">
                   <Label className="text-[8px] uppercase text-slate-400 font-black leading-none mb-1">Type</Label>
-                  <p className="text-xs font-bold text-slate-700 truncate">{project.type || 'Standard'}</p>
+                  <p className="text-xs font-bold text-slate-700 truncate">{project.type_ref?.name || project.type || 'Standard'}</p>
                 </div>
               </div>
               <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center gap-2.5">
@@ -446,8 +448,8 @@ export default function ProjectDetailPage() {
               initialValues={{
                 name: project.name,
                 description: project.description,
-                topic: project.topic,
-                type: project.type,
+                topic_id: project.topic_id || undefined,
+                type_id: project.type_id || undefined,
                 status: project.status,
                 start_date: project.start_date?.split('T')[0],
                 due_date: project.due_date?.split('T')[0],
@@ -484,8 +486,8 @@ export default function ProjectDetailPage() {
               description: editingTask.description,
               status: editingTask.status,
               priority: editingTask.priority,
-              topic: editingTask.topic,
-              type: editingTask.type,
+              topic_id: editingTask.topic_id || undefined,
+              type_id: editingTask.type_id || undefined,
               is_milestone: editingTask.is_milestone,
               start_date: editingTask.start_date ? editingTask.start_date.split('T')[0] : '',
               due_date: editingTask.due_date ? editingTask.due_date.split('T')[0] : '',

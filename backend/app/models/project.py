@@ -19,8 +19,15 @@ class Project(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
+    
+    # Old string fields (to be migrated)
     topic = Column(String, index=True)
     type = Column(String, index=True)
+    
+    # New FK fields
+    topic_id = Column(UUID(as_uuid=True), ForeignKey("topics.id"), nullable=True)
+    type_id = Column(UUID(as_uuid=True), ForeignKey("work_types.id"), nullable=True)
+    
     status = Column(SAEnum(Status), default=Status.TODO)
     progress_percent = Column(Float, default=0.0)
     
@@ -39,3 +46,6 @@ class Project(Base):
     owner = relationship("User", backref="owned_projects", foreign_keys=[owner_id])
     members = relationship("User", secondary=project_members, backref="member_projects")
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
+    
+    topic_ref = relationship("Topic")
+    type_ref = relationship("WorkType")

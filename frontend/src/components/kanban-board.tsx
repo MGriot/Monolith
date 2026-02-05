@@ -363,6 +363,9 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
             )}>
                 {item.is_milestone && <Milestone className="w-3 h-3 text-blue-500 shrink-0" />}
                 {item.title}
+                {!isDone && (item as any).due_date && new Date((item as any).due_date) < new Date() && (
+                  <AlertTriangle className="w-3 h-3 text-red-500 animate-pulse" />
+                )}
             </CardTitle>
           </div>
           <div {...dragProps} className="cursor-grab active:cursor-grabbing text-slate-300 group-hover:text-slate-400 shrink-0">

@@ -1,6 +1,8 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,12 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Topic, WorkType } from "@/types";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
   description: z.string().optional(),
-  topic: z.string().min(1, "Topic is required"),
-  type: z.string().min(1, "Type is required"),
+  topic_id: z.string().min(1, "Topic is required"),
+  type_id: z.string().min(1, "Type is required"),
   status: z.string().min(1, "Status is required"),
   start_date: z.string().optional(),
   due_date: z.string().optional(),
@@ -39,6 +42,16 @@ export default function ProjectForm({
   onCancel, 
   isLoading 
 }: ProjectFormProps) {
+  const { data: topics } = useQuery({
+    queryKey: ['metadata', 'topics'],
+    queryFn: async () => (await api.get('/metadata/topics')).data,
+  });
+
+  const { data: workTypes } = useQuery({
+    queryKey: ['metadata', 'work-types'],
+    queryFn: async () => (await api.get('/metadata/work-types')).data,
+  });
+
   const {
     register,
     handleSubmit,
@@ -50,13 +63,15 @@ export default function ProjectForm({
     defaultValues: {
       status: "Todo",
       name: "",
-      topic: "",
-      type: "",
+      topic_id: "",
+      type_id: "",
       ...initialValues,
     },
   });
 
   const statusValue = watch("status");
+  const topicId = watch("topic_id");
+  const typeId = watch("type_id");
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -69,13 +84,37 @@ export default function ProjectForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="topic">Topic</Label>
-          <Input id="topic" {...register("topic")} placeholder="e.g. Marketing" />
-          {errors.topic && <p className="text-xs text-destructive">{errors.topic.message}</p>}
+          <Select 
+            onValueChange={(value: string) => setValue("topic_id", value)} 
+            value={topicId}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Topic" />
+            </SelectTrigger>
+            <SelectContent>
+              {topics?.map((t: Topic) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.topic_id && <p className="text-xs text-destructive">{errors.topic_id.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="type">Type</Label>
-          <Input id="type" {...register("type")} placeholder="e.g. Feature" />
-          {errors.type && <p className="text-xs text-destructive">{errors.type.message}</p>}
+          <Select 
+            onValueChange={(value: string) => setValue("type_id", value)} 
+            value={typeId}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Type" />
+            </SelectTrigger>
+            <SelectContent>
+              {workTypes?.map((t: WorkType) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.type_id && <p className="text-xs text-destructive">{errors.type_id.message}</p>}
         </div>
       </div>
 

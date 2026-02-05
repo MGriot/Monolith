@@ -1,5 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useAuth } from '@/components/auth-provider';
+import { Navigate } from 'react-router-dom';
 import { 
   Table, 
   TableBody, 
@@ -9,7 +11,17 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { User as UserIcon, Mail, ShieldCheck, Shield } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { 
+  User as UserIcon, 
+  Mail, 
+  ShieldCheck, 
+  Shield, 
+  Key, 
+  ShieldAlert,
+  Loader2
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 interface User {
   id: string;
@@ -20,6 +32,9 @@ interface User {
 }
 
 export default function UsersPage() {
+  const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
+
   const { data: users, isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
@@ -28,10 +43,33 @@ export default function UsersPage() {
     },
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: (userId: string) => {
+      const newPassword = prompt("Enter new password for this user:");
+      if (!newPassword) throw new Error("Cancelled");
+      return api.put(`/users/${userId}`, { password: newPassword });
+    },
+    onSuccess: () => toast.success("Password updated"),
+    onError: (err: any) => err.message !== "Cancelled" && toast.error("Failed to update password")
+  });
+
+  const toggleAdminMutation = useMutation({
+    mutationFn: ({ userId, is_superuser }: { userId: string, is_superuser: boolean }) => 
+      api.put(`/users/${userId}`, { is_superuser }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success("User role updated");
+    }
+  });
+
+  if (!currentUser?.is_superuser) {
+    return <Navigate to="/" replace />;
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -52,7 +90,7 @@ export default function UsersPage() {
               <TableHead className="w-[300px]">User</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">ID</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -96,8 +134,29 @@ export default function UsersPage() {
                     </div>
                   )}
                 </TableCell>
-                <TableCell className="text-right font-mono text-[10px] text-slate-400">
-                  {user.id}
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 gap-1.5 text-xs"
+                      onClick={() => resetPasswordMutation.mutate(user.id)}
+                    >
+                      <Key className="w-3 h-3" /> Reset
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 gap-1.5 text-xs"
+                      onClick={() => toggleAdminMutation.mutate({ 
+                        userId: user.id, 
+                        is_superuser: !user.is_superuser 
+                      })}
+                    >
+                      <ShieldAlert className="w-3 h-3" /> 
+                      {user.is_superuser ? "Demote" : "Make Admin"}
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

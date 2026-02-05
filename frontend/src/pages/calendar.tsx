@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { 
-  format, 
-  addMonths, 
-  subMonths, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  isSameMonth, 
-  isSameDay, 
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  isSameMonth,
+  isSameDay,
   eachDayOfInterval,
-  parseISO
+  parseISO,
+  isWithinInterval,
+  startOfDay,
+  endOfDay
 } from 'date-fns';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -31,6 +34,7 @@ interface CalendarItem {
   title: string;
   item_type: 'project' | 'task' | 'subtask';
   status: string;
+  start_date?: string;
   due_date: string;
   project_id?: string;
   task_id?: string;
@@ -118,10 +122,19 @@ export default function CalendarPage() {
 
     calendarDays.forEach((day, i) => {
       const formattedDate = format(day, 'yyyy-MM-dd');
-      const dayItems = data?.filter((item) => isSameDay(parseISO(item.due_date), day)) || [];
+      
+      const dayItems = data?.filter((item) => {
+        const due = parseISO(item.due_date);
+        const start = item.start_date ? parseISO(item.start_date) : due;
+        
+        // Ensure we check full day range
+        return isWithinInterval(startOfDay(day), {
+          start: startOfDay(start),
+          end: endOfDay(due)
+        });
+      }) || [];
 
-      days.push(
-        <div
+      days.push(        <div
           key={formattedDate}
           className={cn(
             "min-h-[120px] bg-white border-t border-l border-slate-200 p-2 transition-colors hover:bg-slate-50/50",
