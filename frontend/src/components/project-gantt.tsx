@@ -426,8 +426,6 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                     const endX = getPositionPx(firstChild.start_date!);
                                     const endY = (childItem as any).rowIndex * rowHeight + (rowHeight / 2);
 
-                                    const color = getPriorityColorHex(task);
-                                    
                                     lines.push(
                                         <path 
                                             key={`hier-${task.id}`}
