@@ -54,12 +54,16 @@ async def read_projects_gantt(
     from sqlalchemy import and_
     from app.models.project import Project as ProjectModel
     from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
 
     query = select(ProjectModel).where(
         and_(
             ProjectModel.start_date != None,
             ProjectModel.due_date != None
         )
+    ).options(
+        selectinload(ProjectModel.topic_ref),
+        selectinload(ProjectModel.type_ref)
     )
     
     if not current_user.is_superuser:
