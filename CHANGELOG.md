@@ -19,7 +19,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - **Recursive Lazy Loading:** Resolved `MissingGreenlet` errors by eager-loading many-to-many relationships in deep task hierarchies.
-- **Nginx Upstream Resolution:** Fixed intermittent 502 errors during login by resolving container DNS caching issues.
+- **Nginx Upstream Resolution:** Fixed intermittent 502 errors during login by implementing dynamic DNS resolution using the Docker resolver (`127.0.0.11`) and variable-based `proxy_pass` in `nginx.conf`. This prevents stale IP caching when backend containers restart.
 - **Build Integrity:** Fixed newline escaping issues in TSX string literals and removed dead imports.
 - **Template API Auth:** Fixed an `AttributeError` in template endpoints by correcting current user dependency usage.
 
