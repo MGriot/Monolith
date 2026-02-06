@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.crud.base import CRUDBase
 from app.models.task import Task
+from app.models.metadata import Topic, WorkType
 from app.schemas.task import TaskCreate, TaskUpdate
 from app.core.enums import Status
 from app.core.utils import clean_dict_datetimes
@@ -26,13 +27,17 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 selectinload(Task.blocking),
                 selectinload(Task.topic_ref),
                 selectinload(Task.type_ref),
+                selectinload(Task.topics),
+                selectinload(Task.types),
                 selectinload(Task.subtasks).options(
                     selectinload(Task.owner),
                     selectinload(Task.assignees),
                     selectinload(Task.blocked_by),
                     selectinload(Task.blocking),
                     selectinload(Task.topic_ref),
-                    selectinload(Task.type_ref)
+                    selectinload(Task.type_ref),
+                    selectinload(Task.topics),
+                    selectinload(Task.types)
                 )
             )
         )
@@ -62,6 +67,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 selectinload(Task.blocking),
                 selectinload(Task.topic_ref),
                 selectinload(Task.type_ref),
+                selectinload(Task.topics),
+                selectinload(Task.types),
                 selectinload(Task.subtasks).options(
                     selectinload(Task.owner),
                     selectinload(Task.assignees),
@@ -69,6 +76,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                     selectinload(Task.blocking),
                     selectinload(Task.topic_ref),
                     selectinload(Task.type_ref),
+                    selectinload(Task.topics),
+                    selectinload(Task.types),
                     selectinload(Task.subtasks).options(
                         selectinload(Task.owner),
                         selectinload(Task.assignees),
@@ -76,6 +85,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                         selectinload(Task.blocking),
                         selectinload(Task.topic_ref),
                         selectinload(Task.type_ref),
+                        selectinload(Task.topics),
+                        selectinload(Task.types),
                         selectinload(Task.subtasks).options(
                             selectinload(Task.owner),
                             selectinload(Task.assignees),
@@ -83,6 +94,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                             selectinload(Task.blocking),
                             selectinload(Task.topic_ref),
                             selectinload(Task.type_ref),
+                            selectinload(Task.topics),
+                            selectinload(Task.types),
                             selectinload(Task.subtasks).options(
                                  selectinload(Task.owner),
                                  selectinload(Task.assignees),
@@ -90,6 +103,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                                  selectinload(Task.blocking),
                                  selectinload(Task.topic_ref),
                                  selectinload(Task.type_ref),
+                                 selectinload(Task.topics),
+                                 selectinload(Task.types),
                                  selectinload(Task.subtasks).options(
                                      selectinload(Task.owner),
                                      selectinload(Task.assignees),
@@ -97,6 +112,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                                      selectinload(Task.blocking),
                                      selectinload(Task.topic_ref),
                                      selectinload(Task.type_ref),
+                                     selectinload(Task.topics),
+                                     selectinload(Task.types),
                                      selectinload(Task.subtasks)
                                  )
                             )
@@ -113,28 +130,76 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 t.subtasks.sort(key=lambda x: (x.sort_index or 0, x.created_at))
         return tasks
 
-    async def update_project_progress(self, db: AsyncSession, project_id: UUID):
+    async def sync_project_from_tasks(self, db: AsyncSession, project_id: UUID):
         from app.crud.crud_project import project as project_crud
         
-        # Get only top-level tasks for the project to calculate overall progress
-        tasks = await self.get_multi_by_project(db, project_id=project_id, limit=1000, parent_id=None)
-        if not tasks:
+        # Get all tasks for the project to aggregate data
+        result = await db.execute(
+            select(self.model)
+            .filter(self.model.project_id == project_id)
+            .options(
+                selectinload(Task.topics),
+                selectinload(Task.types)
+            )
+        )
+        all_tasks = result.scalars().all()
+        if not all_tasks:
             return
 
-        total = len(tasks)
+        # 1. Progress calculation (Top-level tasks only for progress)
+        top_tasks = [t for t in all_tasks if t.parent_id is None]
+        total = len(top_tasks)
         score_sum = 0
-        for t in tasks:
+        for t in top_tasks:
             if t.status == Status.DONE:
                 score_sum += 100
             elif t.status in [Status.IN_PROGRESS, Status.REVIEW]:
                 score_sum += 50
-        
         progress = float(score_sum) / total if total > 0 else 0.0
+
+        # 2. Date aggregation
+        start_dates = [t.start_date for t in all_tasks if t.start_date]
+        due_dates = [t.due_date for t in all_tasks if t.due_date]
+        deadline_dates = [t.deadline_at for t in all_tasks if t.deadline_at]
         
+        # end_date fallback logic: use due_date or deadline_at
+        effective_end_dates = due_dates + deadline_dates
+        
+        new_start_date = min(start_dates) if start_dates else None
+        new_due_date = max(effective_end_dates) if effective_end_dates else None
+
+        # 3. Topic & Type inheritance (Aggregation)
+        topic_ids = set()
+        type_ids = set()
+        for t in all_tasks:
+            for topic in t.topics:
+                topic_ids.add(topic.id)
+            for wtype in t.types:
+                type_ids.add(wtype.id)
+            # Support legacy single FKs too
+            if t.topic_id: topic_ids.add(t.topic_id)
+            if t.type_id: type_ids.add(t.type_id)
+
         project_obj = await project_crud.get(db, id=project_id)
         if project_obj:
+            update_data = {}
             if abs(project_obj.progress_percent - progress) > 0.01:
-                await project_crud.update(db, db_obj=project_obj, obj_in={"progress_percent": progress})
+                update_data["progress_percent"] = progress
+            
+            if new_start_date and project_obj.start_date != new_start_date:
+                update_data["start_date"] = new_start_date
+                
+            if new_due_date and project_obj.due_date != new_due_date:
+                update_data["due_date"] = new_due_date
+
+            # Add aggregated topic/type IDs to update
+            if topic_ids:
+                update_data["topic_ids"] = list(topic_ids)
+            if type_ids:
+                update_data["type_ids"] = list(type_ids)
+
+            if update_data:
+                await project_crud.update(db, db_obj=project_obj, obj_in=update_data)
 
     async def update_parent_status_recursive(self, db: AsyncSession, parent_id: UUID):
         """
@@ -219,9 +284,12 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return active_blocker_titles
 
     async def create(self, db: AsyncSession, *, obj_in: TaskCreate) -> Task:
-        obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True))
+        obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True, exclude={'topic_ids', 'type_ids'}))
         assignee_ids = obj_data.pop("assignee_ids", [])
         subtasks_data = obj_data.pop("subtasks", [])
+        
+        topic_ids = getattr(obj_in, 'topic_ids', [])
+        type_ids = getattr(obj_in, 'type_ids', [])
         
         # Calculate next sort_index
         if "sort_index" not in obj_data:
@@ -242,6 +310,14 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             res = await db.execute(select(User).filter(User.id.in_(assignee_ids)))
             db_obj.assignees = res.scalars().all()
 
+        if topic_ids:
+            res = await db.execute(select(Topic).filter(Topic.id.in_(topic_ids)))
+            db_obj.topics = res.scalars().all()
+            
+        if type_ids:
+            res = await db.execute(select(WorkType).filter(WorkType.id.in_(type_ids)))
+            db_obj.types = res.scalars().all()
+
         db.add(db_obj)
         await db.commit()
         await db.refresh(db_obj)
@@ -261,8 +337,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         
         if db_obj.parent_id:
             await self.update_parent_status_recursive(db, db_obj.parent_id)
-        else:
-            await self.update_project_progress(db, db_obj.project_id)
+        
+        await self.sync_project_from_tasks(db, db_obj.project_id)
             
         if assignee_ids:
             await self.notify_assignees(db, db_obj.id, assignee_ids, db_obj.title)
@@ -327,12 +403,28 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if added_ids:
                 await self.notify_assignees(db, db_obj.id, added_ids, db_obj.title)
 
+        if "topic_ids" in obj_data:
+            topic_ids = obj_data.pop("topic_ids")
+            if topic_ids:
+                res = await db.execute(select(Topic).filter(Topic.id.in_(topic_ids)))
+                db_obj.topics = res.scalars().all()
+            else:
+                db_obj.topics = []
+                
+        if "type_ids" in obj_data:
+            type_ids = obj_data.pop("type_ids")
+            if type_ids:
+                res = await db.execute(select(WorkType).filter(WorkType.id.in_(type_ids)))
+                db_obj.types = res.scalars().all()
+            else:
+                db_obj.types = []
+
         db_obj = await super().update(db, db_obj=db_obj, obj_in=obj_data)
         
         if parent_id:
             await self.update_parent_status_recursive(db, parent_id)
         
-        await self.update_project_progress(db, project_id)
+        await self.sync_project_from_tasks(db, project_id)
         
         # Refetch to get all relationships loaded
         return await self.get(db, db_obj.id)
@@ -351,7 +443,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         if parent_id:
             await self.update_parent_status_recursive(db, parent_id)
         
-        await self.update_project_progress(db, project_id)
+        await self.sync_project_from_tasks(db, project_id)
         return obj
 
 task = CRUDTask(Task)

@@ -14,13 +14,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import type { Topic, WorkType } from "@/types";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
   description: z.string().optional(),
-  topic_id: z.string().min(1, "Topic is required"),
-  type_id: z.string().min(1, "Type is required"),
+  topic_id: z.string().optional().nullable(),
+  type_id: z.string().optional().nullable(),
+  topic_ids: z.array(z.string()).optional(),
+  type_ids: z.array(z.string()).optional(),
   status: z.string().min(1, "Status is required"),
   start_date: z.string().optional(),
   due_date: z.string().optional(),
@@ -63,15 +66,39 @@ export default function ProjectForm({
     defaultValues: {
       status: "Todo",
       name: "",
-      topic_id: "",
-      type_id: "",
+      topic_id: null,
+      type_id: null,
+      topic_ids: [],
+      type_ids: [],
       ...initialValues,
     },
   });
 
   const statusValue = watch("status");
-  const topicId = watch("topic_id");
-  const typeId = watch("type_id");
+  const selectedTopicIds = watch("topic_ids") || [];
+  const selectedTypeIds = watch("type_ids") || [];
+
+  const toggleTopic = (topicId: string) => {
+    const current = [...selectedTopicIds];
+    const index = current.indexOf(topicId);
+    if (index > -1) {
+      current.splice(index, 1);
+    } else {
+      current.push(topicId);
+    }
+    setValue("topic_ids", current);
+  };
+
+  const toggleType = (typeId: string) => {
+    const current = [...selectedTypeIds];
+    const index = current.indexOf(typeId);
+    if (index > -1) {
+      current.splice(index, 1);
+    } else {
+      current.push(typeId);
+    }
+    setValue("type_ids", current);
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -83,38 +110,44 @@ export default function ProjectForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="topic">Topic</Label>
-          <Select 
-            onValueChange={(value: string) => setValue("topic_id", value)} 
-            value={topicId}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Topic" />
-            </SelectTrigger>
-            <SelectContent>
-              {topics?.map((t: Topic) => (
-                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.topic_id && <p className="text-xs text-destructive">{errors.topic_id.message}</p>}
+          <Label>Topics</Label>
+          <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-slate-50/50 min-h-[40px]">
+            {topics?.map((t: Topic) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggleTopic(t.id)}
+                className={cn(
+                  "px-2 py-0.5 rounded text-[10px] font-bold border transition-all",
+                  selectedTopicIds.includes(t.id)
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
+                )}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="type">Type</Label>
-          <Select 
-            onValueChange={(value: string) => setValue("type_id", value)} 
-            value={typeId}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Type" />
-            </SelectTrigger>
-            <SelectContent>
-              {workTypes?.map((t: WorkType) => (
-                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.type_id && <p className="text-xs text-destructive">{errors.type_id.message}</p>}
+          <Label>Types</Label>
+          <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-slate-50/50 min-h-[40px]">
+            {workTypes?.map((t: WorkType) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggleType(t.id)}
+                className={cn(
+                  "px-2 py-0.5 rounded text-[10px] font-bold border transition-all",
+                  selectedTypeIds.includes(t.id)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
+                )}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

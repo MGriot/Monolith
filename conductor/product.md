@@ -237,3 +237,30 @@ Visual connections in the Gantt chart must follow an **Orthogonal Connector** pa
 *   **Color Matching:** Line color must match the Predecessor's priority/status color.
 *   **Z-Index:** Dependency layer must sit behind task bars.
 
+## 11. Addendum: User Requested Enhancements (Feb 6, 2026)
+
+### 11.1 Frontend Logic Refinements
+*   **Deadline Warning:** The deadline warning icon/indicator must **only** be displayed if the task's `end_date` (or `today` if in progress) is strictly greater than the `deadline_at` date.
+*   **Task List Columns:** Remove the `ORDER` column from the "List" view in the Project Details page.
+
+### 11.2 Data Model & Inheritance
+*   **Multiple Metadata:**
+    *   **Tasks & Projects:** Allow selecting **multiple** Topics and Types for a single entity (Many-to-Many relationship).
+*   **Project Inheritance Logic:**
+    *   **Metadata:** A Project should inherit (aggregate) Topics and Types from its constituent Tasks.
+    *   **Dates:**
+        *   `Project.start_date` = Minimum `Task.start_date`.
+        *   `Project.end_date` = Maximum `Task.end_date`.
+
+### 11.3 Visualization Logic
+*   **Gantt Chart:**
+    *   **End Date Fallback:** If a Task has no `end_date`, use `deadline_at` for the bar's endpoint in the plot.
+    *   **Priority:** If `end_date` exists, use it; otherwise fallback to `deadline_at`.
+*   **Calendar View:**
+    *   **Discrete Deadlines:** Display **only** the Task Deadline (single day event), not the full active range (start to end).
+
+### 11.4 Feature: Project Templates
+*   **Template Management:** Dedicated page for Creating, Modifying, and Deleting Project Templates.
+*   **Creation Flow:** When creating a new project, allow the user to:
+    *   Select a "Blank" project.
+    *   Select from available templates to pre-populate structure/metadata.

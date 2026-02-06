@@ -309,10 +309,16 @@ export default function ProjectDetailPage() {
                   <FolderKanban className="w-3.5 h-3.5 text-blue-600" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <Label className="text-[8px] uppercase text-slate-400 font-black leading-none mb-1">Topic</Label>
-                  <p className="text-xs font-bold text-slate-700 truncate" style={{ color: project.topic_ref?.color }}>
-                    {project.topic_ref?.name || project.topic || 'General'}
-                  </p>
+                  <Label className="text-[8px] uppercase text-slate-400 font-black leading-none mb-1">Topics</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {project.topics && project.topics.length > 0 ? project.topics.map(t => (
+                      <Badge key={t.id} variant="secondary" className="text-[9px] px-1 py-0 h-4 bg-white border-slate-200" style={{ color: t.color }}>{t.name}</Badge>
+                    )) : (
+                      <p className="text-xs font-bold text-slate-700 truncate">
+                        {project.topic_ref?.name || project.topic || 'General'}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center gap-2.5">
@@ -320,8 +326,14 @@ export default function ProjectDetailPage() {
                   <ListIcon className="w-3.5 h-3.5 text-purple-600" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <Label className="text-[8px] uppercase text-slate-400 font-black leading-none mb-1">Type</Label>
-                  <p className="text-xs font-bold text-slate-700 truncate">{project.type_ref?.name || project.type || 'Standard'}</p>
+                  <Label className="text-[8px] uppercase text-slate-400 font-black leading-none mb-1">Types</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {project.types && project.types.length > 0 ? project.types.map(t => (
+                      <Badge key={t.id} variant="outline" className="text-[9px] px-1 py-0 h-4 bg-white border-slate-200">{t.name}</Badge>
+                    )) : (
+                      <p className="text-xs font-bold text-slate-700 truncate">{project.type_ref?.name || project.type || 'Standard'}</p>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center gap-2.5">
@@ -450,6 +462,8 @@ export default function ProjectDetailPage() {
                 description: project.description,
                 topic_id: project.topic_id || undefined,
                 type_id: project.type_id || undefined,
+                topic_ids: project.topic_ids || project.topics?.map(t => t.id) || [],
+                type_ids: project.type_ids || project.types?.map(t => t.id) || [],
                 status: project.status,
                 start_date: project.start_date?.split('T')[0],
                 due_date: project.due_date?.split('T')[0],
@@ -488,6 +502,8 @@ export default function ProjectDetailPage() {
               priority: editingTask.priority,
               topic_id: editingTask.topic_id || undefined,
               type_id: editingTask.type_id || undefined,
+              topic_ids: editingTask.topic_ids || editingTask.topics?.map(t => t.id) || [],
+              type_ids: editingTask.type_ids || editingTask.types?.map(t => t.id) || [],
               is_milestone: editingTask.is_milestone,
               start_date: editingTask.start_date ? editingTask.start_date.split('T')[0] : '',
               due_date: editingTask.due_date ? editingTask.due_date.split('T')[0] : '',

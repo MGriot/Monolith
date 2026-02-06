@@ -13,7 +13,7 @@ import {
   parseISO,
   min,
   max,
-  isPast,
+  isAfter,
 } from 'date-fns';
 import { toPng } from 'html-to-image';
 import { cn } from '@/lib/utils';
@@ -128,6 +128,10 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
     }
   };
 
+  const getEffectiveEndDate = (item: any) => {
+    return item.due_date || item.deadline_at || item.start_date;
+  };
+
   const ganttItems = useMemo(() => {
     const items: GanttItem[] = [];
     let currentRow = 0;
@@ -136,7 +140,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
         const sorted = [...taskList].sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
         
         sorted.forEach(task => {
-            if (task.start_date && task.due_date) {
+            if (task.start_date && (task.due_date || task.deadline_at)) {
                 items.push({ 
                     ...task, 
                     isSubtask: level > 0, 
@@ -161,7 +165,8 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
     
     ganttItems.forEach(item => {
       if (item.start_date) dates.push(parseISO(item.start_date));
-      if (item.due_date) dates.push(parseISO(item.due_date));
+      const effectiveEnd = getEffectiveEndDate(item);
+      if (effectiveEnd) dates.push(parseISO(effectiveEnd));
     });
 
     if (projectStartDate) dates.push(parseISO(projectStartDate));
@@ -214,7 +219,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
       <div className="flex flex-col h-full items-center justify-center p-8 space-y-4 text-center">
         <div className="h-64 flex flex-col items-center justify-center text-slate-500 border-2 border-dashed rounded-xl w-full max-w-2xl">
           <p className="font-medium">No schedule data available.</p>
-          <p className="text-xs opacity-70 mt-1">Ensure tasks have both start and due dates.</p>
+          <p className="text-xs opacity-70 mt-1">Ensure tasks have start dates and either due dates or deadlines.</p>
         </div>
       </div>
     );
@@ -277,7 +282,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
   };
 
   const isMilestone = (item: any) => {
-    return item.is_milestone || item.start_date === item.due_date;
+    return item.is_milestone || (item.start_date && item.start_date === getEffectiveEndDate(item));
   };
 
   const handleZoom = (direction: 'in' | 'out') => {
@@ -410,12 +415,12 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                             const drawHierarchy = (taskList: Task[]) => {
                                 taskList.forEach(task => {
                                     if (!showSubtasks || !task.subtasks || task.subtasks.length === 0) return;
-                                    if (!task.start_date || !task.due_date) return;
+                                    if (!task.start_date || !getEffectiveEndDate(task)) return;
 
                                     const parentItem = ganttItems.find(i => i.id === task.id);
                                     if (!parentItem) return;
 
-                                    const firstChild = task.subtasks.find(st => st.start_date && st.due_date);
+                                    const firstChild = task.subtasks.find(st => st.start_date && getEffectiveEndDate(st));
                                     if (!firstChild) return;
 
                                     const childItem = ganttItems.find(i => i.id === firstChild.id);
@@ -456,7 +461,8 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 if (!blocker) return null;
 
                                 // Base start at predecessor end
-                                const baseStartX = getPositionPx(blocker.due_date!) + dayWidth;
+                                const blockerEndDate = getEffectiveEndDate(blocker);
+                                const baseStartX = getPositionPx(blockerEndDate!) + dayWidth;
                                 // Add lag
                                 const lagOffset = (dep.lag_days || 0) * dayWidth;
                                 
@@ -508,7 +514,15 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                 {ganttItems.map((item) => {
                 const isSub = 'isSubtask' in item;
                 const milestone = isMilestone(item);
-                const overdue = (item.status !== 'Done' && item.status !== 'done') && item.due_date && isPast(parseISO(item.due_date));
+                
+                // New Overdue Logic: only if (today or completed_at) > deadline_at
+                const isDone = item.status === 'Done' || item.status === 'done';
+                const deadlineDate = item.deadline_at ? parseISO(item.deadline_at) : null;
+                const endDate = isDone 
+                    ? (item.completed_at ? parseISO(item.completed_at) : (item.due_date ? parseISO(item.due_date) : null))
+                    : new Date();
+                const overdue = !!(deadlineDate && endDate && isAfter(endDate, deadlineDate));
+                
                 const hasDeadline = !!item.deadline_at;
                 
                 return (
@@ -589,7 +603,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 )}
                                 style={{ 
                                     left: `${getPositionPercent(item.start_date!)}%`, 
-                                    width: `${getWidthPercent(item.start_date!, item.due_date!)}%`,
+                                    width: `${getWidthPercent(item.start_date!, getEffectiveEndDate(item)!)}%`,
                                     top: isSub ? '20px' : '16px'
                                 }}
                             >
@@ -600,7 +614,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 />
                                 
                                 <span className="text-[9px] font-black text-white truncate drop-shadow-sm z-10">
-                                    {Math.round(getWidthPercent(item.start_date!, item.due_date!) / 100 * totalDays)}d
+                                    {Math.round(getWidthPercent(item.start_date!, getEffectiveEndDate(item)!) / 100 * totalDays)}d
                                 </span>
                                 
                                 {overdue && (

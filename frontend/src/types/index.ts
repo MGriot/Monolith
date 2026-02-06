@@ -23,6 +23,7 @@ export interface Task {
   start_date?: string;
   due_date?: string;
   deadline_at?: string;
+  completed_at?: string;
   is_milestone?: boolean;
   blocked_by_ids?: string[];
   blocked_by?: Dependency[];
@@ -35,6 +36,10 @@ export interface Task {
   parent_id?: string;
   topic_id?: string;
   type_id?: string;
+  topic_ids?: string[];
+  type_ids?: string[];
+  topics?: Topic[];
+  types?: WorkType[];
   topic_ref?: Topic;
   type_ref?: WorkType;
   wbs_code?: string;
@@ -57,6 +62,10 @@ export interface Project {
   type: string;
   topic_id?: string;
   type_id?: string;
+  topic_ids?: string[];
+  type_ids?: string[];
+  topics?: Topic[];
+  types?: WorkType[];
   topic_ref?: Topic;
   type_ref?: WorkType;
   tags?: string[];
@@ -74,4 +83,13 @@ export interface WorkType {
   name: string;
   icon?: string;
   is_active: boolean;
+}
+
+export interface ProjectTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  tasks_json: any[];
+  is_active: boolean;
+  owner_id: string;
 }

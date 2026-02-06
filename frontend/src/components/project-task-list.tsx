@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { parseISO, isAfter } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
 import {
@@ -14,8 +15,6 @@ import {
   ChevronRight,
   User as UserIcon,
   Plus,
-  ArrowUp,
-  ArrowDown,
   Milestone,
   AlertTriangle
 } from 'lucide-react';
@@ -44,6 +43,14 @@ interface RecursiveRowProps {
 function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onReorderSubtask }: RecursiveRowProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = task.subtasks && task.subtasks.length > 0;
+
+  // New Overdue Logic: only if (today or completed_at) > deadline_at
+  const isDone = task.status === 'Done' || task.status === 'done';
+  const deadlineDate = task.deadline_at ? parseISO(task.deadline_at) : null;
+  const endDate = isDone 
+      ? (task.completed_at ? parseISO(task.completed_at) : (task.due_date ? parseISO(task.due_date) : null))
+      : new Date();
+  const overdue = !!(deadlineDate && endDate && isAfter(endDate, deadlineDate));
 
   return (
     <>
@@ -80,7 +87,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             {task.is_milestone && <Milestone className={cn("w-3.5 h-3.5 text-blue-500 shrink-0", level > 0 && "w-3 h-3 text-blue-400")} />}
             <span className={cn(level > 0 && "text-xs text-slate-600 font-medium", "flex items-center gap-1.5")}>
               {task.title}
-              {task.status !== 'Done' && task.status !== 'done' && task.due_date && new Date(task.due_date) < new Date() && (
+              {overdue && (
                 <AlertTriangle className="w-3.5 h-3.5 text-red-500 animate-pulse" />
               )}
             </span>
@@ -127,38 +134,6 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             ))}
           </div>
         </TableCell>
-        <TableCell className="py-2">
-          <div className="flex items-center justify-center gap-1">
-            {(onReorderTask || onReorderSubtask) && (
-              <>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6 text-slate-400 hover:text-primary"
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    if (level === 0) onReorderTask?.(task.id, 'up');
-                    else onReorderSubtask ? onReorderSubtask(task.id, 'up') : onReorderTask?.(task.id, 'up');
-                  }}
-                >
-                  <ArrowUp className="w-3.5 h-3.5" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6 text-slate-400 hover:text-primary"
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    if (level === 0) onReorderTask?.(task.id, 'down');
-                    else onReorderSubtask ? onReorderSubtask(task.id, 'down') : onReorderTask?.(task.id, 'down');
-                  }}
-                >
-                  <ArrowDown className="w-3.5 h-3.5" />
-                </Button>
-              </>
-            )}
-          </div>
-        </TableCell>
         <TableCell className="text-right py-2">
           <div className="flex flex-col items-end">
             <span className={cn("font-bold text-slate-500", level === 0 ? "text-[11px]" : "text-[10px]")}>
@@ -203,14 +178,13 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Status</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Priority</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Assignees</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center w-20">Order</TableHead>
             <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-slate-500">Due / Deadline</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {tasks.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={10} className="h-32 text-center text-slate-500 italic text-sm">
+              <TableCell colSpan={9} className="h-32 text-center text-slate-500 italic text-sm">
                 No tasks found in this project.
               </TableCell>
             </TableRow>
