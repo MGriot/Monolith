@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 from app.core.enums import Status, Priority
+from app.models.associations import task_topics, task_types
 
 # Association Tables for Assignees (these are still useful)
 task_assignees = Table(
@@ -70,6 +71,9 @@ class Task(Base):
 
     topic_ref = relationship("Topic")
     type_ref = relationship("WorkType")
+
+    topics = relationship("Topic", secondary=task_topics, backref="tasks")
+    types = relationship("WorkType", secondary=task_types, backref="tasks")
 
 class Subtask(Base):
     __tablename__ = "subtasks"

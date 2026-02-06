@@ -13,9 +13,6 @@ import {
   isSameDay,
   eachDayOfInterval,
   parseISO,
-  isWithinInterval,
-  startOfDay,
-  endOfDay
 } from 'date-fns';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -36,6 +33,7 @@ interface CalendarItem {
   status: string;
   start_date?: string;
   due_date: string;
+  deadline_at?: string;
   project_id?: string;
   task_id?: string;
 }
@@ -124,14 +122,12 @@ export default function CalendarPage() {
       const formattedDate = format(day, 'yyyy-MM-dd');
       
       const dayItems = data?.filter((item) => {
-        const due = parseISO(item.due_date);
-        const start = item.start_date ? parseISO(item.start_date) : due;
-        
-        // Ensure we check full day range
-        return isWithinInterval(startOfDay(day), {
-          start: startOfDay(start),
-          end: endOfDay(due)
-        });
+        // Show only the discrete deadline/due date, not the full interval
+        const dateStr = (item.item_type === 'task' || item.item_type === 'subtask')
+          ? (item.deadline_at || item.due_date)
+          : item.due_date;
+          
+        return isSameDay(day, parseISO(dateStr));
       }) || [];
 
       days.push(        <div
@@ -170,7 +166,9 @@ export default function CalendarPage() {
                       <Badge className="text-[10px]">{item.status}</Badge>
                     </div>
                     <h4 className="font-bold text-sm text-slate-900">{item.title}</h4>
-                    <p className="text-xs text-slate-500">Due: {format(parseISO(item.due_date), 'PPP')}</p>
+                    <p className="text-xs text-slate-500">
+                      {item.deadline_at ? `Deadline: ${format(parseISO(item.deadline_at), 'PPP')}` : `Due: ${format(parseISO(item.due_date), 'PPP')}`}
+                    </p>
                     <Button 
                       variant="outline" 
                       size="sm" 

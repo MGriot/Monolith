@@ -646,5 +646,77 @@
     "linked_req": "Gantt Improvements",
     "description": "Implement 'Export PNG' button using html-to-image to save the current Gantt view.",
     "verification_method": "Click Export and verify PNG is downloaded."
+  },
+  {
+    "id": "FRONT-036",
+    "title": "UI: Deadline Warning Logic Update",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 11.1: Frontend Logic Refinements",
+    "description": "Update warning logic to show only if end_date (or today) > deadline_at."
+  },
+  {
+    "id": "FRONT-037",
+    "title": "UI: Remove Order Column",
+    "status": "done",
+    "priority": "low",
+    "linked_req": "PRD Section 11.1: Frontend Logic Refinements",
+    "description": "Remove the 'ORDER' column from the Project Details Task List."
+  },
+  {
+    "id": "BACK-017",
+    "title": "Model: Multi-Topic/Type Support",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 11.2: Data Model & Inheritance",
+    "description": "Refactor Project/Task models to support Many-to-Many relationships for Topics and Types."
+  },
+  {
+    "id": "BACK-018",
+    "title": "Logic: Project Date/Metadata Inheritance",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 11.2: Data Model & Inheritance",
+    "description": "Implement logic to aggregate Project start/end dates and metadata from constituent tasks."
+  },
+  {
+    "id": "FRONT-038",
+    "title": "Gantt: Fallback Date Logic",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 11.3: Visualization Logic",
+    "description": "Use deadline_at as fallback for end_date in Gantt visualization."
+  },
+  {
+    "id": "FRONT-039",
+    "title": "Calendar: Show Deadlines Only",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 11.3: Visualization Logic",
+    "description": "Update Calendar to show only discrete deadline events, not task duration ranges."
+  },
+  {
+    "id": "BACK-019",
+    "title": "Model: Project Templates",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 11.4: Feature: Project Templates",
+    "description": "Create backend models and CRUD endpoints for Project Templates."
+  },
+  {
+    "id": "FRONT-040",
+    "title": "UI: Template Management Page",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 11.4: Feature: Project Templates",
+    "description": "Create a dedicated page for creating/modifying/deleting Project Templates."
+  },
+  {
+    "id": "FRONT-041",
+    "title": "UI: Create Project from Template",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 11.4: Feature: Project Templates",
+    "description": "Update Create Project flow to allow selection of Blank or Template options."
   }
 ]

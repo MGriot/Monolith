@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 from app.core.enums import Status
+from app.models.associations import project_topics, project_types
 
 project_members = Table(
     "project_members",
@@ -49,3 +50,7 @@ class Project(Base):
     
     topic_ref = relationship("Topic")
     type_ref = relationship("WorkType")
+
+    topics = relationship("Topic", secondary=project_topics, backref="projects")
+    types = relationship("WorkType", secondary=project_types, backref="projects")
+    

@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -29,30 +30,24 @@ import {
   Trash2,
   Loader2
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
-
-interface Project {
-  id: string;
-  name: string;
-  topic: string;
-  type: string;
-  status: string;
-  progress_percent: number;
-  due_date: string;
-  owner_id: string;
-}
+import type { Project as ProjectType, ProjectTemplate } from '@/types';
 
 export default function ProjectsListPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [creationStep, setCreationStep] = useState<'type' | 'form'>('type');
+  const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<ProjectType | null>(null);
 
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
       setIsCreateDialogOpen(true);
+      setCreationStep('type');
       // Clean up search params after opening
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('create');
@@ -64,8 +59,13 @@ export default function ProjectsListPage() {
     queryKey: ['projects'],
     queryFn: async () => {
       const response = await api.get('/projects/');
-      return response.data as Project[];
+      return response.data as ProjectType[];
     },
+  });
+
+  const { data: templates } = useQuery({
+    queryKey: ['templates'],
+    queryFn: async () => (await api.get('/templates/')).data as ProjectTemplate[],
   });
 
   const createProjectMutation = useMutation({
@@ -76,11 +76,28 @@ export default function ProjectsListPage() {
         start_date: values.start_date ? new Date(values.start_date).toISOString() : null,
         due_date: values.due_date ? new Date(values.due_date).toISOString() : null,
       };
-      return api.post('/projects/', formattedValues);
+      
+      const projectResponse = await api.post('/projects/', formattedValues);
+      const newProject = projectResponse.data;
+
+      // If a template was selected, create the tasks from it
+      if (selectedTemplate && selectedTemplate.tasks_json) {
+        for (const taskTemplate of selectedTemplate.tasks_json) {
+          await api.post('/tasks/', {
+            ...taskTemplate,
+            project_id: newProject.id,
+            start_date: formattedValues.start_date,
+            due_date: formattedValues.due_date
+          });
+        }
+      }
+
+      return newProject;
     },
-    onSuccess: () => {
+    onSuccess: (newProject) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setIsCreateDialogOpen(false);
+      navigate(`/projects/${newProject.id}`);
     },
   });
 
@@ -98,7 +115,7 @@ export default function ProjectsListPage() {
     createProjectMutation.mutate(data);
   };
 
-  const handleDeleteProject = (e: React.MouseEvent, project: Project) => {
+  const handleDeleteProject = (e: React.MouseEvent, project: ProjectType) => {
     e.stopPropagation();
     setProjectToDelete(project);
   };
@@ -169,8 +186,16 @@ export default function ProjectsListPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <span className="text-xs font-medium text-slate-700">{project.topic}</span>
-                      <span className="text-[10px] text-slate-500 capitalize">{project.type}</span>
+                      <div className="flex flex-wrap gap-1 max-w-[150px]">
+                        {project.topics && project.topics.length > 0 ? project.topics.map(t => (
+                          <Badge key={t.id} variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-slate-100 text-slate-600 border-none">{t.name}</Badge>
+                        )) : <span className="text-xs font-medium text-slate-700">{project.topic || 'General'}</span>}
+                      </div>
+                      <div className="flex flex-wrap gap-1 max-w-[150px]">
+                        {project.types && project.types.length > 0 ? project.types.map(t => (
+                          <Badge key={t.id} variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-slate-200 text-slate-500">{t.name}</Badge>
+                        )) : <span className="text-[10px] text-slate-500 capitalize">{project.type || 'Standard'}</span>}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -250,19 +275,57 @@ export default function ProjectsListPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { setIsCreateDialogOpen(open); if (!open) setCreationStep('type'); }}>
+        <DialogContent className={cn("transition-all duration-300", creationStep === 'type' ? "sm:max-w-[600px]" : "sm:max-w-[500px]")}>
           <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
+            <DialogTitle>{creationStep === 'type' ? 'Select Project Type' : 'Project Details'}</DialogTitle>
             <DialogDescription>
-              Enter the project details to get started.
+              {creationStep === 'type' ? 'Choose a template or start with a blank project.' : 'Enter the project details to get started.'}
             </DialogDescription>
           </DialogHeader>
-          <ProjectForm 
-            onSubmit={handleCreateSubmit} 
-            onCancel={() => setIsCreateDialogOpen(false)} 
-            isLoading={createProjectMutation.isPending}
-          />
+          
+          {creationStep === 'type' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+              <Card 
+                className="cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                onClick={() => { setSelectedTemplate(null); setCreationStep('form'); }}
+              >
+                <CardHeader className="p-4">
+                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-primary/10 transition-colors">
+                    <Plus className="w-5 h-5 text-slate-500 group-hover:text-primary" />
+                  </div>
+                  <CardTitle className="text-base">Blank Project</CardTitle>
+                  <CardDescription className="text-xs">Start from scratch with no predefined tasks.</CardDescription>
+                </CardHeader>
+              </Card>
+
+              {templates?.map((template) => (
+                <Card 
+                  key={template.id}
+                  className="cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                  onClick={() => { setSelectedTemplate(template); setCreationStep('form'); }}
+                >
+                  <CardHeader className="p-4">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mb-2 group-hover:bg-primary/20 transition-colors">
+                      <FolderKanban className="w-5 h-5 text-primary" />
+                    </div>
+                    <CardTitle className="text-base truncate">{template.name}</CardTitle>
+                    <CardDescription className="text-xs line-clamp-1">{template.description || 'Custom template'}</CardDescription>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <ProjectForm 
+              onSubmit={handleCreateSubmit} 
+              onCancel={() => setCreationStep('type')} 
+              isLoading={createProjectMutation.isPending}
+              initialValues={selectedTemplate ? {
+                name: selectedTemplate.name,
+                description: selectedTemplate.description,
+              } : {}}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

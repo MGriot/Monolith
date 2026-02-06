@@ -13,6 +13,8 @@ class ProjectBase(BaseModel):
     type: Optional[str] = None
     topic_id: Optional[UUID] = None
     type_id: Optional[UUID] = None
+    topic_ids: Optional[List[UUID]] = []
+    type_ids: Optional[List[UUID]] = []
     status: Optional[Status] = Status.TODO
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
@@ -37,3 +39,5 @@ class ProjectInDBBase(ProjectBase):
 class Project(ProjectInDBBase):
     topic_ref: Optional[Topic] = None
     type_ref: Optional[WorkType] = None
+    topics: List[Topic] = []
+    types: List[WorkType] = []

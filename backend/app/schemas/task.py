@@ -26,6 +26,8 @@ class TaskBase(BaseModel):
     type: Optional[str] = None
     topic_id: Optional[UUID] = None
     type_id: Optional[UUID] = None
+    topic_ids: Optional[List[UUID]] = []
+    type_ids: Optional[List[UUID]] = []
     status: Optional[Status] = Status.TODO
     priority: Optional[Priority] = Priority.MEDIUM
     is_milestone: Optional[bool] = False
@@ -81,6 +83,8 @@ class Task(TaskInDBBase):
     blocking: List[Dependency] = []
     topic_ref: Optional[Topic] = None
     type_ref: Optional[WorkType] = None
+    topics: List[Topic] = []
+    types: List[WorkType] = []
 
 # For recursive models in Pydantic V2
 Task.model_rebuild()

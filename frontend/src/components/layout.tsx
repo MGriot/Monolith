@@ -11,7 +11,8 @@ import {
   User as UserIcon,
   Users,
   Plus,
-  Database
+  Database,
+  Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ export default function Layout({ children }: LayoutProps) {
     { icon: FolderKanban, label: 'Projects', href: '/projects' },
     { icon: CalendarIcon, label: 'Calendar', href: '/calendar' },
     { icon: GanttChart, label: 'Roadmap', href: '/roadmap' },
+    { icon: Copy, label: 'Templates', href: '/templates' },
     ...(user?.is_superuser ? [
       { icon: Users, label: 'Team', href: '/users' },
       { icon: Database, label: 'Metadata', href: '/admin/metadata' }

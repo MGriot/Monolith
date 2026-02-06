@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-02-06
+
+### Added
+- **Project Templates:** Implemented a full template system allowing users to define reusable project shells and task lists.
+- **Multi-Metadata Support:** Transitioned Topics and Types to many-to-many relationships, allowing projects and tasks to belong to multiple categories.
+- **Project Auto-Sync:** Implemented backend logic to automatically inherit and aggregate dates, topics, and types from constituent tasks up to the project level.
+- **Template Management UI:** Created a dedicated page for template CRUD operations.
+- **Scaffolded Creation:** Integrated template selection into the "New Project" workflow.
+
+### Changed
+- **Calendar Simplification:** Refined the calendar view to display only discrete deadline events, improving readability by removing overlapping range bars.
+- **Task List UI:** Removed the redundant 'ORDER' column from the project task list.
+- **Deadline Logic:** Updated overdue warning logic to strictly compare completion/today dates against hard deadlines.
+- **Multi-select Forms:** Refactored Project and Task forms to use a modern button-toggle interface for multiple topic/type selection.
+
+### Fixed
+- **Recursive Lazy Loading:** Resolved `MissingGreenlet` errors by eager-loading many-to-many relationships in deep task hierarchies.
+- **Nginx Upstream Resolution:** Fixed intermittent 502 errors during login by resolving container DNS caching issues.
+- **Build Integrity:** Fixed newline escaping issues in TSX string literals and removed dead imports.
+- **Template API Auth:** Fixed an `AttributeError` in template endpoints by correcting current user dependency usage.
+
 ## [1.0.0] - 2026-02-01
 
 ### Added

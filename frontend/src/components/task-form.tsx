@@ -7,13 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { User as UserIcon, Loader2, Milestone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { User, Task, Topic, WorkType } from "@/types";
@@ -25,6 +18,8 @@ const taskSchema = z.object({
   priority: z.string().min(1, "Priority is required"),
   topic_id: z.string().optional().nullable(),
   type_id: z.string().optional().nullable(),
+  topic_ids: z.array(z.string()).optional(),
+  type_ids: z.array(z.string()).optional(),
   is_milestone: z.boolean().optional(),
   start_date: z.string().optional().nullable(),
   due_date: z.string().optional().nullable(),
@@ -80,14 +75,16 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
       parent_id: null,
       topic_id: null,
       type_id: null,
+      topic_ids: [],
+      type_ids: [],
       ...initialValues,
     },
   });
 
   const selectedAssignees = watch("assignee_ids") || [];
+  const selectedTopicIds = watch("topic_ids") || [];
+  const selectedTypeIds = watch("type_ids") || [];
   const selectedParentId = watch("parent_id");
-  const topicId = watch("topic_id");
-  const typeId = watch("type_id");
 
   const toggleAssignee = (userId: string) => {
     const current = [...selectedAssignees];
@@ -98,6 +95,28 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
       current.push(userId);
     }
     setValue("assignee_ids", current);
+  };
+
+  const toggleTopic = (topicId: string) => {
+    const current = [...selectedTopicIds];
+    const index = current.indexOf(topicId);
+    if (index > -1) {
+      current.splice(index, 1);
+    } else {
+      current.push(topicId);
+    }
+    setValue("topic_ids", current);
+  };
+
+  const toggleType = (typeId: string) => {
+    const current = [...selectedTypeIds];
+    const index = current.indexOf(typeId);
+    if (index > -1) {
+      current.splice(index, 1);
+    } else {
+      current.push(typeId);
+    }
+    setValue("type_ids", current);
   };
 
   // Helper to flatten tasks for the select, excluding descendants of the current task
@@ -245,36 +264,44 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="topic">Topic</Label>
-          <Select 
-            onValueChange={(value: string) => setValue("topic_id", value)} 
-            value={topicId || ""}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Topic" />
-            </SelectTrigger>
-            <SelectContent>
-              {topics?.map((t: Topic) => (
-                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label>Topics</Label>
+          <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-slate-50/50 min-h-[40px]">
+            {topics?.map((t: Topic) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggleTopic(t.id)}
+                className={cn(
+                  "px-2 py-0.5 rounded text-[10px] font-bold border transition-all",
+                  selectedTopicIds.includes(t.id)
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
+                )}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="type">Type</Label>
-          <Select 
-            onValueChange={(value: string) => setValue("type_id", value)} 
-            value={typeId || ""}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Type" />
-            </SelectTrigger>
-            <SelectContent>
-              {workTypes?.map((t: WorkType) => (
-                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label>Types</Label>
+          <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-slate-50/50 min-h-[40px]">
+            {workTypes?.map((t: WorkType) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggleType(t.id)}
+                className={cn(
+                  "px-2 py-0.5 rounded text-[10px] font-bold border transition-all",
+                  selectedTypeIds.includes(t.id)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
+                )}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

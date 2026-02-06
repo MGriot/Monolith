@@ -4,3 +4,4 @@ from .task import Task, Subtask
 from .dependency import Dependency
 from .notification import Notification
 from .metadata import Topic, WorkType
+from .template import ProjectTemplate
