@@ -10,10 +10,12 @@ import {
   Calendar,
   ArrowRight,
   TrendingUp,
-  Activity
+  Activity,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from 'date-fns';
 import ProjectHeatmap from '@/components/project-heatmap';
 import ResourceTimeline from '@/components/resource-timeline';
@@ -39,6 +41,18 @@ interface DashboardSummary {
   global_activity: { date: string; count: number }[];
 }
 
+interface TeammateActivity {
+  id: string;
+  title: string;
+  completed_at: string;
+  project_name: string;
+  project_id: string;
+  user: {
+    full_name: string;
+    email: string;
+  };
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { data, isLoading, isError } = useQuery({
@@ -46,6 +60,14 @@ export default function DashboardPage() {
     queryFn: async () => {
       const response = await api.get('/dashboard/summary');
       return response.data as DashboardSummary;
+    },
+  });
+
+  const { data: teamActivity } = useQuery({
+    queryKey: ['team-activity'],
+    queryFn: async () => {
+      const response = await api.get('/teams/activity');
+      return response.data as TeammateActivity[];
     },
   });
 
@@ -204,6 +226,51 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Team Activity Feed (only if there is activity) */}
+      {(teamActivity && teamActivity.length > 0) && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <Users className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold text-slate-900">Teammate Activity</h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {teamActivity.map((activity) => (
+              <Card key={activity.id} className="border-slate-200 shadow-sm hover:border-primary/20 transition-all group">
+                <CardHeader className="p-4 pb-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
+                      {activity.user.full_name ? activity.user.full_name.charAt(0) : activity.user.email.charAt(0).toUpperCase()}
+                    </div>
+                    <Badge variant="outline" className="text-[8px] font-black uppercase text-emerald-600 bg-emerald-50 border-emerald-100">Done</Badge>
+                  </div>
+                  <CardTitle className="text-xs font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                    {activity.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <div className="flex flex-col gap-1.5 mt-2">
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
+                      <FolderKanban className="w-3 h-3" />
+                      <span className="truncate">{activity.project_name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                      <Clock className="w-3 h-3" />
+                      <span>{format(parseISO(activity.completed_at), 'MMM d, h:mm a')}</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-900">{activity.user.full_name || activity.user.email}</span>
+                    <Link to={`/projects/${activity.project_id}`} className="text-[9px] font-black text-primary uppercase hover:underline flex items-center gap-0.5">
+                      View <ArrowRight className="w-2 h-2" />
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quick Links */}
       <div className={cn("grid gap-4", user?.is_superuser ? "md:grid-cols-3" : "md:grid-cols-2")}>

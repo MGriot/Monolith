@@ -830,7 +830,7 @@
   {
     "id": "FRONT-050",
     "title": "UI: Team Activity Feed",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: Teams",
     "description": "Add a feed to the Dashboard showing recent task completions by team members.",
