@@ -29,6 +29,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 selectinload(Task.type_ref),
                 selectinload(Task.topics),
                 selectinload(Task.types),
+                selectinload(Task.project),
                 selectinload(Task.subtasks).options(
                     selectinload(Task.owner),
                     selectinload(Task.assignees),
@@ -69,6 +70,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 selectinload(Task.type_ref),
                 selectinload(Task.topics),
                 selectinload(Task.types),
+                selectinload(Task.project),
                 selectinload(Task.subtasks).options(
                     selectinload(Task.owner),
                     selectinload(Task.assignees),

@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from app.core.enums import Status, Priority, DependencyType
 from app.schemas.user import User as UserSchema
 from app.schemas.metadata import Topic, WorkType
+from .project import ProjectInDBBase
 
 class DependencyBase(BaseModel):
     successor_id: UUID
@@ -85,6 +86,7 @@ class Task(TaskInDBBase):
     type_ref: Optional[WorkType] = None
     topics: List[Topic] = []
     types: List[WorkType] = []
+    project: Optional["ProjectInDBBase"] = None
 
 # For recursive models in Pydantic V2
 Task.model_rebuild()

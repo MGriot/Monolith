@@ -66,7 +66,9 @@ async def read_projects_gantt(
     ).options(
         selectinload(ProjectModel.topic_ref),
         selectinload(ProjectModel.type_ref),
-        selectinload(ProjectModel.members)
+        selectinload(ProjectModel.members),
+        selectinload(ProjectModel.topics),
+        selectinload(ProjectModel.types)
     )
     
     if not current_user.is_superuser:

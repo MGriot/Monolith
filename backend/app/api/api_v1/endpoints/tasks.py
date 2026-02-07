@@ -107,7 +107,12 @@ async def read_tasks(
     from app.core.cpm import calculate_cpm
     from app.schemas.task import Task as TaskSchema
     # Convert models to schemas to allow setting wbs_code (which is not in DB)
-    task_schemas = [TaskSchema.model_validate(t) for t in tasks]
+    # We also ensure the project is attached to the schema if loaded
+    task_schemas = []
+    for t in tasks:
+        ts = TaskSchema.model_validate(t)
+        ts.project = project # Attach the project we already fetched
+        task_schemas.append(ts)
     
     # Apply WBS and CPM
     task_schemas = apply_wbs_codes(task_schemas, "")

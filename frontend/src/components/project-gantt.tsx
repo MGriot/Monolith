@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, AlertTriangle, Download } from 'lucide-react';
+import { ZoomIn, ZoomOut, AlertTriangle, Download, Folder } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Task, Subtask } from '@/types';
 
@@ -31,7 +31,7 @@ interface ProjectGanttProps {
   initialShowSubtasks?: boolean;
 }
 
-type GanttItem = (Task | (Subtask & { isSubtask: boolean, parentTitle: string, parentId: string })) & { rowIndex: number };
+type GanttItem = (Task | (Subtask & { isSubtask: boolean, parentTitle: string, parentId: string })) & { rowIndex: number, projectName?: string };
 type ZoomLevel = 'day' | 'week' | 'month' | 'year';
 
 const ZOOM_CONFIG = {
@@ -146,6 +146,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                     isSubtask: level > 0, 
                     parentTitle: parent?.title || "",
                     parentId: parent?.id || "",
+                    projectName: task.project?.name || parent?.project?.name || "",
                     rowIndex: currentRow++ 
                 } as any);
             }
@@ -530,7 +531,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                     "flex border-b border-slate-100 hover:bg-slate-50/50 transition-colors group relative",
                     isSub && "bg-slate-50/20"
                     )}>
-                    <div className="w-64 border-r border-slate-200 p-3 flex-shrink-0 flex flex-col justify-center min-w-0 sticky left-0 bg-inherit z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                    <div className="w-64 border-r border-slate-200 p-3 flex-shrink-0 flex flex-col justify-center min-w-0 sticky left-0 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                         <div className="flex items-center gap-2">
                             <span className="text-[8px] font-black text-slate-400 w-6 shrink-0">{item.wbs_code}</span>
                             <span className={cn(
@@ -541,9 +542,16 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                             {overdue && <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />}
                             </span>
                         </div>
-                        {isSub && (
-                        <span className="text-[9px] text-slate-400 pl-8 truncate">Parent: {(item as any).parentTitle}</span>
-                        )}
+                        <div className="flex items-center gap-2 pl-8 mt-0.5">
+                          {item.projectName && (
+                            <span className="text-[8px] text-slate-500 font-bold uppercase flex items-center gap-1">
+                              <Folder className="w-2 h-2" /> {item.projectName}
+                            </span>
+                          )}
+                          {isSub && (
+                            <span className="text-[8px] text-slate-400 font-medium">/ {item.parentTitle}</span>
+                          )}
+                        </div>
                     </div>
                     <div className="flex-1 relative h-14 py-4">
                         {/* Minor Grid lines */}
