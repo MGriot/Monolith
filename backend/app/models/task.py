@@ -5,22 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 from app.core.enums import Status, Priority
-from app.models.associations import task_topics, task_types
-
-# Association Tables for Assignees (these are still useful)
-task_assignees = Table(
-    "task_assignees",
-    Base.metadata,
-    Column("task_id", UUID(as_uuid=True), ForeignKey("tasks.id"), primary_key=True),
-    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
-)
-
-subtask_assignees = Table(
-    "subtask_assignees",
-    Base.metadata,
-    Column("subtask_id", UUID(as_uuid=True), ForeignKey("subtasks.id"), primary_key=True),
-    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
-)
+from app.models.associations import task_topics, task_types, task_assignees, subtask_assignees
 
 class Task(Base):
     __tablename__ = "tasks"

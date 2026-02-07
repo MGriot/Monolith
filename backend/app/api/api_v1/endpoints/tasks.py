@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 from app.api import deps
 from app.crud import crud_task, crud_project, crud_dependency
