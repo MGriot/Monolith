@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
+import { useAuth } from '@/components/auth-provider';
 import { 
   FolderKanban, 
   CheckCircle2, 
@@ -11,6 +12,7 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { format, parseISO } from 'date-fns';
 import ProjectHeatmap from '@/components/project-heatmap';
@@ -38,6 +40,7 @@ interface DashboardSummary {
 }
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: async () => {
@@ -254,29 +257,31 @@ export default function DashboardPage() {
       </div>
 
       {/* Global Activity Heatmap */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <CardHeader className="bg-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base font-semibold">Team Workload</CardTitle>
-                <CardDescription>Current task distribution across your team.</CardDescription>
+      <div className={cn("grid gap-6", user?.is_superuser ? "md:grid-cols-2" : "grid-cols-1")}>
+        {user?.is_superuser && (
+          <Card className="border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <CardHeader className="bg-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-semibold">Team Workload</CardTitle>
+                  <CardDescription>Current task distribution across your team.</CardDescription>
+                </div>
+                <TrendingUp className="h-4 w-4 text-slate-400" />
               </div>
-              <TrendingUp className="h-4 w-4 text-slate-400" />
-            </div>
-          </CardHeader>
-          <CardContent className="p-0 flex-1 min-h-[400px]">
-            <ResourceTimeline 
-                tasks={(calendarData?.items || []).filter((i: any) => i.item_type !== 'project').map((i: any) => ({
-                    ...i,
-                    project: { name: i.project_name }
-                }))} 
-                title="Global Resource Load"
-            />
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent className="p-0 flex-1 min-h-[400px]">
+              <ResourceTimeline 
+                  tasks={(calendarData?.items || []).filter((i: any) => i.item_type !== 'project').map((i: any) => ({
+                      ...i,
+                      project: { name: i.project_name }
+                  }))} 
+                  title="Global Resource Load"
+              />
+            </CardContent>
+          </Card>
+        )}
 
-        <Card className="border-slate-200 shadow-sm">
+        <Card className={cn("border-slate-200 shadow-sm", !user?.is_superuser && "max-w-4xl mx-auto w-full")}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>

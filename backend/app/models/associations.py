@@ -36,3 +36,17 @@ project_members = Table(
     Column("project_id", UUID(as_uuid=True), ForeignKey("projects.id"), primary_key=True),
     Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
 )
+
+task_assignees = Table(
+    "task_assignees",
+    Base.metadata,
+    Column("task_id", UUID(as_uuid=True), ForeignKey("tasks.id"), primary_key=True),
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+)
+
+subtask_assignees = Table(
+    "subtask_assignees",
+    Base.metadata,
+    Column("subtask_id", UUID(as_uuid=True), ForeignKey("subtasks.id"), primary_key=True),
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+)
