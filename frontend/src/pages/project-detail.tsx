@@ -22,9 +22,9 @@ import type { TaskFormValues } from '@/components/task-form';
 import DependencyManager from '@/components/dependency-manager';
 import AttachmentManager from '@/components/attachment-manager';
 import MarkdownRenderer from '@/components/markdown-renderer';
-import { 
-  Trello, 
-  GanttChart, 
+import {
+  Trello,
+  GanttChart,
   Calendar as CalendarIcon,
   Plus,
   List as ListIcon,
@@ -109,9 +109,18 @@ export default function ProjectDetailPage() {
 
   const createTaskMutation = useMutation({
     mutationFn: async (newTask: TaskFormValues) => {
-      return api.post('/tasks/', { ...newTask, project_id: id });
+      const response = await api.post('/tasks/', { ...newTask, project_id: id });
+      return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (newTask) => {
+      // Optimistic cache update for Tasks
+      queryClient.setQueryData(['tasks', id], (old: Task[] | undefined) => {
+        if (!old) return [newTask];
+        // If it's a subtask, we might need to find the parent and add it there
+        // But for simplicity in this implementation, we rely on the flatten login in components
+        // or just append to the flat list if the API returns a flat list (it seems it returns nested based on findTaskRecursive)
+        return [...old, newTask];
+      });
       queryClient.invalidateQueries({ queryKey: ['tasks', id] });
       queryClient.invalidateQueries({ queryKey: ['project', id] });
       setIsTaskDialogOpen(false);
@@ -121,6 +130,17 @@ export default function ProjectDetailPage() {
   const deleteTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
       return api.delete(`/tasks/${taskId}`);
+    },
+    onMutate: async (taskId) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks', id] });
+      const previousTasks = queryClient.getQueryData(['tasks', id]);
+      queryClient.setQueryData(['tasks', id], (old: Task[] | undefined) => {
+        return old?.filter(t => t.id !== taskId);
+      });
+      return { previousTasks };
+    },
+    onError: (_, __, context) => {
+      queryClient.setQueryData(['tasks', id], context?.previousTasks);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', id] });
@@ -133,7 +153,28 @@ export default function ProjectDetailPage() {
 
   const updateTaskMutation = useMutation({
     mutationFn: async ({ taskId, data }: { taskId: string; data: Partial<TaskFormValues> }) => {
-      return api.put(`/tasks/${taskId}`, data);
+      const response = await api.put(`/tasks/${taskId}`, data);
+      return response.data;
+    },
+    onMutate: async ({ taskId, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks', id] });
+      const previousTasks = queryClient.getQueryData(['tasks', id]);
+
+      queryClient.setQueryData(['tasks', id], (old: Task[] | undefined) => {
+        const updateRecursive = (list: Task[]): Task[] => {
+          return list.map(t => {
+            if (t.id === taskId) return { ...t, ...data };
+            if (t.subtasks) return { ...t, subtasks: updateRecursive(t.subtasks) };
+            return t;
+          });
+        };
+        return old ? updateRecursive(old) : [];
+      });
+
+      return { previousTasks };
+    },
+    onError: (_, __, context) => {
+      queryClient.setQueryData(['tasks', id], context?.previousTasks);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', id] });
@@ -148,7 +189,29 @@ export default function ProjectDetailPage() {
     mutationFn: async ({ taskId, newStatus }: { taskId: string; newStatus: string }) => {
       return api.put(`/tasks/${taskId}`, { status: newStatus });
     },
+    onMutate: async ({ taskId, newStatus }) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks', id] });
+      const previousTasks = queryClient.getQueryData(['tasks', id]);
+
+      queryClient.setQueryData(['tasks', id], (old: Task[] | undefined) => {
+        const updateRecursive = (list: Task[]): Task[] => {
+          return list.map(t => {
+            if (t.id === taskId) return { ...t, status: newStatus };
+            if (t.subtasks) return { ...t, subtasks: updateRecursive(t.subtasks) };
+            return t;
+          });
+        };
+        return old ? updateRecursive(old) : [];
+      });
+
+      return { previousTasks };
+    },
+    onError: (_, __, context) => {
+      queryClient.setQueryData(['tasks', id], context?.previousTasks);
+    },
     onSuccess: () => {
+      // We don't necessarily need to invalidate immediately if we are confident in our optimistic update
+      // but it's good practice to ensure consistency eventually
       queryClient.invalidateQueries({ queryKey: ['tasks', id] });
       queryClient.invalidateQueries({ queryKey: ['project', id] });
       queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
@@ -209,49 +272,72 @@ export default function ProjectDetailPage() {
 
   const handleReorderTask = (taskId: string, direction: 'up' | 'down') => {
     if (!tasks) return;
-    const index = tasks.findIndex(t => t.id === taskId);
-    if (index === -1) return;
 
+    // Find task and its siblings
+    let taskToMove: Task | null = null;
+    let siblings: Task[] = [];
+
+    const findSiblings = (list: Task[]) => {
+      const idx = list.findIndex(t => t.id === taskId);
+      if (idx !== -1) {
+        taskToMove = list[idx];
+        siblings = list;
+        return true;
+      }
+      for (const t of list) {
+        if (t.subtasks && findSiblings(t.subtasks)) return true;
+      }
+      return false;
+    };
+
+    findSiblings(tasks);
+    if (!taskToMove || siblings.length === 0) return;
+
+    const index = siblings.findIndex(t => t.id === taskId);
     if (direction === 'up' && index > 0) {
-      const prevTask = tasks[index - 1];
+      const prevTask = siblings[index - 1];
       const newIndex = (prevTask.sort_index || 0) - 1;
       updateTaskMutation.mutate({ taskId, data: { sort_index: newIndex } });
-    } else if (direction === 'down' && index < tasks.length - 1) {
-      const nextTask = tasks[index + 1];
+    } else if (direction === 'down' && index < siblings.length - 1) {
+      const nextTask = siblings[index + 1];
       const newIndex = (nextTask.sort_index || 0) + 1;
       updateTaskMutation.mutate({ taskId, data: { sort_index: newIndex } });
     }
   };
 
-  const handleReorderSubtask = (subtaskId: string, direction: 'up' | 'down') => {
+  const handleIndentTask = (taskId: string, direction: 'indent' | 'outdent') => {
     if (!tasks) return;
-    // Find parent task and subtask
-    let parentTask: Task | undefined;
-    let stIndex = -1;
-    
-    for (const t of tasks) {
-      const idx = t.subtasks?.findIndex(st => st.id === subtaskId);
-      if (idx !== undefined && idx !== -1) {
-        parentTask = t;
-        stIndex = idx;
-        break;
+
+    const findContext = (list: Task[], p: Task | null = null): { task: Task, parent: Task | null, siblings: Task[] } | null => {
+      const idx = list.findIndex(t => t.id === taskId);
+      if (idx !== -1) {
+        return { task: list[idx], parent: p, siblings: list };
       }
-    }
+      for (const t of list) {
+        if (t.subtasks) {
+          const res = findContext(t.subtasks, t);
+          if (res) return res;
+        }
+      }
+      return null;
+    };
 
-    if (!parentTask || !parentTask.subtasks) return;
+    const context = findContext(tasks);
+    if (!context) return;
 
-    if (direction === 'up' && stIndex > 0) {
-      const prevSt = parentTask.subtasks[stIndex - 1];
-      const newIndex = (prevSt.sort_index || 0) - 1;
-      api.put(`/tasks/${subtaskId}`, { sort_index: newIndex }).then(() => {
-        queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      });
-    } else if (direction === 'down' && stIndex < parentTask.subtasks.length - 1) {
-      const nextSt = parentTask.subtasks[stIndex + 1];
-      const newIndex = (nextSt.sort_index || 0) + 1;
-      api.put(`/tasks/${subtaskId}`, { sort_index: newIndex }).then(() => {
-        queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      });
+    const { parent: pTask, siblings } = context;
+
+    if (direction === 'indent') {
+      const index = siblings.findIndex(t => t.id === taskId);
+      if (index > 0) {
+        const prevSibling = siblings[index - 1];
+        updateTaskMutation.mutate({ taskId, data: { parent_id: prevSibling.id } });
+      }
+    } else {
+      // Outdent
+      if (pTask) {
+        updateTaskMutation.mutate({ taskId, data: { parent_id: pTask.parent_id || null } });
+      }
     }
   };
 
@@ -267,11 +353,11 @@ export default function ProjectDetailPage() {
     return (
       <div className="p-8 flex flex-col items-center justify-center h-64 gap-4">
         <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-            <AlertCircle className="w-6 h-6 text-red-600" />
+          <AlertCircle className="w-6 h-6 text-red-600" />
         </div>
         <div className="text-center">
-            <h2 className="text-xl font-bold text-slate-900">Access Denied</h2>
-            <p className="text-slate-500">You do not have permission to view this project or it does not exist.</p>
+          <h2 className="text-xl font-bold text-slate-900">Access Denied</h2>
+          <p className="text-slate-500">You do not have permission to view this project or it does not exist.</p>
         </div>
         <Button onClick={() => navigate('/projects')}>Back to Projects</Button>
       </div>
@@ -280,11 +366,11 @@ export default function ProjectDetailPage() {
 
   if (!project) {
     return (
-        <div className="p-8 flex flex-col items-center justify-center h-64 gap-4">
-          <p className="text-slate-500">Project not found.</p>
-          <Button onClick={() => navigate('/projects')}>Back to Projects</Button>
-        </div>
-      );
+      <div className="p-8 flex flex-col items-center justify-center h-64 gap-4">
+        <p className="text-slate-500">Project not found.</p>
+        <Button onClick={() => navigate('/projects')}>Back to Projects</Button>
+      </div>
+    );
   }
 
   return (
@@ -296,16 +382,16 @@ export default function ProjectDetailPage() {
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{project.name}</h1>
               <Badge variant="secondary" className="capitalize px-2 py-0 h-5 text-[10px]">{project.status}</Badge>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-7 w-7 text-slate-400 hover:text-primary transition-colors"
                 onClick={() => setIsProjectEditDialogOpen(true)}
               >
                 <SettingsIcon className="w-4 h-4" />
               </Button>
             </div>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-md bg-blue-100 flex items-center justify-center shrink-0">
@@ -363,12 +449,12 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            <MarkdownRenderer 
-              content={project.description || "No description provided."} 
+            <MarkdownRenderer
+              content={project.description || "No description provided."}
               className="text-xs text-slate-500 max-w-4xl line-clamp-2 hover:line-clamp-none transition-all cursor-default"
             />
           </div>
-          
+
           <div className="flex flex-row lg:flex-col items-center lg:items-end gap-4 shrink-0">
             <Button onClick={() => handleAddTask()} className="gap-2 shadow-lg shadow-primary/20 h-9">
               <Plus className="w-4 h-4" /> Add Task
@@ -399,7 +485,7 @@ export default function ProjectDetailPage() {
             </TabsTrigger>
           </TabsList>
         </div>
-        
+
         <TabsContent value="overview" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30 space-y-6">
           {/* Gantt Chart Section */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
@@ -410,8 +496,8 @@ export default function ProjectDetailPage() {
               </h3>
             </div>
             <div className="min-h-[400px] h-auto">
-              <ProjectGantt 
-                tasks={tasks || []} 
+              <ProjectGantt
+                tasks={tasks || []}
                 projectStartDate={project.start_date}
                 projectDueDate={project.due_date}
                 initialShowSubtasks={true}
@@ -425,26 +511,26 @@ export default function ProjectDetailPage() {
               <ListIcon className="w-4 h-4 text-slate-500" />
               Tasks & Subtasks
             </h3>
-            <ProjectTaskList 
-              tasks={tasks || []} 
-              onTaskClick={handleTaskClick} 
+            <ProjectTaskList
+              tasks={tasks || []}
+              onTaskClick={handleTaskClick}
               onSubtaskClick={handleSubtaskClick}
               onAddSubtask={handleAddSubtask}
               onReorderTask={handleReorderTask}
-              onReorderSubtask={handleReorderSubtask}
+              onIndentTask={handleIndentTask}
             />
           </div>
 
           <div className="flex justify-center">
             <div className="w-full max-w-4xl bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <ProjectHeatmap stats={stats || []} />
+              <ProjectHeatmap stats={stats || []} />
             </div>
           </div>
         </TabsContent>
 
         <TabsContent value="kanban" className="flex-1 overflow-hidden m-0 p-6 bg-slate-50/30">
-          <KanbanBoard 
-            tasks={tasks || []} 
+          <KanbanBoard
+            tasks={tasks || []}
             onTaskMove={handleTaskMove}
             onSubtaskMove={handleSubtaskMove}
             onAddTask={handleAddTask}
@@ -478,9 +564,9 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            <ResourceTimeline 
-              tasks={tasks || []} 
-              users={project.members} 
+            <ResourceTimeline
+              tasks={tasks || []}
+              users={project.members}
               title="Team Schedule"
             />
           </div>
@@ -495,7 +581,7 @@ export default function ProjectDetailPage() {
             <DialogDescription>Modify project metadata and settings.</DialogDescription>
           </DialogHeader>
           {project && (
-            <ProjectForm 
+            <ProjectForm
               initialValues={{
                 name: project.name,
                 description: project.description,
@@ -526,7 +612,7 @@ export default function ProjectDetailPage() {
               {editingTask ? 'Modify the task details below.' : 'Add a new task to your project.'}
             </DialogDescription>
           </DialogHeader>
-          
+
           {editingTask && editingTask.description && (
             <div className="bg-slate-50 p-4 rounded-lg border mb-4">
               <Label className="text-[10px] uppercase text-slate-400 font-bold mb-2 block">Description Preview</Label>
@@ -534,7 +620,7 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
-          <TaskForm 
+          <TaskForm
             initialValues={editingTask ? {
               title: editingTask.title,
               description: editingTask.description,
@@ -564,11 +650,11 @@ export default function ProjectDetailPage() {
           {editingTask && (
             <div className="pt-6 border-t mt-6 flex justify-between items-center">
               <div className="text-xs text-slate-400">
-                Created at {new Date(editingTask.id ? parseInt(editingTask.id.substring(0,8), 16) * 1000 : Date.now()).toLocaleDateString()}
+                Created at {new Date(editingTask.id ? parseInt(editingTask.id.substring(0, 8), 16) * 1000 : Date.now()).toLocaleDateString()}
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 h-8"
                 onClick={() => {
                   if (window.confirm(`Are you sure you want to delete the task "${editingTask.title}"?`)) {
@@ -585,22 +671,22 @@ export default function ProjectDetailPage() {
 
           {editingTask && (
             <>
-              <DependencyManager 
-                item={editingTask} 
+              <DependencyManager
+                item={editingTask}
                 allPossibleBlockers={(() => {
-                    const flat: any[] = [];
-                    const recurse = (list: Task[], prefix = "") => {
-                        list.forEach(t => {
-                            const title = prefix ? `${prefix} > ${t.title}` : t.title;
-                            flat.push({ id: t.id, title, blocked_by_ids: t.blocked_by_ids });
-                            if (t.subtasks) recurse(t.subtasks, title);
-                        });
-                    };
-                    recurse(tasks || []);
-                    return flat;
+                  const flat: any[] = [];
+                  const recurse = (list: Task[], prefix = "") => {
+                    list.forEach(t => {
+                      const title = prefix ? `${prefix} > ${t.title}` : t.title;
+                      flat.push({ id: t.id, title, blocked_by_ids: t.blocked_by_ids });
+                      if (t.subtasks) recurse(t.subtasks, title);
+                    });
+                  };
+                  recurse(tasks || []);
+                  return flat;
                 })()}
               />
-              <AttachmentManager 
+              <AttachmentManager
                 taskId={editingTask.id}
                 attachments={editingTask.attachments || []}
               />

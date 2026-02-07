@@ -14,11 +14,15 @@ import {
   ChevronDown,
   ChevronRight,
   User as UserIcon,
-  Plus,
   Milestone,
-  AlertTriangle
+  AlertTriangle,
+  ArrowUp,
+  ArrowDown,
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getStatusColors, getPriorityColors } from '@/constants/colors';
 import type { Task } from '@/types';
 
 export interface ProjectTaskListProps {
@@ -27,7 +31,7 @@ export interface ProjectTaskListProps {
   onSubtaskClick?: (subtask: Task) => void;
   onAddSubtask?: (parentTask: Task) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
-  onReorderSubtask?: (subtaskId: string, direction: 'up' | 'down') => void;
+  onIndentTask?: (taskId: string, direction: 'indent' | 'outdent') => void;
 }
 
 interface RecursiveRowProps {
@@ -37,31 +41,31 @@ interface RecursiveRowProps {
   onSubtaskClick?: (subtask: Task) => void;
   onAddSubtask?: (parentTask: Task) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
-  onReorderSubtask?: (subtaskId: string, direction: 'up' | 'down') => void;
+  onIndentTask?: (taskId: string, direction: 'indent' | 'outdent') => void;
 }
 
-function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onReorderSubtask }: RecursiveRowProps) {
+function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask }: RecursiveRowProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = task.subtasks && task.subtasks.length > 0;
 
   // New Overdue Logic: only if (today or completed_at) > deadline_at
   const isDone = task.status === 'Done' || task.status === 'done';
   const deadlineDate = task.deadline_at ? parseISO(task.deadline_at) : null;
-  const endDate = isDone 
-      ? (task.completed_at ? parseISO(task.completed_at) : (task.due_date ? parseISO(task.due_date) : null))
-      : new Date();
+  const endDate = isDone
+    ? (task.completed_at ? parseISO(task.completed_at) : (task.due_date ? parseISO(task.due_date) : null))
+    : new Date();
   const overdue = !!(deadlineDate && endDate && isAfter(endDate, deadlineDate));
 
   return (
     <>
-      <TableRow 
+      <TableRow
         className={cn(
-            "hover:bg-slate-50/50 transition-colors cursor-pointer group border-b border-slate-100",
-            level > 0 && "bg-slate-50/20"
+          "hover:bg-slate-50/50 transition-colors cursor-pointer group border-b border-slate-100",
+          level > 0 && "bg-slate-50/20"
         )}
         onClick={() => {
-            if (level === 0) onTaskClick(task);
-            else onSubtaskClick ? onSubtaskClick(task) : onTaskClick(task);
+          if (level === 0) onTaskClick(task);
+          else onSubtaskClick ? onSubtaskClick(task) : onTaskClick(task);
         }}
       >
         <TableCell className="py-2" onClick={(e) => {
@@ -80,9 +84,9 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
         <TableCell className="font-semibold text-slate-900 text-sm py-2">
           <div className="flex items-center gap-2" style={{ paddingLeft: `${level * 16}px` }}>
             {level > 0 && (
-                <div className="flex items-center gap-2 mr-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                </div>
+              <div className="flex items-center gap-2 mr-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+              </div>
             )}
             {task.is_milestone && <Milestone className={cn("w-3.5 h-3.5 text-blue-500 shrink-0", level > 0 && "w-3 h-3 text-blue-400")} />}
             <span className={cn(level > 0 && "text-xs text-slate-600 font-medium", "flex items-center gap-1.5")}>
@@ -94,18 +98,58 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
           </div>
         </TableCell>
         <TableCell className="py-2 text-right">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-7 w-7 text-slate-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-primary"
               onClick={(e) => {
-                  e.stopPropagation();
-                  onAddSubtask?.(task);
+                e.stopPropagation();
+                onReorderTask?.(task.id, 'up');
               }}
-              title="Add Subtask"
+              title="Move Up"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <ArrowUp className="w-3.5 h-3.5" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onReorderTask?.(task.id, 'down');
+              }}
+              title="Move Down"
+            >
+              <ArrowDown className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Indent (make subtask)
+                onIndentTask?.(task.id, 'indent');
+              }}
+              title="Indent (Make Subtask)"
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Outdent (promote to parent)
+                onIndentTask?.(task.id, 'outdent');
+              }}
+              title="Outdent (Move to Parent Level)"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </TableCell>
         <TableCell className="py-2">
           {task.topic && <Badge variant="secondary" className="text-[9px] font-bold bg-slate-100 text-slate-600 border-none px-1.5">{task.topic}</Badge>}
@@ -113,18 +157,25 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
         <TableCell className="py-2">
           <Badge variant="outline" className={cn(
             "capitalize text-[9px] font-bold px-1.5 h-5",
-            task.status === 'Done' || task.status === 'done' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white"
+            getStatusColors(task.status).bg,
+            getStatusColors(task.status).text,
+            getStatusColors(task.status).border
           )}>{task.status}</Badge>
         </TableCell>
         <TableCell className="py-2">
-          <Badge variant={task.priority === 'High' || task.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[9px] font-black px-1.5 h-5">
+          <Badge variant="outline" className={cn(
+            "capitalize text-[9px] font-bold px-1.5 h-5",
+            getPriorityColors(task.priority).bg,
+            getPriorityColors(task.priority).text,
+            getPriorityColors(task.priority).border
+          )}>
             {task.priority}
           </Badge>
         </TableCell>
         <TableCell className="py-2">
           <div className="flex -space-x-1.5 overflow-hidden">
             {task.assignees?.map((u) => (
-              <div 
+              <div
                 key={u.id}
                 className="inline-block h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center shrink-0 shadow-sm"
                 title={u.full_name || u.email}
@@ -149,22 +200,22 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
         </TableCell>
       </TableRow>
       {hasChildren && isExpanded && task.subtasks?.map(sub => (
-        <RecursiveTaskRow 
-            key={sub.id} 
-            task={sub} 
-            level={level + 1} 
-            onTaskClick={onTaskClick}
-            onSubtaskClick={onSubtaskClick}
-            onAddSubtask={onAddSubtask}
-            onReorderTask={onReorderTask}
-            onReorderSubtask={onReorderSubtask}
+        <RecursiveTaskRow
+          key={sub.id}
+          task={sub}
+          level={level + 1}
+          onTaskClick={onTaskClick}
+          onSubtaskClick={onSubtaskClick}
+          onAddSubtask={onAddSubtask}
+          onReorderTask={onReorderTask}
+          onIndentTask={onIndentTask}
         />
       ))}
     </>
   );
 }
 
-export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onReorderSubtask }: ProjectTaskListProps) {
+export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask }: ProjectTaskListProps) {
   return (
     <div className="rounded-md border border-slate-200 bg-white overflow-hidden shadow-sm">
       <Table>
@@ -190,15 +241,15 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
             </TableRow>
           ) : (
             tasks.map((task) => (
-              <RecursiveTaskRow 
-                key={task.id} 
-                task={task} 
-                level={0} 
+              <RecursiveTaskRow
+                key={task.id}
+                task={task}
+                level={0}
                 onTaskClick={onTaskClick}
                 onSubtaskClick={onSubtaskClick}
                 onAddSubtask={onAddSubtask}
                 onReorderTask={onReorderTask}
-                onReorderSubtask={onReorderSubtask}
+                onIndentTask={onIndentTask}
               />
             ))
           )}

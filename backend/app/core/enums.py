@@ -4,6 +4,7 @@ class Status(str, Enum):
     BACKLOG = "Backlog"
     TODO = "Todo"
     IN_PROGRESS = "In Progress"
+    ON_HOLD = "On hold"
     REVIEW = "Review"
     DONE = "Done"
 

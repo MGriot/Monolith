@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2026-02-07
+
+### Added
+- **Priority-Status Dual Coding**: Gantt bars now visualize both **Status** (fill color) and **Priority** (border color) simultaneously.
+- **Critical Path Aura**: Connection lines on the critical path now feature a pulsing "red aura" animation for maximum visibility.
+- **Floating Legend**: Redesigned the Gantt legend as a compact, floating, semi-transparent element with clear sections for Fill and Border meanings.
+- **Intuitive Task Controls**: Replaced generic buttons with clear Arrow icons for moving and nesting tasks in the list view.
+
+## [1.4.0] - 2026-02-07
+
+### Added
+- **Status & Priority**: Added **"On hold"** status across backend, frontend, and database enum.
+- **Consistent Color Coding**: Implemented centralized style configuration for all statuses and priorities.
+- **Task List Controls**: Added **reordering (Up/Down)** and **nesting (Indent/Outdent)** controls for WBS management.
+- **Metadata Colors**: Added color support for Work Types in the database and Admin UI.
+- **Gantt Legend**: Updated legend to reflect new status and priorities.
+
+### Fixed
+- **Database Integrity**: Resolved `InvalidTextRepresentationError` by adding 'ON_HOLD' value to PostgreSQL `status` enum type.
+- **Form Consistency**: Added missing 'On hold' option to Project and Task creation/edit dropdowns.
+- **Build Types**: Fixed `ProjectTaskList` prop interface mismatch in `project-detail.tsx`, ensuring correct type safety for task indentation handlers.
+
+## [1.3.0] - 2026-02-07
+
+### Added
+- **Gutter-Based Gantt Routing**: Implemented a sophisticated orthogonal routing system that directs all connection lines through the "gutters" between task rows, preventing overlap with task bars.
+- **Two-Color Connection Standard**: Established a high-contrast visual standard using **Blue-600** for dependencies and **Slate-400** for WBS hierarchy lines.
+- **WBS Aesthetic & Backwards Routing**: Refactored hierarchy lines to use smooth, curved orthogonal paths with a "shared leftmost spine" logic that prevents bar overlap even when subtasks start before their parents.
+- **Dependency Recovery System**: Implemented a frontend fallback mechanism that synthesizes connection lines from `blocked_by_ids`, ensuring visibility even when relationship objects aren't fully hydrated.
+- **Conflict Visuals**: Integrated "Amber Dashed" loopback paths for scheduling conflicts (Successor Start < Predecessor Finish) within the new gutter routing system.
+
+### Fixed
+- **Docker Build Integrity**: Resolved TypeScript errors and type mismatches in project/task schemas that were blocking successful container builds.
+- **CPM Harmonization**: Synchronized Critical Path Method calculations to support both the explicit Dependency table and the ID-based fallback array.
+
 ## [1.2.0] - 2026-02-07
 
 ### Added
