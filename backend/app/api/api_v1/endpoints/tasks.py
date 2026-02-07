@@ -197,6 +197,7 @@ async def update_task(
         task_obj = await crud_task.task.update(db=db, db_obj=task_obj, obj_in=task_in)
         return task_obj
     except ValueError as e:
+        print(f"DEBUG: Task update ValueError: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete("/{task_id}", response_model=Task)
