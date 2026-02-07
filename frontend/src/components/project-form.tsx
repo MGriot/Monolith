@@ -40,11 +40,11 @@ interface ProjectFormProps {
   isLoading?: boolean;
 }
 
-export default function ProjectForm({ 
-  initialValues, 
-  onSubmit, 
-  onCancel, 
-  isLoading 
+export default function ProjectForm({
+  initialValues,
+  onSubmit,
+  onCancel,
+  isLoading
 }: ProjectFormProps) {
   const { data: topics } = useQuery({
     queryKey: ['metadata', 'topics'],
@@ -198,8 +198,8 @@ export default function ProjectForm({
 
       <div className="space-y-2">
         <Label htmlFor="status">Status</Label>
-        <Select 
-          onValueChange={(value: string) => setValue("status", value)} 
+        <Select
+          onValueChange={(value: string) => setValue("status", value)}
           defaultValue={statusValue}
         >
           <SelectTrigger>
@@ -209,6 +209,7 @@ export default function ProjectForm({
             <SelectItem value="Backlog">Backlog</SelectItem>
             <SelectItem value="Todo">Todo</SelectItem>
             <SelectItem value="In Progress">In Progress</SelectItem>
+            <SelectItem value="On hold">On hold</SelectItem>
             <SelectItem value="Review">Review</SelectItem>
             <SelectItem value="Done">Done</SelectItem>
           </SelectContent>
@@ -228,9 +229,9 @@ export default function ProjectForm({
 
       <div className="space-y-2">
         <Label htmlFor="description">Description (Markdown supported)</Label>
-        <Textarea 
-          id="description" 
-          {...register("description")} 
+        <Textarea
+          id="description"
+          {...register("description")}
           placeholder="Describe the project goals..."
           className="min-h-[100px]"
         />

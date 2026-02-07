@@ -122,7 +122,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
   // Helper to flatten tasks for the select, excluding descendants of the current task
   const getAvailableParents = () => {
     const flat: { id: string; title: string; wbs_code?: string; level: number }[] = [];
-    
+
     // Find descendants to exclude
     const descendants = new Set<string>();
     if (editingTaskId && allTasks) {
@@ -132,7 +132,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
           if (t.subtasks) findDescendants(t.subtasks);
         }
       };
-      
+
       const findAndExclude = (tasks: Task[]) => {
         for (const t of tasks) {
           if (t.id === editingTaskId) {
@@ -214,6 +214,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
             <option value="Backlog">Backlog</option>
             <option value="Todo">Todo</option>
             <option value="In Progress">In Progress</option>
+            <option value="On hold">On hold</option>
             <option value="Review">Review</option>
             <option value="Done">Done</option>
           </select>

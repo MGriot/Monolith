@@ -21,6 +21,7 @@ class Topic(TopicBase):
 # WorkType Schemas
 class WorkTypeBase(BaseModel):
     name: Optional[str] = None
+    color: Optional[str] = "#64748b"
     icon: Optional[str] = None
     is_active: Optional[bool] = True
 

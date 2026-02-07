@@ -34,6 +34,22 @@ async def sync_db_schema():
         # Subtasks (still exist for now)
         await run_stmt(conn, "ALTER TABLE subtasks ADD COLUMN is_milestone BOOLEAN DEFAULT FALSE", "is_milestone to subtasks")
         await run_stmt(conn, "ALTER TABLE subtasks ADD COLUMN deadline_at TIMESTAMP WITHOUT TIME ZONE", "deadline_at to subtasks")
+        
+        # Work Types
+        await run_stmt(conn, "ALTER TABLE work_types ADD COLUMN color VARCHAR DEFAULT '#64748b'", "color to work_types")
+        
+        # Enums
+        # PostgreSQL enum updates need specialized handling
+        try:
+            await conn.execute(text("ALTER TYPE status ADD VALUE 'ON_HOLD'"))
+            await conn.commit()
+            print("SUCCESS: ON_HOLD added to status enum")
+        except Exception as e:
+            await conn.rollback()
+            if "already exists" in str(e).lower():
+                print("SKIP: ON_HOLD already in status enum")
+            else:
+                print(f"ERROR: status enum update: {e}")
 
     print("Schema sync complete.")
 

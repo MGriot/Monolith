@@ -45,10 +45,17 @@ def calculate_cpm(tasks: List[Task]):
     # predecessor_id -> [successor_ids]
     successors_of: Dict[UUID, List[UUID]] = {tid: [] for tid in all_tasks}
     for t in all_tasks.values():
+        preds = set()
         if t.blocked_by:
             for dep in t.blocked_by:
-                if dep.predecessor_id in successors_of:
-                    successors_of[dep.predecessor_id].append(t.id)
+                preds.add(dep.predecessor_id)
+        if t.blocked_by_ids:
+            for p_id in t.blocked_by_ids:
+                preds.add(p_id)
+        
+        for p_id in preds:
+            if p_id in successors_of:
+                successors_of[p_id].append(t.id)
 
     # Recursive function to calculate LF
     memo_lf: Dict[UUID, datetime] = {}

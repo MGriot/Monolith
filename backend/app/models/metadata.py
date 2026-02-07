@@ -16,5 +16,6 @@ class WorkType(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
+    color = Column(String, default="#64748b")
     icon = Column(String, nullable=True) # Icon identifier for Lucide/Shadcn
     is_active = Column(Boolean, default=True)

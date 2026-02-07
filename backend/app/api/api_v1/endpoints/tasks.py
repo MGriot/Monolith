@@ -63,7 +63,17 @@ async def read_assigned_tasks(
                     selectinload(TaskModel.type_ref),
                     selectinload(TaskModel.topics),
                     selectinload(TaskModel.types),
-                    selectinload(TaskModel.subtasks)
+                    selectinload(TaskModel.subtasks).options(
+                        selectinload(TaskModel.owner),
+                        selectinload(TaskModel.assignees),
+                        selectinload(TaskModel.blocked_by),
+                        selectinload(TaskModel.blocking),
+                        selectinload(TaskModel.topic_ref),
+                        selectinload(TaskModel.type_ref),
+                        selectinload(TaskModel.topics),
+                        selectinload(TaskModel.types),
+                        selectinload(TaskModel.subtasks)
+                    )
                 )
             )
         )

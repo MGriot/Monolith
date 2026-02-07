@@ -14,9 +14,7 @@ from app.core.utils import clean_dict_datetimes
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[Task]:
-        # Using a recursive loader or just loading immediate children
-        # For full tree, we might need a recursive CTE or just load levels as needed.
-        # But for 'get' by ID, we usually want the task and its immediate subtasks.
+        # Deep eager loading for recursive task structure (up to 3 levels)
         result = await db.execute(
             select(self.model)
             .filter(self.model.id == id)
@@ -38,13 +36,41 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                     selectinload(Task.topic_ref),
                     selectinload(Task.type_ref),
                     selectinload(Task.topics),
-                    selectinload(Task.types)
+                    selectinload(Task.types),
+                    selectinload(Task.subtasks).options(
+                        selectinload(Task.owner),
+                        selectinload(Task.assignees),
+                        selectinload(Task.blocked_by),
+                        selectinload(Task.blocking),
+                        selectinload(Task.topic_ref),
+                        selectinload(Task.type_ref),
+                        selectinload(Task.topics),
+                        selectinload(Task.types),
+                        selectinload(Task.subtasks).options(
+                            selectinload(Task.owner),
+                            selectinload(Task.assignees),
+                            selectinload(Task.blocked_by),
+                            selectinload(Task.blocking),
+                            selectinload(Task.topic_ref),
+                            selectinload(Task.type_ref),
+                            selectinload(Task.topics),
+                            selectinload(Task.types),
+                            selectinload(Task.subtasks)
+                        )
+                    )
                 )
             )
         )
         obj = result.scalars().first()
-        if obj and obj.subtasks:
-            obj.subtasks.sort(key=lambda x: (x.sort_index or 0, x.created_at))
+        # Sort subtasks recursively
+        def sort_recursive(task):
+            if task.subtasks:
+                task.subtasks.sort(key=lambda x: (x.sort_index or 0, x.created_at))
+                for st in task.subtasks:
+                    sort_recursive(st)
+        
+        if obj:
+            sort_recursive(obj)
         return obj
 
     async def get_multi_by_project(
@@ -98,27 +124,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                             selectinload(Task.type_ref),
                             selectinload(Task.topics),
                             selectinload(Task.types),
-                            selectinload(Task.subtasks).options(
-                                 selectinload(Task.owner),
-                                 selectinload(Task.assignees),
-                                 selectinload(Task.blocked_by),
-                                 selectinload(Task.blocking),
-                                 selectinload(Task.topic_ref),
-                                 selectinload(Task.type_ref),
-                                 selectinload(Task.topics),
-                                 selectinload(Task.types),
-                                 selectinload(Task.subtasks).options(
-                                     selectinload(Task.owner),
-                                     selectinload(Task.assignees),
-                                     selectinload(Task.blocked_by),
-                                     selectinload(Task.blocking),
-                                     selectinload(Task.topic_ref),
-                                     selectinload(Task.type_ref),
-                                     selectinload(Task.topics),
-                                     selectinload(Task.types),
-                                     selectinload(Task.subtasks)
-                                 )
-                            )
+                            selectinload(Task.subtasks)
                         )
                     )
                 )
@@ -127,9 +133,15 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             .limit(limit)
         )
         tasks = result.scalars().all()
+        
+        def sort_recursive(task):
+            if task.subtasks:
+                task.subtasks.sort(key=lambda x: (x.sort_index or 0, x.created_at))
+                for st in task.subtasks:
+                    sort_recursive(st)
+
         for t in tasks:
-            if t.subtasks:
-                t.subtasks.sort(key=lambda x: (x.sort_index or 0, x.created_at))
+            sort_recursive(t)
         return tasks
 
     async def sync_project_from_tasks(self, db: AsyncSession, project_id: UUID):
