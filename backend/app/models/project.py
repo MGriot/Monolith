@@ -5,14 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 from app.core.enums import Status
-from app.models.associations import project_topics, project_types
-
-project_members = Table(
-    "project_members",
-    Base.metadata,
-    Column("project_id", UUID(as_uuid=True), ForeignKey("projects.id"), primary_key=True),
-    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
-)
+from app.models.associations import project_topics, project_types, project_members
 
 class Project(Base):
     __tablename__ = "projects"

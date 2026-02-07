@@ -17,6 +17,42 @@ from app.core.config import settings
 
 router = APIRouter()
 
+@router.get("/assigned", response_model=List[Task])
+async def read_assigned_tasks(
+    db: AsyncSession = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Retrieve all tasks assigned to the current user.
+    """
+    from app.models.task import Task as TaskModel
+    from app.models.associations import task_assignees
+    
+    query = (
+        select(TaskModel)
+        .join(task_assignees)
+        .filter(task_assignees.c.user_id == current_user.id)
+        .options(
+            selectinload(TaskModel.owner),
+            selectinload(TaskModel.assignees),
+            selectinload(TaskModel.blocked_by),
+            selectinload(TaskModel.blocking),
+            selectinload(TaskModel.topic_ref),
+            selectinload(TaskModel.type_ref),
+            selectinload(TaskModel.topics),
+            selectinload(TaskModel.types)
+        )
+        .offset(skip)
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    tasks = result.scalars().all()
+    
+    # We don't apply WBS here as these tasks are from different projects/levels
+    return tasks
+
 @router.get("/", response_model=List[Task])
 async def read_tasks(
     project_id: UUID,
@@ -33,8 +69,12 @@ async def read_tasks(
     project = await crud_project.project.get(db, id=project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+    
+    # Check permissions (Owner or Member)
+    if not current_user.is_superuser and project.owner_id != current_user.id:
+        member_ids = [m.id for m in project.members]
+        if current_user.id not in member_ids:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
     
     tasks = await crud_task.task.get_multi_by_project(
         db, project_id=project_id, skip=skip, limit=limit, parent_id=parent_id
@@ -63,8 +103,12 @@ async def create_task(
     project = await crud_project.project.get(db, id=task_in.project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+    
+    # Check permissions (Owner or Member)
+    if not current_user.is_superuser and project.owner_id != current_user.id:
+        member_ids = [m.id for m in project.members]
+        if current_user.id not in member_ids:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
     
     if not task_in.owner_id:
         task_in.owner_id = current_user.id
@@ -89,8 +133,12 @@ async def read_task(
         raise HTTPException(status_code=404, detail="Task not found")
     
     project = await crud_project.project.get(db, id=task_obj.project_id)
-    if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+    
+    # Check permissions (Owner or Member)
+    if not current_user.is_superuser and project.owner_id != current_user.id:
+        member_ids = [m.id for m in project.members]
+        if current_user.id not in member_ids:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
     
     return task_obj
 
@@ -110,8 +158,12 @@ async def update_task(
         raise HTTPException(status_code=404, detail="Task not found")
     
     project = await crud_project.project.get(db, id=task_obj.project_id)
-    if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+    
+    # Check permissions (Owner or Member)
+    if not current_user.is_superuser and project.owner_id != current_user.id:
+        member_ids = [m.id for m in project.members]
+        if current_user.id not in member_ids:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
     
     try:
         task_obj = await crud_task.task.update(db=db, db_obj=task_obj, obj_in=task_in)
@@ -134,8 +186,12 @@ async def delete_task(
         raise HTTPException(status_code=404, detail="Task not found")
     
     project = await crud_project.project.get(db, id=task_obj.project_id)
-    if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+    
+    # Check permissions (Owner or Member)
+    if not current_user.is_superuser and project.owner_id != current_user.id:
+        member_ids = [m.id for m in project.members]
+        if current_user.id not in member_ids:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
     
     task_obj = await crud_task.task.remove(db=db, id=task_id)
     return task_obj

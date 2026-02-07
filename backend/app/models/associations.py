@@ -29,3 +29,10 @@ task_types = Table(
     Column("task_id", UUID(as_uuid=True), ForeignKey("tasks.id"), primary_key=True),
     Column("type_id", UUID(as_uuid=True), ForeignKey("work_types.id"), primary_key=True)
 )
+
+project_members = Table(
+    "project_members",
+    Base.metadata,
+    Column("project_id", UUID(as_uuid=True), ForeignKey("projects.id"), primary_key=True),
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+)
