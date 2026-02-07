@@ -821,7 +821,7 @@
   {
     "id": "FRONT-049",
     "title": "UI: Team Management Page",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "User Request: Teams",
     "description": "Implement a page for admins to manage teams and assign members.",
