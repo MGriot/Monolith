@@ -1,22 +1,20 @@
-# Current Stage: Enhancements Complete! 🚀
+# Current Stage: Team Management & Activity 👥
 
-**Status:** ✅ Finished
-**Focus:** Maintenance
+**Status:** 🏗️ In Progress
+**Focus:** Infrastructure: Team Models
+
+## Active Focus
+- [ ] [BACK-023] API: Teams CRUD
 
 ## Recent History
-- [x] [UX-005] Gantt: Export as PNG (2026-02-05)
-- [x] [UX-004] Gantt: Minor Ticks & Subdivisions (2026-02-05)
-- [x] [UX-003] Gantt: TODAY Label & Curved Connectors (2026-02-05)
-- [x] [FRONT-035] UI: Admin User Management Enhancements (2026-02-05)
-- [x] [FRONT-034] UI: Dynamic Metadata Dropdowns (2026-02-05)
-- [x] [FRONT-033] UI: Admin Metadata Management (2026-02-05)
-- [x] [BACK-016] Backend: Metadata Migration Script (2026-02-05)
-- [x] [BACK-015] Backend: Model & Schema Refactor (FKs) (2026-02-05)
-- [x] [BACK-014] Backend: Metadata Models (Topic & WorkType) (2026-02-05)
+- [x] [BACK-022] Model: Team Management (2026-02-07)
+- [x] [BACK-020/021] Project Membership & Access Control (2026-02-07)
+- [x] [FRONT-043/044] My Tasks Inbox & Member Selection (2026-02-07)
+- [x] [FRONT-045-048] Resource Timeline (User-Gantt) Charts (2026-02-07)
+- [x] [FRONT-042] Hierarchical Template Indentation (2026-02-07)
 
 ## Summary
-The requested system enhancements have been fully implemented:
-- **Admin Metadata**: Managed dropdowns for Topics and WorkTypes.
-- **User Management**: Admins can now reset passwords and toggle admin status.
-- **Gantt Polish**: Smooth curved connectors, clear Today label, minor ticks, and PNG Export.
-- **Security**: Restricted sensitive pages to superusers only.
+Implementing a team-based organizational layer:
+- **Team CRUD**: Admin-managed team definitions.
+- **Team Activity**: Visibility of peer completions for team members.
+- **Cross-Team Flexibility**: Maintaining project/task assignment freedom.

@@ -790,5 +790,50 @@
     "priority": "low",
     "linked_req": "PRD Section 12.3",
     "description": "Integrate ResourceTimeline into Admin User Management page for org-wide capacity planning."
+  },
+  {
+    "id": "BACK-022",
+    "title": "Model: Team Management",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: Teams",
+    "description": "Create Team model and team_members many-to-many association table.",
+    "verification_method": "Run database migration and check tables."
+  },
+  {
+    "id": "BACK-023",
+    "title": "API: Teams CRUD",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "User Request: Teams",
+    "description": "Implement CRUD endpoints for Team management, restricted to admins.",
+    "verification_method": "Test endpoints with Postman/curl: GET/POST/PUT/DELETE /api/v1/teams/"
+  },
+  {
+    "id": "BACK-024",
+    "title": "API: Team Activity Endpoint",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "User Request: Teams",
+    "description": "Create an endpoint to fetch recent activity (completions) from users within the current user's team(s).",
+    "verification_method": "Verify endpoint returns tasks completed by teammates."
+  },
+  {
+    "id": "FRONT-049",
+    "title": "UI: Team Management Page",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "User Request: Teams",
+    "description": "Implement a page for admins to manage teams and assign members.",
+    "verification_method": "Navigate to /teams and perform CRUD operations."
+  },
+  {
+    "id": "FRONT-050",
+    "title": "UI: Team Activity Feed",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "User Request: Teams",
+    "description": "Add a feed to the Dashboard showing recent task completions by team members.",
+    "verification_method": "Verify feed shows teammate activity."
   }
 ]

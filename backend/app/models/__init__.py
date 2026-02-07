@@ -5,3 +5,4 @@ from .dependency import Dependency
 from .notification import Notification
 from .metadata import Topic, WorkType
 from .template import ProjectTemplate
+from .team import Team

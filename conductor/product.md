@@ -40,3 +40,25 @@ A visualization tool to manage human resources and workload availability.
     3.  **Admin > Team Page (Super View):**
         *   Scope: ALL users and ALL tasks in the system.
         *   Purpose: Global capacity planning and availability check.
+
+## 13. Addendum: Team Management (Feb 7, 2026)
+
+### 13.1 Feature: Multi-Team Organization
+Administrators can define organizational units (Teams) to group users.
+
+*   **Logic:**
+    *   **Creation:** Admins can create multiple Teams (e.g., "Frontend", "Backend", "Marketing").
+    *   **Membership:** A user can belong to zero, one, or multiple teams.
+    *   **Independence:** Team membership is purely for organizational visibility and activity tracking. It does NOT restrict project membership or task assignment.
+
+### 13.2 Feature: Team Activity Visibility
+Team members can monitor the progress and completions of their teammates.
+
+*   **Logic:**
+    *   If User A and User B are in "Team Alpha", User A will see User B's completed tasks in their "Team Activity" feed.
+    *   Users who are not in any team see a standard global or project-specific activity feed.
+    *   Admins see activity across all teams.
+
+*   **UI/UX:**
+    *   **Admin Team Page:** A new management interface for creating teams and dragging members into them.
+    *   **Dashboard Integration:** A new widget showing "Teammate Activity" (recent completions by users in the same team).
