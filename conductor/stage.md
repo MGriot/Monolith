@@ -1,24 +1,21 @@
-# Current Stage: Team Management & Activity 👥
+# Current Stage: Gantt Visual Refinement 📊
 
 **Status:** 🏗️ In Progress
-**Focus:** Infrastructure: Team Models
+**Focus:** SVG Rendering & Connectors
 
 ## Active Focus
 - [ ] [DONE] Phase Complete
 
 ## Recent History
+- [x] [FRONT-051-053] Gantt: Visual & Anchor Refinements (2026-02-07)
 - [x] [FRONT-050] UI: Team Activity Feed (2026-02-07)
 - [x] [FRONT-049] UI: Team Management Page (2026-02-07)
 - [x] [BACK-024] API: Team Activity Endpoint (2026-02-07)
 - [x] [BACK-023] API: Teams CRUD (2026-02-07)
 - [x] [BACK-022] Model: Team Management (2026-02-07)
-- [x] [BACK-020/021] Project Membership & Access Control (2026-02-07)
-- [x] [FRONT-043/044] My Tasks Inbox & Member Selection (2026-02-07)
-- [x] [FRONT-045-048] Resource Timeline (User-Gantt) Charts (2026-02-07)
-- [x] [FRONT-042] Hierarchical Template Indentation (2026-02-07)
 
 ## Summary
-Implementing a team-based organizational layer:
-- **Team CRUD**: Admin-managed team definitions.
-- **Team Activity**: Visibility of peer completions for team members.
-- **Cross-Team Flexibility**: Maintaining project/task assignment freedom.
+Refining the Gantt chart visualization to improve technical clarity:
+- **Dependency Arrows**: Adding distinct markers for blocking relationships.
+- **Hierarchy Clarity**: Making parent-child lines more subtle.
+- **Anchor Precision**: Ensuring lines connect exactly to the task bar edges.
