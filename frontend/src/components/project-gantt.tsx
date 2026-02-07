@@ -399,12 +399,20 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
               {/* Minor Ticks */}
               {minorTicks?.map((tick) => {
                 const left = getPositionPercent(tick.toISOString());
+                let label = '';
+                if (zoomLevel === 'week') label = format(tick, 'd');
+                if (zoomLevel === 'month') label = format(tick, 'd');
+                if (zoomLevel === 'year') label = format(tick, 'MMM');
+                // day view has no minor ticks in current logic
+
                 return (
                   <div
                     key={`minor-${tick.toISOString()}`}
-                    className="absolute border-l border-slate-200/50 h-2 bottom-0"
+                    className="absolute border-l border-slate-200/50 h-4 bottom-0 flex items-end pl-1 pb-0.5"
                     style={{ left: `${left}%` }}
-                  />
+                  >
+                    <span className="text-[8px] text-slate-400 font-medium leading-none">{label}</span>
+                  </div>
                 );
               })}
 
