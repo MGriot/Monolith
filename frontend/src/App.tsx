@@ -12,6 +12,7 @@ import SettingsPage from "./pages/settings";
 import AdminMetadataPage from "./pages/admin-metadata";
 import TemplatesPage from "./pages/templates";
 import MyTasksPage from "./pages/my-tasks";
+import TeamsPage from "./pages/teams";
 
 import DashboardPage from "./pages/dashboard";
 import ProjectsListPage from "./pages/projects-list";
@@ -51,6 +52,7 @@ function App() {
             <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
             <Route path="/roadmap" element={<PrivateRoute><RoadmapPage /></PrivateRoute>} />
             <Route path="/templates" element={<PrivateRoute><TemplatesPage /></PrivateRoute>} />
+            <Route path="/teams" element={<PrivateRoute><TeamsPage /></PrivateRoute>} />
             <Route path="/users" element={<PrivateRoute><UsersPage /></PrivateRoute>} />
             <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
             <Route path="/admin/metadata" element={<PrivateRoute><AdminMetadataPage /></PrivateRoute>} />

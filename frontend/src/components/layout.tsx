@@ -43,7 +43,8 @@ export default function Layout({ children }: LayoutProps) {
     { icon: GanttChart, label: 'Roadmap', href: '/roadmap' },
     { icon: Copy, label: 'Templates', href: '/templates' },
     ...(user?.is_superuser ? [
-      { icon: Users, label: 'Team', href: '/users' },
+      { icon: Users, label: 'Teams', href: '/teams' },
+      { icon: Users, label: 'Team Members', href: '/users' },
       { icon: Database, label: 'Metadata', href: '/admin/metadata' }
     ] : []),
   ];
@@ -56,6 +57,7 @@ export default function Layout({ children }: LayoutProps) {
     if (path === '/tasks') return 'My Tasks';
     if (path === '/calendar') return 'Calendar';
     if (path === '/roadmap') return 'Roadmap';
+    if (path === '/teams') return 'Team Definitions';
     if (path === '/users') return 'Team Management';
     return path.substring(1);
   };

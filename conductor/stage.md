@@ -4,9 +4,10 @@
 **Focus:** Infrastructure: Team Models
 
 ## Active Focus
-- [ ] [FRONT-049] UI: Team Management Page
+- [ ] [FRONT-050] UI: Team Activity Feed
 
 ## Recent History
+- [x] [FRONT-049] UI: Team Management Page (2026-02-07)
 - [x] [BACK-024] API: Team Activity Endpoint (2026-02-07)
 - [x] [BACK-023] API: Teams CRUD (2026-02-07)
 - [x] [BACK-022] Model: Team Management (2026-02-07)
