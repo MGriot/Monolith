@@ -262,19 +262,6 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
     }
   };
 
-  const getPriorityColorHex = (item: any) => {
-    if (item.status === 'Done' || item.status === 'done') return "#10b981"; // emerald-500
-    
-    const priority = item.priority || 'Medium';
-    switch (priority) {
-      case 'Critical': return "#ef4444"; // red-500
-      case 'High': return "#f97316"; // orange-500
-      case 'Medium': return "#f59e0b"; // amber-500
-      case 'Low': return "#3b82f6"; // blue-500
-      default: return "#64748b"; // slate-500
-    }
-  };
-
   const getProgressWidth = (status: string) => {
     const s = status.toLowerCase();
     if (s === 'done') return '100%';
@@ -406,23 +393,10 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                     >
                         <defs>
                             <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
-                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#94a3b8" />
+                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#6366f1" />
                             </marker>
-                            {/* Color-aware markers */}
                             <marker id="arrowhead-red" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
                                 <path d="M 0 0 L 6 2 L 0 4 Z" fill="#ef4444" />
-                            </marker>
-                            <marker id="arrowhead-emerald" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
-                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#10b981" />
-                            </marker>
-                            <marker id="arrowhead-amber" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
-                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#f59e0b" />
-                            </marker>
-                            <marker id="arrowhead-orange" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
-                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#f97316" />
-                            </marker>
-                            <marker id="arrowhead-blue" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
-                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#3b82f6" />
                             </marker>
                         </defs>
 
@@ -498,15 +472,9 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 const startY = blocker.rowIndex * rowHeight + (rowHeight / 2);
                                 const endY = item.rowIndex * rowHeight + (rowHeight / 2);
 
-                                const color = getPriorityColorHex(blocker);
-                                
-                                // Determine marker ID based on color
-                                let markerId = "arrowhead";
-                                if (color === "#ef4444") markerId = "arrowhead-red";
-                                else if (color === "#10b981") markerId = "arrowhead-emerald";
-                                else if (color === "#f59e0b") markerId = "arrowhead-amber";
-                                else if (color === "#f97316") markerId = "arrowhead-orange";
-                                else if (color === "#3b82f6") markerId = "arrowhead-blue";
+                                const isCritical = showCriticalPath && item.is_critical && blocker.is_critical;
+                                const color = isCritical ? "#ef4444" : "#6366f1";
+                                const markerId = isCritical ? "arrowhead-red" : "arrowhead";
 
                                 return (
                                     <path 
@@ -514,11 +482,11 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                         d={getOrthogonalPath(startSide, actualStartX, startY, endX, endY)}
                                         fill="none"
                                         stroke={color}
-                                        strokeWidth={showCriticalPath && item.is_critical && blocker.is_critical ? "3" : "2"}
-                                        strokeOpacity={showCriticalPath && item.is_critical && blocker.is_critical ? "1" : "0.7"}
+                                        strokeWidth={isCritical ? "3" : "2"}
+                                        strokeOpacity={isCritical ? "1" : "0.8"}
                                         vectorEffect="non-scaling-stroke"
                                         markerEnd={`url(#${markerId})`}
-                                        className={cn("transition-all duration-300", showCriticalPath && item.is_critical && blocker.is_critical && "animate-pulse")}
+                                        className={cn("transition-all duration-300", isCritical && "animate-pulse")}
                                     />
                                 );
                             });

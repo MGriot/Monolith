@@ -369,32 +369,42 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     ) -> Task:
         # Capture IDs early to avoid lazy-loading issues during async operations
         project_id = db_obj.project_id
-        parent_id = db_obj.parent_id
+        old_parent_id = db_obj.parent_id
         
         if isinstance(obj_in, TaskUpdate):
-            obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True))
+            obj_data = obj_in.dict(exclude_unset=True)
         else:
-            obj_data = clean_dict_datetimes(obj_in)
+            obj_data = obj_in.copy()
         
-        if obj_data.get("status") == Status.DONE:
+        # Extract fields handled manually
+        new_assignee_ids = obj_data.pop("assignee_ids", None)
+        new_topic_ids = obj_data.pop("topic_ids", None)
+        new_type_ids = obj_data.pop("type_ids", None)
+        new_blocker_ids = obj_data.pop("blocked_by_ids", None)
+
+        # 1. Clean data and naivify dates
+        obj_data = clean_dict_datetimes(obj_data)
+        
+        # 2. Status logic: check blockers ONLY if moving TO Done
+        if obj_data.get("status") == Status.DONE and db_obj.status != Status.DONE:
             active_blockers = await self.check_for_active_blockers(db, db_obj.id)
             if active_blockers:
                 raise ValueError(f"Task is blocked by unfinished items: {', '.join(active_blockers)}")
-            if db_obj.status != Status.DONE:
-                obj_data["completed_at"] = datetime.utcnow()
+            obj_data["completed_at"] = datetime.utcnow()
         elif "status" in obj_data and obj_data["status"] != Status.DONE:
             obj_data["completed_at"] = None
 
-        if "blocked_by_ids" in obj_data:
-            new_blocker_ids = obj_data["blocked_by_ids"]
+        # 3. Dependency Logic: prevent circularity
+        if new_blocker_ids is not None:
             for b_id in new_blocker_ids:
                 if b_id == db_obj.id:
                     raise ValueError("Item cannot block itself")
                 if await self.is_blocked_by_recursive(db, b_id, db_obj.id, set()):
                     raise ValueError(f"Circular dependency detected with item ID: {b_id}")
+            db_obj.blocked_by_ids = new_blocker_ids
 
-        if "assignee_ids" in obj_data:
-            new_assignee_ids = obj_data.pop("assignee_ids")
+        # 4. M2M Relationships: Assignees
+        if new_assignee_ids is not None:
             current_ids = [u.id for u in db_obj.assignees]
             added_ids = [uid for uid in new_assignee_ids if uid not in current_ids]
             
@@ -405,30 +415,43 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if added_ids:
                 await self.notify_assignees(db, db_obj.id, added_ids, db_obj.title)
 
-        if "topic_ids" in obj_data:
-            topic_ids = obj_data.pop("topic_ids")
-            if topic_ids:
-                res = await db.execute(select(Topic).filter(Topic.id.in_(topic_ids)))
-                db_obj.topics = res.scalars().all()
-            else:
-                db_obj.topics = []
+        # 5. M2M Relationships: Topics & Types
+        if new_topic_ids is not None:
+            res = await db.execute(select(Topic).filter(Topic.id.in_(new_topic_ids)))
+            db_obj.topics = res.scalars().all()
                 
-        if "type_ids" in obj_data:
-            type_ids = obj_data.pop("type_ids")
-            if type_ids:
-                res = await db.execute(select(WorkType).filter(WorkType.id.in_(type_ids)))
-                db_obj.types = res.scalars().all()
-            else:
-                db_obj.types = []
+        if new_type_ids is not None:
+            res = await db.execute(select(WorkType).filter(WorkType.id.in_(new_type_ids)))
+            db_obj.types = res.scalars().all()
 
+        # 6. Parent circularity check
+        if "parent_id" in obj_data and obj_data["parent_id"] is not None:
+            new_p_id = UUID(str(obj_data["parent_id"]))
+            if new_p_id == db_obj.id:
+                raise ValueError("A task cannot be its own parent")
+            
+            async def is_descendant(parent_candidate_id: UUID, task_id: UUID) -> bool:
+                res = await db.execute(select(self.model.id).filter(self.model.parent_id == task_id))
+                children_ids = res.scalars().all()
+                for c_id in children_ids:
+                    if c_id == parent_candidate_id or await is_descendant(parent_candidate_id, c_id):
+                        return True
+                return False
+            
+            if await is_descendant(new_p_id, db_obj.id):
+                raise ValueError("Cannot set a descendant as a parent (circular hierarchy)")
+
+        # 7. Call base update for remaining fields
         db_obj = await super().update(db, db_obj=db_obj, obj_in=obj_data)
         
-        if parent_id:
-            await self.update_parent_status_recursive(db, parent_id)
+        # 8. Post-update bubbles
+        if old_parent_id:
+            await self.update_parent_status_recursive(db, old_parent_id)
+        if db_obj.parent_id and db_obj.parent_id != old_parent_id:
+            await self.update_parent_status_recursive(db, db_obj.parent_id)
         
         await self.sync_project_from_tasks(db, project_id)
         
-        # Refetch to get all relationships loaded
         return await self.get(db, db_obj.id)
 
     async def remove(self, db: AsyncSession, *, id: UUID) -> Task:
