@@ -453,9 +453,10 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                             key={`hier-${task.id}`}
                                             d={getOrthogonalPath('left', startX, startY, endX, endY)}
                                             fill="none"
-                                            stroke="#e2e8f0"
-                                            strokeWidth="1"
-                                            strokeOpacity="0.6"
+                                            stroke="#94a3b8"
+                                            strokeWidth="1.5"
+                                            strokeDasharray="4 3"
+                                            strokeOpacity="0.8"
                                             vectorEffect="non-scaling-stroke"
                                             strokeLinecap="round"
                                         />
@@ -513,8 +514,8 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                         d={getOrthogonalPath(startSide, actualStartX, startY, endX, endY)}
                                         fill="none"
                                         stroke={color}
-                                        strokeWidth={showCriticalPath && item.is_critical && blocker.is_critical ? "2.5" : "1.5"}
-                                        strokeOpacity={showCriticalPath && item.is_critical && blocker.is_critical ? "1" : "0.5"}
+                                        strokeWidth={showCriticalPath && item.is_critical && blocker.is_critical ? "3" : "2"}
+                                        strokeOpacity={showCriticalPath && item.is_critical && blocker.is_critical ? "1" : "0.7"}
                                         vectorEffect="non-scaling-stroke"
                                         markerEnd={`url(#${markerId})`}
                                         className={cn("transition-all duration-300", showCriticalPath && item.is_critical && blocker.is_critical && "animate-pulse")}
