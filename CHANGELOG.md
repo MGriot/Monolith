@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.1] - 2026-02-07
+
+### Added
+- **Gantt Header Precision**: Added labels to **minor ticks** in the Gantt timeline (e.g., day numbers in Week view) for better temporal orientation.
+
 ## [1.5.0] - 2026-02-07
 
 ### Added
