@@ -12,6 +12,7 @@ import {
   Folder
 } from 'lucide-react';
 import KanbanBoard from '@/components/kanban-board';
+import ProjectGantt from '@/components/project-gantt';
 import {
   Table,
   TableBody,
@@ -95,68 +96,82 @@ export default function MyTasksPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden p-6">
-        {view === 'kanban' ? (
-          <KanbanBoard 
-            tasks={tasks || []} 
-            onTaskMove={(id, status) => moveTaskMutation.mutate({ taskId: id, newStatus: status })}
-            onSubtaskMove={(id, status) => moveTaskMutation.mutate({ taskId: id, newStatus: status })}
-            onTaskClick={(task) => navigate(`/projects/${task.project_id}`)}
-            onSubtaskClick={(st) => navigate(`/projects/${st.project_id}`)}
-          />
-        ) : (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader className="bg-slate-50">
-                <TableRow>
-                  <TableHead className="text-[10px] font-black uppercase text-slate-500">Task</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-slate-500">Project</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-slate-500">Status</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-slate-500">Priority</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-slate-500 text-right">Due Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tasks?.length === 0 ? (
+      <div className="flex-1 overflow-auto p-6 space-y-6">
+        <div className="min-h-[500px]">
+          {view === 'kanban' ? (
+            <KanbanBoard 
+              tasks={tasks || []} 
+              onTaskMove={(id, status) => moveTaskMutation.mutate({ taskId: id, newStatus: status })}
+              onSubtaskMove={(id, status) => moveTaskMutation.mutate({ taskId: id, newStatus: status })}
+              onTaskClick={(task) => navigate(`/projects/${task.project_id}`)}
+              onSubtaskClick={(st) => navigate(`/projects/${st.project_id}`)}
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <Table>
+                <TableHeader className="bg-slate-50">
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center text-slate-500 italic">
-                      You have no tasks assigned to you.
-                    </TableCell>
+                    <TableHead className="text-[10px] font-black uppercase text-slate-500">Task</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-slate-500">Project</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-slate-500">Status</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-slate-500">Priority</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-slate-500 text-right">Due Date</TableHead>
                   </TableRow>
-                ) : (
-                  tasks?.map((task) => (
-                    <TableRow 
-                      key={task.id} 
-                      className="hover:bg-slate-50/50 cursor-pointer"
-                      onClick={() => navigate(`/projects/${task.project_id}`)}
-                    >
-                      <TableCell className="font-semibold text-slate-900">{task.title}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                          <Folder className="w-3 h-3 text-slate-400" />
-                          {task.project?.name || 'Unknown Project'}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize text-[10px] font-bold">
-                          {task.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={task.priority === 'High' || task.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[10px] font-black">
-                          {task.priority}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right text-xs font-bold text-slate-500">
-                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                </TableHeader>
+                <TableBody>
+                  {tasks?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-32 text-center text-slate-500 italic">
+                        You have no tasks assigned to you.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    tasks?.map((task) => (
+                      <TableRow 
+                        key={task.id} 
+                        className="hover:bg-slate-50/50 cursor-pointer"
+                        onClick={() => navigate(`/projects/${task.project_id}`)}
+                      >
+                        <TableCell className="font-semibold text-slate-900">{task.title}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                            <Folder className="w-3 h-3 text-slate-400" />
+                            {task.project?.name || 'Unknown Project'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize text-[10px] font-bold">
+                            {task.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={task.priority === 'High' || task.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[10px] font-black">
+                            {task.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-bold text-slate-500">
+                          {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+              <CheckSquare className="w-4 h-4 text-primary" />
+              Schedule Overview
+            </h3>
           </div>
-        )}
+          <div className="min-h-[400px]">
+            <ProjectGantt tasks={tasks || []} initialShowSubtasks={true} />
+          </div>
+        </div>
       </div>
     </div>
   );

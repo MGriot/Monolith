@@ -206,7 +206,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className={cn("grid gap-4", user?.is_superuser ? "md:grid-cols-3" : "md:grid-cols-2")}>
         <Link 
           to="/projects" 
           className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-primary/30 transition-all flex items-center justify-between group"
@@ -239,21 +239,23 @@ export default function DashboardPage() {
           <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
         </Link>
 
-        <Link 
-          to="/users" 
-          className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-primary/30 transition-all flex items-center justify-between group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-amber-600" />
+        {user?.is_superuser && (
+          <Link 
+            to="/users" 
+            className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-primary/30 transition-all flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Team Stats</p>
+                <p className="text-xs text-slate-500">See contribution patterns</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold">Team Stats</p>
-              <p className="text-xs text-slate-500">See contribution patterns</p>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
-        </Link>
+            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        )}
       </div>
 
       {/* Global Activity Heatmap */}
