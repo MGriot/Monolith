@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from app.core.enums import Status
 
 from .metadata import Topic, WorkType
+from .user import User as UserSchema
 
 class ProjectBase(BaseModel):
     name: Optional[str] = None
@@ -15,6 +16,7 @@ class ProjectBase(BaseModel):
     type_id: Optional[UUID] = None
     topic_ids: Optional[List[UUID]] = []
     type_ids: Optional[List[UUID]] = []
+    member_ids: Optional[List[UUID]] = []
     status: Optional[Status] = Status.TODO
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
@@ -41,3 +43,4 @@ class Project(ProjectInDBBase):
     type_ref: Optional[WorkType] = None
     topics: List[Topic] = []
     types: List[WorkType] = []
+    members: List[UserSchema] = []

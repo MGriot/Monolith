@@ -23,8 +23,9 @@ async def read_projects(
     if current_user.is_superuser:
         projects = await crud_project.project.get_multi(db, skip=skip, limit=limit)
     else:
-        projects = await crud_project.project.get_multi_by_owner(
-            db, owner_id=current_user.id, skip=skip, limit=limit
+        # Use new method to fetch projects where user is owner OR member
+        projects = await crud_project.project.get_multi_by_user(
+            db, user_id=current_user.id, skip=skip, limit=limit
         )
     return projects
 
@@ -51,8 +52,9 @@ async def read_projects_gantt(
     """
     Retrieve projects for Gantt view (those with start and due dates).
     """
-    from sqlalchemy import and_
+    from sqlalchemy import and_, or_
     from app.models.project import Project as ProjectModel
+    from app.models.associations import project_members
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
 
@@ -63,11 +65,17 @@ async def read_projects_gantt(
         )
     ).options(
         selectinload(ProjectModel.topic_ref),
-        selectinload(ProjectModel.type_ref)
+        selectinload(ProjectModel.type_ref),
+        selectinload(ProjectModel.members)
     )
     
     if not current_user.is_superuser:
-        query = query.where(ProjectModel.owner_id == current_user.id)
+        query = query.outerjoin(project_members).where(
+            or_(
+                ProjectModel.owner_id == current_user.id,
+                project_members.c.user_id == current_user.id
+            )
+        ).distinct()
     
     result = await db.execute(query)
     projects = result.scalars().all()
@@ -87,9 +95,15 @@ async def read_project_statistics(
     from app.models.project import Project as ProjectModel
     from sqlalchemy import select
 
-    project = await db.get(ProjectModel, project_id)
+    project = await crud_project.project.get(db, id=project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Check permissions
+    if not current_user.is_superuser and project.owner_id != current_user.id:
+        member_ids = [m.id for m in project.members]
+        if current_user.id not in member_ids:
+             raise HTTPException(status_code=403, detail="Not enough permissions")
     
     # Activity query: count all completed tasks in this project per day
     # Using unified Task model
@@ -120,8 +134,13 @@ async def read_project(
     project = await crud_project.project.get(db, id=project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+    
+    # Check permissions (Owner or Member)
+    if not current_user.is_superuser and project.owner_id != current_user.id:
+        member_ids = [m.id for m in project.members]
+        if current_user.id not in member_ids:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
+            
     return project
 
 @router.put("/{project_id}", response_model=Project)
@@ -138,8 +157,11 @@ async def update_project(
     project = await crud_project.project.get(db, id=project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Only owner or superuser can update project settings/members
     if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+        raise HTTPException(status_code=403, detail="Only the project owner can update settings")
+        
     project = await crud_project.project.update(db=db, db_obj=project, obj_in=project_in)
     return project
 
@@ -156,7 +178,10 @@ async def delete_project(
     project = await crud_project.project.get(db, id=project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Only owner or superuser can delete
     if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+        raise HTTPException(status_code=403, detail="Only the project owner can delete the project")
+        
     project = await crud_project.project.remove(db=db, id=project_id)
     return project
