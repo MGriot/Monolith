@@ -50,3 +50,10 @@ subtask_assignees = Table(
     Column("subtask_id", UUID(as_uuid=True), ForeignKey("subtasks.id"), primary_key=True),
     Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
 )
+
+team_members = Table(
+    "team_members",
+    Base.metadata,
+    Column("team_id", UUID(as_uuid=True), ForeignKey("teams.id"), primary_key=True),
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+)
