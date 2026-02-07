@@ -835,5 +835,32 @@
     "linked_req": "User Request: Teams",
     "description": "Add a feed to the Dashboard showing recent task completions by team members.",
     "verification_method": "Verify feed shows teammate activity."
+  },
+  {
+    "id": "FRONT-051",
+    "title": "Gantt: Refine SVG Marker and Dependency Arrowheads",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "Gantt Refinement Request",
+    "description": "Ensure the SVG marker definition exists and is applied to dependency lines with proper color and alignment.",
+    "verification_method": "Visually verify arrowheads on dependency lines in Gantt."
+  },
+  {
+    "id": "FRONT-052",
+    "title": "Gantt: Style WBS Hierarchy Lines",
+    "status": "done",
+    "priority": "low",
+    "linked_req": "Gantt Refinement Request",
+    "description": "Make WBS hierarchy lines visually lighter (thinner stroke, lower opacity) and ensure they use 'left' side anchoring without arrowheads.",
+    "verification_method": "Visually verify hierarchy lines are subtle and distinct from dependencies."
+  },
+  {
+    "id": "FRONT-053",
+    "title": "Gantt: Correct Finish-to-Start Dependency Anchoring",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "Gantt Refinement Request",
+    "description": "Update coordinate calculation to connect the End (Right) of the predecessor to the Start (Left) of the successor.",
+    "verification_method": "Verify dependency lines start at the right edge of the source task bar."
   }
 ]

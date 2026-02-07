@@ -406,7 +406,23 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                     >
                         <defs>
                             <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
-                                <polygon points="0 0, 6 2, 0 4" fill="#94a3b8" />
+                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#94a3b8" />
+                            </marker>
+                            {/* Color-aware markers */}
+                            <marker id="arrowhead-red" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#ef4444" />
+                            </marker>
+                            <marker id="arrowhead-emerald" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#10b981" />
+                            </marker>
+                            <marker id="arrowhead-amber" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#f59e0b" />
+                            </marker>
+                            <marker id="arrowhead-orange" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#f97316" />
+                            </marker>
+                            <marker id="arrowhead-blue" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                                <path d="M 0 0 L 6 2 L 0 4 Z" fill="#3b82f6" />
                             </marker>
                         </defs>
 
@@ -437,8 +453,9 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                             key={`hier-${task.id}`}
                                             d={getOrthogonalPath('left', startX, startY, endX, endY)}
                                             fill="none"
-                                            stroke="#cbd5e1"
-                                            strokeWidth="2"
+                                            stroke="#e2e8f0"
+                                            strokeWidth="1"
+                                            strokeOpacity="0.6"
                                             vectorEffect="non-scaling-stroke"
                                             strokeLinecap="round"
                                         />
@@ -461,37 +478,45 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                                 const blocker = ganttItems.find(i => i.id === dep.predecessor_id);
                                 if (!blocker) return null;
 
-                                // Base start at predecessor end
+                                // Base start at predecessor end (Right Edge)
                                 const blockerEndDate = getEffectiveEndDate(blocker);
-                                const baseStartX = getPositionPx(blockerEndDate!) + dayWidth;
-                                // Add lag
+                                const startX = getPositionPx(blockerEndDate!) + dayWidth;
+                                
+                                // Lag offset
                                 const lagOffset = (dep.lag_days || 0) * dayWidth;
+                                const adjustedStartX = startX + lagOffset;
                                 
                                 const taskStart = getPositionPx(item.start_date!);
-                                const blockerEnd = baseStartX + lagOffset;
-                                const blockerStart = getPositionPx(blocker.start_date!);
+                                const endX = taskStart;
 
-                                // Smart Anchor Logic
-                                const isBackwards = taskStart < blockerEnd + 20;
-                                const startX = isBackwards ? blockerStart : blockerEnd;
+                                // Smart Anchor Logic (Check if it's backwards scheduling)
+                                const isBackwards = taskStart < adjustedStartX + 20;
+                                const actualStartX = isBackwards ? getPositionPx(blocker.start_date!) : adjustedStartX;
                                 const startSide = isBackwards ? 'left' : 'right';
                                 
                                 const startY = blocker.rowIndex * rowHeight + (rowHeight / 2);
-                                const endX = taskStart;
                                 const endY = item.rowIndex * rowHeight + (rowHeight / 2);
 
                                 const color = getPriorityColorHex(blocker);
+                                
+                                // Determine marker ID based on color
+                                let markerId = "arrowhead";
+                                if (color === "#ef4444") markerId = "arrowhead-red";
+                                else if (color === "#10b981") markerId = "arrowhead-emerald";
+                                else if (color === "#f59e0b") markerId = "arrowhead-amber";
+                                else if (color === "#f97316") markerId = "arrowhead-orange";
+                                else if (color === "#3b82f6") markerId = "arrowhead-blue";
 
                                 return (
                                     <path 
                                         key={`${item.id}-${dep.predecessor_id}`}
-                                        d={getOrthogonalPath(startSide, startX, startY, endX, endY)}
+                                        d={getOrthogonalPath(startSide, actualStartX, startY, endX, endY)}
                                         fill="none"
                                         stroke={color}
                                         strokeWidth={showCriticalPath && item.is_critical && blocker.is_critical ? "2.5" : "1.5"}
                                         strokeOpacity={showCriticalPath && item.is_critical && blocker.is_critical ? "1" : "0.5"}
                                         vectorEffect="non-scaling-stroke"
-                                        markerEnd="url(#arrowhead)"
+                                        markerEnd={`url(#${markerId})`}
                                         className={cn("transition-all duration-300", showCriticalPath && item.is_critical && blocker.is_critical && "animate-pulse")}
                                     />
                                 );
