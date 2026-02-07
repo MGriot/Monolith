@@ -42,6 +42,7 @@ export interface Task {
   types?: WorkType[];
   topic_ref?: Topic;
   type_ref?: WorkType;
+  project?: Project;
   wbs_code?: string;
   is_critical?: boolean;
   slack_days?: number;
@@ -69,6 +70,7 @@ export interface Project {
   topic_ref?: Topic;
   type_ref?: WorkType;
   tags?: string[];
+  members?: User[];
 }
 
 export interface Topic {

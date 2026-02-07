@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { format, parseISO } from 'date-fns';
 import ProjectHeatmap from '@/components/project-heatmap';
+import ResourceTimeline from '@/components/resource-timeline';
 
 interface DashboardSummary {
   total_projects: number;
@@ -42,6 +43,14 @@ export default function DashboardPage() {
     queryFn: async () => {
       const response = await api.get('/dashboard/summary');
       return response.data as DashboardSummary;
+    },
+  });
+
+  const { data: calendarData } = useQuery({
+    queryKey: ['calendar-events', 'global'],
+    queryFn: async () => {
+      const response = await api.get('/calendar/');
+      return response.data;
     },
   });
 
@@ -245,13 +254,34 @@ export default function DashboardPage() {
       </div>
 
       {/* Global Activity Heatmap */}
-      <div className="flex justify-center">
-        <Card className="w-full max-w-4xl border-slate-200 shadow-sm">
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <CardHeader className="bg-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-semibold">Team Workload</CardTitle>
+                <CardDescription>Current task distribution across your team.</CardDescription>
+              </div>
+              <TrendingUp className="h-4 w-4 text-slate-400" />
+            </div>
+          </CardHeader>
+          <CardContent className="p-0 flex-1 min-h-[400px]">
+            <ResourceTimeline 
+                tasks={(calendarData?.items || []).filter((i: any) => i.item_type !== 'project').map((i: any) => ({
+                    ...i,
+                    project: { name: i.project_name }
+                }))} 
+                title="Global Resource Load"
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base font-semibold">System-wide Activity</CardTitle>
-                <CardDescription>Consolidated task completions across all projects over the last year.</CardDescription>
+                <CardDescription>Consolidated completions over the last year.</CardDescription>
               </div>
               <Activity className="h-4 w-4 text-slate-400" />
             </div>

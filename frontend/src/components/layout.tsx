@@ -12,7 +12,8 @@ import {
   Users,
   Plus,
   Database,
-  Copy
+  Copy,
+  CheckSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,7 @@ export default function Layout({ children }: LayoutProps) {
   const filteredNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
     { icon: FolderKanban, label: 'Projects', href: '/projects' },
+    { icon: CheckSquare, label: 'My Tasks', href: '/tasks' },
     { icon: CalendarIcon, label: 'Calendar', href: '/calendar' },
     { icon: GanttChart, label: 'Roadmap', href: '/roadmap' },
     { icon: Copy, label: 'Templates', href: '/templates' },
@@ -51,6 +53,7 @@ export default function Layout({ children }: LayoutProps) {
     if (path === '/') return 'Overview';
     if (path === '/projects') return 'Projects';
     if (path.startsWith('/projects/')) return 'Project Details';
+    if (path === '/tasks') return 'My Tasks';
     if (path === '/calendar') return 'Calendar';
     if (path === '/roadmap') return 'Roadmap';
     if (path === '/users') return 'Team Management';
