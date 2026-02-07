@@ -718,5 +718,77 @@
     "priority": "high",
     "linked_req": "PRD Section 11.4: Feature: Project Templates",
     "description": "Update Create Project flow to allow selection of Blank or Template options."
+  },
+  {
+    "id": "FRONT-042",
+    "title": "UI: Hierarchical Template Indentation",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "User Request (Indentation)",
+    "description": "Support nested task structures via indentation (2 spaces) in the template editor."
+  },
+  {
+    "id": "BACK-020",
+    "title": "Model: Project Membership",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 12.1",
+    "description": "Create project_members association table and update Project model with members relationship."
+  },
+  {
+    "id": "BACK-021",
+    "title": "API: Project Membership & Access Logic",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 12.1",
+    "description": "Update Project CRUD to handle member assignment and implement access filtering for projects list."
+  },
+  {
+    "id": "FRONT-043",
+    "title": "UI: Project Member Selection",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 12.1",
+    "description": "Update Create/Edit Project forms to include member selection dropdown."
+  },
+  {
+    "id": "FRONT-044",
+    "title": "UI: \"My Tasks\" Page (Inbox)",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 12.2",
+    "description": "Implement /tasks route with Kanban/List view toggle and aggregated task data across all projects."
+  },
+  {
+    "id": "FRONT-045",
+    "title": "UI: Resource Timeline Chart (User-Gantt)",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 12.3",
+    "description": "Implement the core ResourceTimeline component for visualizing user workload."
+  },
+  {
+    "id": "FRONT-046",
+    "title": "UI: Resource Timeline - Project View",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 12.3",
+    "description": "Integrate ResourceTimeline into Project Details page for project-specific team workload."
+  },
+  {
+    "id": "FRONT-047",
+    "title": "UI: Resource Timeline - Global Dashboard",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 12.3",
+    "description": "Integrate ResourceTimeline into Global Dashboard for cross-project visibility."
+  },
+  {
+    "id": "FRONT-048",
+    "title": "UI: Resource Timeline - Admin Super View",
+    "status": "todo",
+    "priority": "low",
+    "linked_req": "PRD Section 12.3",
+    "description": "Integrate ResourceTimeline into Admin User Management page for org-wide capacity planning."
   }
 ]
