@@ -812,7 +812,7 @@
   {
     "id": "BACK-024",
     "title": "API: Team Activity Endpoint",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: Teams",
     "description": "Create an endpoint to fetch recent activity (completions) from users within the current user's team(s).",

@@ -2,6 +2,7 @@ from typing import Any, List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app import crud, models, schemas
 from app.api import deps
@@ -25,6 +26,67 @@ async def read_teams(
             db, user_id=current_user.id, skip=skip, limit=limit
         )
     return teams
+
+@router.get("/activity", response_model=Any)
+async def read_team_activity(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: models.user.User = Depends(deps.get_current_user),
+    limit: int = 20
+) -> Any:
+    """
+    Retrieve recent activity (completions) from teammates.
+    """
+    from app.models.task import Task
+    from app.models.associations import team_members
+    from sqlalchemy import select, desc, and_
+    
+    # 1. Find all teammates (users in the same teams as current_user)
+    team_ids_query = select(team_members.c.team_id).where(team_members.c.user_id == current_user.id)
+    team_ids_result = await db.execute(team_ids_query)
+    team_ids = team_ids_result.scalars().all()
+    
+    if not team_ids:
+        return []
+        
+    teammates_query = select(team_members.c.user_id).where(team_members.c.team_id.in_(team_ids))
+    teammates_result = await db.execute(teammates_query)
+    teammate_ids = set(teammates_result.scalars().all())
+    
+    if current_user.id in teammate_ids:
+        teammate_ids.remove(current_user.id)
+        
+    if not teammate_ids:
+        return []
+
+    # 2. Fetch recent completions by these users
+    from app.models.associations import task_assignees
+    query = (
+        select(Task)
+        .join(task_assignees)
+        .filter(task_assignees.c.user_id.in_(teammate_ids))
+        .filter(Task.completed_at != None)
+        .order_by(desc(Task.completed_at))
+        .limit(limit)
+        .options(selectinload(Task.project), selectinload(Task.assignees))
+    )
+    
+    result = await db.execute(query)
+    tasks = result.scalars().all()
+    
+    return [
+        {
+            "id": t.id,
+            "title": t.title,
+            "completed_at": t.completed_at,
+            "project_name": t.project.name if t.project else "Unknown",
+            "project_id": t.project_id,
+            "user": {
+                "full_name": next((u.full_name for u in t.assignees if u.id in teammate_ids), "Teammate"),
+                "email": next((u.email for u in t.assignees if u.id in teammate_ids), "")
+            }
+        }
+        for t in tasks
+    ]
 
 @router.post("/", response_model=schemas.team.Team)
 async def create_team(
