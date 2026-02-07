@@ -22,7 +22,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreVertical, GripVertical, Plus, User as UserIcon, Milestone, AlertTriangle } from 'lucide-react';
+import { MoreVertical, GripVertical, Plus, User as UserIcon, Milestone, AlertTriangle, Folder } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Task, Subtask } from '@/types';
 
@@ -38,6 +38,7 @@ interface KanbanItem {
   assignees?: { id: string; full_name: string; email: string }[];
   type: 'task' | 'subtask';
   parentId?: string;
+  project?: { id: string; name: string };
 }
 
 interface KanbanBoardProps {
@@ -76,7 +77,8 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
                 ...task, 
                 type: task.parent_id ? 'subtask' : 'task', 
                 topic: task.topic || parent?.topic, 
-                parentId: task.parent_id || undefined 
+                parentId: task.parent_id || undefined,
+                project: task.project || parent?.project
             } as any);
             
             if (task.subtasks && task.subtasks.length > 0) {
@@ -355,6 +357,12 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
                 <span className="text-[8px] font-black text-slate-400">{item.wbs_code}</span>
                 {item.type === 'subtask' && (
                     <span className="text-[8px] font-black text-primary uppercase">Subtask</span>
+                )}
+                {item.project && (
+                  <span className="text-[8px] font-black text-slate-500 uppercase flex items-center gap-1">
+                    <Folder className="w-2 h-2" />
+                    {item.project.name}
+                  </span>
                 )}
             </div>
             <CardTitle className={cn(
