@@ -42,7 +42,8 @@ async def read_assigned_tasks(
             selectinload(TaskModel.topic_ref),
             selectinload(TaskModel.type_ref),
             selectinload(TaskModel.topics),
-            selectinload(TaskModel.types)
+            selectinload(TaskModel.types),
+            selectinload(TaskModel.project)
         )
         .offset(skip)
         .limit(limit)

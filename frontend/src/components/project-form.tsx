@@ -28,6 +28,7 @@ const projectSchema = z.object({
   start_date: z.string().optional(),
   due_date: z.string().optional(),
   tags: z.string().optional(),
+  member_ids: z.array(z.string()).optional(),
 });
 
 export type ProjectFormValues = z.infer<typeof projectSchema>;
@@ -55,6 +56,11 @@ export default function ProjectForm({
     queryFn: async () => (await api.get('/metadata/work-types')).data,
   });
 
+  const { data: users } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => (await api.get('/users/')).data,
+  });
+
   const {
     register,
     handleSubmit,
@@ -70,6 +76,7 @@ export default function ProjectForm({
       type_id: null,
       topic_ids: [],
       type_ids: [],
+      member_ids: [],
       ...initialValues,
     },
   });
@@ -77,6 +84,7 @@ export default function ProjectForm({
   const statusValue = watch("status");
   const selectedTopicIds = watch("topic_ids") || [];
   const selectedTypeIds = watch("type_ids") || [];
+  const selectedMemberIds = watch("member_ids") || [];
 
   const toggleTopic = (topicId: string) => {
     const current = [...selectedTopicIds];
@@ -98,6 +106,17 @@ export default function ProjectForm({
       current.push(typeId);
     }
     setValue("type_ids", current);
+  };
+
+  const toggleMember = (userId: string) => {
+    const current = [...selectedMemberIds];
+    const index = current.indexOf(userId);
+    if (index > -1) {
+      current.splice(index, 1);
+    } else {
+      current.push(userId);
+    }
+    setValue("member_ids", current);
   };
 
   return (
@@ -149,6 +168,32 @@ export default function ProjectForm({
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Project Members (Access Control)</Label>
+        <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-slate-50/50 min-h-[40px] max-h-[120px] overflow-y-auto">
+          {users?.map((u: any) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => toggleMember(u.id)}
+              className={cn(
+                "px-2 py-0.5 rounded text-[10px] font-medium border transition-all flex items-center gap-1.5",
+                selectedMemberIds.includes(u.id)
+                  ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-200"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+              )}
+            >
+              <div className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                selectedMemberIds.includes(u.id) ? "bg-white" : "bg-slate-300"
+              )} />
+              {u.full_name || u.email}
+            </button>
+          ))}
+        </div>
+        <p className="text-[10px] text-slate-500">Members selected here will have full visibility and access to this project.</p>
       </div>
 
       <div className="space-y-2">

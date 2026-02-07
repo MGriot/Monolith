@@ -16,6 +16,7 @@ import KanbanBoard from '@/components/kanban-board';
 import ProjectGantt from '@/components/project-gantt';
 import ProjectHeatmap from '@/components/project-heatmap';
 import ProjectTaskList from '@/components/project-task-list';
+import ResourceTimeline from '@/components/resource-timeline';
 import TaskForm from '@/components/task-form';
 import type { TaskFormValues } from '@/components/task-form';
 import DependencyManager from '@/components/dependency-manager';
@@ -27,7 +28,9 @@ import {
   Calendar as CalendarIcon,
   Plus,
   List as ListIcon,
+  Users as UsersIcon,
   Settings as SettingsIcon,
+  User as UserIcon,
   FolderKanban,
   LayoutDashboard,
   Trash2,
@@ -391,6 +394,9 @@ export default function ProjectDetailPage() {
             <TabsTrigger value="kanban" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
               <Trello className="w-3.5 h-3.5" /> Kanban
             </TabsTrigger>
+            <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
+              <UsersIcon className="w-3.5 h-3.5" /> Team Workload
+            </TabsTrigger>
           </TabsList>
         </div>
         
@@ -446,6 +452,39 @@ export default function ProjectDetailPage() {
             onSubtaskClick={handleSubtaskClick}
           />
         </TabsContent>
+
+        <TabsContent value="team" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                <UsersIcon className="w-4 h-4 text-primary" />
+                Project Members
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {project.members?.map((member) => (
+                  <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-slate-200 shadow-sm">
+                      <UserIcon className="w-5 h-5 text-slate-400" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-bold text-slate-900 truncate">{member.full_name || 'No Name'}</span>
+                      <span className="text-xs text-slate-500 truncate">{member.email}</span>
+                    </div>
+                  </div>
+                ))}
+                {project.members?.length === 0 && (
+                  <p className="text-xs text-slate-500 italic py-4">No members assigned to this project.</p>
+                )}
+              </div>
+            </div>
+
+            <ResourceTimeline 
+              tasks={tasks || []} 
+              users={project.members} 
+              title="Team Schedule"
+            />
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Project Edit Dialog */}
@@ -467,7 +506,8 @@ export default function ProjectDetailPage() {
                 status: project.status,
                 start_date: project.start_date?.split('T')[0],
                 due_date: project.due_date?.split('T')[0],
-                tags: project.tags?.join(', ')
+                tags: project.tags?.join(', '),
+                member_ids: project.members?.map(m => m.id) || []
               }}
               onSubmit={(data) => updateProjectMutation.mutate(data)}
               onCancel={() => setIsProjectEditDialogOpen(false)}
