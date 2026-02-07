@@ -4,9 +4,10 @@
 **Focus:** Infrastructure: Team Models
 
 ## Active Focus
-- [ ] [BACK-023] API: Teams CRUD
+- [ ] [BACK-024] API: Team Activity Endpoint
 
 ## Recent History
+- [x] [BACK-023] API: Teams CRUD (2026-02-07)
 - [x] [BACK-022] Model: Team Management (2026-02-07)
 - [x] [BACK-020/021] Project Membership & Access Control (2026-02-07)
 - [x] [FRONT-043/044] My Tasks Inbox & Member Selection (2026-02-07)

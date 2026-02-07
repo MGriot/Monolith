@@ -803,7 +803,7 @@
   {
     "id": "BACK-023",
     "title": "API: Teams CRUD",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "User Request: Teams",
     "description": "Implement CRUD endpoints for Team management, restricted to admins.",
