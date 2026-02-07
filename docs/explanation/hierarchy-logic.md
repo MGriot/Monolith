@@ -26,3 +26,6 @@ The Project's `progress_percent` is calculated by the completion status of its T
 Monolith implements **Recursive Dependency Checking**. If Task B depends on Task A:
 - Task B cannot be marked "Done" until Task A is "Done".
 - Circular dependencies (A depends on B, B depends on A) are detected and blocked at the API level using Depth-First Search (DFS).
+
+## Template Hierarchies
+Project Templates support the same hierarchical logic as active projects. When defining a template, subtasks can be nested using **indentation** (2 spaces). This structure is preserved when a project is scaffolded from the template, automatically generating the full Task → Subtask tree.

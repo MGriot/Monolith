@@ -18,6 +18,65 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Helper to parse indented text into hierarchical tasks
+const parseTasks = (text: string) => {
+  const lines = text.split('\n');
+  const root: any[] = [];
+  const stack: { level: number; item: any }[] = [];
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+
+    // Calculate indentation (assume 2 spaces = 1 level)
+    const match = line.match(/^(\s*)/);
+    const spaces = match ? match[1].length : 0;
+    const level = Math.floor(spaces / 2);
+
+    const task = {
+      title: line.trim(),
+      status: 'Todo',
+      priority: 'Medium',
+      subtasks: []
+    };
+
+    if (level === 0) {
+      root.push(task);
+      stack.length = 0; // Reset stack for new root
+      stack.push({ level, item: task });
+    } else {
+      // Find valid parent in stack
+      while (stack.length > 0 && stack[stack.length - 1].level >= level) {
+        stack.pop();
+      }
+      
+      if (stack.length > 0) {
+        const parent = stack[stack.length - 1].item;
+        parent.subtasks.push(task);
+        stack.push({ level, item: task });
+      } else {
+        // Fallback if indentation is weird (e.g. level 2 without level 1)
+        // Just add to root to avoid losing data
+        root.push(task);
+        stack.push({ level, item: task });
+      }
+    }
+  }
+  return root;
+};
+
+// Helper to serialize hierarchical tasks back to text
+const serializeTasks = (tasks: any[], level = 0): string => {
+  let output = '';
+  const indent = '  '.repeat(level);
+  for (const task of tasks) {
+    output += `${indent}${task.title}\n`;
+    if (task.subtasks && task.subtasks.length > 0) {
+      output += serializeTasks(task.subtasks, level + 1);
+    }
+  }
+  return output;
+};
+
 export default function TemplatesPage() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -71,7 +130,7 @@ export default function TemplatesPage() {
     setEditingTemplate(template);
     setName(template.name);
     setDescription(template.description || '');
-    setTasksText(template.tasks_json.map((t: any) => t.title).join('\n'));
+    setTasksText(serializeTasks(template.tasks_json));
     setIsCreateDialogOpen(true);
   };
 
@@ -81,10 +140,7 @@ export default function TemplatesPage() {
       return;
     }
 
-    const tasks_json = tasksText
-      .split('\n')
-      .filter(line => line.trim() !== '')
-      .map(title => ({ title: title.trim(), status: 'Todo', priority: 'Medium' }));
+    const tasks_json = parseTasks(tasksText);
 
     const templateData = { name, description, tasks_json };
 
@@ -176,12 +232,12 @@ export default function TemplatesPage() {
               <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this template for?" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tasks">Tasks (one per line)</Label>
+              <Label htmlFor="tasks">Tasks (use indentation for subtasks)</Label>
               <Textarea 
                 id="tasks" 
                 value={tasksText} 
                 onChange={(e) => setTasksText(e.target.value)} 
-                placeholder="Initialize Repo&#10;Architecture Design&#10;Backend Setup..."
+                placeholder="Phase 1&#10;  Task 1.1&#10;  Task 1.2&#10;Phase 2&#10;  Task 2.1"
                 className="min-h-[150px] font-mono text-sm"
               />
             </div>

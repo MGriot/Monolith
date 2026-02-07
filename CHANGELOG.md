@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-02-07
+
+### Added
+- **Hierarchical Template Indentation:** The project template editor now supports nested task structures via indentation. Using 2 spaces (or tabs) in the task list automatically creates a parent-child relationship, allowing for complex project scaffolding in a single text field.
+- **Recursive Template Parsing:** Implemented intelligent parsing and serialization logic in the frontend to handle transformation between indented text and recursive JSON structures.
+
 ## [1.1.0] - 2026-02-06
 
 ### Added
