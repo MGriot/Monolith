@@ -907,5 +907,13 @@
     "linked_req": "User Request: Completion Tracking",
     "description": "Add 'Concluded' date column to Task List. Add editable 'Conclusion Date' field to Task Form.",
     "verification_method": "Edit conclusion date manually and verify persistence."
+  },
+  {
+    "id": "FRONT-057",
+    "title": "Kanban Board Refinements",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 12.2",
+    "description": "Add missing status columns (Backlog, On Hold), fix drag-and-drop stability, and limit visible tasks to 5 per column."
   }
 ]

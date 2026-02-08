@@ -189,17 +189,23 @@ export default function ProjectDetailPage() {
   });
 
   const moveTaskMutation = useMutation({
-    mutationFn: async ({ taskId, newStatus }: { taskId: string; newStatus: string }) => {
-      return api.put(`/tasks/${taskId}`, { status: newStatus });
+    mutationFn: async ({ taskId, newStatus, sortIndex }: { taskId: string; newStatus: string; sortIndex?: number }) => {
+      const data: any = { status: newStatus };
+      if (sortIndex !== undefined) data.sort_index = sortIndex;
+      return api.put(`/tasks/${taskId}`, data);
     },
-    onMutate: async ({ taskId, newStatus }) => {
+    onMutate: async ({ taskId, newStatus, sortIndex }) => {
       await queryClient.cancelQueries({ queryKey: ['tasks', id] });
       const previousTasks = queryClient.getQueryData(['tasks', id]);
 
       queryClient.setQueryData(['tasks', id], (old: Task[] | undefined) => {
         const updateRecursive = (list: Task[]): Task[] => {
           return list.map(t => {
-            if (t.id === taskId) return { ...t, status: newStatus };
+            if (t.id === taskId) {
+              const updated = { ...t, status: newStatus };
+              if (sortIndex !== undefined) updated.sort_index = sortIndex;
+              return updated;
+            }
             if (t.subtasks) return { ...t, subtasks: updateRecursive(t.subtasks) };
             return t;
           });
@@ -209,24 +215,90 @@ export default function ProjectDetailPage() {
 
       return { previousTasks };
     },
-    onError: (_, __, context) => {
+    onError: (err: any, __, context) => {
       queryClient.setQueryData(['tasks', id], context?.previousTasks);
+      const msg = err.response?.data?.detail || err.message;
+      alert(`Move failed: ${msg}`);
     },
-    onSuccess: () => {
-      // We don't necessarily need to invalidate immediately if we are confident in our optimistic update
-      // but it's good practice to ensure consistency eventually
+    onSuccess: (response) => {
+      const updatedTask = response.data;
+      // Targeted update for the moved task to ensure immediate visual consistency with server state
+      queryClient.setQueryData(['tasks', id], (old: Task[] | undefined) => {
+        const updateRecursive = (list: Task[]): Task[] => {
+          return list.map(t => {
+            if (t.id === updatedTask.id) return updatedTask;
+            if (t.subtasks) return { ...t, subtasks: updateRecursive(t.subtasks) };
+            return t;
+          });
+        };
+        return old ? updateRecursive(old) : [];
+      });
+      
+      // Still trigger refetch to catch parent updates (status propagation)
       queryClient.invalidateQueries({ queryKey: ['tasks', id] });
       queryClient.invalidateQueries({ queryKey: ['project', id] });
       queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
     },
   });
 
-  const handleTaskMove = (taskId: string, newStatus: string) => {
-    moveTaskMutation.mutate({ taskId, newStatus });
+  const calculateSortIndex = (container: string, index: number) => {
+    // Helper to find neighboring tasks in the flattened list for a specific status
+    const flatten = (list: Task[]): Task[] => {
+      let flat: Task[] = [];
+      list.forEach(t => {
+        flat.push(t);
+        if (t.subtasks) flat = [...flat, ...flatten(t.subtasks)];
+      });
+      return flat;
+    };
+
+    const allTasksFlat = tasks ? flatten(tasks) : [];
+    const columnTasks = allTasksFlat
+      .filter(t => t.status.toLowerCase() === container.toLowerCase())
+      .sort((a, b) => {
+        if ((a.sort_index || 0) !== (b.sort_index || 0)) {
+          return (a.sort_index || 0) - (b.sort_index || 0);
+        }
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+
+    if (columnTasks.length === 0) return 100;
+
+    // Handle dropping at the very beginning
+    if (index <= 0) {
+      return (columnTasks[0].sort_index || 0) - 10;
+    }
+
+    // Handle dropping at the very end
+    if (index >= columnTasks.length) {
+      return (columnTasks[columnTasks.length - 1].sort_index || 0) + 10;
+    }
+
+    // Average between neighbors
+    const prev = columnTasks[index - 1].sort_index || 0;
+    const next = columnTasks[index].sort_index || 0;
+    
+    // If indices are the same, we need to find a gap or force one
+    if (prev === next) {
+        return prev + 1;
+    }
+    
+    return Math.round((prev + next) / 2);
   };
 
-  const handleSubtaskMove = (subtaskId: string, newStatus: string) => {
-    moveTaskMutation.mutate({ taskId: subtaskId, newStatus });
+  const handleTaskMove = (taskId: string, newStatus: string, index?: number) => {
+    const sortIndex = index !== undefined ? calculateSortIndex(newStatus, index) : undefined;
+    moveTaskMutation.mutate({ taskId, newStatus, sortIndex });
+  };
+
+  const handleSubtaskMove = (subtaskId: string, newStatus: string, index?: number) => {
+    const sortIndex = index !== undefined ? calculateSortIndex(newStatus, index) : undefined;
+    moveTaskMutation.mutate({ taskId: subtaskId, newStatus, sortIndex });
+  };
+
+  const handleKanbanReorder = (taskId: string, newIndex: number, container: string) => {
+    const sortIndex = calculateSortIndex(container, newIndex);
+    moveTaskMutation.mutate({ taskId, newStatus: container, sortIndex });
   };
 
   const handleAddTask = (status?: string) => {
@@ -547,6 +619,7 @@ export default function ProjectDetailPage() {
             tasks={tasks || []}
             onTaskMove={handleTaskMove}
             onSubtaskMove={handleSubtaskMove}
+            onReorder={handleKanbanReorder}
             onAddTask={handleAddTask}
             onTaskClick={handleTaskClick}
             onSubtaskClick={handleSubtaskClick}

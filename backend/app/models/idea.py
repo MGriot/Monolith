@@ -10,8 +10,9 @@ class Idea(Base):
     __tablename__ = "ideas"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     author_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+
     
     title = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
@@ -21,7 +22,8 @@ class Idea(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # If promoted to task, store the task ID
-    converted_task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=True)
+    converted_task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True)
+
 
     # Relationships
     project = relationship("Project", back_populates="ideas")

@@ -38,13 +38,66 @@ export default function MyTasksPage() {
   });
 
   const moveTaskMutation = useMutation({
-    mutationFn: async ({ taskId, newStatus }: { taskId: string; newStatus: string }) => {
-      return api.put(`/tasks/${taskId}`, { status: newStatus });
+    mutationFn: async ({ taskId, newStatus, sortIndex }: { taskId: string; newStatus: string; sortIndex?: number }) => {
+      const data: any = { status: newStatus };
+      if (sortIndex !== undefined) data.sort_index = sortIndex;
+      return api.put(`/tasks/${taskId}`, data);
+    },
+    onMutate: async ({ taskId, newStatus, sortIndex }) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks', 'assigned'] });
+      const previousTasks = queryClient.getQueryData(['tasks', 'assigned']);
+
+      queryClient.setQueryData(['tasks', 'assigned'], (old: Task[] | undefined) => {
+        return old?.map(t => {
+          if (t.id === taskId) {
+            const updated = { ...t, status: newStatus };
+            if (sortIndex !== undefined) updated.sort_index = sortIndex;
+            return updated;
+          }
+          return t;
+        });
+      });
+
+      return { previousTasks };
+    },
+    onError: (err: any, __, context) => {
+      queryClient.setQueryData(['tasks', 'assigned'], context?.previousTasks);
+      const msg = err.response?.data?.detail || err.message;
+      alert(`Move failed: ${msg}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', 'assigned'] });
     },
   });
+
+  const calculateSortIndex = (container: string, index: number) => {
+    const columnTasks = (tasks || [])
+      .filter(t => t.status.toLowerCase() === container.toLowerCase())
+      .sort((a, b) => {
+        if ((a.sort_index || 0) !== (b.sort_index || 0)) {
+          return (a.sort_index || 0) - (b.sort_index || 0);
+        }
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+
+    if (columnTasks.length === 0) return 100;
+    if (index <= 0) return (columnTasks[0].sort_index || 0) - 10;
+    if (index >= columnTasks.length) return (columnTasks[columnTasks.length - 1].sort_index || 0) + 10;
+
+    const prev = columnTasks[index - 1].sort_index || 0;
+    const next = columnTasks[index].sort_index || 0;
+    
+    if (prev === next) {
+        return prev + 1;
+    }
+    
+    return Math.round((prev + next) / 2);
+  };
+
+  const handleKanbanReorder = (taskId: string, newIndex: number, container: string) => {
+    const sortIndex = calculateSortIndex(container, newIndex);
+    moveTaskMutation.mutate({ taskId, newStatus: container, sortIndex });
+  };
 
   if (isLoading) {
     return (
@@ -101,8 +154,9 @@ export default function MyTasksPage() {
           {view === 'kanban' ? (
             <KanbanBoard 
               tasks={tasks || []} 
-              onTaskMove={(id, status) => moveTaskMutation.mutate({ taskId: id, newStatus: status })}
-              onSubtaskMove={(id, status) => moveTaskMutation.mutate({ taskId: id, newStatus: status })}
+              onTaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx) : undefined })}
+              onSubtaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx) : undefined })}
+              onReorder={handleKanbanReorder}
               onTaskClick={(task) => navigate(`/projects/${task.project_id}`)}
               onSubtaskClick={(st) => navigate(`/projects/${st.project_id}`)}
             />

@@ -43,6 +43,27 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         )
         return result.scalars().all()
 
+    async def create(self, db: AsyncSession, *, obj_in: ProjectCreate) -> Project:
+        obj_data = clean_dict_datetimes(obj_in.dict(exclude={'topic_ids', 'type_ids', 'member_ids'}))
+        db_obj = self.model(**obj_data)
+        
+        if obj_in.topic_ids:
+            topics_result = await db.execute(select(Topic).filter(Topic.id.in_(obj_in.topic_ids)))
+            db_obj.topics = topics_result.scalars().all()
+            
+        if obj_in.type_ids:
+            types_result = await db.execute(select(WorkType).filter(WorkType.id.in_(obj_in.type_ids)))
+            db_obj.types = types_result.scalars().all()
+
+        if obj_in.member_ids:
+            members_result = await db.execute(select(User).filter(User.id.in_(obj_in.member_ids)))
+            db_obj.members = members_result.scalars().all()
+
+        db.add(db_obj)
+        await db.commit()
+        await db.refresh(db_obj)
+        return await self.get(db, id=db_obj.id)
+
     async def create_with_owner(
         self, db: AsyncSession, *, obj_in: ProjectCreate, owner_id: UUID
     ) -> Project:

@@ -20,7 +20,10 @@ A focused execution view for individual contributors.
 *   **Route:** `/tasks` (Added to main Navigation Bar).
 *   **Data Scope:** Aggregates ALL tasks assigned to the current user across ALL projects.
 *   **Views (Toggleable):**
-    1.  **Kanban Board:** Columns by Status (To Do, In Progress, Review, Done). Drag-and-drop enabled for status updates.
+    1.  **Kanban Board:**
+        *   **Columns:** Backlog, To Do, In Progress, On Hold, Review, Done.
+        *   **Constraints:** Columns display a maximum of 5 tasks by default. If more exist, a "Show X more" indicator is displayed.
+        *   **Interaction:** Drag-and-drop enabled for status updates.
     2.  **List View:** A flat, sortable data table showing Task Title, Project Name, Priority, Due Date, and Status.
 
 ### 12.3 Feature: Resource Timeline Charts (User-Gantt)
