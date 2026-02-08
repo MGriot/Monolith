@@ -17,6 +17,7 @@ import ProjectGantt from '@/components/project-gantt';
 import ProjectHeatmap from '@/components/project-heatmap';
 import ProjectTaskList from '@/components/project-task-list';
 import ResourceTimeline from '@/components/resource-timeline';
+import ProjectIdeas from '@/components/project-ideas';
 import TaskForm from '@/components/task-form';
 import type { TaskFormValues } from '@/components/task-form';
 import DependencyManager from '@/components/dependency-manager';
@@ -35,7 +36,8 @@ import {
   LayoutDashboard,
   Trash2,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Lightbulb
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -483,6 +485,9 @@ export default function ProjectDetailPage() {
             <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
               <UsersIcon className="w-3.5 h-3.5" /> Team Workload
             </TabsTrigger>
+            <TabsTrigger value="ideas" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
+              <Lightbulb className="w-3.5 h-3.5" /> Ideas
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -570,6 +575,10 @@ export default function ProjectDetailPage() {
               title="Team Schedule"
             />
           </div>
+        </TabsContent>
+
+        <TabsContent value="ideas" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
+          <ProjectIdeas projectId={id!} />
         </TabsContent>
       </Tabs>
 

@@ -884,7 +884,7 @@
   {
     "id": "FRONT-055",
     "title": "UI: Project Ideas Tab",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: Ideas",
     "description": "Add 'Ideas' tab to Project Details. interface to list, create, and promote ideas.",
