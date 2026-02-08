@@ -24,6 +24,7 @@ const taskSchema = z.object({
   start_date: z.string().optional().nullable(),
   due_date: z.string().optional().nullable(),
   deadline_at: z.string().optional().nullable(),
+  completed_at: z.string().optional().nullable(),
   assignee_ids: z.array(z.string()),
   sort_index: z.number().optional(),
   parent_id: z.string().optional().nullable(),
@@ -322,17 +323,22 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
           <Label htmlFor="deadline_at">Hard Deadline</Label>
           <Input id="deadline_at" type="date" {...register("deadline_at")} />
         </div>
-        <div className="flex items-center space-x-2 pt-8">
-          <Switch
-            id="is_milestone"
-            checked={watch("is_milestone")}
-            onCheckedChange={(checked) => setValue("is_milestone", checked)}
-          />
-          <Label htmlFor="is_milestone" className="flex items-center gap-1.5 cursor-pointer">
-            <Milestone className="w-3.5 h-3.5 text-blue-500" />
-            Mark as Milestone
-          </Label>
+        <div className="space-y-2">
+          <Label htmlFor="completed_at">Conclusion Date</Label>
+          <Input id="completed_at" type="date" {...register("completed_at")} />
         </div>
+      </div>
+
+      <div className="flex items-center space-x-2 pt-2">
+        <Switch
+          id="is_milestone"
+          checked={watch("is_milestone")}
+          onCheckedChange={(checked) => setValue("is_milestone", checked)}
+        />
+        <Label htmlFor="is_milestone" className="flex items-center gap-1.5 cursor-pointer">
+          <Milestone className="w-3.5 h-3.5 text-blue-500" />
+          Mark as Milestone
+        </Label>
       </div>
 
       <div className="flex justify-end gap-3 pt-4">

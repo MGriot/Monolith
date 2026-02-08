@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './auth-provider';
-import { 
-  LayoutDashboard, 
-  FolderKanban, 
-  Calendar as CalendarIcon, 
-  GanttChart, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  FolderKanban,
+  Calendar as CalendarIcon,
+  GanttChart,
+  LogOut,
   Settings,
   User as UserIcon,
   Users,
   Plus,
   Database,
   Copy,
-  CheckSquare
+  Copy,
+  CheckSquare,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -42,6 +44,7 @@ export default function Layout({ children }: LayoutProps) {
     { icon: CalendarIcon, label: 'Calendar', href: '/calendar' },
     { icon: GanttChart, label: 'Roadmap', href: '/roadmap' },
     { icon: Copy, label: 'Templates', href: '/templates' },
+    { icon: BookOpen, label: 'Workflows', href: '/workflows' },
     ...(user?.is_superuser ? [
       { icon: Users, label: 'Teams', href: '/teams' },
       { icon: Users, label: 'Team Members', href: '/users' },
@@ -72,7 +75,7 @@ export default function Layout({ children }: LayoutProps) {
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Monolith</h1>
           </Link>
         </div>
-        
+
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
           {filteredNavItems.map((item) => {
             const isActive = location.pathname === item.href || (item.href !== '/' && location.pathname.startsWith(item.href));
@@ -82,8 +85,8 @@ export default function Layout({ children }: LayoutProps) {
                 to={item.href}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                  isActive 
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/10" 
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 )}
               >
@@ -95,16 +98,16 @@ export default function Layout({ children }: LayoutProps) {
         </nav>
 
         <div className="p-4 border-t border-slate-100 space-y-1 bg-slate-50/50">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="w-full justify-start text-slate-600 hover:text-slate-900 gap-3 h-10 px-3"
             onClick={() => navigate('/settings')}
           >
             <Settings className="w-4 h-4 text-slate-400" />
             Settings
           </Button>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 gap-3 h-10 px-3"
             onClick={logout}
           >
@@ -123,7 +126,7 @@ export default function Layout({ children }: LayoutProps) {
               {getPageTitle()}
             </h2>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <Popover>
               <PopoverTrigger asChild>
@@ -133,9 +136,9 @@ export default function Layout({ children }: LayoutProps) {
               </PopoverTrigger>
               <PopoverContent className="w-48 p-2" align="end">
                 <div className="flex flex-col gap-1">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="justify-start gap-2 text-xs font-medium"
                     onClick={() => {
                       navigate('/projects?create=true');
@@ -144,9 +147,9 @@ export default function Layout({ children }: LayoutProps) {
                     <FolderKanban className="w-3.5 h-3.5 text-slate-400" />
                     New Project
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="justify-start gap-2 text-xs font-medium"
                     onClick={() => setIsTaskCreateOpen(true)}
                   >

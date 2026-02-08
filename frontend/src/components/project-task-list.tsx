@@ -185,6 +185,11 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             ))}
           </div>
         </TableCell>
+        <TableCell className="py-2">
+          <span className="text-[10px] font-medium text-slate-500">
+            {task.completed_at ? new Date(task.completed_at).toLocaleDateString() : '-'}
+          </span>
+        </TableCell>
         <TableCell className="text-right py-2">
           <div className="flex flex-col items-end">
             <span className={cn("font-bold text-slate-500", level === 0 ? "text-[11px]" : "text-[10px]")}>
@@ -229,6 +234,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Status</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Priority</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Assignees</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Concluded</TableHead>
             <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-slate-500">Due / Deadline</TableHead>
           </TableRow>
         </TableHeader>

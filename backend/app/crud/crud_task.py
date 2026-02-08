@@ -305,6 +305,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         topic_ids = getattr(obj_in, 'topic_ids', [])
         type_ids = getattr(obj_in, 'type_ids', [])
         
+        # Status logic: set completed_at if created as DONE and not provided
+        if obj_data.get("status") == Status.DONE and not obj_data.get("completed_at"):
+            obj_data["completed_at"] = datetime.utcnow()
+        
         # Calculate next sort_index
         if "sort_index" not in obj_data:
             result = await db.execute(
@@ -402,9 +406,11 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             active_blockers = await self.check_for_active_blockers(db, db_obj.id)
             if active_blockers:
                 raise ValueError(f"Task is blocked by unfinished items: {', '.join(active_blockers)}")
-            obj_data["completed_at"] = datetime.utcnow()
+            if not obj_data.get("completed_at"):
+                obj_data["completed_at"] = datetime.utcnow()
         elif "status" in obj_data and obj_data["status"] != Status.DONE:
-            obj_data["completed_at"] = None
+            if "completed_at" not in obj_data:
+                obj_data["completed_at"] = None
 
         # 3. Dependency Logic: prevent circularity
         if new_blocker_ids is not None:

@@ -62,3 +62,31 @@ Team members can monitor the progress and completions of their teammates.
 *   **UI/UX:**
     *   **Admin Team Page:** A new management interface for creating teams and dragging members into them.
     *   **Dashboard Integration:** A new widget showing "Teammate Activity" (recent completions by users in the same team).
+
+## 14. Addendum: Workflow & Ideas Management (Feb 8, 2026)
+
+### 14.1 Feature: Workflow Library
+A dedicated area for users to seek inspiration and view standard operating procedures.
+
+*   **Route:** `/workflows` (New Navigation Item).
+*   **Content:** A collection of best-practice workflows, templates, or guides (initial implementation can be static or placeholder content).
+
+### 14.2 Feature: Project Ideas & Feature Requests
+A staging area for tasks within a project.
+
+*   **Location:** Project Details Page (New Tab or Section: "Ideas").
+*   **functionality:**
+    *   **Submit:** Users can propose ideas or features.
+    *   **Convert:** Project Owners can promote an Idea into a Task (moving it to the Backlog/Todo and assigning a WBS code).
+    *   **Status:** Ideas have their own simple status (Proposed, Approved, Rejected, Converted).
+
+### 14.3 Feature: Task Conclusion Tracking
+Exact tracking of when a task was actually finished, separate from its due date.
+
+*   **Data Model:** Add `completed_at` (DateTime) to Task model.
+*   **Automation:**
+    *   When Status changes to "Done" -> Set `completed_at` to `NOW()` (if empty).
+    *   When Status changes from "Done" to others -> Clear `completed_at`.
+*   **UI/UX:**
+    *   **Grid:** Add "Concluded" column to Task List.
+    *   **Form:** Add "Conclusion Date" field to Task Edit modal (Editable).

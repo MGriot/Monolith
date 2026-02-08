@@ -35,6 +35,7 @@ class TaskBase(BaseModel):
     deadline_at: Optional[datetime] = None
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
     tags: Optional[List[str]] = []
     attachments: Optional[List[str]] = []
     owner_id: Optional[UUID] = None

@@ -862,5 +862,50 @@
     "linked_req": "Gantt Refinement Request",
     "description": "Update coordinate calculation to connect the End (Right) of the predecessor to the Start (Left) of the successor.",
     "verification_method": "Verify dependency lines start at the right edge of the source task bar."
+  },
+  {
+    "id": "FRONT-054",
+    "title": "UI: Workflow Library",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "User Request: Workflows",
+    "description": "Create a new '/workflows' page with a library of standard procedures (placeholder content).",
+    "verification_method": "Navigate to /workflows and verify page renders."
+  },
+  {
+    "id": "BACK-025",
+    "title": "API: Project Ideas",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "User Request: Ideas",
+    "description": "Create 'Idea' model (title, description, status) linked to Project. Implement CRUD and 'promote to task' logic.",
+    "verification_method": "Test CRUD endpoints for Ideas."
+  },
+  {
+    "id": "FRONT-055",
+    "title": "UI: Project Ideas Tab",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "User Request: Ideas",
+    "description": "Add 'Ideas' tab to Project Details. interface to list, create, and promote ideas.",
+    "verification_method": "Create an idea and promote it to a task in the UI."
+  },
+  {
+    "id": "BACK-026",
+    "title": "Model: Task Completion Logic",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: Completion Tracking",
+    "description": "Add 'completed_at' to Task model. Auto-set on status='done'. Clear on status change.",
+    "verification_method": "Update task status to done and check 'completed_at' timestamp."
+  },
+  {
+    "id": "FRONT-056",
+    "title": "UI: Task Completion Field",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: Completion Tracking",
+    "description": "Add 'Concluded' date column to Task List. Add editable 'Conclusion Date' field to Task Form.",
+    "verification_method": "Edit conclusion date manually and verify persistence."
   }
 ]
