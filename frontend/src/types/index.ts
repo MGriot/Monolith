@@ -123,4 +123,15 @@ export interface IdeaComment {
   author?: User | null;
 }
 
+export interface Workflow {
+  id: string;
+  title: string;
+  description?: string | null;
+  content: string;
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+  owner?: User | null;
+}
+
 
