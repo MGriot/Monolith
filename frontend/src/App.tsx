@@ -13,6 +13,7 @@ import AdminMetadataPage from "./pages/admin-metadata";
 import TemplatesPage from "./pages/templates";
 import MyTasksPage from "./pages/my-tasks";
 import TeamsPage from "./pages/teams";
+import WorkflowsPage from "./pages/workflows";
 
 import DashboardPage from "./pages/dashboard";
 import ProjectsListPage from "./pages/projects-list";
@@ -56,6 +57,7 @@ function App() {
             <Route path="/users" element={<PrivateRoute><UsersPage /></PrivateRoute>} />
             <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
             <Route path="/admin/metadata" element={<PrivateRoute><AdminMetadataPage /></PrivateRoute>} />
+            <Route path="/workflows" element={<PrivateRoute><WorkflowsPage /></PrivateRoute>} />
           </Routes>
         </Router>
       </AuthProvider>
