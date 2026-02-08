@@ -96,3 +96,17 @@ export interface ProjectTemplate {
   is_active: boolean;
   owner_id: string;
 }
+
+export interface Idea {
+  id: string;
+  project_id: string;
+  author_id?: string | null;
+  title: string;
+  description?: string | null;
+  status: 'Proposed' | 'Approved' | 'Rejected' | 'Converted';
+  converted_task_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  author?: User | null;
+}
+
