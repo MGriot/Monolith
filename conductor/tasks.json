@@ -935,7 +935,7 @@
   {
     "id": "BACK-029",
     "title": "CRUD: Team Ownership Logic",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "User Request: Decentralized Teams",
     "description": "Update CRUDTeam to set owner on create and filter by ownership/membership."
