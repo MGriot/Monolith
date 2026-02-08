@@ -5,3 +5,4 @@ from .task import Task, TaskCreate, TaskUpdate, Subtask, SubtaskCreate, SubtaskU
 from .notification import Notification, NotificationCreate, NotificationUpdate
 from .template import ProjectTemplate, ProjectTemplateCreate, ProjectTemplateUpdate
 from .team import Team, TeamCreate, TeamUpdate
+from .workflow import Workflow, WorkflowCreate, WorkflowUpdate

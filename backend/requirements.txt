@@ -14,3 +14,5 @@ sse-starlette
 email-validator
 bcrypt==4.0.1
 bcrypt
+pandas
+openpyxl

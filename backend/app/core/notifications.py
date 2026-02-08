@@ -10,8 +10,7 @@ async def send_email_notification(recipient: str, subject: str, body: str):
     Stub implementation for now.
     """
     logger.info(f"Sending email to {recipient}")
-    logger.info(f"Subject: {subject}")
-    logger.info(f"Body: {body}")
+    print(f"\n[EMAIL STUB] To: {recipient}\n[EMAIL STUB] Subject: {subject}\n[EMAIL STUB] Body:\n{body}\n")
     
     # In a real implementation, you would use a library like fastapi-mail or a background task with smtplib.
     # For now, we just log it.
