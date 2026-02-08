@@ -16,6 +16,11 @@ reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"/api/v1/login/access-token"
 )
 
+reusable_oauth2_optional = OAuth2PasswordBearer(
+    tokenUrl=f"/api/v1/login/access-token",
+    auto_error=False
+)
+
 async def get_current_user(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(reusable_oauth2)
@@ -37,7 +42,7 @@ async def get_current_user(
 
 async def get_current_user_optional(
     db: AsyncSession = Depends(get_db),
-    token: Optional[str] = Depends(reusable_oauth2)
+    token: Optional[str] = Depends(reusable_oauth2_optional)
 ) -> Optional[User]:
     if not token:
         return None

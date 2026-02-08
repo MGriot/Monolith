@@ -955,5 +955,61 @@
     "priority": "high",
     "linked_req": "User Request: Decentralized Teams",
     "description": "Allow all users to create and manage teams they own."
+  },
+  {
+    "id": "BACK-031",
+    "title": "Fix: User Registration Auth",
+    "status": "done",
+    "priority": "critical",
+    "linked_req": "Bug: 401 on Registration",
+    "description": "Remove unintended dependency check on registration endpoint that causes 401 Unauthorized."
+  },
+  {
+    "id": "FRONT-059",
+    "title": "Fix: Gantt PNG Download",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 15.1",
+    "description": "Ensure Gantt PNG export triggers a local browser download instead of server-side saving."
+  },
+  {
+    "id": "UX-006",
+    "title": "Gantt: High-DPI Export",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 15.1",
+    "description": "Increase rendering scale during Gantt PNG export for better image quality."
+  },
+  {
+    "id": "FRONT-060",
+    "title": "UI: Workflow CRUD & Viewer",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 15.2",
+    "description": "Implement full CRUD for Workflows/SOPs and a dedicated Markdown viewer."
+  },
+  {
+    "id": "BACK-032",
+    "title": "API: Project Export (CSV/Excel)",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 15.1",
+    "description": "Create endpoints to export project task lists as CSV or .xlsx files."
+  },
+  {
+    "id": "BACK-033",
+    "title": "Logic: Weekly Mail Summary",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 15.3",
+    "description": "Implement backend logic to aggregate and send weekly status reports to users, team owners, and project owners."
+  },
+  {
+    "id": "FRONT-061",
+    "title": "UI: Task Duration Column",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 15.4",
+    "description": "Add 'Duration (Days)' column to the project task list table."
   }
 ]

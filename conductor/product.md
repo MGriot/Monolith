@@ -66,30 +66,35 @@ Team members can monitor the progress and completions of their teammates.
     *   **Admin Team Page:** A new management interface for creating teams and dragging members into them.
     *   **Dashboard Integration:** A new widget showing "Teammate Activity" (recent completions by users in the same team).
 
-## 14. Addendum: Workflow & Ideas Management (Feb 8, 2026)
+## 15. Addendum: Production Polishing & Reporting (Feb 8, 2026)
 
-### 14.1 Feature: Workflow Library
-A dedicated area for users to seek inspiration and view standard operating procedures.
+### 15.1 Feature: Advanced Data Exports
+Users need to take their data out of the system for external reporting and presentations.
 
-*   **Route:** `/workflows` (New Navigation Item).
-*   **Content:** A collection of best-practice workflows, templates, or guides (initial implementation can be static or placeholder content).
+*   **Gantt PNG Export:**
+    *   **Requirements:** High DPI rendering (min 2x scale).
+    *   **Fix:** Ensure the resulting file is triggered as a browser download, not saved to a internal server directory.
+*   **Project Spreadsheet Export:**
+    *   **Formats:** CSV and Excel (.xlsx).
+    *   **Content:** Full task list including WBS, status, dates, and assignees.
 
-### 14.2 Feature: Project Ideas & Feature Requests
-A staging area for tasks within a project.
+### 15.2 Feature: Decentralized Workflow Library (SOPs)
+Transition the workflow page from a static catalog to a user-managed repository.
 
-*   **Location:** Project Details Page (New Tab or Section: "Ideas").
-*   **functionality:**
-    *   **Submit:** Users can propose ideas or features.
-    *   **Convert:** Project Owners can promote an Idea into a Task (moving it to the Backlog/Todo and assigning a WBS code).
-    *   **Status:** Ideas have their own simple status (Proposed, Approved, Rejected, Converted).
+*   **CRUD:** Users can create, edit, and delete Standard Operating Procedures (SOPs).
+*   **Reading:** Dedicated viewer for SOP content (Markdown support).
 
-### 14.3 Feature: Task Conclusion Tracking
-Exact tracking of when a task was actually finished, separate from its due date.
+### 15.3 Feature: Automated Weekly Summaries
+Keep users and stakeholders informed without requiring them to log in.
 
-*   **Data Model:** Add `completed_at` (DateTime) to Task model.
-*   **Automation:**
-    *   When Status changes to "Done" -> Set `completed_at` to `NOW()` (if empty).
-    *   When Status changes from "Done" to others -> Clear `completed_at`.
-*   **UI/UX:**
-    *   **Grid:** Add "Concluded" column to Task List.
-    *   **Form:** Add "Conclusion Date" field to Task Edit modal (Editable).
+*   **Recipient Logic:**
+    *   **Standard User:** List of their specific tasks due/overdue.
+    *   **Team Owner:** Summary of team activity and overall team health.
+    *   **Project Owner:** Deep dive into project progress, bottlenecks, and completion rate.
+*   **Dispatch:** Every Monday at 08:00 UTC.
+
+### 15.4 UI Refinement: Task Duration Visibility
+The task list must provide immediate insight into time allocation.
+
+*   **Column:** "Duration" (Days).
+*   **Logic:** `due_date` - `start_date` (inclusive). Already calculated for Gantt, now exposing in Table view.
