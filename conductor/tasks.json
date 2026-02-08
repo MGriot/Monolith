@@ -915,5 +915,45 @@
     "priority": "high",
     "linked_req": "PRD Section 12.2",
     "description": "Add missing status columns (Backlog, On Hold), fix drag-and-drop stability, and limit visible tasks to 5 per column."
+  },
+  {
+    "id": "BACK-027",
+    "title": "Model: Team Ownership",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: Decentralized Teams",
+    "description": "Add owner_id to Team model and update database schema."
+  },
+  {
+    "id": "BACK-028",
+    "title": "Schema: Team Metadata",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "User Request: Decentralized Teams",
+    "description": "Update Team Pydantic schemas to include owner_id."
+  },
+  {
+    "id": "BACK-029",
+    "title": "CRUD: Team Ownership Logic",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "User Request: Decentralized Teams",
+    "description": "Update CRUDTeam to set owner on create and filter by ownership/membership."
+  },
+  {
+    "id": "BACK-030",
+    "title": "API: Decentralized Team CRUD",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "User Request: Decentralized Teams",
+    "description": "Update Team API endpoints to allow standard users to manage their own teams."
+  },
+  {
+    "id": "FRONT-058",
+    "title": "UI: Decentralized Team Management",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "User Request: Decentralized Teams",
+    "description": "Allow all users to create and manage teams they own."
   }
 ]

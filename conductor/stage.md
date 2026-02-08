@@ -1,12 +1,14 @@
-# Current Stage: Ideas Management & Cleanup 💡
+# Current Stage: Decentralized Team Management 🤝
 
 **Status:** 🏗️ In Progress
-**Focus:** Project Ideas & Backend Logic
+**Focus:** Allowing all users to create and manage teams.
 
 ## Active Focus
-- [ ] Phase Complete
+- [ ] [BACK-028] Schema: Team Metadata
 
 ## Recent History
+- [x] [BACK-027] Model: Team Ownership (2026-02-08)
+- [x] [FRONT-057] Kanban Board Refinements (2026-02-08)
 - [x] [FRONT-055] UI: Project Ideas Tab (2026-02-08)
 - [x] [BACK-025] API: Project Ideas (2026-02-08)
 - [x] [BACK-026] Model: Task Completion Logic (2026-02-08)
@@ -18,8 +20,5 @@
 - [x] [BACK-023] API: Teams CRUD (2026-02-07)
 
 ## Summary
-Successfully completed the "Workflow & Ideas" enhancement phase:
-- **Workflow Library**: Dedicated SOP repository accessible via the sidebar.
-- **Project Ideas**: Staging area for features/ideas with a one-click promotion to the project backlog.
-- **Task Conclusion**: Automated and manual tracking of `completed_at` timestamps, now visible in lists and editable in forms.
-- **Next Up**: Final polish and preparing for production deployment.
+Successfully completed the "Workflow & Ideas" enhancement phase and Kanban Board refinements.
+Now starting the "Decentralized Team Management" phase to allow standard users to create and manage their own teams.

@@ -38,6 +38,9 @@ async def sync_db_schema():
         # Work Types
         await run_stmt(conn, "ALTER TABLE work_types ADD COLUMN color VARCHAR DEFAULT '#64748b'", "color to work_types")
         
+        # Teams
+        await run_stmt(conn, "ALTER TABLE teams ADD COLUMN owner_id UUID REFERENCES users(id)", "owner_id to teams")
+        
         # Enums
         # PostgreSQL enum updates need specialized handling
         try:
