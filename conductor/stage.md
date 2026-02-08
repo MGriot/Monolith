@@ -4,9 +4,11 @@
 **Focus:** Fixing critical bugs and implementing advanced reporting.
 
 ## Active Focus
-- [ ] [FRONT-059] Fix: Gantt PNG Download
+- [ ] [FRONT-060] UI: Workflow CRUD & Viewer
 
 ## Recent History
+- [x] [FRONT-059] Fix: Gantt PNG Download (2026-02-08)
+- [x] [UX-006] Gantt: High-DPI Export (2026-02-08)
 - [x] [BACK-031] Fix: User Registration Auth (2026-02-08)
 - [x] [FRONT-058] UI: Decentralized Team Management (2026-02-08)
 - [x] [BACK-030] API: Decentralized Team CRUD (2026-02-08)
