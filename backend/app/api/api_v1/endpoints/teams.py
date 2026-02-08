@@ -93,11 +93,12 @@ async def create_team(
     *,
     db: AsyncSession = Depends(deps.get_db),
     obj_in: schemas.team.TeamCreate,
-    current_user: models.user.User = Depends(deps.get_current_admin),
+    current_user: models.user.User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Create new team. Restricted to superusers.
+    Create new team.
     """
+    obj_in.owner_id = current_user.id
     team = await crud.team.create(db, obj_in=obj_in)
     return team
 
@@ -107,14 +108,16 @@ async def update_team(
     db: AsyncSession = Depends(deps.get_db),
     id: UUID,
     obj_in: schemas.team.TeamUpdate,
-    current_user: models.user.User = Depends(deps.get_current_admin),
+    current_user: models.user.User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Update a team. Restricted to superusers.
+    Update a team. Owners and admins only.
     """
     team = await crud.team.get(db, id=id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
+    if not current_user.is_superuser and team.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions to manage this team")
     team = await crud.team.update(db, db_obj=team, obj_in=obj_in)
     return team
 
@@ -132,11 +135,11 @@ async def read_team(
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
     
-    # Check permissions: admin or member
-    if not current_user.is_superuser:
+    # Check permissions: admin or owner or member
+    if not current_user.is_superuser and team.owner_id != current_user.id:
         member_ids = [m.id for m in team.members]
         if current_user.id not in member_ids:
-            raise HTTPException(status_code=403, detail="Not enough permissions")
+            raise HTTPException(status_code=403, detail="Not enough permissions to view this team")
             
     return team
 
@@ -145,13 +148,15 @@ async def delete_team(
     *,
     db: AsyncSession = Depends(deps.get_db),
     id: UUID,
-    current_user: models.user.User = Depends(deps.get_current_admin),
+    current_user: models.user.User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Delete a team. Restricted to superusers.
+    Delete a team. Owners and admins only.
     """
     team = await crud.team.get(db, id=id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
+    if not current_user.is_superuser and team.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions to delete this team")
     team = await crud.team.remove(db, id=id)
     return team

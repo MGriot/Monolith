@@ -943,7 +943,7 @@
   {
     "id": "BACK-030",
     "title": "API: Decentralized Team CRUD",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "User Request: Decentralized Teams",
     "description": "Update Team API endpoints to allow standard users to manage their own teams."
