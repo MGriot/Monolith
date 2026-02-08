@@ -7,6 +7,7 @@ from .user import User as UserSchema
 class TeamBase(BaseModel):
     name: str
     description: Optional[str] = None
+    owner_id: Optional[UUID] = None
 
 class TeamCreate(TeamBase):
     member_ids: Optional[List[UUID]] = []
@@ -23,3 +24,4 @@ class TeamInDBBase(TeamBase):
 
 class Team(TeamInDBBase):
     members: List[UserSchema] = []
+    owner: Optional[UserSchema] = None
