@@ -991,7 +991,7 @@
   {
     "id": "BACK-032",
     "title": "API: Project Export (CSV/Excel)",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 15.1",
     "description": "Create endpoints to export project task lists as CSV or .xlsx files."
@@ -999,7 +999,7 @@
   {
     "id": "BACK-033",
     "title": "Logic: Weekly Mail Summary",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 15.3",
     "description": "Implement backend logic to aggregate and send weekly status reports to users, team owners, and project owners."
@@ -1007,7 +1007,7 @@
   {
     "id": "FRONT-061",
     "title": "UI: Task Duration Column",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 15.4",
     "description": "Add 'Duration (Days)' column to the project task list table."

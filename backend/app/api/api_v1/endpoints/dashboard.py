@@ -9,8 +9,22 @@ from app.models.project import Project
 from app.models.task import Task
 from app.models.user import User
 from app.core.enums import Status
+from app.core.reports import generate_weekly_summaries
 
 router = APIRouter()
+
+@router.post("/trigger-weekly-summary", status_code=202)
+async def trigger_weekly_summary(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin),
+) -> Any:
+    """
+    Manually trigger the generation of weekly email summaries for all users.
+    Admin only.
+    """
+    # Run in background ideally, but for test we can await
+    await generate_weekly_summaries(db)
+    return {"message": "Weekly summary generation triggered"}
 
 @router.get("/summary", response_model=Any)
 async def get_dashboard_summary(

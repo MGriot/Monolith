@@ -1,14 +1,105 @@
 from typing import Any, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+import io
+import pandas as pd
+from datetime import datetime
 
 from app.api import deps
-from app.crud import crud_project
+from app.crud import crud_project, crud_task
 from app.schemas.project import Project, ProjectCreate, ProjectUpdate
 from app.models.user import User
 
 router = APIRouter()
+
+@router.get("/{project_id}/export")
+async def export_project(
+    project_id: UUID,
+    format: str = Query("csv", regex="^(csv|excel)$"),
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Export project tasks as CSV or Excel.
+    """
+    project = await crud_project.project.get(db, id=project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Check permissions
+    if not current_user.is_superuser and project.owner_id != current_user.id:
+        member_ids = [m.id for m in project.members]
+        if current_user.id not in member_ids:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    # Fetch all tasks (flattened)
+    # We need to fetch all tasks recursively. 
+    # The current get_multi_by_project only gets top-level.
+    # Let's use a helper to get all.
+    from app.models.task import Task
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    
+    # Simple query to get everything for this project
+    query = select(Task).filter(Task.project_id == project_id).options(
+        selectinload(Task.assignees),
+        selectinload(Task.owner)
+    ).order_by(Task.sort_index.asc(), Task.created_at.asc())
+    
+    res = await db.execute(query)
+    all_tasks = res.scalars().all()
+    
+    # WBS calculation logic (frontend logic mirrored here or simple dump)
+    # Since we have the data, let's prepare the list of dicts
+    data = []
+    for t in all_tasks:
+        duration = 0
+        if t.start_date and t.due_date:
+            duration = (t.due_date - t.start_date).days + 1
+        
+        data.append({
+            "WBS": t.wbs_code or "",
+            "Title": t.title,
+            "Description": t.description or "",
+            "Status": t.status.value if hasattr(t.status, 'value') else str(t.status),
+            "Priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
+            "Start Date": t.start_date.strftime("%Y-%m-%d") if t.start_date else "",
+            "Due Date": t.due_date.strftime("%Y-%m-%d") if t.due_date else "",
+            "Deadline": t.deadline_at.strftime("%Y-%m-%d") if t.deadline_at else "",
+            "Completed At": t.completed_at.strftime("%Y-%m-%d %H:%M") if t.completed_at else "",
+            "Duration (Days)": duration,
+            "Assignees": ", ".join([u.full_name or u.email for u in t.assignees]),
+            "Milestone": "Yes" if t.is_milestone else "No",
+            "Tags": ", ".join(t.tags or [])
+        })
+
+    df = pd.DataFrame(data)
+    
+    if format == "csv":
+        stream = io.StringIO()
+        df.to_csv(stream, index=False)
+        response = StreamingResponse(
+            io.BytesIO(stream.getvalue().encode()),
+            media_type="text/csv",
+        )
+        filename = f"export_{project.name}_{datetime.now().strftime('%Y%m%d')}.csv"
+        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+        return response
+    else:
+        # Excel
+        stream = io.BytesIO()
+        with pd.ExcelWriter(stream, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Tasks')
+        
+        response = StreamingResponse(
+            io.BytesIO(stream.getvalue()),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        filename = f"export_{project.name}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+        return response
 
 @router.get("/", response_model=List[Project])
 async def read_projects(

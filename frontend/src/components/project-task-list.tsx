@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { parseISO, isAfter } from 'date-fns';
+import { parseISO, isAfter, differenceInDays } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
 import {
@@ -55,6 +55,10 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
     ? (task.completed_at ? parseISO(task.completed_at) : (task.due_date ? parseISO(task.due_date) : null))
     : new Date();
   const overdue = !!(deadlineDate && endDate && isAfter(endDate, deadlineDate));
+
+  const duration = task.start_date && task.due_date 
+    ? differenceInDays(parseISO(task.due_date), parseISO(task.start_date)) + 1
+    : 0;
 
   return (
     <>
@@ -154,6 +158,9 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
         <TableCell className="py-2">
           {task.topic && <Badge variant="secondary" className="text-[9px] font-bold bg-slate-100 text-slate-600 border-none px-1.5">{task.topic}</Badge>}
         </TableCell>
+        <TableCell className="py-2 text-center">
+          <span className="text-[10px] font-black text-slate-500">{duration > 0 ? `${duration}d` : '-'}</span>
+        </TableCell>
         <TableCell className="py-2">
           <Badge variant="outline" className={cn(
             "capitalize text-[9px] font-bold px-1.5 h-5",
@@ -230,6 +237,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
             <TableHead className="w-16 text-[10px] font-black uppercase tracking-widest text-slate-500">WBS</TableHead>
             <TableHead className="min-w-[200px] text-[10px] font-black uppercase tracking-widest text-slate-500">Task</TableHead>
             <TableHead className="w-10"></TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Days</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Topic</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Status</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Priority</TableHead>
