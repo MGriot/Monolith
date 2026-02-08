@@ -1011,5 +1011,13 @@
     "priority": "medium",
     "linked_req": "PRD Section 15.4",
     "description": "Add 'Duration (Days)' column to the project task list table."
+  },
+  {
+    "id": "BACK-034",
+    "title": "Model & API: Workflow (SOP)",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 15.2",
+    "description": "Create Workflow model, schemas, and CRUD endpoints for Standard Operating Procedures."
   }
 ]

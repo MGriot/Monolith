@@ -7,6 +7,7 @@
 - [ ] [FRONT-060] UI: Workflow CRUD & Viewer
 
 ## Recent History
+- [x] [BACK-034] Model & API: Workflow (SOP) (2026-02-08)
 - [x] [FRONT-059] Fix: Gantt PNG Download (2026-02-08)
 - [x] [UX-006] Gantt: High-DPI Export (2026-02-08)
 - [x] [BACK-031] Fix: User Registration Auth (2026-02-08)
