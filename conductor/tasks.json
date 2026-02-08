@@ -967,7 +967,7 @@
   {
     "id": "FRONT-059",
     "title": "Fix: Gantt PNG Download",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 15.1",
     "description": "Ensure Gantt PNG export triggers a local browser download instead of server-side saving."
@@ -975,7 +975,7 @@
   {
     "id": "UX-006",
     "title": "Gantt: High-DPI Export",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 15.1",
     "description": "Increase rendering scale during Gantt PNG export for better image quality."

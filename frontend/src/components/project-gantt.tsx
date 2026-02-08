@@ -125,17 +125,23 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
     if (!ganttRef.current) return;
     setIsExporting(true);
     try {
+      // Increase DPI for high-quality export (3x scale)
       const dataUrl = await toPng(ganttRef.current, {
         backgroundColor: '#ffffff',
+        pixelRatio: 3,
         style: {
           overflow: 'visible'
         }
       });
+      
       const link = document.createElement('a');
       link.download = `gantt-export-${format(new Date(), 'yyyy-MM-dd')}.png`;
       link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
-      toast.success('Gantt exported as PNG');
+      document.body.removeChild(link);
+      
+      toast.success('Gantt exported as high-DPI PNG');
     } catch (err) {
       console.error(err);
       toast.error('Failed to export Gantt');
