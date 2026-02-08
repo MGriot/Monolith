@@ -1,4 +1,4 @@
-import { FileText, BookOpen, GitBranch, ArrowRight } from "lucide-react";
+import { FileText, BookOpen, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
