@@ -14,7 +14,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         result = await db.execute(
             select(self.model)
             .filter(self.model.id == id)
-            .options(selectinload(Team.members))
+            .options(selectinload(Team.members), selectinload(Team.owner))
         )
         return result.scalars().first()
 
@@ -23,7 +23,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
     ) -> List[Team]:
         result = await db.execute(
             select(self.model)
-            .options(selectinload(Team.members))
+            .options(selectinload(Team.members), selectinload(Team.owner))
             .offset(skip)
             .limit(limit)
         )
@@ -66,14 +66,21 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         self, db: AsyncSession, *, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> List[Team]:
         """
-        Fetch teams where the user is a member.
+        Fetch teams where the user is either the owner OR a member.
         """
         from app.models.associations import team_members
+        from sqlalchemy import or_
         query = (
             select(self.model)
-            .join(team_members)
-            .filter(team_members.c.user_id == user_id)
-            .options(selectinload(Team.members))
+            .outerjoin(team_members)
+            .filter(
+                or_(
+                    self.model.owner_id == user_id,
+                    team_members.c.user_id == user_id
+                )
+            )
+            .distinct()
+            .options(selectinload(Team.members), selectinload(Team.owner))
             .offset(skip)
             .limit(limit)
         )
