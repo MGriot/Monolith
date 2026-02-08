@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { formatPercent } from '@/lib/utils';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 import type { Project, Task } from '@/types';
 
@@ -545,7 +546,7 @@ export default function ProjectDetailPage() {
             <div className="w-48 space-y-1.5">
               <div className="flex justify-between text-[10px] font-black uppercase tracking-wider">
                 <span className="text-slate-400">Progress</span>
-                <span className="text-primary">{Math.round(project.progress_percent)}%</span>
+                <span className="text-primary">{formatPercent(project.progress_percent)}%</span>
               </div>
               <Progress value={project.progress_percent} className="h-1.5" />
             </div>
