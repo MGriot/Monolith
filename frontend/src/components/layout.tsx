@@ -44,8 +44,8 @@ export default function Layout({ children }: LayoutProps) {
     { icon: GanttChart, label: 'Roadmap', href: '/roadmap' },
     { icon: Copy, label: 'Templates', href: '/templates' },
     { icon: BookOpen, label: 'Workflows', href: '/workflows' },
+    { icon: Users, label: 'Teams', href: '/teams' },
     ...(user?.is_superuser ? [
-      { icon: Users, label: 'Teams', href: '/teams' },
       { icon: Users, label: 'Team Members', href: '/users' },
       { icon: Database, label: 'Metadata', href: '/admin/metadata' }
     ] : []),
