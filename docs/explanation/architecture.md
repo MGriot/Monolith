@@ -15,13 +15,14 @@ Monolith is designed as a modular suite of services orchestrated via Docker.
 
 ### 3. Backend (FastAPI)
 - **Role:** Application logic & Data persistence.
-- **Tech:** Python 3.12, SQLAlchemy (Async), PostgreSQL.
-- **Key Logic:** Status propagation triggers, recursive dependency validation, JWT security, and dynamic metadata management.
+- **Tech:** Python 3.12, SQLAlchemy (Async), PostgreSQL, Pandas.
+- **Key Logic:** Status propagation triggers, recursive dependency validation, JWT security, automated weekly email summaries, and project data exportation (CSV/XLSX).
 
-### 4. Admin & Security
-- **Role:** System configuration and user oversight.
-- **Function:** Admins can manage global "Topics" and "Work Types" via a dedicated interface. Sensitive pages like Team Management and Metadata Settings are restricted to superusers.
-- **Password Safety:** Implements direct bcrypt hashing and provides admin-triggered password reset flows.
+### 4. User Roles & Collaboration
+- **Project Members:** Granular access control at the project level.
+- **Decentralized Teams:** Users can form their own teams for activity tracking and collaboration.
+- **Admin Oversight:** Global configuration of "Topics" and "Work Types" via a dedicated interface. Restricted management of all users and teams.
+- **Security:** Implements bcrypt hashing and admin-triggered password reset flows. Implements optional OAuth2 schemes for standard user registration.
 
 ### 5. MCP Server (Model Context Protocol)
 - **Role:** AI Interface.

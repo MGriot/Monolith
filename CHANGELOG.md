@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-02-08
+
+### Added
+- **Decentralized Team Management**: Standard users can now create and manage their own teams, assigning members from the organization.
+- **Workflow Library (SOPs)**: A full-featured repository for Standard Operating Procedures with Markdown support, search, and decentralized ownership.
+- **Automated Weekly Summaries**: Implemented a backend reporting engine that sends personalized project and team health summaries to users via email every week.
+- **Advanced Project Exports**: Added support for exporting project task lists to **CSV** and **Excel (.xlsx)** formats.
+- **High-DPI Gantt Export**: Improved Gantt PNG export resolution to **3x scale** for professional-grade imaging.
+- **Task Duration Tracking**: Added a "Days" column to the project task list, showing the inclusive duration between start and due dates.
+- **Full Kanban Parity**: Added missing "Backlog" and "On hold" columns to the Kanban board.
+- **Precise Kanban Reordering**: Implemented `sort_index` persistence for stable reordering and cross-column moves.
+- **Weighted Progress Logic**: Refined project completion calculation to weight statuses accurately (Done: 100%, Review: 80%, In Progress: 50%, On Hold: 25%).
+- **Dashboard Breakdown**: Added a detailed "Task Status Breakdown" section to the main dashboard with percentage distributions.
+
+### Fixed
+- **Registration Auth Bug**: Resolved an issue where standard user registration incorrectly returned `401 Unauthorized`.
+- **Gantt Download directory**: Fixed PNG export logic to ensure files are handled as browser downloads rather than server-side savings.
+- **Project Metadata Integrity**: Fixed a `TypeError` in project creation when assigning multiple topics or work types.
+- **Percentage Formatting**: Standardized all UI and API percentages to show a maximum of two decimal places.
+
 ## [1.5.1] - 2026-02-07
 
 ### Added

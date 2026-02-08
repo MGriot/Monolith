@@ -17,10 +17,15 @@ To prevent manual work, Monolith automatically calculates progress based on the 
 - If a task has no subtasks, its status is managed manually.
 
 ### Task to Project
-The Project's `progress_percent` is calculated by the completion status of its Tasks:
+The Project's `progress_percent` is calculated by the weighted completion status of its top-level Tasks:
 - **Done:** 100% contribution.
-- **In Progress / Review:** 50% contribution.
+- **Review:** 80% contribution.
+- **In Progress:** 50% contribution.
+- **On Hold:** 25% contribution.
 - **Todo / Backlog:** 0% contribution.
+
+## Kanban Board Dynamics
+The Kanban board provides a synchronized view of this hierarchy. Moving a task between status columns (e.g., from "In Progress" to "Review") automatically updates its `status` and `sort_index` in the database, which in turn triggers the recursive status propagation logic described above. Each column is limited to 5 visible tasks to maintain visual performance.
 
 ## Dependency Resolution
 Monolith implements **Recursive Dependency Checking**. If Task B depends on Task A:
