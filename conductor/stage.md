@@ -4,9 +4,10 @@
 **Focus:** Project Ideas & Backend Logic
 
 ## Active Focus
-- [ ] [BACK-025] API: Project Ideas
+- [ ] [FRONT-055] UI: Project Ideas Tab
 
 ## Recent History
+- [x] [BACK-025] API: Project Ideas (2026-02-08)
 - [x] [FRONT-056] UI: Task Completion Field (2026-02-08)
 - [x] [BACK-026] Model: Task Completion Logic (2026-02-08)
 - [x] [FRONT-054] UI: Workflow Library (2026-02-08)

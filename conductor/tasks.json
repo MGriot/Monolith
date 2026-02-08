@@ -875,7 +875,7 @@
   {
     "id": "BACK-025",
     "title": "API: Project Ideas",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: Ideas",
     "description": "Create 'Idea' model (title, description, status) linked to Project. Implement CRUD and 'promote to task' logic.",
