@@ -4,9 +4,10 @@
 **Focus:** Allowing all users to create and manage teams.
 
 ## Active Focus
-- [ ] [BACK-030] API: Decentralized Team CRUD
+- [ ] [FRONT-058] UI: Decentralized Team Management
 
 ## Recent History
+- [x] [BACK-030] API: Decentralized Team CRUD (2026-02-08)
 - [x] [BACK-029] CRUD: Team Ownership Logic (2026-02-08)
 - [x] [BACK-028] Schema: Team Metadata (2026-02-08)
 - [x] [BACK-027] Model: Team Ownership (2026-02-08)
