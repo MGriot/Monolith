@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import type { Idea } from '@/types';
+import type { Idea, Task } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +21,10 @@ import { cn } from '@/lib/utils';
 
 interface ProjectIdeasProps {
   projectId: string;
+  onPromoteSuccess?: (task: Task) => void;
 }
 
-export default function ProjectIdeas({ projectId }: ProjectIdeasProps) {
+export default function ProjectIdeas({ projectId, onPromoteSuccess }: ProjectIdeasProps) {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newIdea, setNewIdea] = useState({ title: '', description: '' });
@@ -58,12 +59,14 @@ export default function ProjectIdeas({ projectId }: ProjectIdeasProps) {
 
   const promoteIdeaMutation = useMutation({
     mutationFn: async (ideaId: string) => {
-      return api.post(`/ideas/${ideaId}/promote`);
+      const res = await api.post(`/ideas/${ideaId}/promote`);
+      return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (data: Task) => {
       queryClient.invalidateQueries({ queryKey: ['ideas', projectId] });
       queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      if (onPromoteSuccess) onPromoteSuccess(data);
     },
   });
 

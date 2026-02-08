@@ -53,6 +53,7 @@ export default function ProjectDetailPage() {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [parentTaskId, setParentTaskId] = useState<string | null>(null);
   const [initialStatus, setInitialStatus] = useState<string>("Todo");
+  const [activeTab, setActiveTab] = useState<string>("overview");
 
   const { data: project, isLoading: isProjectLoading, error: projectError } = useQuery({
     queryKey: ['project', id],
@@ -343,6 +344,13 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handlePromoteSuccess = (task: Task) => {
+    // Switch to overview, select the new task, and open edit dialog
+    setActiveTab("overview");
+    setEditingTaskId(task.id);
+    setIsTaskDialogOpen(true);
+  };
+
   if (isProjectLoading || isTasksLoading || isStatsLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -473,7 +481,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0 bg-white">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 bg-white">
         <div className="px-6 py-2 border-b border-slate-100 bg-white">
           <TabsList className="flex bg-transparent p-0 gap-6 h-10">
             <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
@@ -578,7 +586,7 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="ideas" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
-          <ProjectIdeas projectId={id!} />
+          <ProjectIdeas projectId={id!} onPromoteSuccess={handlePromoteSuccess} />
         </TabsContent>
       </Tabs>
 

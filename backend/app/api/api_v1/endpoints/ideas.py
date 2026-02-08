@@ -15,7 +15,7 @@ async def read_ideas(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
-    current_user: models.User = Depends(deps.get_current_active_user),
+    current_user: models.User = Depends(deps.get_current_user),
 ) -> Any:
     """
     Retrieve ideas for a project.
@@ -32,7 +32,7 @@ async def create_idea(
     *,
     db: AsyncSession = Depends(deps.get_db),
     idea_in: schemas.idea.IdeaCreate,
-    current_user: models.User = Depends(deps.get_current_active_user),
+    current_user: models.User = Depends(deps.get_current_user),
 ) -> Any:
     """
     Create a new idea.
@@ -50,7 +50,7 @@ async def update_idea(
     db: AsyncSession = Depends(deps.get_db),
     idea_id: UUID,
     idea_in: schemas.idea.IdeaUpdate,
-    current_user: models.User = Depends(deps.get_current_active_user),
+    current_user: models.User = Depends(deps.get_current_user),
 ) -> Any:
     """
     Update an idea.
@@ -71,7 +71,7 @@ async def delete_idea(
     *,
     db: AsyncSession = Depends(deps.get_db),
     idea_id: UUID,
-    current_user: models.User = Depends(deps.get_current_active_user),
+    current_user: models.User = Depends(deps.get_current_user),
 ) -> Any:
     """
     Delete an idea.
@@ -91,7 +91,7 @@ async def promote_idea(
     *,
     db: AsyncSession = Depends(deps.get_db),
     idea_id: UUID,
-    current_user: models.User = Depends(deps.get_current_active_user),
+    current_user: models.User = Depends(deps.get_current_user),
 ) -> Any:
     """
     Promote an idea to a task.

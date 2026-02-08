@@ -26,6 +26,14 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
         )
         return result.scalars().all()
 
+    async def create(self, db: AsyncSession, *, obj_in: IdeaCreate, author_id: UUID) -> Idea:
+        obj_in_data = obj_in.dict()
+        db_obj = self.model(**obj_in_data, author_id=author_id)
+        db.add(db_obj)
+        await db.commit()
+        await db.refresh(db_obj)
+        return db_obj
+
     async def promote_to_task(self, db: AsyncSession, *, idea_id: UUID, owner_id: UUID) -> Task:
         idea = await self.get(db, id=idea_id)
         if not idea:
