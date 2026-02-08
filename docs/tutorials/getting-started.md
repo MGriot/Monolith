@@ -48,6 +48,22 @@ Templates allow you to pre-define entire project structures.
 3. Click on a task to open the Edit Dialog.
 4. Use the **Subtask Manager** within the dialog to add granular steps (e.g., "Procure Titanium", "Weld Joints").
 
-## 7. Track Progress
-- Switch to the **Kanban** tab to drag items across columns.
-- Return to **Overview** to see how subtask completions automatically drive the progress bars and activity heatmap.
+## 7. Collaborate with Teams
+Every user can form their own teams:
+1. Navigate to **Teams** in the sidebar.
+2. Click **"Create Team"** and give it a name.
+3. Assign members from the list of registered users.
+4. As an owner, you'll receive weekly activity reports for your team.
+
+## 8. Document Workflows
+Standardize your team's knowledge:
+1. Navigate to **Workflows** in the sidebar.
+2. Search for existing SOPs or click **"Create SOP"**.
+3. Use the Markdown editor to draft procedures.
+4. View procedures in a clean, readable format.
+
+## 9. Track & Export Progress
+- **Kanban:** Drag tasks to update status and priority.
+- **Reporting:** Check your email every Monday for an automated weekly summary of your tasks and projects.
+- **Exporting:** Use the **CSV** or **Excel** buttons in the Project Header to download your project data for external use.
+- **Gantt:** Use **"Export PNG"** to save a high-DPI visualization of your timeline.

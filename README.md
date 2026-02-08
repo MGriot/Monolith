@@ -15,21 +15,24 @@
 - **🎯 Strict Hierarchy:** Maintain absolute clarity with a 3-level structure. Subtask completion automatically drives Task progress, which in turn updates Project completion metrics.
 - **📊 High-Density Visualizations:**
     - **Advanced Gantt:** Orthogonal stepped lines, dependency Z-shapes, and multi-level zoom (Day to Year).
-    - **Smart Kanban:** Automatically switches between Tasks and Subtasks based on hierarchy depth.
+    - **Smart Kanban:** Full status parity (Backlog to Done) with precise drag-and-drop reordering and a 5-task column limit.
     - **Activity Heatmap:** GitHub-style contribution tracking (Last 12 months rolling).
+- **🤝 Decentralized Management:** Every user can create and manage their own teams, fostering organic collaboration.
+- **📖 Workflow Library:** A user-managed repository for Standard Operating Procedures (SOPs) with full Markdown support.
+- **📥 Data Portability:** High-DPI Gantt PNGs, Project CSV, and Excel (.xlsx) exports for comprehensive reporting.
 - **🤖 AI-Ready (MCP):** Integrated **Model Context Protocol** server allows AI agents to autonomously manage your projects, tasks, and subtasks.
 - **⚡ Technical Excellence:**
     - Manual sorting with `sort_index` (Up/Down).
-    - Recursive dependency tracking.
-    - Markdown support for descriptions.
+    - Recursive dependency tracking and status propagation.
+    - Automated weekly email summaries for users, team owners, and project owners.
     - Fully Dockerized (Nginx, FastAPI, React, Postgres).
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** React 19, TypeScript, Tailwind CSS, Shadcn/UI, Lucide Icons.
-- **Backend:** FastAPI, SQLAlchemy (Async), PostgreSQL.
+- **Frontend:** React 19, TypeScript, Tailwind CSS, Shadcn/UI, Lucide Icons, TanStack Query.
+- **Backend:** FastAPI, SQLAlchemy (Async), PostgreSQL, Pandas (for exports).
 - **Infrastructure:** Docker & Docker Compose, Nginx.
 - **AI Integration:** Model Context Protocol (MCP).
 

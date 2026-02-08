@@ -29,7 +29,11 @@ Topics are high-level category labels (e.g., "Backend", "Design").
 Work Types define the nature of the task (e.g., "Feature", "Bug", "Epic").
 - These are selectable in both Project and Task creation forms.
 
-## 4. Troubleshooting Login
+## 4. Automated Reporting
+Admins can oversee the automated reporting infrastructure.
+- **Trigger Summaries:** If needed, admins can manually trigger the generation of weekly email summaries for all users. This is useful for immediate synchronization or testing. Currently, this action is performed via the API backend or a future admin utility button.
+
+## 5. Troubleshooting Login
 If a user cannot log in:
 1. Ensure their password is at least **6 characters** long.
 2. If they have forgotten their password, use the **Reset Password** tool in the Team page.
