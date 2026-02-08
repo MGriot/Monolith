@@ -951,7 +951,7 @@
   {
     "id": "FRONT-058",
     "title": "UI: Decentralized Team Management",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "User Request: Decentralized Teams",
     "description": "Allow all users to create and manage teams they own."
