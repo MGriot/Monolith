@@ -7,3 +7,4 @@ from .metadata import Topic, WorkType
 from .template import ProjectTemplate
 from .team import Team
 from .idea import Idea
+from .idea_comment import IdeaComment

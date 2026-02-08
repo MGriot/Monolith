@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.crud.base import CRUDBase
 from app.models.idea import Idea
+from app.models.idea_comment import IdeaComment
 from app.models.task import Task
 from app.schemas.idea import IdeaCreate, IdeaUpdate
 from app.schemas.task import TaskCreate
@@ -13,6 +14,17 @@ from app.core.enums import IdeaStatus, Status
 from app.crud.crud_task import task as crud_task
 
 class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
+    async def get(self, db: AsyncSession, id: Any) -> Optional[Idea]:
+        result = await db.execute(
+            select(self.model)
+            .filter(self.model.id == id)
+            .options(
+                selectinload(Idea.author),
+                selectinload(Idea.comments).options(selectinload(IdeaComment.author))
+            )
+        )
+        return result.scalars().first()
+
     async def get_multi_by_project(
         self, db: AsyncSession, *, project_id: UUID, skip: int = 0, limit: int = 100
     ) -> List[Idea]:
@@ -20,11 +32,15 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
             select(self.model)
             .filter(self.model.project_id == project_id)
             .order_by(self.model.created_at.desc())
-            .options(selectinload(Idea.author))
+            .options(
+                selectinload(Idea.author),
+                selectinload(Idea.comments).options(selectinload(IdeaComment.author))
+            )
             .offset(skip)
             .limit(limit)
         )
         return result.scalars().all()
+
 
     async def create(self, db: AsyncSession, *, obj_in: IdeaCreate, author_id: UUID) -> Idea:
         obj_in_data = obj_in.dict()

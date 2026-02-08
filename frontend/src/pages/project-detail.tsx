@@ -263,6 +263,7 @@ export default function ProjectDetailPage() {
       start_date: formatDate(data.start_date),
       due_date: formatDate(data.due_date),
       deadline_at: formatDate(data.deadline_at),
+      completed_at: formatDate(data.completed_at),
       parent_id: data.parent_id === undefined ? parentTaskId : data.parent_id
     };
 

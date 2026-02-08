@@ -108,5 +108,17 @@ export interface Idea {
   created_at: string;
   updated_at: string;
   author?: User | null;
+  comments?: IdeaComment[];
 }
+
+export interface IdeaComment {
+  id: string;
+  idea_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  author?: User | null;
+}
+
 
