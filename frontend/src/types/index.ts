@@ -46,6 +46,8 @@ export interface Task {
   wbs_code?: string;
   is_critical?: boolean;
   slack_days?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // Deprecated: use Task

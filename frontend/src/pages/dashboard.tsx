@@ -23,9 +23,12 @@ import ResourceTimeline from '@/components/resource-timeline';
 interface DashboardSummary {
   total_projects: number;
   total_tasks: number;
-  tasks_in_progress: number;
-  tasks_done: number;
+  tasks_backlog: number;
   tasks_todo: number;
+  tasks_in_progress: number;
+  tasks_on_hold: number;
+  tasks_review: number;
+  tasks_done: number;
   upcoming_deadlines: {
     id: string;
     title: string;
@@ -121,37 +124,93 @@ export default function DashboardPage() {
         </Card>
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">In Progress</CardTitle>
-            <Clock className="h-4 w-4 text-amber-500" />
+            <CardTitle className="text-sm font-medium text-slate-500">Active Tasks</CardTitle>
+            <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.tasks_in_progress}</div>
-            <p className="text-xs text-slate-500 mt-1">Tasks currently active</p>
+            <div className="text-2xl font-bold">{(data?.tasks_in_progress || 0) + (data?.tasks_review || 0)}</div>
+            <p className="text-xs text-slate-500 mt-1">In Progress & Review</p>
           </CardContent>
         </Card>
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Completed</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <CardTitle className="text-sm font-medium text-slate-500">Blocked / Hold</CardTitle>
+            <AlertCircle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.tasks_done}</div>
-            <p className="text-xs text-slate-500 mt-1">Tasks finished total</p>
+            <div className="text-2xl font-bold">{data?.tasks_on_hold}</div>
+            <p className="text-xs text-slate-500 mt-1">Currently on hold</p>
           </CardContent>
         </Card>
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Completion Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-500" />
+            <TrendingUp className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{completionRate}%</div>
             <div className="mt-2 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500" style={{ width: `${completionRate}%` }} />
+              <div className="h-full bg-emerald-500" style={{ width: `${completionRate}%` }} />
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Task Status Breakdown */}
+      <Card className="border-slate-200 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <Activity className="w-4 h-4 text-slate-400" />
+            Task Status Breakdown
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="flex flex-col gap-1 p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-[10px] font-black uppercase text-slate-400">Backlog</span>
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-bold text-slate-700">{data?.tasks_backlog}</span>
+                <Badge variant="outline" className="text-[9px] bg-white text-slate-500 border-slate-200">{Math.round((data?.tasks_backlog || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1 p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-[10px] font-black uppercase text-slate-400">To Do</span>
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-bold text-slate-700">{data?.tasks_todo}</span>
+                <Badge variant="outline" className="text-[9px] bg-white text-slate-500 border-slate-200">{Math.round((data?.tasks_todo || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1 p-3 rounded-xl bg-blue-50/50 border border-blue-100">
+              <span className="text-[10px] font-black uppercase text-blue-400">In Progress</span>
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-bold text-blue-700">{data?.tasks_in_progress}</span>
+                <Badge variant="outline" className="text-[9px] bg-white text-blue-600 border-blue-100">{Math.round((data?.tasks_in_progress || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1 p-3 rounded-xl bg-amber-50/50 border border-amber-100">
+              <span className="text-[10px] font-black uppercase text-amber-400">On Hold</span>
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-bold text-amber-700">{data?.tasks_on_hold}</span>
+                <Badge variant="outline" className="text-[9px] bg-white text-amber-600 border-amber-100">{Math.round((data?.tasks_on_hold || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1 p-3 rounded-xl bg-purple-50/50 border border-purple-100">
+              <span className="text-[10px] font-black uppercase text-purple-400">Review</span>
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-bold text-purple-700">{data?.tasks_review}</span>
+                <Badge variant="outline" className="text-[9px] bg-white text-purple-600 border-purple-100">{Math.round((data?.tasks_review || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1 p-3 rounded-xl bg-emerald-50/50 border border-emerald-100">
+              <span className="text-[10px] font-black uppercase text-emerald-400">Done</span>
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-bold text-emerald-700">{data?.tasks_done}</span>
+                <Badge variant="outline" className="text-[9px] bg-white text-emerald-600 border-emerald-100">{Math.round((data?.tasks_done || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-7">
         {/* Upcoming Deadlines */}

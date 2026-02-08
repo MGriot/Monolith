@@ -167,8 +167,12 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         for t in top_tasks:
             if t.status == Status.DONE:
                 score_sum += 100
-            elif t.status in [Status.IN_PROGRESS, Status.REVIEW]:
+            elif t.status == Status.REVIEW:
+                score_sum += 80
+            elif t.status == Status.IN_PROGRESS:
                 score_sum += 50
+            elif t.status == Status.ON_HOLD:
+                score_sum += 25
         progress = float(score_sum) / total if total > 0 else 0.0
 
         # 2. Date aggregation

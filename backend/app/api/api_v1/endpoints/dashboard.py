@@ -39,9 +39,12 @@ async def get_dashboard_summary(
     all_tasks = res.scalars().all()
     
     total_tasks = len(all_tasks)
-    tasks_in_progress = sum(1 for t in all_tasks if t.status == Status.IN_PROGRESS)
-    tasks_done = sum(1 for t in all_tasks if t.status == Status.DONE)
+    tasks_backlog = sum(1 for t in all_tasks if t.status == Status.BACKLOG)
     tasks_todo = sum(1 for t in all_tasks if t.status == Status.TODO)
+    tasks_in_progress = sum(1 for t in all_tasks if t.status == Status.IN_PROGRESS)
+    tasks_on_hold = sum(1 for t in all_tasks if t.status == Status.ON_HOLD)
+    tasks_review = sum(1 for t in all_tasks if t.status == Status.REVIEW)
+    tasks_done = sum(1 for t in all_tasks if t.status == Status.DONE)
     
     # 3. Upcoming Deadlines (next 7 days)
     now = datetime.utcnow()
@@ -102,9 +105,12 @@ async def get_dashboard_summary(
     return {
         "total_projects": total_projects,
         "total_tasks": total_tasks,
-        "tasks_in_progress": tasks_in_progress,
-        "tasks_done": tasks_done,
+        "tasks_backlog": tasks_backlog,
         "tasks_todo": tasks_todo,
+        "tasks_in_progress": tasks_in_progress,
+        "tasks_on_hold": tasks_on_hold,
+        "tasks_review": tasks_review,
+        "tasks_done": tasks_done,
         "upcoming_deadlines": [
             {
                 "id": str(t.id),

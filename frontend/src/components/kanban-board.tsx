@@ -7,6 +7,7 @@ import {
   PointerSensor, 
   useSensor, 
   useSensors,
+  useDroppable,
   type DragStartEvent,
   type DragOverEvent,
   type DragEndEvent,
@@ -35,6 +36,8 @@ interface KanbanItem {
   wbs_code?: string;
   is_milestone?: boolean;
   deadline_at?: string;
+  sort_index?: number;
+  created_at?: string;
   assignees?: { id: string; full_name: string; email: string }[];
   type: 'task' | 'subtask';
   parentId?: string;
@@ -43,29 +46,34 @@ interface KanbanItem {
 
 interface KanbanBoardProps {
   tasks: Task[];
-  onTaskMove: (taskId: string, newStatus: string) => void;
-  onSubtaskMove: (subtaskId: string, newStatus: string) => void;
+  onTaskMove: (taskId: string, newStatus: string, index?: number) => void;
+  onSubtaskMove: (subtaskId: string, newStatus: string, index?: number) => void;
+  onReorder?: (taskId: string, newIndex: number, container: string) => void;
   onAddTask?: (status: string) => void;
   onTaskClick?: (task: Task) => void;
   onSubtaskClick?: (subtask: Subtask) => void;
 }
 
 const COLUMNS = [
+  { id: 'Backlog', title: 'Backlog' },
   { id: 'Todo', title: 'To Do' },
   { id: 'In Progress', title: 'In Progress' },
+  { id: 'On hold', title: 'On hold' },
   { id: 'Review', title: 'Review' },
   { id: 'Done', title: 'Done' }
 ];
 
-export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTask, onTaskClick, onSubtaskClick }: KanbanBoardProps) {
+export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorder, onAddTask, onTaskClick, onSubtaskClick }: KanbanBoardProps) {
   const [items, setItems] = useState<Record<string, string[]>>({
     'Backlog': [],
     'Todo': [],
     'In Progress': [],
+    'On hold': [],
     'Review': [],
     'Done': []
   });
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [initialContainer, setInitialContainer] = useState<string | null>(null);
 
   // Flatten tasks recursively
   const kanbanItems = useMemo(() => {
@@ -88,7 +96,14 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
     };
 
     flatten(tasks);
-    return list;
+    // Sort flattened list by sort_index to ensure initial items order is correct
+    // Secondary sort by created_at for stability
+    return list.sort((a, b) => {
+        if ((a.sort_index || 0) !== (b.sort_index || 0)) {
+            return (a.sort_index || 0) - (b.sort_index || 0);
+        }
+        return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+    });
   }, [tasks]);
 
   useEffect(() => {
@@ -96,12 +111,16 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
       'Backlog': [],
       'Todo': [],
       'In Progress': [],
+      'On hold': [],
       'Review': [],
       'Done': []
     };
     kanbanItems.forEach((item: KanbanItem) => {
-      if (newItems[item.status]) {
-        newItems[item.status].push(item.id);
+      const statusKey = Object.keys(newItems).find(k => k.toLowerCase() === item.status.toLowerCase());
+      if (statusKey) {
+        newItems[statusKey].push(item.id);
+      } else {
+        console.warn(`Unknown status: ${item.status}`);
       }
     });
     setItems(newItems);
@@ -124,7 +143,9 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
   }
 
   function handleDragStart(event: DragStartEvent) {
-    setActiveId(event.active.id as string);
+    const id = event.active.id as string;
+    setActiveId(id);
+    setInitialContainer(findContainer(id) || null);
   }
 
   function handleDragOver(event: DragOverEvent) {
@@ -166,40 +187,50 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-    const activeContainer = findContainer(active.id as string);
     const overId = over?.id;
 
-    if (!overId || !activeContainer) {
+    if (!overId) {
       setActiveId(null);
+      setInitialContainer(null);
       return;
     }
 
     const overContainer = findContainer(overId as string);
+    const activeContainer = findContainer(active.id as string);
 
-    if (overContainer) {
+    if (overContainer && activeContainer) {
       const activeIndex = items[activeContainer].indexOf(active.id as string);
-      const overIndex = items[overContainer].indexOf(overId as string);
+      let overIndex = items[overContainer].indexOf(overId as string);
 
-      if (activeIndex !== overIndex || activeContainer !== overContainer) {
+      // If dropped onto the container itself, position at the end
+      if (overIndex === -1 && overId === overContainer) {
+        overIndex = items[overContainer].length;
+      }
+
+      if (activeIndex !== overIndex || activeContainer !== initialContainer) {
+        // Only update local state if it's a reorder or container change
         setItems((prev) => ({
           ...prev,
           [overContainer]: arrayMove(prev[overContainer], activeIndex, overIndex)
         }));
         
-        if (activeContainer !== overContainer) {
-          const movedItem = kanbanItems.find((i: KanbanItem) => i.id === active.id);
-          if (movedItem) {
+        const movedItem = kanbanItems.find((i: KanbanItem) => i.id === active.id);
+        if (movedItem) {
+          if (activeContainer !== initialContainer) {
             if (movedItem.type === 'task') {
-              onTaskMove(movedItem.id, overContainer);
+              onTaskMove(movedItem.id, overContainer, overIndex);
             } else {
-              onSubtaskMove(movedItem.id, overContainer);
+              onSubtaskMove(movedItem.id, overContainer, overIndex);
             }
+          } else if (activeIndex !== overIndex) {
+            onReorder?.(movedItem.id, overIndex, overContainer);
           }
         }
       }
     }
 
     setActiveId(null);
+    setInitialContainer(null);
   }
 
   return (
@@ -211,7 +242,7 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
       onDragEnd={handleDragEnd}
     >
       <div className="h-full overflow-x-auto pb-4">
-        <div className="flex gap-6 min-w-min mx-auto justify-center px-6">
+        <div className="flex gap-6 min-w-max mx-auto px-6">
           {COLUMNS.map((col) => (
             <KanbanColumn 
               key={col.id} 
@@ -219,6 +250,7 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onAddTas
               title={col.title} 
               itemIds={items[col.id] || []} 
               kanbanItems={kanbanItems}
+              activeId={activeId}
               onAddTask={onAddTask}
               onItemClick={(item: KanbanItem) => {
                 if (item.type === 'task') {
@@ -256,11 +288,29 @@ interface KanbanColumnProps {
   title: string;
   itemIds: string[];
   kanbanItems: KanbanItem[];
+  activeId: string | null;
   onAddTask?: (status: string) => void;
   onItemClick: (item: KanbanItem) => void;
 }
 
-function KanbanColumn({ id, title, itemIds, kanbanItems, onAddTask, onItemClick }: KanbanColumnProps) {
+function KanbanColumn({ id, title, itemIds, kanbanItems, activeId, onAddTask, onItemClick }: KanbanColumnProps) {
+  const MAX_VISIBLE_ITEMS = 5;
+  
+  const { setNodeRef, isOver } = useDroppable({
+    id: id,
+  });
+
+  const visibleItemIds = useMemo(() => {
+    const visible = itemIds.slice(0, MAX_VISIBLE_ITEMS);
+    // Ensure the item being dragged is visible if it's in this column
+    if (activeId && itemIds.includes(activeId) && !visible.includes(activeId)) {
+        visible.push(activeId);
+    }
+    return visible;
+  }, [itemIds, activeId]);
+
+  const remainingCount = Math.max(0, itemIds.length - visibleItemIds.length);
+
   return (
     <div className="flex flex-col w-80 shrink-0">
       <div className="flex items-center justify-between mb-4 px-2">
@@ -284,9 +334,20 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, onAddTask, onItemClick 
         </div>
       </div>
       
-      <SortableContext id={id} items={itemIds} strategy={verticalListSortingStrategy}>
-        <div className="flex-1 bg-slate-50/50 rounded-xl p-3 border border-slate-100 min-h-[400px]">
-          {itemIds.map((itemId) => {
+      {/* 
+        Pass visibleItemIds to SortableContext. 
+        dnd-kit requires the items in SortableContext to match the rendered Sortable items 1:1.
+        If we pass hidden items, dnd-kit will calculate wrong indices for drops.
+      */}
+      <SortableContext id={id} items={visibleItemIds} strategy={verticalListSortingStrategy}>
+        <div 
+          ref={setNodeRef}
+          className={cn(
+            "flex-1 bg-slate-50/50 rounded-xl p-3 border border-slate-100 min-h-[400px] transition-colors",
+            isOver && "bg-slate-100/80 border-primary/30"
+          )}
+        >
+          {visibleItemIds.map((itemId) => {
             const item = kanbanItems.find((i: KanbanItem) => i.id === itemId);
             if (!item) return null;
             return (
@@ -297,6 +358,12 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, onAddTask, onItemClick 
                 />
             );
           })}
+          
+          {remainingCount > 0 && (
+            <div className="mt-2 text-center p-2 rounded-lg border border-dashed border-slate-200 text-xs text-slate-500 bg-white/50 italic">
+                + {remainingCount} more tasks ...
+            </div>
+          )}
         </div>
       </SortableContext>
     </div>

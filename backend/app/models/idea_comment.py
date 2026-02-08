@@ -9,8 +9,9 @@ class IdeaComment(Base):
     __tablename__ = "idea_comments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    idea_id = Column(UUID(as_uuid=True), ForeignKey("ideas.id"), nullable=False)
+    idea_id = Column(UUID(as_uuid=True), ForeignKey("ideas.id", ondelete="CASCADE"), nullable=False)
     author_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+
     
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
