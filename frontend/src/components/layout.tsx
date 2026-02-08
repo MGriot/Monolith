@@ -13,7 +13,6 @@ import {
   Plus,
   Database,
   Copy,
-  Copy,
   CheckSquare,
   BookOpen
 } from 'lucide-react';
