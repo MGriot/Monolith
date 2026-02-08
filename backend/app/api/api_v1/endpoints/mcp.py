@@ -119,7 +119,7 @@ async def list_projects() -> str:
         lines = []
         for p in projects:
             status_val = p.status.value if hasattr(p.status, 'value') else str(p.status)
-            lines.append(f"- {p.name} (ID: {p.id}, Owner: {p.owner_id}, Progress: {p.progress_percent}%, Status: {status_val}, Start: {p.start_date}, Due: {p.due_date})")
+            lines.append(f"- {p.name} (ID: {p.id}, Owner: {p.owner_id}, Progress: {p.progress_percent:.2f}%, Status: {status_val}, Start: {p.start_date}, Due: {p.due_date})")
         return "\n".join(lines)
 
 @mcp.resource("users://list")
@@ -238,7 +238,7 @@ async def search_projects(query: str) -> str:
             return f"No projects found matching '{query}'"
         lines = []
         for p in matches:
-            lines.append(f"- {p.name} (ID: {p.id}, Progress: {p.progress_percent}%)")
+            lines.append(f"- {p.name} (ID: {p.id}, Progress: {p.progress_percent:.2f}%)")
         return "\n".join(lines)
 
 @mcp.tool()

@@ -12,7 +12,7 @@ import {
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Filter } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatPercent } from '@/lib/utils';
 
 interface Project {
   id: string;
@@ -127,7 +127,7 @@ export default function RoadmapPage() {
                 <div className="w-64 border-r border-slate-200 p-4 flex-shrink-0 flex flex-col justify-center">
                   <span className="text-sm font-semibold text-slate-900 truncate">{project.name}</span>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] text-slate-500">{project.progress_percent}%</span>
+                    <span className="text-[10px] text-slate-500">{formatPercent(project.progress_percent)}%</span>
                     <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden max-w-[80px]">
                       <div 
                         className="h-full bg-primary" 

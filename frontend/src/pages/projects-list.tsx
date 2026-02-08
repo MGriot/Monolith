@@ -30,7 +30,7 @@ import {
   Trash2,
   Loader2
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatPercent } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 import type { Project as ProjectType, ProjectTemplate } from '@/types';
@@ -206,7 +206,7 @@ export default function ProjectsListPage() {
                   <TableCell>
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-[10px] font-medium text-slate-500">
-                        <span>{project.progress_percent}%</span>
+                        <span>{formatPercent(project.progress_percent)}%</span>
                       </div>
                       <Progress value={project.progress_percent} className="h-1.5" />
                     </div>
