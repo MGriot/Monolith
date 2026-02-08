@@ -19,3 +19,10 @@ class DependencyType(str, Enum):
     SS = "SS"
     FF = "FF"
     SF = "SF"
+
+class IdeaStatus(str, Enum):
+    PROPOSED = "Proposed"
+    APPROVED = "Approved"
+    REJECTED = "Rejected"
+    CONVERTED = "Converted"
+
