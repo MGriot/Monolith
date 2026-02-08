@@ -983,7 +983,7 @@
   {
     "id": "FRONT-060",
     "title": "UI: Workflow CRUD & Viewer",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 15.2",
     "description": "Implement full CRUD for Workflows/SOPs and a dedicated Markdown viewer."

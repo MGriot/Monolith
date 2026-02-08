@@ -4,9 +4,10 @@
 **Focus:** Fixing critical bugs and implementing advanced reporting.
 
 ## Active Focus
-- [ ] [FRONT-060] UI: Workflow CRUD & Viewer
+- [ ] [BACK-032] API: Project Export (CSV/Excel)
 
 ## Recent History
+- [x] [FRONT-060] UI: Workflow CRUD & Viewer (2026-02-08)
 - [x] [BACK-034] Model & API: Workflow (SOP) (2026-02-08)
 - [x] [FRONT-059] Fix: Gantt PNG Download (2026-02-08)
 - [x] [UX-006] Gantt: High-DPI Export (2026-02-08)
