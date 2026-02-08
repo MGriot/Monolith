@@ -927,7 +927,7 @@
   {
     "id": "BACK-028",
     "title": "Schema: Team Metadata",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: Decentralized Teams",
     "description": "Update Team Pydantic schemas to include owner_id."

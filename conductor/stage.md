@@ -4,9 +4,10 @@
 **Focus:** Allowing all users to create and manage teams.
 
 ## Active Focus
-- [ ] [BACK-028] Schema: Team Metadata
+- [ ] [BACK-029] CRUD: Team Ownership Logic
 
 ## Recent History
+- [x] [BACK-028] Schema: Team Metadata (2026-02-08)
 - [x] [BACK-027] Model: Team Ownership (2026-02-08)
 - [x] [FRONT-057] Kanban Board Refinements (2026-02-08)
 - [x] [FRONT-055] UI: Project Ideas Tab (2026-02-08)
