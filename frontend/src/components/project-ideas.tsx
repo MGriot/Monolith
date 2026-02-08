@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import type { Idea, Task, IdeaComment } from '@/types';
+import type { Idea, Task } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +29,6 @@ import {
     Edit3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from './auth-provider';
 
 interface ProjectIdeasProps {
   projectId: string;
@@ -38,7 +37,6 @@ interface ProjectIdeasProps {
 
 export default function ProjectIdeas({ projectId, onPromoteSuccess }: ProjectIdeasProps) {
   const queryClient = useQueryClient();
-  const { user: currentUser } = useAuth();
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -46,7 +44,11 @@ export default function ProjectIdeas({ projectId, onPromoteSuccess }: ProjectIde
   
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
   const [newIdea, setNewIdea] = useState({ title: '', description: '' });
-  const [editIdeaData, setEditIdeaData] = useState({ title: '', description: '', status: '' });
+  const [editIdeaData, setEditIdeaData] = useState<{
+    title: string;
+    description: string;
+    status: Idea['status'];
+  }>({ title: '', description: '', status: 'Proposed' });
   const [newComment, setNewComment] = useState('');
 
   const { data: ideas, isLoading } = useQuery({
@@ -338,7 +340,7 @@ export default function ProjectIdeas({ projectId, onPromoteSuccess }: ProjectIde
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Status</Label>
                   <div className="flex flex-wrap gap-2">
-                      {['Proposed', 'Approved', 'Rejected'].map((s) => (
+                      {(['Proposed', 'Approved', 'Rejected'] as const).map((s) => (
                           <Button
                             key={s}
                             type="button"
