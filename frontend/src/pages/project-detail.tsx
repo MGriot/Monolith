@@ -490,14 +490,33 @@ export default function ProjectDetailPage() {
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{project.name}</h1>
               <Badge variant="secondary" className="capitalize px-2 py-0 h-5 text-[10px]">{project.status}</Badge>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-slate-400 hover:text-primary transition-colors"
-                onClick={() => setIsProjectEditDialogOpen(true)}
-              >
-                <SettingsIcon className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-slate-400 hover:text-primary transition-colors"
+                    onClick={() => setIsProjectEditDialogOpen(true)}
+                    title="Settings"
+                >
+                    <SettingsIcon className="w-4 h-4" />
+                </Button>
+                {!project.is_archived && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-amber-600 transition-colors"
+                        onClick={async () => {
+                            if (confirm("Archive this project? It will be moved to the archive view.")) {
+                                await api.post(`/projects/${project.id}/archive`);
+                                navigate('/projects');
+                            }
+                        }}
+                        title="Archive Project"
+                    >
+                        <FolderKanban className="w-4 h-4" />
+                    </Button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

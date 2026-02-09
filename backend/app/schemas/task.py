@@ -45,6 +45,8 @@ class TaskBase(BaseModel):
     wbs_code: Optional[str] = None
     is_critical: Optional[bool] = False
     slack_days: Optional[int] = 0
+    is_archived: bool = False
+    archived_at: Optional[datetime] = None
 
 class TaskShortCreate(BaseModel):
     title: str

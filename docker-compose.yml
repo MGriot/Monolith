@@ -73,21 +73,19 @@ services:
       dockerfile: Dockerfile
     container_name: monolith_frontend
     restart: always
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+    # Port 8080 removed here, moved back to global nginx proxy
     networks:
       - monolith_net
 
   # ---------------------------------------------------------------------------
-  # Reverse Proxy: Nginx
+  # Reverse Proxy: Nginx (Entry Point)
   # ---------------------------------------------------------------------------
   nginx:
     image: nginx:alpine
     container_name: monolith_nginx
     restart: always
     ports:
-      - "8080:80"
+      - "8180:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:

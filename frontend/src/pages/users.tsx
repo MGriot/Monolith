@@ -19,7 +19,8 @@ import {
   Shield, 
   Key, 
   ShieldAlert,
-  Loader2
+  Loader2,
+  Archive
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ResourceTimeline from '@/components/resource-timeline';
@@ -71,6 +72,15 @@ export default function UsersPage() {
     }
   });
 
+  const autoArchiveMutation = useMutation({
+    mutationFn: () => api.post('/projects/auto-archive?days_threshold=7'),
+    onSuccess: (res) => {
+        const count = res.data.length;
+        toast.success(`Auto-archive complete. Archived ${count} projects.`);
+    },
+    onError: () => toast.error("Failed to run auto-archive")
+  });
+
   if (!currentUser?.is_superuser) {
     return <Navigate to="/" replace />;
   }
@@ -90,6 +100,19 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Users & Team</h1>
           <p className="text-slate-500">Manage your team members and their roles.</p>
         </div>
+        <Button 
+            variant="outline" 
+            onClick={() => {
+                if (confirm("Run auto-archive? This will archive all DONE projects older than 7 days.")) {
+                    autoArchiveMutation.mutate();
+                }
+            }}
+            disabled={autoArchiveMutation.isPending}
+            className="gap-2"
+        >
+            {autoArchiveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
+            Run Auto-Archive
+        </Button>
       </div>
 
       <div className="grid gap-6">

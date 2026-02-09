@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Table, Enum as SAEnum
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Table, Boolean, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 from app.db.session import Base
@@ -33,6 +33,9 @@ class Project(Base):
     
     tags = Column(ARRAY(String), default=[])
     attachments = Column(ARRAY(String), default=[])
+    
+    is_archived = Column(Boolean, default=False)
+    archived_at = Column(DateTime, nullable=True)
     
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     

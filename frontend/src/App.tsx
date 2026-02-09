@@ -17,6 +17,7 @@ import WorkflowsPage from "./pages/workflows";
 
 import DashboardPage from "./pages/dashboard";
 import ProjectsListPage from "./pages/projects-list";
+import ArchivePage from "./pages/archive";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ function App() {
             />
             {/* Placeholder routes for navigation */}
             <Route path="/projects" element={<PrivateRoute><ProjectsListPage /></PrivateRoute>} />
+            <Route path="/archive" element={<PrivateRoute><ArchivePage /></PrivateRoute>} />
             <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
             <Route path="/tasks" element={<PrivateRoute><MyTasksPage /></PrivateRoute>} />
             <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
