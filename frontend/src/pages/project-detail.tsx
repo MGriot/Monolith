@@ -40,7 +40,8 @@ import {
   AlertCircle,
   Lightbulb,
   FileDown,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Archive
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';

@@ -386,98 +386,50 @@ async def restore_task(
     if not current_user.is_superuser and project.owner_id != current_user.id and task_obj.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
         
-        task_obj = await crud_task.task.update(
-        
-            db=db, 
-        
-            db_obj=task_obj, 
-        
-            obj_in={"is_archived": False, "archived_at": None}
-        
-        )
-        
-        return task_obj
-        
+    task_obj = await crud_task.task.update(
+        db=db, 
+        db_obj=task_obj, 
+        obj_in={"is_archived": False, "archived_at": None}
+    )
+    return task_obj
+
+@router.get("/archived/all", response_model=List[Task])
+async def read_archived_tasks(
+    db: AsyncSession = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Retrieve all archived tasks where the current user is either the owner or an assignee.
+    """
+    from app.models.task import Task as TaskModel
+    from app.models.associations import task_assignees
+    from sqlalchemy import or_
     
-        
-    @router.get("/archived/all", response_model=List[Task])
-        
-    async def read_archived_tasks(
-        
-        db: AsyncSession = Depends(deps.get_db),
-        
-        skip: int = 0,
-        
-        limit: int = 100,
-        
-        current_user: User = Depends(deps.get_current_user),
-        
-    ) -> Any:
-        
-        """
-        
-        Retrieve all archived tasks where the current user is either the owner or an assignee.
-        
-        """
-        
-        from app.models.task import Task as TaskModel
-        
-        from app.models.associations import task_assignees
-        
-        from sqlalchemy import or_
-        
-        
-        
-        # Select tasks that are archived AND (user is owner OR user is in assignees)
-        
-        query = (
-        
-            select(TaskModel)
-        
-            .outerjoin(task_assignees)
-        
-            .filter(TaskModel.is_archived == True)
-        
-            .filter(
-        
-                or_(
-        
-                    TaskModel.owner_id == current_user.id,
-        
-                    task_assignees.c.user_id == current_user.id
-        
-                )
-        
+    # Select tasks that are archived AND (user is owner OR user is in assignees)
+    query = (
+        select(TaskModel)
+        .outerjoin(task_assignees)
+        .filter(TaskModel.is_archived == True)
+        .filter(
+            or_(
+                TaskModel.owner_id == current_user.id,
+                task_assignees.c.user_id == current_user.id
             )
-        
-            .options(
-        
-                selectinload(TaskModel.owner),
-        
-                selectinload(TaskModel.assignees),
-        
-                selectinload(TaskModel.project),
-        
-                selectinload(TaskModel.topics),
-        
-                selectinload(TaskModel.types)
-        
-            )
-        
-            .distinct()
-        
-            .offset(skip)
-        
-            .limit(limit)
-        
         )
-        
-        
-        
-        result = await db.execute(query)
-        
-        tasks = result.scalars().all()
-        
-        return tasks
-        
+        .options(
+            selectinload(TaskModel.owner),
+            selectinload(TaskModel.assignees),
+            selectinload(TaskModel.project),
+            selectinload(TaskModel.topics),
+            selectinload(TaskModel.types)
+        )
+        .distinct()
+        .offset(skip)
+        .limit(limit)
+    )
     
+    result = await db.execute(query)
+    tasks = result.scalars().all()
+    return tasks
