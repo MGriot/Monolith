@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [2.0.0] - 2026-02-08
 
 ### Added
+- **Central Archive**: A new unified archive page at `/archive` that separates Archived Projects and Individual Archived Tasks using a tabbed interface.
+- **Individual Task Archiving**: Users can now archive specific tasks without archiving the entire project. This is useful for clearing cluttered projects or preserving specific work independent of the project lifecycle.
 - **Decentralized Team Management**: Standard users can now create and manage their own teams, assigning members from the organization.
 - **Workflow Library (SOPs)**: A full-featured repository for Standard Operating Procedures with Markdown support, search, and decentralized ownership.
 - **Automated Weekly Summaries**: Implemented a backend reporting engine that sends personalized project and team health summaries to users via email every week.

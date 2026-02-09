@@ -245,6 +245,34 @@ export default function ProjectDetailPage() {
     },
   });
 
+  const archiveTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      return api.post(`/tasks/${taskId}/archive`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'archived'] });
+      setIsTaskDialogOpen(false);
+      setEditingTaskId(null);
+      toast.success("Task archived successfully");
+    },
+    onError: () => toast.error("Failed to archive task")
+  });
+
+  const archiveProjectMutation = useMutation({
+    mutationFn: async () => {
+      return api.post(`/projects/${id}/archive`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['projects', 'archived'] });
+      navigate('/projects');
+      toast.success("Project archived successfully");
+    },
+    onError: () => toast.error("Failed to archive project")
+  });
+
   const calculateSortIndex = (container: string, index: number) => {
     // Helper to find neighboring tasks in the flattened list for a specific status
     const flatten = (list: Task[]): Task[] => {
@@ -505,15 +533,15 @@ export default function ProjectDetailPage() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-slate-400 hover:text-amber-600 transition-colors"
-                        onClick={async () => {
+                        onClick={() => {
                             if (confirm("Archive this project? It will be moved to the archive view.")) {
-                                await api.post(`/projects/${project.id}/archive`);
-                                navigate('/projects');
+                                archiveProjectMutation.mutate();
                             }
                         }}
+                        disabled={archiveProjectMutation.isPending}
                         title="Archive Project"
                     >
-                        <FolderKanban className="w-4 h-4" />
+                        {archiveProjectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderKanban className="w-4 h-4" />}
                     </Button>
                 )}
               </div>
@@ -805,20 +833,36 @@ export default function ProjectDetailPage() {
               <div className="text-xs text-slate-400">
                 Created at {new Date(editingTask.id ? parseInt(editingTask.id.substring(0, 8), 16) * 1000 : Date.now()).toLocaleDateString()}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 h-8"
-                onClick={() => {
-                  if (window.confirm(`Are you sure you want to delete the task "${editingTask.title}"?`)) {
-                    deleteTaskMutation.mutate(editingTask.id);
-                  }
-                }}
-                disabled={deleteTaskMutation.isPending}
-              >
-                {deleteTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                Delete Task
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-slate-400 hover:text-amber-600 hover:bg-amber-50 gap-2 h-8"
+                    onClick={() => {
+                    if (window.confirm(`Archive the task "${editingTask.title}"? It will be moved to the central archive.`)) {
+                        archiveTaskMutation.mutate(editingTask.id);
+                    }
+                    }}
+                    disabled={archiveTaskMutation.isPending}
+                >
+                    {archiveTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
+                    Archive Task
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 h-8"
+                    onClick={() => {
+                    if (window.confirm(`Are you sure you want to delete the task "${editingTask.title}"?`)) {
+                        deleteTaskMutation.mutate(editingTask.id);
+                    }
+                    }}
+                    disabled={deleteTaskMutation.isPending}
+                >
+                    {deleteTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    Delete Task
+                </Button>
+              </div>
             </div>
           )}
 
