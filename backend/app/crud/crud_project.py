@@ -27,10 +27,14 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         return result.scalars().first()
 
     async def get_multi(
-        self, db: AsyncSession, *, skip: int = 0, limit: int = 100
+        self, db: AsyncSession, *, skip: int = 0, limit: int = 100, include_archived: bool = False
     ) -> List[Project]:
+        query = select(self.model)
+        if not include_archived:
+            query = query.filter(self.model.is_archived == False)
+            
         result = await db.execute(
-            select(self.model)
+            query
             .options(
                 selectinload(Project.topic_ref),
                 selectinload(Project.type_ref),
@@ -125,11 +129,14 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         return await super().update(db, db_obj=db_obj, obj_in=update_data)
 
     async def get_multi_by_owner(
-        self, db: AsyncSession, *, owner_id: UUID, skip: int = 0, limit: int = 100
+        self, db: AsyncSession, *, owner_id: UUID, skip: int = 0, limit: int = 100, include_archived: bool = False
     ) -> List[Project]:
+        query = select(self.model).filter(self.model.owner_id == owner_id)
+        if not include_archived:
+            query = query.filter(self.model.is_archived == False)
+            
         result = await db.execute(
-            select(self.model)
-            .filter(self.model.owner_id == owner_id)
+            query
             .options(
                 selectinload(Project.topic_ref),
                 selectinload(Project.type_ref),
@@ -143,7 +150,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         return result.scalars().all()
 
     async def get_multi_by_user(
-        self, db: AsyncSession, *, user_id: UUID, skip: int = 0, limit: int = 100
+        self, db: AsyncSession, *, user_id: UUID, skip: int = 0, limit: int = 100, include_archived: bool = False
     ) -> List[Project]:
         """
         Fetch projects where the user is either the owner OR a member.
@@ -161,7 +168,13 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     project_members.c.user_id == user_id
                 )
             )
-            .distinct()
+        )
+        
+        if not include_archived:
+            query = query.filter(self.model.is_archived == False)
+            
+        query = (
+            query.distinct()
             .options(
                 selectinload(Project.topic_ref),
                 selectinload(Project.type_ref),

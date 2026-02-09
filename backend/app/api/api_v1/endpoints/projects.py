@@ -17,7 +17,7 @@ router = APIRouter()
 @router.get("/{project_id}/export")
 async def export_project(
     project_id: UUID,
-    format: str = Query("csv", regex="^(csv|excel)$"),
+    format: str = Query("csv", pattern="^(csv|excel)$"),
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
@@ -106,17 +106,20 @@ async def read_projects(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
+    include_archived: bool = Query(False),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
     Retrieve projects.
     """
     if current_user.is_superuser:
-        projects = await crud_project.project.get_multi(db, skip=skip, limit=limit)
+        projects = await crud_project.project.get_multi(
+            db, skip=skip, limit=limit, include_archived=include_archived
+        )
     else:
         # Use new method to fetch projects where user is owner OR member
         projects = await crud_project.project.get_multi_by_user(
-            db, user_id=current_user.id, skip=skip, limit=limit
+            db, user_id=current_user.id, skip=skip, limit=limit, include_archived=include_archived
         )
     return projects
 
@@ -152,7 +155,8 @@ async def read_projects_gantt(
     query = select(ProjectModel).where(
         and_(
             ProjectModel.start_date != None,
-            ProjectModel.due_date != None
+            ProjectModel.due_date != None,
+            ProjectModel.is_archived == False
         )
     ).options(
         selectinload(ProjectModel.topic_ref),
@@ -278,3 +282,92 @@ async def delete_project(
         
     project = await crud_project.project.remove(db=db, id=project_id)
     return project
+
+@router.post("/{project_id}/archive", response_model=Project)
+async def archive_project(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    project_id: UUID,
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Archive a project.
+    """
+    project = await crud_project.project.get(db, id=project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    if not current_user.is_superuser and (project.owner_id != current_user.id):
+        raise HTTPException(status_code=403, detail="Only owner can archive")
+        
+    project = await crud_project.project.update(
+        db=db, 
+        db_obj=project, 
+        obj_in={"is_archived": True, "archived_at": datetime.utcnow()}
+    )
+    return project
+
+@router.post("/{project_id}/restore", response_model=Project)
+async def restore_project(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    project_id: UUID,
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Restore an archived project.
+    """
+    project = await crud_project.project.get(db, id=project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    if not current_user.is_superuser and (project.owner_id != current_user.id):
+        raise HTTPException(status_code=403, detail="Only owner can restore")
+        
+    project = await crud_project.project.update(
+        db=db, 
+        db_obj=project, 
+        obj_in={"is_archived": False, "archived_at": None}
+    )
+    return project
+
+@router.post("/auto-archive", response_model=List[Project])
+async def auto_archive_projects(
+    db: AsyncSession = Depends(deps.get_db),
+    days_threshold: int = Query(7),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Auto-archive projects that are DONE and older than X days.
+    """
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Admin only")
+        
+    from datetime import timedelta
+    from app.core.enums import Status
+    from sqlalchemy import select, and_
+    
+    cutoff_date = datetime.utcnow() - timedelta(days=days_threshold)
+    
+    # Find candidates
+    query = select(crud_project.project.model).where(
+        and_(
+            crud_project.project.model.status == Status.DONE,
+            crud_project.project.model.is_archived == False,
+            crud_project.project.model.updated_at < cutoff_date
+        )
+    )
+    
+    result = await db.execute(query)
+    candidates = result.scalars().all()
+    
+    archived_projects = []
+    for proj in candidates:
+        updated = await crud_project.project.update(
+            db=db, 
+            db_obj=proj, 
+            obj_in={"is_archived": True, "archived_at": datetime.utcnow()}
+        )
+        archived_projects.append(updated)
+        
+    return archived_projects

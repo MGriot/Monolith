@@ -74,9 +74,12 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return obj
 
     async def get_multi_by_project(
-        self, db: AsyncSession, *, project_id: UUID, skip: int = 0, limit: int = 100, parent_id: Optional[UUID] = None
+        self, db: AsyncSession, *, project_id: UUID, skip: int = 0, limit: int = 100, parent_id: Optional[UUID] = None, include_archived: bool = False
     ) -> List[Task]:
         query = select(self.model).filter(self.model.project_id == project_id)
+        
+        if not include_archived:
+            query = query.filter(self.model.is_archived == False)
         
         if parent_id:
             query = query.filter(self.model.parent_id == parent_id)

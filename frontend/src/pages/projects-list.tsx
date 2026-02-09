@@ -144,9 +144,14 @@ export default function ProjectsListPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Projects</h1>
           <p className="text-slate-500">Manage and track all your active projects.</p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> New Project
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate('/archive')} className="gap-2">
+                <FolderKanban className="w-4 h-4" /> Archive
+            </Button>
+            <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+                <Plus className="w-4 h-4" /> New Project
+            </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

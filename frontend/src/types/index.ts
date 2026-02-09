@@ -46,6 +46,8 @@ export interface Task {
   wbs_code?: string;
   is_critical?: boolean;
   slack_days?: number;
+  is_archived?: boolean;
+  archived_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -73,6 +75,8 @@ export interface Project {
   type_ref?: WorkType | null;
   tags?: string[];
   members?: User[];
+  is_archived?: boolean;
+  archived_at?: string | null;
 }
 
 export interface Topic {

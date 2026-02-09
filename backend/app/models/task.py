@@ -39,6 +39,9 @@ class Task(Base):
     tags = Column(ARRAY(String), default=[])
     attachments = Column(ARRAY(String), default=[])
     
+    is_archived = Column(Boolean, default=False)
+    archived_at = Column(DateTime, nullable=True)
+    
     # Unified dependency storage
     blocked_by_ids = Column(ARRAY(UUID(as_uuid=True)), default=[])
     sort_index = Column(Integer, default=0)
@@ -86,6 +89,9 @@ class Subtask(Base):
     
     tags = Column(ARRAY(String), default=[])
     attachments = Column(ARRAY(String), default=[])
+    
+    is_archived = Column(Boolean, default=False)
+    archived_at = Column(DateTime, nullable=True)
     
     # Unified dependency storage
     blocked_by_ids = Column(ARRAY(UUID(as_uuid=True)), default=[])

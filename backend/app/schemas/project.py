@@ -21,6 +21,8 @@ class ProjectBase(BaseModel):
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     tags: Optional[List[str]] = []
+    is_archived: bool = False
+    archived_at: Optional[datetime] = None
 
 class ProjectCreate(ProjectBase):
     name: str

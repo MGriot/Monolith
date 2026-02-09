@@ -3,7 +3,7 @@ import os
 import shutil
 import uuid
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_
 from sqlalchemy.future import select
@@ -37,6 +37,7 @@ async def read_assigned_tasks(
         select(TaskModel)
         .join(task_assignees)
         .filter(task_assignees.c.user_id == current_user.id)
+        .filter(TaskModel.is_archived == False)
         .options(
             selectinload(TaskModel.owner),
             selectinload(TaskModel.assignees),
@@ -92,6 +93,7 @@ async def read_assigned_tasks(
 async def read_tasks(
     project_id: UUID,
     parent_id: Optional[UUID] = None,
+    include_archived: bool = Query(False),
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
@@ -112,7 +114,12 @@ async def read_tasks(
             raise HTTPException(status_code=403, detail="Not enough permissions")
     
     tasks = await crud_task.task.get_multi_by_project(
-        db, project_id=project_id, skip=skip, limit=limit, parent_id=parent_id
+        db, 
+        project_id=project_id, 
+        skip=skip, 
+        limit=limit, 
+        parent_id=parent_id,
+        include_archived=include_archived
     )
     
     from app.core.wbs import apply_wbs_codes
@@ -333,3 +340,55 @@ async def delete_task_dependency(
     
     remaining = await crud_dependency.dependency.get_by_successor(db, successor_id=task_id)
     return remaining
+
+@router.post("/{task_id}/archive", response_model=Task)
+async def archive_task(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    task_id: UUID,
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Archive a task.
+    """
+    task_obj = await crud_task.task.get(db, id=task_id)
+    if not task_obj:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Check permissions (Owner/Project Owner)
+    project = await crud_project.project.get(db, id=task_obj.project_id)
+    if not current_user.is_superuser and project.owner_id != current_user.id and task_obj.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+        
+    task_obj = await crud_task.task.update(
+        db=db, 
+        db_obj=task_obj, 
+        obj_in={"is_archived": True, "archived_at": datetime.utcnow()}
+    )
+    return task_obj
+
+@router.post("/{task_id}/restore", response_model=Task)
+async def restore_task(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    task_id: UUID,
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Restore an archived task.
+    """
+    task_obj = await crud_task.task.get(db, id=task_id)
+    if not task_obj:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Check permissions
+    project = await crud_project.project.get(db, id=task_obj.project_id)
+    if not current_user.is_superuser and project.owner_id != current_user.id and task_obj.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+        
+    task_obj = await crud_task.task.update(
+        db=db, 
+        db_obj=task_obj, 
+        obj_in={"is_archived": False, "archived_at": None}
+    )
+    return task_obj

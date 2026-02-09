@@ -20,7 +20,7 @@
     - **Users:** See upcoming and overdue tasks.
     - **Team Owners:** See team completion rates and recent activities.
     - **Project Owners:** See overall project health and bottlenecks.
-- **Trigger:** Added an admin-only endpoint to manually trigger report generation.
+    - **Trigger:** Added an admin-only endpoint to manually trigger report generation.
 
 ## 5. UI Refinements
 - **Task Duration (FRONT-061):** Added a "Days" column to the project task list, providing immediate visibility into time allocation.
