@@ -6,27 +6,34 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Edit2, Tag, Briefcase } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2, Edit2, Tag, Briefcase, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Topic, WorkType } from '@/types';
 
 export default function AdminMetadataPage() {
   const queryClient = useQueryClient();
-  const [editingTopic, setEditingTopic] = useState<string | null>(null);
+  
+  // State
+  const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+  const [editingWorkType, setEditingWorkType] = useState<WorkType | null>(null);
+  
+  // Create Form State
   const [newTopicName, setNewTopicName] = useState('');
   const [newTopicColor, setNewTopicColor] = useState('#64748b');
   const [newTypeName, setNewTypeName] = useState('');
   const [newTypeColor, setNewTypeColor] = useState('#64748b');
-  const [editingType, setEditingType] = useState<string | null>(null);
 
   // Queries
-  const { data: topics } = useQuery<Topic[]>({
+  const { data: topics, isLoading: topicsLoading } = useQuery<Topic[]>({
     queryKey: ['metadata', 'topics'],
     queryFn: async () => (await api.get('/metadata/topics')).data,
   });
 
-  const { data: workTypes } = useQuery<WorkType[]>({
+  const { data: workTypes, isLoading: typesLoading } = useQuery<WorkType[]>({
     queryKey: ['metadata', 'work-types'],
     queryFn: async () => (await api.get('/metadata/work-types')).data,
   });
@@ -38,7 +45,8 @@ export default function AdminMetadataPage() {
       queryClient.invalidateQueries({ queryKey: ['metadata', 'topics'] });
       setNewTopicName('');
       toast.success('Topic created');
-    }
+    },
+    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to create topic')
   });
 
   const updateTopicMutation = useMutation({
@@ -47,7 +55,8 @@ export default function AdminMetadataPage() {
       queryClient.invalidateQueries({ queryKey: ['metadata', 'topics'] });
       setEditingTopic(null);
       toast.success('Topic updated');
-    }
+    },
+    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to update topic')
   });
 
   const deleteTopicMutation = useMutation({
@@ -55,7 +64,8 @@ export default function AdminMetadataPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['metadata', 'topics'] });
       toast.success('Topic deleted');
-    }
+    },
+    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to delete topic')
   });
 
   const createTypeMutation = useMutation({
@@ -65,16 +75,18 @@ export default function AdminMetadataPage() {
       setNewTypeName('');
       setNewTypeColor('#64748b');
       toast.success('Work Type created');
-    }
+    },
+    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to create work type')
   });
 
   const updateTypeMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: Partial<WorkType> }) => api.put(`/metadata/work-types/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['metadata', 'work-types'] });
-      setEditingType(null);
+      setEditingWorkType(null);
       toast.success('Work Type updated');
-    }
+    },
+    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to update work type')
   });
 
   const deleteTypeMutation = useMutation({
@@ -82,8 +94,35 @@ export default function AdminMetadataPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['metadata', 'work-types'] });
       toast.success('Work Type deleted');
-    }
+    },
+    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to delete work type')
   });
+
+  const handleUpdateTopic = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTopic) return;
+    updateTopicMutation.mutate({ 
+      id: editingTopic.id, 
+      data: { 
+        name: editingTopic.name, 
+        color: editingTopic.color,
+        is_active: editingTopic.is_active 
+      } 
+    });
+  };
+
+  const handleUpdateWorkType = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWorkType) return;
+    updateTypeMutation.mutate({ 
+      id: editingWorkType.id, 
+      data: { 
+        name: editingWorkType.name, 
+        color: editingWorkType.color,
+        is_active: editingWorkType.is_active 
+      } 
+    });
+  };
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8">
@@ -113,7 +152,7 @@ export default function AdminMetadataPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-slate-500">Name</label>
+                  <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
                   <Input
                     placeholder="e.g. Backend"
                     value={newTopicName}
@@ -121,11 +160,11 @@ export default function AdminMetadataPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-slate-500">Color</label>
+                  <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
                   <div className="flex gap-2">
                     <Input
                       type="color"
-                      className="w-12 h-10 p-1"
+                      className="w-12 h-10 p-1 cursor-pointer"
                       value={newTopicColor}
                       onChange={(e) => setNewTopicColor(e.target.value)}
                     />
@@ -139,9 +178,9 @@ export default function AdminMetadataPage() {
                 <Button
                   className="w-full gap-2"
                   onClick={() => createTopicMutation.mutate({ name: newTopicName, color: newTopicColor })}
-                  disabled={!newTopicName}
+                  disabled={!newTopicName || createTopicMutation.isPending}
                 >
-                  <Plus className="w-4 h-4" />
+                  {createTopicMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   Create Topic
                 </Button>
               </CardContent>
@@ -158,7 +197,13 @@ export default function AdminMetadataPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topics?.map((topic) => (
+                  {topicsLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+                      </TableCell>
+                    </TableRow>
+                  ) : topics?.map((topic) => (
                     <TableRow key={topic.id}>
                       <TableCell>
                         <div
@@ -166,17 +211,7 @@ export default function AdminMetadataPage() {
                           style={{ backgroundColor: topic.color }}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">
-                        {editingTopic === topic.id ? (
-                          <Input
-                            defaultValue={topic.name}
-                            onBlur={(e) => updateTopicMutation.mutate({ id: topic.id, data: { name: e.target.value } })}
-                            autoFocus
-                          />
-                        ) : (
-                          topic.name
-                        )}
-                      </TableCell>
+                      <TableCell className="font-medium">{topic.name}</TableCell>
                       <TableCell>
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
@@ -187,7 +222,7 @@ export default function AdminMetadataPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingTopic(topic.id)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingTopic(topic)}>
                             <Edit2 className="w-3.5 h-3.5" />
                           </Button>
                           <Button
@@ -195,7 +230,7 @@ export default function AdminMetadataPage() {
                             size="icon"
                             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
                             onClick={() => {
-                              if (window.confirm('Are you sure?')) deleteTopicMutation.mutate(topic.id);
+                              if (window.confirm('Are you sure you want to delete this topic?')) deleteTopicMutation.mutate(topic.id);
                             }}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -219,11 +254,19 @@ export default function AdminMetadataPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-slate-500">Color</label>
+                  <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
+                  <Input
+                    placeholder="e.g. Development"
+                    value={newTypeName}
+                    onChange={(e) => setNewTypeName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
                   <div className="flex gap-2">
-                    <input
+                    <Input
                       type="color"
-                      className="w-12 h-10 p-1 rounded-md border border-slate-200 cursor-pointer"
+                      className="w-12 h-10 p-1 cursor-pointer"
                       value={newTypeColor}
                       onChange={(e) => setNewTypeColor(e.target.value)}
                     />
@@ -237,9 +280,9 @@ export default function AdminMetadataPage() {
                 <Button
                   className="w-full gap-2"
                   onClick={() => createTypeMutation.mutate({ name: newTypeName, color: newTypeColor })}
-                  disabled={!newTypeName}
+                  disabled={!newTypeName || createTypeMutation.isPending}
                 >
-                  <Plus className="w-4 h-4" />
+                  {createTypeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   Create Work Type
                 </Button>
               </CardContent>
@@ -256,7 +299,13 @@ export default function AdminMetadataPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {workTypes?.map((type) => (
+                  {typesLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+                      </TableCell>
+                    </TableRow>
+                  ) : workTypes?.map((type) => (
                     <TableRow key={type.id}>
                       <TableCell>
                         <div
@@ -264,22 +313,7 @@ export default function AdminMetadataPage() {
                           style={{ backgroundColor: type.color }}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">
-                        {editingType === type.id ? (
-                          <Input
-                            defaultValue={type.name}
-                            onBlur={(e) => updateTypeMutation.mutate({ id: type.id, data: { name: e.target.value } })}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                updateTypeMutation.mutate({ id: type.id, data: { name: (e.target as HTMLInputElement).value } });
-                              }
-                            }}
-                            autoFocus
-                          />
-                        ) : (
-                          type.name
-                        )}
-                      </TableCell>
+                      <TableCell className="font-medium">{type.name}</TableCell>
                       <TableCell>
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
@@ -290,7 +324,7 @@ export default function AdminMetadataPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingType(type.id)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingWorkType(type)}>
                             <Edit2 className="w-3.5 h-3.5" />
                           </Button>
                           <Button
@@ -298,7 +332,7 @@ export default function AdminMetadataPage() {
                             size="icon"
                             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
                             onClick={() => {
-                              if (window.confirm('Are you sure?')) deleteTypeMutation.mutate(type.id);
+                              if (window.confirm('Are you sure you want to delete this work type?')) deleteTypeMutation.mutate(type.id);
                             }}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -313,6 +347,102 @@ export default function AdminMetadataPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Topic Dialog */}
+      <Dialog open={!!editingTopic} onOpenChange={(open) => !open && setEditingTopic(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Topic</DialogTitle>
+            <DialogDescription>Modify topic details.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateTopic} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input 
+                value={editingTopic?.name || ''} 
+                onChange={(e) => setEditingTopic(prev => prev ? ({...prev, name: e.target.value}) : null)} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="flex gap-2">
+                <Input 
+                  type="color" 
+                  className="w-12 h-10 p-1 cursor-pointer"
+                  value={editingTopic?.color || '#000000'} 
+                  onChange={(e) => setEditingTopic(prev => prev ? ({...prev, color: e.target.value}) : null)} 
+                />
+                <Input 
+                  value={editingTopic?.color || ''} 
+                  onChange={(e) => setEditingTopic(prev => prev ? ({...prev, color: e.target.value}) : null)} 
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>Active Status</Label>
+              <Switch 
+                checked={editingTopic?.is_active || false} 
+                onCheckedChange={(checked) => setEditingTopic(prev => prev ? ({...prev, is_active: checked}) : null)} 
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingTopic(null)}>Cancel</Button>
+              <Button type="submit" disabled={updateTopicMutation.isPending}>
+                {updateTopicMutation.isPending && <Loader2 className="w-3 h-3 animate-spin mr-2" />}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Work Type Dialog */}
+      <Dialog open={!!editingWorkType} onOpenChange={(open) => !open && setEditingWorkType(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Work Type</DialogTitle>
+            <DialogDescription>Modify work type details.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateWorkType} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input 
+                value={editingWorkType?.name || ''} 
+                onChange={(e) => setEditingWorkType(prev => prev ? ({...prev, name: e.target.value}) : null)} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="flex gap-2">
+                <Input 
+                  type="color" 
+                  className="w-12 h-10 p-1 cursor-pointer"
+                  value={editingWorkType?.color || '#000000'} 
+                  onChange={(e) => setEditingWorkType(prev => prev ? ({...prev, color: e.target.value}) : null)} 
+                />
+                <Input 
+                  value={editingWorkType?.color || ''} 
+                  onChange={(e) => setEditingWorkType(prev => prev ? ({...prev, color: e.target.value}) : null)} 
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>Active Status</Label>
+              <Switch 
+                checked={editingWorkType?.is_active || false} 
+                onCheckedChange={(checked) => setEditingWorkType(prev => prev ? ({...prev, is_active: checked}) : null)} 
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingWorkType(null)}>Cancel</Button>
+              <Button type="submit" disabled={updateTypeMutation.isPending}>
+                {updateTypeMutation.isPending && <Loader2 className="w-3 h-3 animate-spin mr-2" />}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -29,6 +29,7 @@ class TaskBase(BaseModel):
     type_id: Optional[UUID] = None
     topic_ids: Optional[List[UUID]] = []
     type_ids: Optional[List[UUID]] = []
+    color: Optional[str] = None
     status: Optional[Status] = Status.TODO
     priority: Optional[Priority] = Priority.MEDIUM
     is_milestone: Optional[bool] = False

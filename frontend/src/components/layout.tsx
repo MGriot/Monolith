@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   FolderKanban,
   Calendar as CalendarIcon,
-  GanttChart,
   LogOut,
   Settings,
   User as UserIcon,
@@ -14,7 +13,8 @@ import {
   Database,
   Copy,
   CheckSquare,
-  BookOpen
+  BookOpen,
+  Archive
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -40,8 +40,8 @@ export default function Layout({ children }: LayoutProps) {
     { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
     { icon: FolderKanban, label: 'Projects', href: '/projects' },
     { icon: CheckSquare, label: 'My Tasks', href: '/tasks' },
-    { icon: CalendarIcon, label: 'Calendar', href: '/calendar' },
-    { icon: GanttChart, label: 'Roadmap', href: '/roadmap' },
+    { icon: CalendarIcon, label: 'Schedule', href: '/schedule' },
+    { icon: Archive, label: 'Archive', href: '/archive' },
     { icon: Copy, label: 'Templates', href: '/templates' },
     { icon: BookOpen, label: 'Workflows', href: '/workflows' },
     { icon: Users, label: 'Teams', href: '/teams' },
@@ -57,10 +57,12 @@ export default function Layout({ children }: LayoutProps) {
     if (path === '/projects') return 'Projects';
     if (path.startsWith('/projects/')) return 'Project Details';
     if (path === '/tasks') return 'My Tasks';
-    if (path === '/calendar') return 'Calendar';
-    if (path === '/roadmap') return 'Roadmap';
+    if (path === '/schedule') return 'Master Schedule';
+    if (path === '/archive') return 'Archive';
+    if (path === '/templates') return 'Project Templates';
     if (path === '/teams') return 'Team Definitions';
     if (path === '/users') return 'Team Management';
+    if (path === '/workflows') return 'SOP Library';
     return path.substring(1);
   };
 

@@ -24,6 +24,8 @@ class Task(Base):
     topic_id = Column(UUID(as_uuid=True), ForeignKey("topics.id"), nullable=True)
     type_id = Column(UUID(as_uuid=True), ForeignKey("work_types.id"), nullable=True)
     
+    color = Column(String, nullable=True) # Custom color for WBS rows or specific task highlighting
+
     status = Column(SAEnum(Status), default=Status.TODO)
     priority = Column(SAEnum(Priority), default=Priority.MEDIUM)
     

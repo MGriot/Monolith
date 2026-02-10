@@ -28,6 +28,7 @@ const taskSchema = z.object({
   assignee_ids: z.array(z.string()),
   sort_index: z.number().optional(),
   parent_id: z.string().optional().nullable(),
+  color: z.string().optional().nullable(),
 });
 
 export type TaskFormValues = z.infer<typeof taskSchema>;
@@ -78,6 +79,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
       type_id: null,
       topic_ids: [],
       type_ids: [],
+      color: null,
       ...initialValues,
     },
   });
@@ -86,6 +88,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
   const selectedTopicIds = watch("topic_ids") || [];
   const selectedTypeIds = watch("type_ids") || [];
   const selectedParentId = watch("parent_id");
+  const selectedColor = watch("color");
 
   const toggleAssignee = (userId: string) => {
     const current = [...selectedAssignees];
@@ -165,21 +168,40 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-4">
-      <div className="space-y-2">
-        <Label htmlFor="parent_id">Parent Task (WBS)</Label>
-        <select
-          id="parent_id"
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          value={selectedParentId || ""}
-          onChange={(e) => setValue("parent_id", e.target.value || null)}
-        >
-          <option value="">None (Root Task)</option>
-          {availableParents.map(p => (
-            <option key={p.id} value={p.id}>
-              {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
-            </option>
-          ))}
-        </select>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="parent_id">Parent Task (WBS)</Label>
+          <select
+            id="parent_id"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            value={selectedParentId || ""}
+            onChange={(e) => setValue("parent_id", e.target.value || null)}
+          >
+            <option value="">None (Root Task)</option>
+            {availableParents.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="color">Row Color (Gantt)</Label>
+          <div className="flex gap-2">
+            <Input
+              type="color"
+              id="color-picker"
+              className="w-12 h-10 p-1 cursor-pointer"
+              value={selectedColor || "#ffffff"}
+              onChange={(e) => setValue("color", e.target.value)}
+            />
+            <Input
+              id="color"
+              placeholder="#ffffff"
+              {...register("color")}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">

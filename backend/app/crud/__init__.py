@@ -5,3 +5,4 @@ from .crud_dependency import dependency
 from .crud_notification import notification
 from .crud_template import project_template
 from .crud_team import team
+from .crud_workflow import workflow

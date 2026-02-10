@@ -97,14 +97,14 @@ export default function ArchivePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <Archive className="w-6 h-6 text-slate-400" />
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            <Archive className="w-8 h-8 text-slate-400" />
             Central Archive
           </h1>
-          <p className="text-slate-500">View and restore archived projects and individual tasks.</p>
+          <p className="text-slate-500 mt-1">View and restore archived projects and individual tasks.</p>
         </div>
         <Button variant="outline" onClick={() => navigate('/projects')}>
           Back to Dashboard

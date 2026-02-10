@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '@/lib/api';
@@ -21,6 +21,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   FolderKanban, 
   ArrowRight, 
@@ -28,10 +35,13 @@ import {
   AlertCircle,
   Plus,
   Trash2,
-  Loader2
+  Loader2,
+  MoreHorizontal,
+  Archive
 } from 'lucide-react';
 import { cn, formatPercent } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
+import { toast } from 'sonner';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 import type { Project as ProjectType, ProjectTemplate } from '@/types';
 
@@ -108,7 +118,19 @@ export default function ProjectsListPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setProjectToDelete(null);
+      toast.success("Project deleted");
     },
+  });
+
+  const archiveProjectMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+        return api.post(`/projects/${projectId}/archive`);
+    },
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
+        toast.success("Project archived");
+    },
+    onError: () => toast.error("Failed to archive project")
   });
 
   const handleCreateSubmit = (data: ProjectFormValues) => {
@@ -118,6 +140,13 @@ export default function ProjectsListPage() {
   const handleDeleteProject = (e: React.MouseEvent, project: ProjectType) => {
     e.stopPropagation();
     setProjectToDelete(project);
+  };
+
+  const handleArchiveProject = (e: React.MouseEvent, project: ProjectType) => {
+      e.stopPropagation();
+      if(confirm(`Archive project "${project.name}"?`)) {
+          archiveProjectMutation.mutate(project.id);
+      }
   };
 
   if (isLoading) {
@@ -138,20 +167,15 @@ export default function ProjectsListPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Projects</h1>
-          <p className="text-slate-500">Manage and track all your active projects.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Projects</h1>
+          <p className="text-slate-500 mt-1">Manage and track all your active projects.</p>
         </div>
-        <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => navigate('/archive')} className="gap-2">
-                <FolderKanban className="w-4 h-4" /> Archive
-            </Button>
-            <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
-                <Plus className="w-4 h-4" /> New Project
-            </Button>
-        </div>
+        <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2 shadow-lg shadow-primary/20">
+            <Plus className="w-4 h-4" /> New Project
+        </Button>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -223,25 +247,25 @@ export default function ProjectsListPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-slate-400 hover:text-destructive"
-                        onClick={(e) => handleDeleteProject(e, project)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="gap-2 text-slate-500 hover:text-primary h-8"
-                        onClick={() => navigate(`/projects/${project.id}`)}
-                      >
-                        View
-                        <ArrowRight className="w-3 h-3" />
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/projects/${project.id}`) }}>
+                          <ArrowRight className="w-4 h-4 mr-2" /> View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={(e: React.MouseEvent) => handleArchiveProject(e, project)}>
+                          <Archive className="w-4 h-4 mr-2" /> Archive
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600" onClick={(e: React.MouseEvent) => handleDeleteProject(e, project)}>
+                          <Trash2 className="w-4 h-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))

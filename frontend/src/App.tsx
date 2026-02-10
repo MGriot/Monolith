@@ -4,8 +4,7 @@ import { AuthProvider, useAuth } from "./components/auth-provider";
 import Layout from "./components/layout";
 import LoginPage from "./pages/login";
 import RegisterPage from "./pages/register";
-import CalendarPage from "./pages/calendar";
-import RoadmapPage from "./pages/roadmap";
+import SchedulePage from "./pages/schedule";
 import ProjectDetailPage from "./pages/project-detail";
 import UsersPage from "./pages/users";
 import SettingsPage from "./pages/settings";
@@ -52,8 +51,9 @@ function App() {
             <Route path="/archive" element={<PrivateRoute><ArchivePage /></PrivateRoute>} />
             <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
             <Route path="/tasks" element={<PrivateRoute><MyTasksPage /></PrivateRoute>} />
-            <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
-            <Route path="/roadmap" element={<PrivateRoute><RoadmapPage /></PrivateRoute>} />
+            <Route path="/schedule" element={<PrivateRoute><SchedulePage /></PrivateRoute>} />
+            <Route path="/calendar" element={<Navigate to="/schedule" replace />} />
+            <Route path="/roadmap" element={<Navigate to="/schedule" replace />} />
             <Route path="/templates" element={<PrivateRoute><TemplatesPage /></PrivateRoute>} />
             <Route path="/teams" element={<PrivateRoute><TeamsPage /></PrivateRoute>} />
             <Route path="/users" element={<PrivateRoute><UsersPage /></PrivateRoute>} />

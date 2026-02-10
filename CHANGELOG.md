@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-02-10
+
+### Added
+- **Master Schedule**: Unified the Calendar and Roadmap views into a single, high-performance schedule management page.
+- **Advanced Gantt Grid**: The Gantt chart now includes a customizable left-hand data grid with columns for assignees, duration, status, and priority.
+- **Deadline Visual Extensions**: Task bars now visually extend in gray to represent the buffer between planned due dates and hard deadlines.
+- **Custom Reference Zones**: Users can now create, edit, and style (text color, rotation, position) vertical background regions in the Gantt chart.
+- **Automated Deadline Reminders**: Implemented a notification engine that scans for near deadlines and sends email alerts to assignees.
+- **Project Action Menus**: Added a "More" dropdown to project list items for rapid access to Archive and Delete functions.
+
+### Fixed
+- **Critical Path Visuals**: Connection lines on the critical path now feature a pulsing red glow, complementing the task bar highlighting.
+- **Layout Homogeneity**: Standardized all application pages to use a consistent container width, padding, and title typography.
+- **Notification Links**: Fixed broken task links in the notification center; they now correctly open the project detail view with the task context.
+- **Metadata Persistence**: Resolved issues where WBS Level 1 colors and other metadata fields were not correctly saved to the database.
+- **Archive Isolation**: Dashboard statistics now strictly exclude archived projects and tasks from active workload calculations.
+
 ## [2.0.0] - 2026-02-08
 
 ### Added

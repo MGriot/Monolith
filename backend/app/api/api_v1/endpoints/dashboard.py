@@ -9,7 +9,7 @@ from app.models.project import Project
 from app.models.task import Task
 from app.models.user import User
 from app.core.enums import Status
-from app.core.reports import generate_weekly_summaries
+from app.core.reports import generate_weekly_summaries, notify_near_deadlines
 
 router = APIRouter()
 
@@ -26,6 +26,18 @@ async def trigger_weekly_summary(
     await generate_weekly_summaries(db)
     return {"message": "Weekly summary generation triggered"}
 
+@router.post("/trigger-deadline-notifications", status_code=202)
+async def trigger_deadline_notifications(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin),
+) -> Any:
+    """
+    Manually trigger the scanning and notification of near deadlines.
+    Admin only.
+    """
+    await notify_near_deadlines(db)
+    return {"message": "Deadline notifications triggered"}
+
 @router.get("/summary", response_model=Any)
 async def get_dashboard_summary(
     db: AsyncSession = Depends(deps.get_db),
@@ -35,7 +47,7 @@ async def get_dashboard_summary(
     Get summary statistics for the dashboard.
     """
     # 1. Projects Count
-    proj_query = select(func.count(Project.id))
+    proj_query = select(func.count(Project.id)).where(Project.is_archived == False)
     if not current_user.is_superuser:
         proj_query = proj_query.where(Project.owner_id == current_user.id)
     
@@ -44,10 +56,14 @@ async def get_dashboard_summary(
 
     # 2. Tasks Count & Breakdown
     # For tasks, we need to filter by projects owned by the user if not superuser
+    # And EXCLUDE archived tasks
     if current_user.is_superuser:
-        task_query = select(Task)
+        task_query = select(Task).where(Task.is_archived == False)
     else:
-        task_query = select(Task).join(Project).where(Project.owner_id == current_user.id)
+        task_query = select(Task).join(Project).where(
+            Project.owner_id == current_user.id,
+            Task.is_archived == False
+        )
 
     res = await db.execute(task_query)
     all_tasks = res.scalars().all()
@@ -61,6 +77,7 @@ async def get_dashboard_summary(
     tasks_done = sum(1 for t in all_tasks if t.status == Status.DONE)
     
     # 3. Upcoming Deadlines (next 7 days)
+    # Exclude archived
     now = datetime.utcnow()
     next_week = now + timedelta(days=7)
     
@@ -68,14 +85,16 @@ async def get_dashboard_summary(
         upcoming_query = select(Task).where(
             Task.due_date >= now,
             Task.due_date <= next_week,
-            Task.status != Status.DONE
+            Task.status != Status.DONE,
+            Task.is_archived == False
         ).order_by(Task.due_date.asc()).limit(5)
     else:
         upcoming_query = select(Task).join(Project).where(
             Project.owner_id == current_user.id,
             Task.due_date >= now,
             Task.due_date <= next_week,
-            Task.status != Status.DONE
+            Task.status != Status.DONE,
+            Task.is_archived == False
         ).order_by(Task.due_date.asc()).limit(5)
 
     res = await db.execute(upcoming_query)

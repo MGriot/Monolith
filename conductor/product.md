@@ -1,4 +1,3 @@
-
 ## 12. Addendum: Advanced Access & Resource Views (Feb 7, 2026)
 
 ### 12.1 Feature: Hierarchy-Based Access Control
@@ -98,3 +97,40 @@ The task list must provide immediate insight into time allocation.
 
 *   **Column:** "Duration" (Days).
 *   **Logic:** `due_date` - `start_date` (inclusive). Already calculated for Gantt, now exposing in Table view.
+
+## 16. Addendum: Gantt, Navigation, and Core Fixes (Feb 10, 2026)
+
+### 16.1 Feature: Gantt Advanced Data Columns
+Enhance the Gantt chart's left-side data grid to be a fully functional task list.
+
+*   **New Columns:**
+    *   **Assignee:** Avatar and Name.
+    *   **Start/End Dates:** Explicit date strings.
+    *   **Duration:** Calculated day count.
+    *   **Status:** Colored badge.
+    *   **Priority:** Icon/Color indicator.
+*   **Customization:**
+    *   **Visibility:** A "Columns" multi-select menu allows users to show/hide specific columns.
+    *   **Sorting/Ordering:** Users can manually reorder columns to customize their view.
+
+### 16.2 Feature: Gantt Visual Enhancements
+improve the visual clarity and utility of the timeline view.
+
+*   **WBS Level 1 Styling:** The top-level parent rows (WBS 1, 2, 3...) should have a distinct background color (e.g., light gray or a user-defined color) that extends across the full row width to visually separate phases.
+*   **Custom Time Regions:** Users can define vertical background highlights ("Reference Zones") by specifying a Name, Start Date, End Date, and Color. Useful for marking Sprints, Holidays, or Deadlines.
+*   **Progress Alignment:** The visual progress bar within a task bar must strictly align with the task's status (e.g., 100% fill for "Done") or a manual `% complete` field.
+*   **End Date Label:** Display the `end_date` text explicitly to the right of (or inside) the Gantt bar for immediate visibility.
+
+### 16.3 Refinement: Navigation Overhaul
+Simplify and reorganize the application structure.
+
+*   **Archive:** Move "Archived Projects" from a tab in the Projects page to a dedicated top-level Sidebar item (`/archive`).
+*   **Manual Archiving:** Add an "Archive Project" action to the project context menu in the main list, allowing manual status updates.
+*   **Unified Schedule:** Merge the "Calendar" and "Roadmap" pages into a single "Master Schedule" view to reduce redundancy.
+
+### 16.4 Fixes & Stability
+Address reported regressions and broken features.
+
+*   **Workflow Library:** Debug and fix the CRUD operations (Create/Edit/Delete) for Workflows, which are currently reported as broken.
+*   **Teams:** Fix the "Team Creator" functionality (Admin > Teams) which is failing to create new teams.
+*   **Metadata (Admin):** Fix the "Edit" modal for Topics and WorkTypes to correctly update Name, Color, and Status fields.
