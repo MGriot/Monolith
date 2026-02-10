@@ -48,6 +48,7 @@ export interface Task {
   slack_days?: number;
   is_archived?: boolean;
   archived_at?: string | null;
+  color?: string | null;
   created_at: string;
   updated_at: string;
 }

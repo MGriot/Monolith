@@ -60,6 +60,9 @@ export default function WorkflowsPage() {
             queryClient.invalidateQueries({ queryKey: ['workflows'] });
             setIsEditDialogOpen(false);
             toast.success('Workflow created');
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.detail || 'Failed to create workflow');
         }
     });
 
@@ -73,6 +76,9 @@ export default function WorkflowsPage() {
                 api.get(`/workflows/${editingWorkflow?.id}`).then(res => setSelectedWorkflow(res.data));
             }
             toast.success('Workflow updated');
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.detail || 'Failed to update workflow');
         }
     });
 

@@ -59,6 +59,9 @@ export default function TeamsPage() {
       resetForm();
       toast.success('Team created');
     },
+    onError: (err: any) => {
+        toast.error(err.response?.data?.detail || 'Failed to create team');
+    }
   });
 
   const updateMutation = useMutation({
@@ -70,6 +73,9 @@ export default function TeamsPage() {
       resetForm();
       toast.success('Team updated');
     },
+    onError: (err: any) => {
+        toast.error(err.response?.data?.detail || 'Failed to update team');
+    }
   });
 
   const deleteMutation = useMutation({

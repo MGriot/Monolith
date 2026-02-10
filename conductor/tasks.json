@@ -1019,5 +1019,93 @@
     "priority": "high",
     "linked_req": "PRD Section 15.2",
     "description": "Create Workflow model, schemas, and CRUD endpoints for Standard Operating Procedures."
+  },
+  {
+    "id": "FRONT-062",
+    "title": "Gantt: Enhanced Data Grid",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 16.1",
+    "description": "Add columns for Assignee, Start/End Dates, Duration, Status, and Priority to the Gantt left panel."
+  },
+  {
+    "id": "FRONT-063",
+    "title": "Gantt: Column Customization",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 16.1",
+    "description": "Implement a multi-select menu to toggle column visibility and allow manual column reordering."
+  },
+  {
+    "id": "FRONT-064",
+    "title": "Gantt: Visual Enhancements",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 16.2",
+    "description": "Implement WBS Level 1 row background styling (by including also transparent colors), precise progress bar alignment, and visible end date as line in the gantt chart."
+  },
+  {
+    "id": "BACK-035",
+    "title": "API: Time Regions (Reference Zones)",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 16.2",
+    "description": "Create model and endpoints for persisting user-defined Gantt Time Regions (Name, Start, End, Color with alpha)."
+  },
+  {
+    "id": "FRONT-065",
+    "title": "Gantt: Time Regions UI",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 16.2",
+    "description": "Implement UI to create/manage Time Regions and render them as vertical background zones in the Gantt."
+  },
+  {
+    "id": "FRONT-066",
+    "title": "Nav: Archive Page & Actions",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 16.3",
+    "description": "Move Archive to a top-level route/page and add 'Archive Project' action to the project list."
+  },
+  {
+    "id": "FRONT-067",
+    "title": "Nav: Unified Schedule Page",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 16.3",
+    "description": "Merge Calendar and Roadmap pages into a single 'Master Schedule' view."
+  },
+  {
+    "id": "FRONT-068",
+    "title": "Fix: Workflow Library CRUD",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 16.4",
+    "description": "Investigate and fix reported issues with creating, editing, and deleting Workflows."
+  },
+  {
+    "id": "FRONT-069",
+    "title": "Fix: Team Creator",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 16.4",
+    "description": "Debug and fix the Team creation modal/form in the Admin > Teams section."
+  },
+  {
+    "id": "FRONT-070",
+    "title": "Fix: Metadata Edit Forms",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 16.4",
+    "description": "Fix the Edit functionality for Topics and WorkTypes to ensure Name, Color, and Status updates are persisted."
+  },
+  {
+    "id": "BACK-036",
+    "title": "Logic: Near Deadline Notifications",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: Deadline Emails",
+    "description": "Implement backend engine to scan for tasks due in 48h and email assignees."
   }
 ]

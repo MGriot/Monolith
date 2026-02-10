@@ -372,6 +372,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return await self.get(db, db_obj.id)
 
     async def notify_assignees(self, db: AsyncSession, item_id: UUID, user_ids: List[UUID], item_title: str):
+        # Refetch or use db_obj if available to get project_id
+        res = await db.execute(select(Task.project_id).filter(Task.id == item_id))
+        project_id = res.scalar()
+        
         from app.crud.crud_notification import notification as notification_crud
         from app.schemas.notification import NotificationCreate
         
@@ -383,7 +387,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                     title="New Assignment",
                     message=f"You have been assigned to task '{item_title}'.",
                     type="assignment",
-                    link=f"/tasks/{item_id}"
+                    link=f"/projects/{project_id}?task_id={item_id}"
                 )
             )
 
