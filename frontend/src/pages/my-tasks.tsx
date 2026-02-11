@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,10 @@ export default function MyTasksPage() {
       return response.data as Task[];
     },
   });
+
+  const activeTasks = useMemo(() => {
+    return (tasks || []).filter(t => !t.is_archived && !t.project?.is_archived);
+  }, [tasks]);
 
   const moveTaskMutation = useMutation({
     mutationFn: async ({ taskId, newStatus, sortIndex }: { taskId: string; newStatus: string; sortIndex?: number }) => {
@@ -153,7 +157,7 @@ export default function MyTasksPage() {
         <div className="min-h-[500px]">
           {view === 'kanban' ? (
             <KanbanBoard 
-              tasks={tasks || []} 
+              tasks={activeTasks} 
               onTaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx) : undefined })}
               onSubtaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx) : undefined })}
               onReorder={handleKanbanReorder}
@@ -173,14 +177,14 @@ export default function MyTasksPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tasks?.length === 0 ? (
+                  {activeTasks.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="h-32 text-center text-slate-500 italic">
                         You have no tasks assigned to you.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    tasks?.map((task) => (
+                    activeTasks.map((task) => (
                       <TableRow 
                         key={task.id} 
                         className="hover:bg-slate-50/50 cursor-pointer"
@@ -223,7 +227,7 @@ export default function MyTasksPage() {
             </h3>
           </div>
           <div className="min-h-[400px]">
-            <ProjectGantt tasks={tasks || []} initialShowSubtasks={true} />
+            <ProjectGantt tasks={activeTasks} initialShowSubtasks={true} />
           </div>
         </div>
       </div>

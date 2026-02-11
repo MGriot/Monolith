@@ -18,6 +18,9 @@
 ### 3. Backend Export Reliability
 - **WBS Export Logic**: Fixed an `AttributeError` in the project export endpoint. The system now correctly fetches the task hierarchy and calculates WBS codes on-the-fly before generating CSV or Excel downloads.
 
+### 4. Archive Visibility Logic
+- **My Tasks Filtering**: Implemented surgical filtering in both backend (`read_assigned_tasks`) and frontend (`MyTasksPage`) to ensure archived tasks and projects are no longer visible in the active task list, Kanban board, or schedule overview.
+
 ## Verification
 - **Export**: Manually verified that `GET /api/v1/projects/{id}/export?format=csv` no longer crashes and returns a valid file with WBS codes.
 - **Gantt**: Visual verification of the floating legend, minor ticks, and "TODAY" badge.
