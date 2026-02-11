@@ -31,13 +31,16 @@ async def read_assigned_tasks(
     Retrieve all tasks assigned to the current user.
     """
     from app.models.task import Task as TaskModel
+    from app.models.project import Project as ProjectModel
     from app.models.associations import task_assignees
     
     query = (
         select(TaskModel)
         .join(task_assignees)
+        .join(ProjectModel, TaskModel.project_id == ProjectModel.id)
         .filter(task_assignees.c.user_id == current_user.id)
         .filter(TaskModel.is_archived == False)
+        .filter(ProjectModel.is_archived == False)
         .options(
             selectinload(TaskModel.owner),
             selectinload(TaskModel.assignees),
