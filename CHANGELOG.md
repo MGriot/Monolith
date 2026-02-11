@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2026-02-11
+
+### Added
+- **Archived Project Navigation**: Added an "Open" action to archived projects, allowing users to view historical data without full restoration.
+
+### Fixed
+- **Gantt Visual Restoration**: Reinstated the floating legend, minor tick labels, and the red "TODAY" marker badge from previous stable versions.
+- **Export Crash**: Fixed `AttributeError` during project CSV/Excel exports by implementing on-the-fly WBS calculation for hierarchical data.
+- **Gantt Grid Alignment**: Synchronized row grid lines with minor ticks for improved temporal alignment.
+
 ## [2.1.0] - 2026-02-10
 
 ### Added

@@ -184,16 +184,27 @@ export default function ArchivePage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="gap-2 text-primary hover:text-primary hover:bg-primary/10 h-8"
-                          onClick={() => restoreProjectMutation.mutate(project.id)}
-                          disabled={restoreProjectMutation.isPending}
-                        >
-                          {restoreProjectMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCcw className="w-3.5 h-3.5" />}
-                          Restore
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 h-8"
+                            onClick={() => navigate(`/projects/${project.id}`)}
+                          >
+                            <FolderKanban className="w-3.5 h-3.5" />
+                            Open
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="gap-2 text-primary hover:text-primary hover:bg-primary/10 h-8"
+                            onClick={() => restoreProjectMutation.mutate(project.id)}
+                            disabled={restoreProjectMutation.isPending}
+                          >
+                            {restoreProjectMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCcw className="w-3.5 h-3.5" />}
+                            Restore
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

@@ -308,6 +308,17 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
     }
   }, [viewWindow, zoomLevel]);
 
+  const minorTicks = useMemo(() => {
+    if (!viewWindow) return [];
+    const interval = { start: viewWindow.start, end: viewWindow.end };
+    switch (zoomLevel) {
+      case 'week': return eachDayOfInterval(interval);
+      case 'month': return eachWeekOfInterval(interval);
+      case 'year': return eachMonthOfInterval(interval);
+      default: return [];
+    }
+  }, [viewWindow, zoomLevel]);
+
   if (!viewWindow || ganttItems.length === 0) {
     return (
       <div className="flex flex-col h-full items-center justify-center p-8 space-y-4 text-center">
@@ -448,6 +459,58 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
             <Download className="w-3.5 h-3.5" /> {isExporting ? '...' : 'PNG'}
           </Button>
         </div>
+
+        {/* Floating Legend */}
+        <div className="absolute top-24 right-4 flex flex-col gap-2 p-2 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-md shadow-sm z-50 pointer-events-none">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Status (Fill)</span>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm bg-slate-400" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase">Backlog</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm bg-slate-500" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase">Todo</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm bg-blue-500" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase">In Progress</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase">On Hold</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm bg-purple-500" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase">Review</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase">Done</span>
+            </div>
+          </div>
+
+          <div className="my-1 border-t border-slate-100" />
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Priority (Border)</span>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm bg-white border-2 border-blue-600" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase">Low</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm bg-white border-2 border-amber-600" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase">Medium</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm bg-white border-2 border-orange-600" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase">High</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm bg-white border-2 border-red-600" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase">Critical</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto relative" ref={ganttRef}>
@@ -483,10 +546,29 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
                 return (
                   <div
                     key={tick.toISOString()}
-                    className="absolute border-l border-slate-200 h-full flex items-center pl-2 text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap"
+                    className="absolute border-l border-slate-200 h-full flex flex-col justify-start pt-1 pl-2 text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap z-10"
                     style={{ left: `${left}%` }}
                   >
                     {label}
+                  </div>
+                );
+              })}
+
+              {/* Minor Ticks */}
+              {minorTicks?.map((tick) => {
+                const left = getPositionPercent(tick.toISOString());
+                let label = "";
+                if (zoomLevel === 'week') label = format(tick, 'd');
+                if (zoomLevel === 'month') label = format(tick, 'd');
+                if (zoomLevel === 'year') label = format(tick, 'MMM');
+
+                return (
+                  <div
+                    key={`minor-${tick.toISOString()}`}
+                    className="absolute border-l border-slate-200/50 h-4 bottom-0 flex items-end pl-1 pb-0.5"
+                    style={{ left: `${left}%` }}
+                  >
+                    <span className="text-[8px] text-slate-400 font-medium leading-none">{label}</span>
                   </div>
                 );
               })}
@@ -606,7 +688,14 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
 
             {/* Today Line */}
             {todayPos >= 0 && todayPos <= 100 && (
-              <div style={{ left: `${todayPos}%`, marginLeft: `${sidebarWidth}px` }} className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-30 pointer-events-none" />
+              <div
+                style={{ left: `${todayPos}%`, marginLeft: `${sidebarWidth}px` }}
+                className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-30 pointer-events-none"
+              >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm w-max">
+                  TODAY
+                </div>
+              </div>
             )}
 
             {/* Rows */}
@@ -681,9 +770,14 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
 
                   {/* Timeline Row */}
                   <div className="flex-1 relative h-14 py-4">
-                    {/* Grid Lines */}
+                    {/* Grid Lines (Major) */}
                     {timeTicks?.map(tick => (
-                        <div key={tick.toISOString()} className="absolute top-0 bottom-0 border-l border-slate-100 h-full" style={{ left: `${getPositionPercent(tick.toISOString())}%` }} />
+                        <div key={tick.toISOString()} className="absolute top-0 bottom-0 border-l border-slate-100 h-full z-0" style={{ left: `${getPositionPercent(tick.toISOString())}%` }} />
+                    ))}
+                    
+                    {/* Grid Lines (Minor) */}
+                    {minorTicks?.map(tick => (
+                        <div key={`grid-minor-${tick.toISOString()}`} className="absolute top-0 bottom-0 border-l border-slate-50 h-full z-0 opacity-50" style={{ left: `${getPositionPercent(tick.toISOString())}%` }} />
                     ))}
 
                     {/* Deadline Indicator */}

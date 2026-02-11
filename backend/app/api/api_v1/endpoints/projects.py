@@ -34,46 +34,41 @@ async def export_project(
         if current_user.id not in member_ids:
             raise HTTPException(status_code=403, detail="Not enough permissions")
 
-    # Fetch all tasks (flattened)
-    # We need to fetch all tasks recursively. 
-    # The current get_multi_by_project only gets top-level.
-    # Let's use a helper to get all.
-    from app.models.task import Task
-    from sqlalchemy import select
-    from sqlalchemy.orm import selectinload
+    # Fetch hierarchical tasks
+    all_tasks_tree = await crud_task.task.get_multi_by_project(db, project_id=project_id, limit=1000)
     
-    # Simple query to get everything for this project
-    query = select(Task).filter(Task.project_id == project_id).options(
-        selectinload(Task.assignees),
-        selectinload(Task.owner)
-    ).order_by(Task.sort_index.asc(), Task.created_at.asc())
+    # Apply WBS codes (need to convert to schema or ensure model has the attribute)
+    from app.core.wbs import apply_wbs_codes
+    # apply_wbs_codes works on model objects too if they have subtasks and sort_index
+    apply_wbs_codes(all_tasks_tree)
     
-    res = await db.execute(query)
-    all_tasks = res.scalars().all()
-    
-    # WBS calculation logic (frontend logic mirrored here or simple dump)
-    # Since we have the data, let's prepare the list of dicts
+    # Flatten the tree for export
     data = []
-    for t in all_tasks:
-        duration = 0
-        if t.start_date and t.due_date:
-            duration = (t.due_date - t.start_date).days + 1
-        
-        data.append({
-            "WBS": t.wbs_code or "",
-            "Title": t.title,
-            "Description": t.description or "",
-            "Status": t.status.value if hasattr(t.status, 'value') else str(t.status),
-            "Priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
-            "Start Date": t.start_date.strftime("%Y-%m-%d") if t.start_date else "",
-            "Due Date": t.due_date.strftime("%Y-%m-%d") if t.due_date else "",
-            "Deadline": t.deadline_at.strftime("%Y-%m-%d") if t.deadline_at else "",
-            "Completed At": t.completed_at.strftime("%Y-%m-%d %H:%M") if t.completed_at else "",
-            "Duration (Days)": duration,
-            "Assignees": ", ".join([u.full_name or u.email for u in t.assignees]),
-            "Milestone": "Yes" if t.is_milestone else "No",
-            "Tags": ", ".join(t.tags or [])
-        })
+    def flatten_for_export(tasks):
+        for t in tasks:
+            duration = 0
+            if t.start_date and t.due_date:
+                duration = (t.due_date - t.start_date).days + 1
+            
+            data.append({
+                "WBS": getattr(t, 'wbs_code', ""),
+                "Title": t.title,
+                "Description": t.description or "",
+                "Status": t.status.value if hasattr(t.status, 'value') else str(t.status),
+                "Priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
+                "Start Date": t.start_date.strftime("%Y-%m-%d") if t.start_date else "",
+                "Due Date": t.due_date.strftime("%Y-%m-%d") if t.due_date else "",
+                "Deadline": t.deadline_at.strftime("%Y-%m-%d") if t.deadline_at else "",
+                "Completed At": t.completed_at.strftime("%Y-%m-%d %H:%M") if t.completed_at else "",
+                "Duration (Days)": duration,
+                "Assignees": ", ".join([u.full_name or u.email for u in t.assignees]),
+                "Milestone": "Yes" if t.is_milestone else "No",
+                "Tags": ", ".join(t.tags or [])
+            })
+            if t.subtasks:
+                flatten_for_export(t.subtasks)
+
+    flatten_for_export(all_tasks_tree)
 
     df = pd.DataFrame(data)
     
