@@ -68,7 +68,7 @@ class TaskCreate(TaskBase):
     subtasks: Optional[List[TaskShortCreate]] = []
 
 class TaskUpdate(TaskBase):
-    parent_id: Optional[UUID] = None
+    pass
 
 class TaskInDBBase(TaskBase):
     id: UUID

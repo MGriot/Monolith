@@ -215,19 +215,6 @@ async def update_task(
         if current_user.id not in member_ids:
             raise HTTPException(status_code=403, detail="Not enough permissions")
             
-    # Auto-set completed_at if status changes
-    if task_in.status is not None:
-        if task_in.status == Status.DONE:
-            # If completed_at is not explicitly provided in this update
-            if "completed_at" not in task_in.model_fields_set:
-                # If not already set, set to now
-                if not task_obj.completed_at:
-                    task_in.completed_at = datetime.utcnow()
-        elif task_in.status != Status.DONE:
-            # If moving away from DONE, clear completion date unless explicitly set
-            if "completed_at" not in task_in.model_fields_set:
-                task_in.completed_at = None
-    
     try:
         task_obj = await crud_task.task.update(db=db, db_obj=task_obj, obj_in=task_in)
         return task_obj

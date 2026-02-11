@@ -115,6 +115,17 @@ export default function ProjectDetailPage() {
     },
   });
 
+  const updateProjectRegionsMutation = useMutation({
+    mutationFn: async (regions: any[]) => {
+      return api.put(`/projects/${id}`, { gantt_regions: regions });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      toast.success("Timeline regions updated");
+    },
+    onError: () => toast.error("Failed to update timeline regions")
+  });
+
   const createTaskMutation = useMutation({
     mutationFn: async (newTask: TaskFormValues) => {
       const response = await api.post('/tasks/', { ...newTask, project_id: id });
@@ -678,6 +689,8 @@ export default function ProjectDetailPage() {
                 projectStartDate={project.start_date}
                 projectDueDate={project.due_date}
                 initialShowSubtasks={true}
+                initialRegions={project.gantt_regions || []}
+                onRegionsChange={(regions) => updateProjectRegionsMutation.mutate(regions)}
               />
             </div>
           </div>

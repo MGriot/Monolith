@@ -21,6 +21,11 @@
 ### 4. Archive Visibility Logic
 - **My Tasks Filtering**: Implemented surgical filtering in both backend (`read_assigned_tasks`) and frontend (`MyTasksPage`) to ensure archived tasks and projects are no longer visible in the active task list, Kanban board, or schedule overview.
 
+### 5. Persistence & Data Integrity
+- **Persistent Gantt Regions**: Added a `gantt_regions` JSONB column to the `projects` table and updated the frontend to save/load reference zones automatically.
+- **Task Metadata Fixes**: Corrected `TaskUpdate` schema inheritance to ensure custom "Row Color" and "Conclusion Date" values are properly persisted to the database.
+- **Completion Date Logic**: Refined `CRUDTask.update` to prevent unintended resets of manually entered conclusion dates when status remains "DONE".
+
 ## Verification
 - **Export**: Manually verified that `GET /api/v1/projects/{id}/export?format=csv` no longer crashes and returns a valid file with WBS codes.
 - **Gantt**: Visual verification of the floating legend, minor ticks, and "TODAY" badge.

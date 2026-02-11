@@ -23,6 +23,7 @@ class ProjectBase(BaseModel):
     tags: Optional[List[str]] = []
     is_archived: bool = False
     archived_at: Optional[datetime] = None
+    gantt_regions: Optional[List[dict]] = []
 
 class ProjectCreate(ProjectBase):
     name: str
