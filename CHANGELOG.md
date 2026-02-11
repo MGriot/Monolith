@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - **Export Crash**: Fixed `AttributeError` during project CSV/Excel exports by implementing on-the-fly WBS calculation for hierarchical data.
 - **Gantt Grid Alignment**: Synchronized row grid lines with minor ticks for improved temporal alignment.
 - **My Tasks Filtering**: Surgically filtered out archived tasks and tasks from archived projects from the "My Tasks" page.
+- **Persistence Stability**: Resolved issues where Gantt reference zones, task conclusion dates, and row colors were not saving correctly to the database.
 
 ## [2.1.0] - 2026-02-10
 

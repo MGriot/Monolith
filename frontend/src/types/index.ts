@@ -78,6 +78,7 @@ export interface Project {
   members?: User[];
   is_archived?: boolean;
   archived_at?: string | null;
+  gantt_regions?: any[];
 }
 
 export interface Topic {

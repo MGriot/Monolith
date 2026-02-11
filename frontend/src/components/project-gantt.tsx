@@ -54,12 +54,15 @@ interface ProjectGanttProps {
   projectStartDate?: string;
   projectDueDate?: string;
   initialShowSubtasks?: boolean;
+  projectId?: string;
+  initialRegions?: TimeRegion[];
+  onRegionsChange?: (regions: TimeRegion[]) => void;
 }
 
 type GanttItem = (Task | (Subtask & { isSubtask: boolean, parentTitle: string, parentId: string })) & { rowIndex: number, projectName?: string };
 type ZoomLevel = 'day' | 'week' | 'month' | 'year';
 
-interface TimeRegion {
+export interface TimeRegion {
     id: string;
     name: string;
     start_date: string;
@@ -159,7 +162,14 @@ const getOrthogonalPath = (
 
 const ROW_HEIGHT = 56;
 
-export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, initialShowSubtasks = false }: ProjectGanttProps) {
+export default function ProjectGantt({ 
+    tasks, 
+    projectStartDate, 
+    projectDueDate, 
+    initialShowSubtasks = false,
+    initialRegions = [],
+    onRegionsChange
+}: ProjectGanttProps) {
   const [showSubtasks, setShowSubtasks] = useState(initialShowSubtasks);
   const [showCriticalPath, setShowCriticalPath] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('month');
@@ -170,7 +180,7 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
   const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
   
   // Time Regions State
-  const [timeRegions, setTimeRegions] = useState<TimeRegion[]>([]);
+  const [timeRegions, setTimeRegions] = useState<TimeRegion[]>(initialRegions);
   const [isRegionDialogOpen, setIsRegionDialogOpen] = useState(false);
   const [regionFormView, setRegionFormView] = useState<'list' | 'form'>('list');
   const [editingRegion, setEditingRegion] = useState<TimeRegion | null>(null);
@@ -189,11 +199,15 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
   const handleSaveRegion = () => {
     if(!newRegion.name || !newRegion.start_date || !newRegion.end_date) return;
     
+    let updatedRegions: TimeRegion[] = [];
     if (editingRegion) {
-        setTimeRegions(prev => prev.map(r => r.id === editingRegion.id ? { ...newRegion, id: r.id } as TimeRegion : r));
+        updatedRegions = timeRegions.map(r => r.id === editingRegion.id ? { ...newRegion, id: r.id } as TimeRegion : r);
     } else {
-        setTimeRegions(prev => [...prev, { ...newRegion, id: crypto.randomUUID() } as TimeRegion]);
+        updatedRegions = [...timeRegions, { ...newRegion, id: crypto.randomUUID() } as TimeRegion];
     }
+    
+    setTimeRegions(updatedRegions);
+    onRegionsChange?.(updatedRegions);
     
     setRegionFormView('list');
     setEditingRegion(null);
@@ -207,7 +221,9 @@ export default function ProjectGantt({ tasks, projectStartDate, projectDueDate, 
   };
 
   const handleDeleteRegion = (id: string) => {
-      setTimeRegions(prev => prev.filter(r => r.id !== id));
+      const updatedRegions = timeRegions.filter(r => r.id !== id);
+      setTimeRegions(updatedRegions);
+      onRegionsChange?.(updatedRegions);
   };
 
   const exportGantt = async () => {

@@ -41,6 +41,9 @@ async def sync_db_schema():
         # Teams
         await run_stmt(conn, "ALTER TABLE teams ADD COLUMN owner_id UUID REFERENCES users(id)", "owner_id to teams")
         
+        # Projects
+        await run_stmt(conn, "ALTER TABLE projects ADD COLUMN gantt_regions JSONB DEFAULT '[]'::jsonb", "gantt_regions to projects")
+        
         # Enums
         # PostgreSQL enum updates need specialized handling
         try:

@@ -419,7 +419,9 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 raise ValueError(f"Task is blocked by unfinished items: {', '.join(active_blockers)}")
             if not obj_data.get("completed_at"):
                 obj_data["completed_at"] = datetime.utcnow()
-        elif "status" in obj_data and obj_data["status"] != Status.DONE:
+        elif "status" in obj_data and obj_data["status"] != Status.DONE and db_obj.status == Status.DONE:
+            # ONLY clear if status is explicitly changing from DONE to something else
+            # and user didn't provide a new date (unlikely but possible)
             if "completed_at" not in obj_data:
                 obj_data["completed_at"] = None
 
