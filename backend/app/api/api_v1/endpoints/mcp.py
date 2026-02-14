@@ -3,7 +3,7 @@ from app.crud import crud_project, crud_task
 from app.db.session import AsyncSessionLocal
 from app.schemas.task import TaskCreate, TaskUpdate, SubtaskCreate, SubtaskUpdate
 from app.schemas.project import ProjectCreate, ProjectUpdate
-from app.core.enums import Status
+from app.core.enums import Status, Priority
 from uuid import UUID
 from datetime import datetime
 from typing import List, Optional
@@ -33,6 +33,24 @@ async def create_user(email: str, password: str, full_name: str = None, is_super
             return f"Successfully created user '{email}' with ID: {user_obj.id}"
         except Exception as e:
             return f"Error creating user: {str(e)}"
+
+@mcp.tool()
+async def delete_user(user_id: str) -> str:
+    """Delete a user from the system."""
+    async with AsyncSessionLocal() as db:
+        try:
+            user_obj = await crud_user.get(db, id=UUID(user_id))
+            if not user_obj:
+                return f"User with ID {user_id} not found."
+            
+            # Simple soft delete check or hard delete
+            # crud_user doesn't have a specific remove, but we can use db.delete
+            from app.models.user import User
+            await db.delete(user_obj)
+            await db.commit()
+            return f"Successfully deleted user '{user_obj.email}'"
+        except Exception as e:
+            return f"Error deleting user: {str(e)}"
 
 @mcp.tool()
 async def create_project(
@@ -179,6 +197,61 @@ async def create_task(
             return f"Error creating task: {str(e)}"
 
 @mcp.tool()
+async def update_task(
+    task_id: str,
+    title: str = None,
+    description: str = None,
+    status: str = None,
+    priority: str = None,
+    start_date: str = None,
+    due_date: str = None
+) -> str:
+    """Update an existing task."""
+    async with AsyncSessionLocal() as db:
+        try:
+            task_obj = await crud_task.task.get(db, id=UUID(task_id))
+            if not task_obj:
+                return f"Task with ID {task_id} not found."
+            
+            update_data = {}
+            if title: update_data["title"] = title
+            if description: update_data["description"] = description
+            if status:
+                try:
+                    status_member = next(s for s in Status if s.value.lower() == status.lower())
+                    update_data["status"] = status_member
+                except StopIteration:
+                    pass
+            if priority:
+                try:
+                    priority_member = next(p for p in Priority if p.value.lower() == priority.lower())
+                    update_data["priority"] = priority_member
+                except StopIteration:
+                    pass
+            if start_date: update_data["start_date"] = datetime.fromisoformat(start_date)
+            if due_date: update_data["due_date"] = datetime.fromisoformat(due_date)
+            
+            task_update = TaskUpdate(**update_data)
+            await crud_task.task.update(db, db_obj=task_obj, obj_in=task_update)
+            return f"Successfully updated task '{task_obj.title}'"
+        except Exception as e:
+            return f"Error updating task: {str(e)}"
+
+@mcp.tool()
+async def delete_task(task_id: str) -> str:
+    """Delete a task and its subtasks."""
+    async with AsyncSessionLocal() as db:
+        try:
+            task_obj = await crud_task.task.get(db, id=UUID(task_id))
+            if not task_obj:
+                return f"Task with ID {task_id} not found."
+            
+            await crud_task.task.remove(db, id=UUID(task_id))
+            return f"Successfully deleted task '{task_obj.title}'"
+        except Exception as e:
+            return f"Error deleting task: {str(e)}"
+
+@mcp.tool()
 async def create_subtask(
     task_id: str, 
     title: str, 
@@ -189,6 +262,10 @@ async def create_subtask(
     """Create a new subtask for a task. Dates in ISO format (YYYY-MM-DD)."""
     async with AsyncSessionLocal() as db:
         try:
+            parent_task = await crud_task.task.get(db, id=UUID(task_id))
+            if not parent_task:
+                return f"Parent task with ID {task_id} not found."
+
             status_member = Status.TODO
             if status:
                 try:
@@ -196,17 +273,48 @@ async def create_subtask(
                 except StopIteration:
                     pass
 
-            st_in = SubtaskCreate(
+            st_in = TaskCreate(
                 title=title,
-                task_id=UUID(task_id),
+                project_id=parent_task.project_id,
+                parent_id=UUID(task_id),
                 status=status_member,
                 start_date=datetime.fromisoformat(start_date) if start_date else None,
                 due_date=datetime.fromisoformat(due_date) if due_date else None
             )
-            st_obj = await crud_task.subtask.create(db, obj_in=st_in)
+            st_obj = await crud_task.task.create(db, obj_in=st_in)
             return f"Successfully created subtask '{title}' with ID: {st_obj.id}"
         except Exception as e:
             return f"Error creating subtask: {str(e)}"
+
+@mcp.tool()
+async def assign_task(task_id: str, user_ids: List[str]) -> str:
+    """Assign users to a task."""
+    async with AsyncSessionLocal() as db:
+        try:
+            task_obj = await crud_task.task.get(db, id=UUID(task_id))
+            if not task_obj:
+                return f"Task with ID {task_id} not found."
+            
+            uids = [UUID(uid) for uid in user_ids]
+            await crud_task.task.update(db, db_obj=task_obj, obj_in={"assignee_ids": uids})
+            return f"Successfully updated assignees for task '{task_obj.title}'"
+        except Exception as e:
+            return f"Error assigning task: {str(e)}"
+
+@mcp.tool()
+async def assign_project_member(project_id: str, user_ids: List[str]) -> str:
+    """Assign members to a project."""
+    async with AsyncSessionLocal() as db:
+        try:
+            project_obj = await crud_project.project.get(db, id=UUID(project_id))
+            if not project_obj:
+                return f"Project with ID {project_id} not found."
+            
+            uids = [UUID(uid) for uid in user_ids]
+            await crud_project.project.update(db, db_obj=project_obj, obj_in={"member_ids": uids})
+            return f"Successfully updated members for project '{project_obj.name}'"
+        except Exception as e:
+            return f"Error assigning project members: {str(e)}"
 
 @mcp.tool()
 async def update_task_status(task_id: str, status: str) -> str:
