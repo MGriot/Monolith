@@ -48,7 +48,8 @@ import {
   ArrowUp,
   ArrowDown,
   Plus,
-  Trash2
+  Trash2,
+  Link
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -66,6 +67,7 @@ interface ProjectGanttProps {
   projectId?: string;
   initialRegions?: TimeRegion[];
   onRegionsChange?: (regions: TimeRegion[]) => void;
+  showProjectNames?: boolean;
 }
 
 type GanttItem = (Task | (Subtask & { isSubtask: boolean, parentTitle: string, parentId: string })) & { rowIndex: number, projectName?: string };
@@ -221,7 +223,8 @@ export default function ProjectGantt({
   projectDueDate,
   initialShowSubtasks = false,
   initialRegions = [],
-  onRegionsChange
+  onRegionsChange,
+  showProjectNames = true
 }: ProjectGanttProps) {
   const [showSubtasks, setShowSubtasks] = useState(initialShowSubtasks);
   const [showCriticalPath, setShowCriticalPath] = useState(false);
@@ -322,7 +325,8 @@ export default function ProjectGantt({
             parentTitle: parent?.title || "",
             parentId: parent?.id || "",
             projectName: task.project?.name || parent?.project?.name || "",
-            rowIndex: currentRow++
+            rowIndex: currentRow++,
+            hierarchyLevel: level
           } as any);
         }
 
@@ -494,6 +498,20 @@ export default function ProjectGantt({
   const todayPos = getPositionPercent(new Date().toISOString());
   const svgHeight = ganttItems.length * ROW_HEIGHT;
 
+  // Helper to check if a task is a predecessor (other tasks depend on it)
+  const isPredecessor = (taskId: string) => {
+    return ganttItems.some((item: any) => {
+      const blockedBy = item.blocked_by || [];
+      const blockedByIds = item.blocked_by_ids || [];
+      return blockedBy.some((dep: any) => dep.predecessor_id === taskId) || blockedByIds.includes(taskId);
+    });
+  };
+
+  // Helper to check if a task has dependencies (is blocked by other tasks)
+  const hasBlockers = (item: any) => {
+    return (item.blocked_by && item.blocked_by.length > 0) || (item.blocked_by_ids && item.blocked_by_ids.length > 0);
+  };
+
   // IMPROVED: Zoom-aware arrow markers with proportional scaling
   const arrowMarkerSize = useMemo(() => {
     const scale = Math.max(0.4, Math.min(1, dayWidth / 60));
@@ -506,10 +524,12 @@ export default function ProjectGantt({
     };
   }, [dayWidth]);
 
-  // IMPROVED: Zoom-aware stroke width
+  // IMPROVED: Zoom-aware stroke width with better minimum threshold
   const getStrokeWidth = (isCritical: boolean) => {
     const baseWidth = isCritical ? 3 : 2;
-    return Math.max(0.5, baseWidth * (dayWidth / 60));
+    // Improved scaling: minimum 1px, scales more gracefully
+    const scaleFactor = Math.max(0.33, dayWidth / 60);
+    return Math.max(1, baseWidth * scaleFactor);
   };
 
   return (
@@ -631,6 +651,19 @@ export default function ProjectGantt({
           <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-sm bg-white border-2 border-red-600" />
             <span className="text-[9px] font-bold text-slate-500 uppercase">Critical</span>
+          </div>
+        </div>
+
+        <div className="my-1 border-t border-slate-100" />
+        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Other</span>
+        <div className="grid grid-cols-1 gap-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="w-0.5 h-2.5 bg-emerald-600" />
+            <span className="text-[9px] font-bold text-slate-500 uppercase">Actual Completion</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-0.5 h-2.5 bg-purple-500" />
+            <span className="text-[9px] font-bold text-slate-500 uppercase">Deadline</span>
           </div>
         </div>
       </div>
@@ -841,8 +874,10 @@ export default function ProjectGantt({
                       if (renderedSubtasks.length === 0) return;
                       const minChildX = Math.min(...renderedSubtasks.map(st => getPositionPx(st.start_date!)));
 
-                      const spineOffset = 20;
-                      const sharedSpineX = Math.min(startX, minChildX) - spineOffset;
+                      // FIXED: Ensure spine stays within visible bounds (minimum 10px from left edge)
+                      const spineOffset = Math.max(10, 20 * (dayWidth / 60));
+                      const idealSpineX = Math.min(startX, minChildX) - spineOffset;
+                      const sharedSpineX = Math.max(10, idealSpineX);
 
                       lines.push(
                         <g key={`hier-group-${task.id}`}>
@@ -957,15 +992,16 @@ export default function ProjectGantt({
             {ganttItems.map((item: any) => {
               const isSub = 'isSubtask' in item;
               const isWbsRoot = !isSub && !item.parent_id;
+              const hasColor = isWbsRoot && item.color;
 
               return (
                 <div
                   key={item.id}
                   className={cn(
                     "flex border-b border-slate-100 hover:bg-slate-50 transition-colors group relative",
-                    (!isWbsRoot || !item.color) && (isWbsRoot ? "bg-slate-50/40" : "")
+                    !hasColor && (isWbsRoot ? "bg-slate-50/40" : "")
                   )}
-                  style={isWbsRoot && item.color ? { backgroundColor: `${item.color}33` } : {}}
+                  style={hasColor ? { backgroundColor: `${item.color}15` } : {}}
                 >
                   {/* Sidebar Cells */}
                   <div className="sticky left-0 z-20 flex bg-white shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
@@ -980,11 +1016,29 @@ export default function ProjectGantt({
                       >
                         {col.id === 'wbs' && <span className="font-mono text-[10px] text-slate-400">{item.wbs_code}</span>}
                         {col.id === 'title' && (
-                          <div className="flex flex-col min-w-0">
-                            <span className={cn("truncate font-medium", isSub ? "pl-4 text-slate-600" : "text-slate-900")}>
-                              {item.title}
-                            </span>
-                            {isSub && <span className="text-[8px] text-slate-400 pl-4 truncate">In {item.projectName}</span>}
+                          <div className="flex flex-col min-w-0 w-full">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span
+                                className={cn("truncate font-medium")}
+                                style={{
+                                  paddingLeft: `${(item.hierarchyLevel || 0) * 12}px`,
+                                  color: item.hierarchyLevel === 0 ? 'inherit' : '#64748b'
+                                }}
+                              >
+                                {item.title}
+                              </span>
+                              {hasBlockers(item) && (
+                                <span title="This task depends on other tasks">
+                                  <Link className="w-3 h-3 text-red-500 shrink-0" />
+                                </span>
+                              )}
+                              {isPredecessor(item.id) && (
+                                <span title="Other tasks depend on this one">
+                                  <Link className="w-3 h-3 text-blue-500 shrink-0" />
+                                </span>
+                              )}
+                            </div>
+                            {showProjectNames && isSub && <span className="text-[8px] text-slate-400 truncate" style={{ paddingLeft: `${(item.hierarchyLevel || 0) * 12}px` }}>In {item.projectName}</span>}
                           </div>
                         )}
                         {col.id === 'assignee' && (
@@ -1112,6 +1166,37 @@ export default function ProjectGantt({
                             <div className="absolute right-1 top-1 text-[8px] animate-pulse">⚠️</div>
                           )}
                         </div>
+
+                        {/* Conclusion Date Indicator */}
+                        {(() => {
+                          const conclusionDate = item.conclusion_date || (item.status.toLowerCase() === 'done' ? new Date().toISOString() : null);
+                          if (!conclusionDate) return null;
+
+                          const conclusionPos = getPositionPercent(conclusionDate);
+                          const barStart = getPositionPercent(item.start_date!);
+                          const barEnd = getPositionPercent(item.due_date || item.start_date!);
+
+                          // Only show if conclusion is within or beyond the bar range
+                          if (conclusionPos < barStart) return null;
+
+                          const relativePos = conclusionPos - barStart;
+                          const barWidth = barEnd - barStart;
+                          const positionInBar = barWidth > 0 ? (relativePos / barWidth) * 100 : 0;
+
+                          return (
+                            <div
+                              className="absolute w-0.5 h-9 bg-emerald-600 z-20 shadow-md"
+                              style={{
+                                left: `${Math.min(positionInBar, 100)}%`,
+                                top: '12px'
+                              }}
+                              title={`Actually completed: ${format(parseISO(conclusionDate), 'PPP')}`}
+                            >
+                              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-emerald-600 rounded-full" />
+                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-emerald-600 rounded-full" />
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -1208,7 +1293,7 @@ export default function ProjectGantt({
                 </div>
                 <div className="space-y-2">
                   <Label>Text Color</Label>
-                    <div className="flex gap-2">
+                  <div className="flex gap-2">
                     <Input type="color" className="w-10 p-1" value={newRegion.text_color} onChange={(e) => setNewRegion({ ...newRegion, text_color: e.target.value })} />
                     <Input value={newRegion.text_color} onChange={(e) => setNewRegion({ ...newRegion, text_color: e.target.value })} placeholder="#000000" />
                   </div>

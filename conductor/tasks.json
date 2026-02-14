@@ -1124,6 +1124,15 @@
         "linked_req": "PRD Section 4.4: MCP Module",
         "description": "Add missing MCP tools: delete_user, update_task, delete_task, project member management, and task assignment. Fix create_subtask schema mismatch.",
         "verification_method": "Run test_mcp_standalone.py with new tool tests."
+      },
+      {
+        "id": "FRONT-071",
+        "title": "Fix: project-gantt.tsx TypeScript Errors",
+        "status": "done",
+        "priority": "critical",
+        "linked_req": "Infrastructure / Docker Build",
+        "description": "Fix TS2322 error by removing unsupported 'title' prop from Lucide Link icons and wrapping them in spans.",
+        "verification_method": "npx tsc -p frontend/tsconfig.app.json --noEmit"
       }
     ]
     
