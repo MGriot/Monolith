@@ -1106,6 +1106,24 @@
     "status": "done",
     "priority": "high",
     "linked_req": "User Request: Deadline Emails",
-    "description": "Implement backend engine to scan for tasks due in 48h and email assignees."
-  }
-]
+        "description": "Implement backend engine to scan for tasks due in 48h and email assignees."
+      },
+      {
+        "id": "UX-007",
+        "title": "Gantt: Thermometer Progress Visualization",
+        "status": "done",
+        "priority": "medium",
+        "linked_req": "UX Refinement",
+        "description": "Implement high-contrast progress bars with 20% opacity duration tracks and dynamic label coloring for improved readability."
+      },
+      {
+        "id": "BACK-037",
+        "title": "Enhance MCP Module: Admin Tools & Fixes",
+        "status": "done",
+        "priority": "medium",
+        "linked_req": "PRD Section 4.4: MCP Module",
+        "description": "Add missing MCP tools: delete_user, update_task, delete_task, project member management, and task assignment. Fix create_subtask schema mismatch.",
+        "verification_method": "Run test_mcp_standalone.py with new tool tests."
+      }
+    ]
+    
