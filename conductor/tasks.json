@@ -1151,5 +1151,14 @@
     "linked_req": "User Request: Auto-set Done Date",
     "description": "Refine CRUDTask update logic to ensure completed_at is automatically set to current UTC time whenever status is changed to DONE.",
     "verification_method": "Set a task to DONE via API without providing completed_at and verify timestamp is set."
+  },
+  {
+    "id": "FRONT-073",
+    "title": "Fix: Task Edit Form completed_at initialization",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Bug Report: Conclusion Date Persistence",
+    "description": "Add missing completed_at field to initialValues in TaskForm within project-detail.tsx to ensure existing conclusion dates are loaded when editing.",
+    "verification_method": "Edit a completed task and verify the conclusion date is prepopulated in the form."
   }
 ]

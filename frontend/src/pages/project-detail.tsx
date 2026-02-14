@@ -829,6 +829,7 @@ export default function ProjectDetailPage() {
               start_date: editingTask.start_date ? editingTask.start_date.split('T')[0] : '',
               due_date: editingTask.due_date ? editingTask.due_date.split('T')[0] : '',
               deadline_at: editingTask.deadline_at ? editingTask.deadline_at.split('T')[0] : '',
+              completed_at: editingTask.completed_at ? editingTask.completed_at.split('T')[0] : '',
               assignee_ids: editingTask.assignees?.map(u => u.id) || [],
               parent_id: editingTask.parent_id,
               color: editingTask.color
