@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -69,7 +70,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
     formState: { errors },
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
-    defaultValues: {
+    defaultValues: useMemo(() => ({
       status: "Todo",
       priority: "Medium",
       is_milestone: false,
@@ -81,7 +82,11 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
       type_ids: [],
       color: null,
       ...initialValues,
-    },
+      start_date: initialValues?.start_date?.split('T')[0] || null,
+      due_date: initialValues?.due_date?.split('T')[0] || null,
+      deadline_at: initialValues?.deadline_at?.split('T')[0] || null,
+      completed_at: initialValues?.completed_at?.split('T')[0] || null,
+    }), [initialValues]),
   });
 
   const selectedAssignees = watch("assignee_ids") || [];

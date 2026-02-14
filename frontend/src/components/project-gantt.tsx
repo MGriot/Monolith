@@ -1169,7 +1169,7 @@ export default function ProjectGantt({
 
                         {/* Conclusion Date Indicator */}
                         {(() => {
-                          const conclusionDate = item.conclusion_date || (item.status.toLowerCase() === 'done' ? new Date().toISOString() : null);
+                          const conclusionDate = item.completed_at;
                           if (!conclusionDate) return null;
 
                           const conclusionPos = getPositionPercent(conclusionDate);

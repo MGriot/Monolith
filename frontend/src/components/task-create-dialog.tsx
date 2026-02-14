@@ -40,7 +40,19 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
   const createTaskMutation = useMutation({
     mutationFn: async (newTask: TaskFormValues) => {
       if (!selectedProjectId) throw new Error("Please select a project first.");
-      return api.post('/tasks/', { ...newTask, project_id: selectedProjectId });
+      
+      const formatDate = (d?: string | null) => (d && d.trim()) ? new Date(d).toISOString() : null;
+      
+      const formattedTask = {
+        ...newTask,
+        project_id: selectedProjectId,
+        start_date: formatDate(newTask.start_date),
+        due_date: formatDate(newTask.due_date),
+        deadline_at: formatDate(newTask.deadline_at),
+        completed_at: formatDate(newTask.completed_at),
+      };
+      
+      return api.post('/tasks/', formattedTask);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
