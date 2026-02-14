@@ -204,7 +204,9 @@ async def update_task(
     status: str = None,
     priority: str = None,
     start_date: str = None,
-    due_date: str = None
+    due_date: str = None,
+    deadline_at: str = None,
+    is_milestone: bool = None
 ) -> str:
     """Update an existing task."""
     async with AsyncSessionLocal() as db:
@@ -230,6 +232,8 @@ async def update_task(
                     pass
             if start_date: update_data["start_date"] = datetime.fromisoformat(start_date)
             if due_date: update_data["due_date"] = datetime.fromisoformat(due_date)
+            if deadline_at: update_data["deadline_at"] = datetime.fromisoformat(deadline_at)
+            if is_milestone is not None: update_data["is_milestone"] = is_milestone
             
             task_update = TaskUpdate(**update_data)
             await crud_task.task.update(db, db_obj=task_obj, obj_in=task_update)
@@ -315,6 +319,26 @@ async def assign_project_member(project_id: str, user_ids: List[str]) -> str:
             return f"Successfully updated members for project '{project_obj.name}'"
         except Exception as e:
             return f"Error assigning project members: {str(e)}"
+
+@mcp.resource("tasks://details/{task_id}")
+async def get_task_details(task_id: str) -> str:
+    """Get detailed information about a specific task."""
+    async with AsyncSessionLocal() as db:
+        task_obj = await crud_task.task.get(db, id=UUID(task_id))
+        if not task_obj:
+            return f"Task with ID {task_id} not found."
+        
+        return (
+            f"Title: {task_obj.title}\n"
+            f"ID: {task_obj.id}\n"
+            f"Status: {task_obj.status}\n"
+            f"Priority: {task_obj.priority}\n"
+            f"Start Date: {task_obj.start_date}\n"
+            f"Due Date: {task_obj.due_date}\n"
+            f"Deadline: {task_obj.deadline_at}\n"
+            f"Parent ID: {task_obj.parent_id}\n"
+            f"Project ID: {task_obj.project_id}"
+        )
 
 @mcp.tool()
 async def update_task_status(task_id: str, status: str) -> str:
