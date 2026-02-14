@@ -1106,33 +1106,50 @@
     "status": "done",
     "priority": "high",
     "linked_req": "User Request: Deadline Emails",
-        "description": "Implement backend engine to scan for tasks due in 48h and email assignees."
-      },
-      {
-        "id": "UX-007",
-        "title": "Gantt: Thermometer Progress Visualization",
-        "status": "done",
-        "priority": "medium",
-        "linked_req": "UX Refinement",
-        "description": "Implement high-contrast progress bars with 20% opacity duration tracks and dynamic label coloring for improved readability."
-      },
-      {
-        "id": "BACK-037",
-        "title": "Enhance MCP Module: Admin Tools & Fixes",
-        "status": "done",
-        "priority": "medium",
-        "linked_req": "PRD Section 4.4: MCP Module",
-        "description": "Add missing MCP tools: delete_user, update_task, delete_task, project member management, and task assignment. Fix create_subtask schema mismatch.",
-        "verification_method": "Run test_mcp_standalone.py with new tool tests."
-      },
-      {
-        "id": "FRONT-071",
-        "title": "Fix: project-gantt.tsx TypeScript Errors",
-        "status": "done",
-        "priority": "critical",
-        "linked_req": "Infrastructure / Docker Build",
-        "description": "Fix TS2322 error by removing unsupported 'title' prop from Lucide Link icons and wrapping them in spans.",
-        "verification_method": "npx tsc -p frontend/tsconfig.app.json --noEmit"
-      }
-    ]
-    
+    "description": "Implement backend engine to scan for tasks due in 48h and email assignees."
+  },
+  {
+    "id": "UX-007",
+    "title": "Gantt: Thermometer Progress Visualization",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "UX Refinement",
+    "description": "Implement high-contrast progress bars with 20% opacity duration tracks and dynamic label coloring for improved readability."
+  },
+  {
+    "id": "BACK-037",
+    "title": "Enhance MCP Module: Admin Tools & Fixes",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 4.4: MCP Module",
+    "description": "Add missing MCP tools: delete_user, update_task, delete_task, project member management, and task assignment. Fix create_subtask schema mismatch.",
+    "verification_method": "Run test_mcp_standalone.py with new tool tests."
+  },
+  {
+    "id": "FRONT-071",
+    "title": "Fix: project-gantt.tsx TypeScript Errors",
+    "status": "done",
+    "priority": "critical",
+    "linked_req": "Infrastructure / Docker Build",
+    "description": "Fix TS2322 error by removing unsupported 'title' prop from Lucide Link icons and wrapping them in spans.",
+    "verification_method": "npx tsc -p frontend/tsconfig.app.json --noEmit"
+  },
+  {
+    "id": "FRONT-072",
+    "title": "Fix: Task Conclusion Date Persistence & Display",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "Bug Report: Conclusion Date",
+    "description": "Fix field name mismatch in Gantt (conclusion_date -> completed_at), format dates in TaskForm for correct display, and ensure ISO formatting on all creation paths.",
+    "verification_method": "Check Gantt for correct completion markers; Verify dates appear in TaskForm when editing."
+  },
+  {
+    "id": "BACK-038",
+    "title": "Logic: Auto-set Completion Date",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "User Request: Auto-set Done Date",
+    "description": "Refine CRUDTask update logic to ensure completed_at is automatically set to current UTC time whenever status is changed to DONE.",
+    "verification_method": "Set a task to DONE via API without providing completed_at and verify timestamp is set."
+  }
+]

@@ -420,10 +420,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if not obj_data.get("completed_at"):
                 obj_data["completed_at"] = datetime.utcnow()
         elif "status" in obj_data and obj_data["status"] != Status.DONE and db_obj.status == Status.DONE:
-            # ONLY clear if status is explicitly changing from DONE to something else
-            # and user didn't provide a new date (unlikely but possible)
-            if "completed_at" not in obj_data:
-                obj_data["completed_at"] = None
+            # Clear completed_at if moving away from DONE
+            obj_data["completed_at"] = None
 
         # 3. Dependency Logic: prevent circularity
         if new_blocker_ids is not None:
