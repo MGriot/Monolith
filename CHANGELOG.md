@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.1] - 2026-02-16
+
+### Added
+- **Gantt Logic Documentation**: Created a detailed technical explanation of the Gantt chart's coordinate system, bar construction, and relationship routing in `docs/explanation/gantt-logic.md`.
+
 ## [2.3.0] - 2026-02-16
 
 ### Added
