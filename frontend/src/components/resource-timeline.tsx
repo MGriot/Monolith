@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef } from 'react';
 import { 
   format, 
-  differenceInDays, 
+  differenceInCalendarDays, 
   startOfMonth, 
   endOfMonth, 
   eachMonthOfInterval,
@@ -13,6 +13,7 @@ import {
   parseISO,
   min,
   max,
+  startOfDay
 } from 'date-fns';
 import { toPng } from 'html-to-image';
 import { cn } from '@/lib/utils';
@@ -112,7 +113,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
   }, [tasks, users]);
 
   const viewWindow = useMemo(() => {
-    const dates: Date[] = [];
+    const dates: Date[] = [new Date()];
     
     tasks.forEach(task => {
       const recurse = (t: Task) => {
@@ -146,7 +147,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
     
     switch (zoomLevel) {
       case 'day': return eachDayOfInterval(interval);
-      case 'week': return eachWeekOfInterval(interval);
+      case 'week': return eachWeekOfInterval(interval, { weekStartsOn: 1 });
       case 'month': return eachMonthOfInterval(interval);
       case 'year': return eachYearOfInterval(interval);
     }
@@ -161,31 +162,48 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
     );
   }
 
-  const totalDays = differenceInDays(viewWindow.end, viewWindow.start) + 1;
+  const totalDays = differenceInCalendarDays(viewWindow.end, viewWindow.start) + 1;
   const dayWidth = ZOOM_CONFIG[zoomLevel].scale;
   const containerWidth = totalDays * dayWidth;
 
-  const getPositionPercent = (dateStr: string) => {
-    const date = parseISO(dateStr);
-    const daysFromStart = differenceInDays(date, viewWindow.start);
-    return (daysFromStart / totalDays) * 100;
+  // IMPROVED: High-precision pixel positioning using calendar days to avoid drift during DST changes
+  const getPositionPx = (dateInput: string | Date) => {
+    if (!viewWindow) return 0;
+    const date = typeof dateInput === 'string' ? parseISO(dateInput) : dateInput;
+    
+    // Calculate full calendar days from view window start
+    const days = differenceInCalendarDays(date, viewWindow.start);
+    
+    // Calculate intra-day fraction correctly (DST-safe)
+    const dayStart = startOfDay(date);
+    const msIntoDay = date.getTime() - dayStart.getTime();
+    const fraction = msIntoDay / (24 * 60 * 60 * 1000);
+    
+    return (days + fraction) * dayWidth;
   };
 
-  const getWidthPercent = (startStr: string, endStr: string) => {
+  const getWidthPx = (startStr: string, endStr: string) => {
+    if (!viewWindow) return 0;
     const start = parseISO(startStr);
     const end = parseISO(endStr);
-    const duration = differenceInDays(end, start) + 1;
-    return (duration / totalDays) * 100;
+    
+    // Precise duration: (calendar days diff) + (end fraction) - (start fraction) + 1 full day
+    const days = differenceInCalendarDays(end, start);
+    const startFrac = (start.getTime() - startOfDay(start).getTime()) / (24 * 60 * 60 * 1000);
+    const endFrac = (end.getTime() - startOfDay(end).getTime()) / (24 * 60 * 60 * 1000);
+    
+    return (days + 1 + endFrac - startFrac) * dayWidth;
   };
 
   const getBarColor = (item: any) => {
-    if (item.status === 'Done' || item.status === 'done') return "bg-emerald-500 border-emerald-600";
-    const priority = item.priority || 'Medium';
+    const status = item.status?.toLowerCase() || '';
+    if (status === 'done') return "bg-emerald-500 border-emerald-600";
+    const priority = item.priority?.toLowerCase() || 'medium';
     switch (priority) {
-      case 'Critical': return "bg-red-500 border-red-600";
-      case 'High': return "bg-orange-500 border-orange-600";
-      case 'Medium': return "bg-amber-500 border-amber-600";
-      case 'Low': return "bg-blue-500 border-blue-600";
+      case 'critical': return "bg-red-500 border-red-600";
+      case 'high': return "bg-orange-500 border-orange-600";
+      case 'medium': return "bg-amber-500 border-amber-600";
+      case 'low': return "bg-blue-500 border-blue-600";
       default: return "bg-slate-500 border-slate-600";
     }
   };
@@ -197,7 +215,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
     if (direction === 'out' && currentIndex < levels.length - 1) setZoomLevel(levels[currentIndex + 1]);
   };
 
-  const todayPos = getPositionPercent(new Date().toISOString());
+  const todayPx = getPositionPx(new Date());
 
   return (
     <div className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -232,7 +250,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
             </div>
             <div className="flex-1 relative h-10 flex items-center">
               {timeTicks.map((tick) => {
-                const left = getPositionPercent(tick.toISOString());
+                const left = getPositionPx(tick);
                 let label = format(tick, 'MMM');
                 if (zoomLevel === 'day') label = format(tick, 'dd MMM');
                 if (zoomLevel === 'week') label = `W${format(tick, 'ww')}`;
@@ -242,7 +260,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
                   <div 
                     key={tick.toISOString()} 
                     className="absolute border-l border-slate-200 h-full flex items-center pl-2 text-[9px] font-bold text-slate-400 uppercase"
-                    style={{ left: `${left}%` }}
+                    style={{ left: `${left}px` }}
                   >
                     {label}
                   </div>
@@ -254,10 +272,10 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
           {/* Rows */}
           <div className="relative">
             {/* Today Line */}
-            {todayPos >= 0 && todayPos <= 100 && (
+            {todayPx >= 0 && todayPx <= containerWidth && (
               <div 
                 className="absolute top-0 bottom-0 w-px bg-red-500 z-10 pointer-events-none ml-48"
-                style={{ left: `${todayPos}%` }}
+                style={{ left: `${todayPx}px` }}
               />
             )}
 
@@ -279,18 +297,19 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
                     <div 
                       key={tick.toISOString()} 
                       className="absolute top-0 bottom-0 border-l border-slate-50 h-full"
-                      style={{ left: `${getPositionPercent(tick.toISOString())}%` }}
+                      style={{ left: `${getPositionPx(tick)}px` }}
                     />
                   ))}
 
                   {/* Task Bars */}
                   {res.tasks.map((task, idx) => {
-                    const pos = getPositionPercent(task.start_date!);
-                    const width = getWidthPercent(task.start_date!, getEffectiveEndDate(task)!);
-                    const isM = task.is_milestone || task.start_date === getEffectiveEndDate(task);
+                    const start = task.start_date!;
+                    const end = getEffectiveEndDate(task)!;
+                    const pos = getPositionPx(start);
+                    const width = getWidthPx(start, end);
+                    const isM = task.is_milestone || start === end;
                     
                     // Simple overlap adjustment (stacking bars if they overlap)
-                    // In a real production app, we'd use a more complex packing algorithm
                     const top = (idx % 2 === 0) ? '10px' : '30px';
                     const height = '18px';
 
@@ -303,8 +322,8 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
                           isM && "w-3 h-3 rotate-45 border-none"
                         )}
                         style={{ 
-                          left: `${pos}%`, 
-                          width: isM ? '12px' : `${width}%`,
+                          left: `${pos}px`, 
+                          width: isM ? '12px' : `${width}px`,
                           top: isM ? '22px' : top,
                           height: isM ? '12px' : height,
                           opacity: 0.9

@@ -155,13 +155,37 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             </Button>
           </div>
         </TableCell>
-        <TableCell className="py-2">
-          {task.topic && <Badge variant="secondary" className="text-[9px] font-bold bg-slate-100 text-slate-600 border-none px-1.5">{task.topic}</Badge>}
+        <TableCell className="py-2 text-center">
+          {(task.topics && task.topics.length > 0) ? (
+            <div className="flex flex-wrap gap-1 justify-center">
+              {task.topics.map(t => (
+                <Badge key={t.id} variant="secondary" className="text-[9px] font-bold bg-slate-100 border-none px-1.5" style={{ color: t.color }}>{t.name}</Badge>
+              ))}
+            </div>
+          ) : (
+            (task.topic_ref?.name || task.topic) && (
+              <Badge variant="secondary" className="text-[9px] font-bold bg-slate-100 text-slate-600 border-none px-1.5" style={{ color: task.topic_ref?.color }}>
+                {task.topic_ref?.name || task.topic}
+              </Badge>
+            )
+          )}
         </TableCell>
         <TableCell className="py-2 text-center">
-          <span className="text-[10px] font-black text-slate-500">{duration > 0 ? `${duration}d` : '-'}</span>
+          {(task.types && task.types.length > 0) ? (
+            <div className="flex flex-wrap gap-1 justify-center">
+              {task.types.map(t => (
+                <Badge key={t.id} variant="outline" className="text-[9px] font-bold px-1.5 h-5">{t.name}</Badge>
+              ))}
+            </div>
+          ) : (
+            (task.type_ref?.name || task.type) && (
+              <Badge variant="outline" className="text-[9px] font-bold px-1.5 h-5">
+                {task.type_ref?.name || task.type}
+              </Badge>
+            )
+          )}
         </TableCell>
-        <TableCell className="py-2">
+        <TableCell className="py-2 text-center">
           <Badge variant="outline" className={cn(
             "capitalize text-[9px] font-bold px-1.5 h-5",
             getStatusColors(task.status).bg,
@@ -169,7 +193,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             getStatusColors(task.status).border
           )}>{task.status}</Badge>
         </TableCell>
-        <TableCell className="py-2">
+        <TableCell className="py-2 text-center">
           <Badge variant="outline" className={cn(
             "capitalize text-[9px] font-bold px-1.5 h-5",
             getPriorityColors(task.priority).bg,
@@ -180,8 +204,8 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
           </Badge>
         </TableCell>
         <TableCell className="py-2">
-          <div className="flex -space-x-1.5 overflow-hidden">
-            {task.assignees?.map((u) => (
+          <div className="flex -space-x-1.5 overflow-hidden justify-center">
+            {task.assignees && task.assignees.length > 0 ? task.assignees.map((u) => (
               <div
                 key={u.id}
                 className="inline-block h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center shrink-0 shadow-sm"
@@ -189,8 +213,18 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
               >
                 <UserIcon className="w-2.5 h-2.5 text-slate-500" />
               </div>
-            ))}
+            )) : (
+              <span className="text-[10px] text-slate-400 italic">Unassigned</span>
+            )}
           </div>
+        </TableCell>
+        <TableCell className="py-2 text-center">
+          <span className="text-[10px] font-black text-slate-500">{duration > 0 ? `${duration}d` : '-'}</span>
+        </TableCell>
+        <TableCell className="py-2">
+          <span className="text-[10px] font-medium text-slate-500">
+            {task.start_date ? new Date(task.start_date).toLocaleDateString() : '-'}
+          </span>
         </TableCell>
         <TableCell className="py-2">
           <span className="text-[10px] font-medium text-slate-500">
@@ -237,11 +271,13 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
             <TableHead className="w-16 text-[10px] font-black uppercase tracking-widest text-slate-500">WBS</TableHead>
             <TableHead className="min-w-[200px] text-[10px] font-black uppercase tracking-widest text-slate-500">Task</TableHead>
             <TableHead className="w-10"></TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Topic</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Type</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Status</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Priority</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Assignees</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Days</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Topic</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Status</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Priority</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Assignees</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Start</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Concluded</TableHead>
             <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-slate-500">Due / Deadline</TableHead>
           </TableRow>
@@ -249,7 +285,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
         <TableBody>
           {tasks.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="h-32 text-center text-slate-500 italic text-sm">
+              <TableCell colSpan={13} className="h-32 text-center text-slate-500 italic text-sm">
                 No tasks found in this project.
               </TableCell>
             </TableRow>

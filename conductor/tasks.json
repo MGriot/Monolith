@@ -1160,5 +1160,23 @@
     "linked_req": "Bug Report: Conclusion Date Persistence",
     "description": "Add missing completed_at field to initialValues in TaskForm within project-detail.tsx to ensure existing conclusion dates are loaded when editing.",
     "verification_method": "Edit a completed task and verify the conclusion date is prepopulated in the form."
+  },
+  {
+    "id": "BACK-039",
+    "title": "Multi-Project Export (Summary/Details)",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: Multi-project export",
+    "description": "Implement GET /projects/export endpoint to export multiple projects (active/archived) with Summary (projects only) or Details (projects + tasks + subtasks explosion) in CSV/Excel formats.",
+    "verification_method": "Test with curl: GET /api/v1/projects/export?include_archived=false&mode=summary"
+  },
+  {
+    "id": "FRONT-074",
+    "title": "Multi-Project Export UI",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: Multi-project export",
+    "description": "Add Export buttons with Summary/Details toggle and CSV/Excel format selection to Projects List and Archive pages.",
+    "verification_method": "Visually verify export buttons and functionality on Projects and Archive pages."
   }
 ]

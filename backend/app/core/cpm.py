@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 from uuid import UUID
 from app.schemas.task import Task
@@ -33,7 +33,10 @@ def calculate_cpm(tasks: List[Task]):
     # LF (Late Finish) for a task is the minimum LS of its successors.
     # For tasks with no successors, LF = project_finish_date (max of all due_dates).
     
-    project_finish = max((t.due_date for t in all_tasks.values() if t.due_date), default=datetime.utcnow())
+    def get_end_date(t: Task) -> Optional[datetime]:
+        return t.completed_at or t.due_date or t.deadline_at or t.start_date
+
+    project_finish = max((get_end_date(t) for t in all_tasks.values() if get_end_date(t)), default=datetime.utcnow())
     
     # Initialize slack with a large number or relative to project finish
     for t in all_tasks.values():
@@ -82,10 +85,11 @@ def calculate_cpm(tasks: List[Task]):
             
             lf = min(successor_starts) if successor_starts else project_finish
             
-            # Constrain by its own due_date if it was explicitly set
-            if task.due_date and task.due_date < lf:
+            # Constrain by its own end_date if it was explicitly set
+            eff_end = get_end_date(task)
+            if eff_end and eff_end < lf:
                 # This task has 'negative slack' if it's already past its dependency limit,
-                # but for this calculation we'll use its due_date.
+                # but for this calculation we'll use its end_date.
                 pass 
 
         memo_lf[task_id] = lf
@@ -93,12 +97,13 @@ def calculate_cpm(tasks: List[Task]):
 
     # Calculate Slack
     for tid, task in all_tasks.items():
-        if not task.due_date:
+        eff_end = get_end_date(task)
+        if not eff_end:
             continue
             
         lf = get_late_finish(tid)
-        # Slack = LF - EF (due_date)
-        slack = (lf - task.due_date).days
+        # Slack = LF - EF (effective end date)
+        slack = (lf - eff_end).days
         task.slack_days = max(0, slack)
         
     # Mark Critical Path (Slack == 0)

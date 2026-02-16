@@ -21,7 +21,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 selectinload(Project.type_ref),
                 selectinload(Project.topics),
                 selectinload(Project.types),
-                selectinload(Project.members)
+                selectinload(Project.members),
+                selectinload(Project.owner)
             )
         )
         return result.scalars().first()
@@ -40,7 +41,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 selectinload(Project.type_ref),
                 selectinload(Project.topics),
                 selectinload(Project.types),
-                selectinload(Project.members)
+                selectinload(Project.members),
+                selectinload(Project.owner)
             )
             .offset(skip)
             .limit(limit)
@@ -142,7 +144,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 selectinload(Project.type_ref),
                 selectinload(Project.topics),
                 selectinload(Project.types),
-                selectinload(Project.members)
+                selectinload(Project.members),
+                selectinload(Project.owner)
             )
             .offset(skip)
             .limit(limit)
@@ -180,7 +183,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 selectinload(Project.type_ref),
                 selectinload(Project.topics),
                 selectinload(Project.types),
-                selectinload(Project.members)
+                selectinload(Project.members),
+                selectinload(Project.owner)
             )
             .offset(skip)
             .limit(limit)
