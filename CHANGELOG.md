@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] - 2026-02-16
+
+### Added
+- **Global Data Export**: Implemented a comprehensive export system for Projects and Tasks. Users can now export data in **CSV** or **Excel (.xlsx)** formats from the Projects List, Archive, My Tasks, and Project Detail pages.
+- **Generic Export UI**: Introduced `DataExportDialog`, a reusable component that allows users to toggle between **Summary** (metadata) and **Details** (hierarchical explosion) modes before generating a download.
+- **Archived Task Export**: Added specific support for exporting individual tasks and projects directly from the Central Archive.
+
+### Changed
+- **Unified Export Experience**: Consolidated all export actions under a single "Export" button and dialog interface across the application.
+
+### Fixed
+- **Clean Build Environment**: Removed unused imports and addressed TypeScript warnings in `project-detail.tsx` to ensure a 100% clean frontend production build.
+
 ## [2.2.0] - 2026-02-16
 
 ### Added
