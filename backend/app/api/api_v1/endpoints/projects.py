@@ -14,6 +14,113 @@ from app.models.user import User
 
 router = APIRouter()
 
+@router.get("/export/all")
+async def export_projects_multi(
+    include_archived: bool = Query(False),
+    mode: str = Query("summary", pattern="^(summary|details)$"),
+    format: str = Query("csv", pattern="^(csv|excel)$"),
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Export multiple projects as CSV or Excel.
+    Summary mode: project list metadata.
+    Details mode: project list + tasks/subtasks explosion.
+    """
+    if current_user.is_superuser:
+        projects = await crud_project.project.get_multi(
+            db, limit=1000, include_archived=include_archived
+        )
+    else:
+        projects = await crud_project.project.get_multi_by_user(
+            db, user_id=current_user.id, limit=1000, include_archived=include_archived
+        )
+
+    data = []
+    
+    if mode == "summary":
+        for p in projects:
+            data.append({
+                "Name": p.name,
+                "Description": p.description or "",
+                "Status": p.status.value if hasattr(p.status, 'value') else str(p.status),
+                "Progress %": p.progress_percent,
+                "Topic": ", ".join([t.name for t in p.topics]) if p.topics else (p.topic or ""),
+                "Type": ", ".join([t.name for t in p.types]) if p.types else (p.type or ""),
+                "Start Date": p.start_date.strftime("%Y-%m-%d") if p.start_date else "",
+                "Due Date": p.due_date.strftime("%Y-%m-%d") if p.due_date else "",
+                "Archived": "Yes" if p.is_archived else "No",
+                "Archived At": p.archived_at.strftime("%Y-%m-%d") if p.archived_at else "",
+                "Owner": p.owner.full_name or p.owner.email if p.owner else ""
+            })
+    else:
+        # Details mode: explosion
+        from app.core.wbs import apply_wbs_codes
+        
+        for p in projects:
+            # Project header row
+            data.append({
+                "Project": p.name,
+                "WBS": "",
+                "Title": "[PROJECT ROOT]",
+                "Status": p.status.value if hasattr(p.status, 'value') else str(p.status),
+                "Priority": "",
+                "Assignees": "",
+                "Start Date": p.start_date.strftime("%Y-%m-%d") if p.start_date else "",
+                "Due Date": p.due_date.strftime("%Y-%m-%d") if p.due_date else "",
+                "Progress %": f"{p.progress_percent}%",
+                "Description": p.description or ""
+            })
+            
+            # Fetch hierarchical tasks for this project
+            all_tasks_tree = await crud_task.task.get_multi_by_project(db, project_id=p.id, limit=1000)
+            apply_wbs_codes(all_tasks_tree)
+            
+            def flatten_for_export(tasks, project_name):
+                for t in tasks:
+                    data.append({
+                        "Project": project_name,
+                        "WBS": getattr(t, 'wbs_code', ""),
+                        "Title": t.title,
+                        "Status": t.status.value if hasattr(t.status, 'value') else str(t.status),
+                        "Priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
+                        "Assignees": ", ".join([u.full_name or u.email for u in t.assignees]),
+                        "Start Date": t.start_date.strftime("%Y-%m-%d") if t.start_date else "",
+                        "Due Date": t.due_date.strftime("%Y-%m-%d") if t.due_date else "",
+                        "Progress %": "", 
+                        "Description": t.description or ""
+                    })
+                    if t.subtasks:
+                        flatten_for_export(t.subtasks, project_name)
+            
+            flatten_for_export(all_tasks_tree, p.name)
+
+    df = pd.DataFrame(data)
+    
+    if format == "csv":
+        stream = io.StringIO()
+        df.to_csv(stream, index=False)
+        response = StreamingResponse(
+            io.BytesIO(stream.getvalue().encode()),
+            media_type="text/csv",
+        )
+        filename = f"projects_export_{'archived' if include_archived else 'active'}_{mode}_{datetime.now().strftime('%Y%m%d')}.csv"
+        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+        return response
+    else:
+        # Excel
+        stream = io.BytesIO()
+        with pd.ExcelWriter(stream, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Projects')
+        
+        response = StreamingResponse(
+            io.BytesIO(stream.getvalue()),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        filename = f"projects_export_{'archived' if include_archived else 'active'}_{mode}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+        return response
+
 @router.get("/{project_id}/export")
 async def export_project(
     project_id: UUID,

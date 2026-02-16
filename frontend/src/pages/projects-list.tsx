@@ -37,12 +37,14 @@ import {
   Trash2,
   Loader2,
   MoreHorizontal,
-  Archive
+  Archive,
+  Download
 } from 'lucide-react';
 import { cn, formatPercent } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
+import ProjectExportDialog from '@/components/project-export-dialog';
 import type { Project as ProjectType, ProjectTemplate } from '@/types';
 
 export default function ProjectsListPage() {
@@ -50,6 +52,7 @@ export default function ProjectsListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [creationStep, setCreationStep] = useState<'type' | 'form'>('type');
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<ProjectType | null>(null);
@@ -173,9 +176,14 @@ export default function ProjectsListPage() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Projects</h1>
           <p className="text-slate-500 mt-1">Manage and track all your active projects.</p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2 shadow-lg shadow-primary/20">
-            <Plus className="w-4 h-4" /> New Project
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={() => setIsExportDialogOpen(true)} className="gap-2">
+              <Download className="w-4 h-4" /> Export
+          </Button>
+          <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2 shadow-lg shadow-primary/20">
+              <Plus className="w-4 h-4" /> New Project
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -273,6 +281,13 @@ export default function ProjectsListPage() {
           </TableBody>
         </Table>
       </div>
+
+      <ProjectExportDialog 
+        open={isExportDialogOpen} 
+        onOpenChange={setIsExportDialogOpen} 
+        includeArchived={false} 
+        title="Export Active Projects"
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>

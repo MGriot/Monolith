@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2026-02-16
+
+### Added
+- **Project Task List Enhancements**: Added "Start" and "Type" columns to the task list. Improved "Topic" rendering with multi-category support and color-coding.
+- **Enhanced MCP Module**: Added administrative tools for user and task deletion, task updates, and membership management.
+- **Gantt Thermometer Visuals**: Implemented high-contrast progress bars with opacity-based duration tracks and dynamic label color switching for maximum legibility.
+
+### Changed
+- **Task List Layout**: Moved the "Days" column after "Assignees" and applied center alignment to all metadata columns (Topic, Type, Status, Priority, Assignees, Days) for improved scanability.
+
+### Fixed
+- **Task List Alignment**: Resolved misalignment between table headers and content rows.
+- **Form Persistence**: Fixed issues with `completed_at` initialization and persistence in the task edit form.
+- **Action Button Visibility**: Corrected a CSS typo that prevented task action buttons from appearing on hover.
+- **TypeScript & Linting**: Fixed `lucide-react` icon prop types and ensured clean build outputs across the frontend.
+
 ## [2.1.1] - 2026-02-11
 
 ### Added

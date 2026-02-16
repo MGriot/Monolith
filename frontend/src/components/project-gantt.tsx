@@ -1,15 +1,13 @@
 import { useMemo, useState, useRef } from 'react';
 import {
   format,
-  differenceInDays,
+  differenceInCalendarDays,
   startOfMonth,
-  endOfMonth,
   eachMonthOfInterval,
   eachDayOfInterval,
   eachWeekOfInterval,
   eachYearOfInterval,
   startOfYear,
-  endOfYear,
   parseISO,
   min,
   max,
@@ -17,8 +15,9 @@ import {
   startOfWeek,
   startOfDay,
   startOfQuarter,
-  endOfQuarter,
-  eachQuarterOfInterval
+  endOfDay,
+  eachQuarterOfInterval,
+  subDays
 } from 'date-fns';
 import { toPng } from 'html-to-image';
 import { cn } from '@/lib/utils';
@@ -49,7 +48,8 @@ import {
   ArrowDown,
   Plus,
   Trash2,
-  Link
+  Link,
+  Target
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -104,41 +104,41 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'priority', label: 'Pri.', width: 80, visible: false },
 ];
 
-// Improved zoom configuration with smoother scaling transitions
+// Optimized zoom configuration for maximum screen utilization and high-precision alignment
 const ZOOM_CONFIG = {
   day: {
-    scale: 60,
+    scale: 120,
     label: 'Days',
     majorUnit: 'day',
     minorUnits: []
   },
   week: {
-    scale: 30,
+    scale: 60,
     label: 'Weeks',
     majorUnit: 'week',
     minorUnits: ['day']
   },
   month: {
-    scale: 8,
+    scale: 30,
     label: 'Months',
     majorUnit: 'month',
     minorUnits: ['week', 'day']
   },
   quarter: {
-    scale: 4,
+    scale: 15,
     label: 'Quarters',
     majorUnit: 'quarter',
     minorUnits: ['month', 'week']
   },
   year: {
-    scale: 2,
+    scale: 8,
     label: 'Years',
     majorUnit: 'year',
     minorUnits: ['quarter', 'month']
   }
 };
 
-// IMPROVED: Proportionally scaling orthogonal path generation
+// IMPROVED: Proportionally scaling orthogonal path generation with adaptive loop buffers
 const getOrthogonalPath = (
   startSide: 'left' | 'right',
   x1: number,
@@ -150,21 +150,23 @@ const getOrthogonalPath = (
 ) => {
   const baseRadius = 8;
   const baseGutterOffset = 22;
-  const referenceDayWidth = 60; // Day zoom level as reference
+  const referenceDayWidth = 120; // Maximum zoom level as reference
 
-  // FIXED: Scale radius and gutter proportionally with zoom level
+  // FIXED: Scale radius and gutter proportionally
   const r = Math.max(0.5, baseRadius * (dayWidth / referenceDayWidth));
-  const gutterOffset = Math.max(10, baseGutterOffset * (dayWidth / referenceDayWidth));
+  const gutterOffset = Math.max(8, baseGutterOffset * (dayWidth / referenceDayWidth));
 
-  // Restricted horizontal sections: adjust indent based on zoom level
-  let indent = 20;
-  if (dayWidth <= 2) { // Year level
-    indent = 3.5 * dayWidth;
-  } else if (dayWidth <= 4) { // Quarter level
-    indent = 2 * dayWidth;
-  } else if (dayWidth <= 8) { // Month level
-    indent = 1 * dayWidth;
+  // Restricted horizontal sections: adjust indent based on zoom level to avoid large detours
+  let indent = 20 * (dayWidth / referenceDayWidth);
+  if (dayWidth <= 8) { // Year level
+    indent = Math.max(6, 2.5 * dayWidth);
+  } else if (dayWidth <= 15) { // Quarter level
+    indent = Math.max(8, 1.5 * dayWidth);
+  } else if (dayWidth <= 30) { // Month level
+    indent = Math.max(10, 1 * dayWidth);
   }
+
+  indent = Math.max(indent, 6); // Hard minimum buffer
 
   const buffer = indent;
 
@@ -247,6 +249,9 @@ export default function ProjectGantt({
     label_rotation: -90
   });
 
+  // Derived values for components
+  const dayWidth = ZOOM_CONFIG[zoomLevel].scale;
+
   // Calculate dynamic sidebar width
   const sidebarWidth = useMemo(() => {
     return columns.reduce((acc, col) => acc + (col.visible ? col.width : 0), 0);
@@ -307,7 +312,7 @@ export default function ProjectGantt({
   };
 
   const getEffectiveEndDate = (item: any) => {
-    return item.due_date || item.deadline_at || item.start_date;
+    return item.completed_at || item.due_date || item.deadline_at || item.start_date;
   };
 
   const ganttItems = useMemo(() => {
@@ -318,7 +323,7 @@ export default function ProjectGantt({
       const sorted = [...taskList].sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
 
       sorted.forEach(task => {
-        if (task.start_date && (task.due_date || task.deadline_at)) {
+        if (task.start_date && (task.due_date || task.deadline_at || task.completed_at)) {
           items.push({
             ...task,
             isSubtask: level > 0,
@@ -341,11 +346,12 @@ export default function ProjectGantt({
   }, [tasks, showSubtasks]);
 
   const viewWindow = useMemo(() => {
-    const dates: Date[] = [];
+    const dates: Date[] = []; // IMPROVED: Exclude 'Today' from default bounds to minimize empty space
     ganttItems.forEach(item => {
       if (item.start_date) dates.push(parseISO(item.start_date));
       const effectiveEnd = getEffectiveEndDate(item);
       if (effectiveEnd) dates.push(parseISO(effectiveEnd));
+      if (item.completed_at) dates.push(parseISO(item.completed_at));
     });
     if (projectStartDate) dates.push(parseISO(projectStartDate));
     if (projectDueDate) dates.push(parseISO(projectDueDate));
@@ -355,41 +361,53 @@ export default function ProjectGantt({
       if (r.end_date) dates.push(parseISO(r.end_date));
     });
 
-    if (dates.length === 0) return null;
+    if (dates.length === 0) {
+      // Fallback if no tasks have dates
+      dates.push(new Date());
+    }
 
     let start = min(dates);
     let end = max(dates);
 
-    if (zoomLevel === 'year') {
-      start = startOfYear(start);
-      end = endOfYear(end);
-    } else if (zoomLevel === 'quarter') {
-      start = startOfQuarter(start);
-      end = endOfQuarter(end);
-    } else if (zoomLevel === 'month') {
-      start = startOfMonth(start);
-      end = endOfMonth(end);
-    } else if (zoomLevel === 'week') {
-      start = startOfWeek(start, { weekStartsOn: 1 });
-      end = endOfMonth(end);
-    } else {
-      start = startOfDay(start);
-      end = endOfMonth(end);
-    }
+    // Apply only the leading buffer (3 days)
+    start = subDays(start, 3);
+    
+    // Minimal trailing alignment: just snap to end of day
+    end = endOfDay(end);
 
+    // Ensure start is at day boundary
+    start = startOfDay(start);
     return { start, end };
   }, [ganttItems, projectStartDate, projectDueDate, zoomLevel, timeRegions]);
 
   const timeTicks = useMemo(() => {
     if (!viewWindow) return [];
     const interval = { start: viewWindow.start, end: viewWindow.end };
+    let dates: Date[] = [];
     switch (zoomLevel) {
-      case 'day': return eachDayOfInterval(interval);
-      case 'week': return eachWeekOfInterval(interval, { weekStartsOn: 1 });
-      case 'month': return eachMonthOfInterval(interval);
-      case 'quarter': return eachQuarterOfInterval(interval);
-      case 'year': return eachYearOfInterval(interval);
+      case 'day': dates = eachDayOfInterval(interval); break;
+      case 'week': dates = eachWeekOfInterval(interval, { weekStartsOn: 1 }); break;
+      case 'month': dates = eachMonthOfInterval(interval); break;
+      case 'quarter': dates = eachQuarterOfInterval(interval); break;
+      case 'year': dates = eachYearOfInterval(interval); break;
     }
+
+    // IMPROVED: Ensure the first unit label is visible even if the interval starts mid-unit
+    if (dates.length === 0 || isAfter(dates[0], viewWindow.start)) {
+      let firstTick: Date;
+      switch (zoomLevel) {
+        case 'day': firstTick = startOfDay(viewWindow.start); break;
+        case 'week': firstTick = startOfWeek(viewWindow.start, { weekStartsOn: 1 }); break;
+        case 'month': firstTick = startOfMonth(viewWindow.start); break;
+        case 'quarter': firstTick = startOfQuarter(viewWindow.start); break;
+        case 'year': firstTick = startOfYear(viewWindow.start); break;
+        default: firstTick = viewWindow.start;
+      }
+      if (!dates.some(d => d.getTime() === firstTick.getTime())) {
+        dates = [firstTick, ...dates];
+      }
+    }
+    return dates;
   }, [viewWindow, zoomLevel]);
 
   const minorTicksLevel1 = useMemo(() => {
@@ -431,6 +449,26 @@ export default function ProjectGantt({
     }
   }, [viewWindow, zoomLevel]);
 
+  // IMPROVED: Zoom-aware arrow markers with proportional scaling
+  const arrowMarkerSize = useMemo(() => {
+    const scale = Math.max(0.4, Math.min(1, dayWidth / 120));
+    return {
+      width: 6 * scale,
+      height: 4 * scale,
+      refX: 6 * scale,
+      refY: 2 * scale,
+      pathD: `M 0 0 L ${6 * scale} ${2 * scale} L 0 ${4 * scale} Z`
+    };
+  }, [dayWidth]);
+
+  // IMPROVED: Zoom-aware stroke width with better minimum threshold
+  const getStrokeWidth = (isCritical: boolean) => {
+    const baseWidth = isCritical ? 3 : 2;
+    // Improved scaling: minimum 1px, scales more gracefully
+    const scaleFactor = Math.max(0.33, dayWidth / 120);
+    return Math.max(1, baseWidth * scaleFactor);
+  };
+
   if (!viewWindow || ganttItems.length === 0) {
     return (
       <div className="flex flex-col h-full items-center justify-center p-8 space-y-4 text-center">
@@ -442,27 +480,40 @@ export default function ProjectGantt({
     );
   }
 
-  const totalDays = differenceInDays(viewWindow.end, viewWindow.start) + 1;
-  const dayWidth = ZOOM_CONFIG[zoomLevel].scale;
+  // Window-dependent helpers
+  const totalDays = differenceInCalendarDays(viewWindow.end, viewWindow.start) + 1;
   const containerWidth = totalDays * dayWidth;
 
-  const getPositionPx = (dateStr: string) => {
-    const date = parseISO(dateStr);
-    const daysFromStart = differenceInDays(date, viewWindow.start);
-    return daysFromStart * dayWidth;
+  const getPositionPx = (dateInput: string | Date) => {
+    if (!viewWindow) return 0;
+    const date = typeof dateInput === 'string' ? parseISO(dateInput) : dateInput;
+    const days = differenceInCalendarDays(date, viewWindow.start);
+    const msIntoDay = date.getTime() - startOfDay(date).getTime();
+    const fraction = msIntoDay / (24 * 60 * 60 * 1000);
+    return (days + fraction) * dayWidth;
   };
 
-  const getPositionPercent = (dateStr: string) => {
-    const date = parseISO(dateStr);
-    const daysFromStart = differenceInDays(date, viewWindow.start);
-    return (daysFromStart / totalDays) * 100;
-  };
-
-  const getWidthPercent = (startStr: string, endStr: string) => {
+  const getWidthPx = (startStr: string, endStr: string) => {
+    if (!viewWindow) return 0;
     const start = parseISO(startStr);
     const end = parseISO(endStr);
-    const duration = differenceInDays(end, start) + 1;
-    return (duration / totalDays) * 100;
+    const days = differenceInCalendarDays(end, start);
+    const startFrac = (start.getTime() - startOfDay(start).getTime()) / (24 * 60 * 60 * 1000);
+    const endFrac = (end.getTime() - startOfDay(end).getTime()) / (24 * 60 * 60 * 1000);
+    return (days + 1 + endFrac - startFrac) * dayWidth;
+  };
+
+  const getItemLeftEdgePx = (item: any) => {
+    const isMilestone = item.is_milestone || (item.start_date && item.start_date === getEffectiveEndDate(item));
+    if (isMilestone) return getPositionPx(item.start_date!) - 8;
+    return getPositionPx(item.start_date!);
+  };
+
+  const getItemRightEdgePx = (item: any) => {
+    const isMilestone = item.is_milestone || (item.start_date && item.start_date === getEffectiveEndDate(item));
+    if (isMilestone) return getPositionPx(item.start_date!) + 8;
+    const barEndDate = item.due_date || item.start_date;
+    return getPositionPx(item.start_date!) + getWidthPx(item.start_date!, barEndDate);
   };
 
   const getProgressWidth = (item: any) => {
@@ -486,7 +537,6 @@ export default function ProjectGantt({
     const newCols = [...columns];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newCols.length) return;
-
     [newCols[index], newCols[targetIndex]] = [newCols[targetIndex], newCols[index]];
     setColumns(newCols);
   };
@@ -495,10 +545,6 @@ export default function ProjectGantt({
     setColumns(columns.map(c => c.id === id ? { ...c, visible: !c.visible } : c));
   };
 
-  const todayPos = getPositionPercent(new Date().toISOString());
-  const svgHeight = ganttItems.length * ROW_HEIGHT;
-
-  // Helper to check if a task is a predecessor (other tasks depend on it)
   const isPredecessor = (taskId: string) => {
     return ganttItems.some((item: any) => {
       const blockedBy = item.blocked_by || [];
@@ -507,29 +553,18 @@ export default function ProjectGantt({
     });
   };
 
-  // Helper to check if a task has dependencies (is blocked by other tasks)
   const hasBlockers = (item: any) => {
     return (item.blocked_by && item.blocked_by.length > 0) || (item.blocked_by_ids && item.blocked_by_ids.length > 0);
   };
 
-  // IMPROVED: Zoom-aware arrow markers with proportional scaling
-  const arrowMarkerSize = useMemo(() => {
-    const scale = Math.max(0.4, Math.min(1, dayWidth / 60));
-    return {
-      width: 6 * scale,
-      height: 4 * scale,
-      refX: 6 * scale,
-      refY: 2 * scale,
-      pathD: `M 0 0 L ${6 * scale} ${2 * scale} L 0 ${4 * scale} Z`
-    };
-  }, [dayWidth]);
+  const todayPx = getPositionPx(new Date());
+  const svgHeight = ganttItems.length * ROW_HEIGHT;
 
-  // IMPROVED: Zoom-aware stroke width with better minimum threshold
-  const getStrokeWidth = (isCritical: boolean) => {
-    const baseWidth = isCritical ? 3 : 2;
-    // Improved scaling: minimum 1px, scales more gracefully
-    const scaleFactor = Math.max(0.33, dayWidth / 60);
-    return Math.max(1, baseWidth * scaleFactor);
+  const scrollToToday = () => {
+    const ganttContainer = ganttRef.current?.querySelector('.overflow-x-auto');
+    if (ganttContainer) {
+      ganttContainer.scrollLeft = Math.max(0, todayPx - 400);
+    }
   };
 
   return (
@@ -559,6 +594,10 @@ export default function ProjectGantt({
           </div>
 
           <div className="h-4 w-px bg-slate-300 mx-2" />
+
+          <Button variant="outline" size="sm" className="h-9 gap-2" onClick={scrollToToday}>
+            <Target className="w-3.5 h-3.5" /> Today
+          </Button>
 
           <Popover>
             <PopoverTrigger asChild>
@@ -669,16 +708,16 @@ export default function ProjectGantt({
       </div>
 
       <div className="overflow-x-auto relative" ref={ganttRef}>
-        <div style={{ width: `${containerWidth + sidebarWidth}px` }} className="relative min-w-full bg-white">
-          {/* IMPROVED: Multi-level Header with year zoom week labels */}
+        <div style={{ width: `${containerWidth + sidebarWidth}px` }} className="relative bg-white">
+          {/* Header Row */}
           <div className="flex border-b border-slate-200 bg-slate-50/50 sticky top-0 z-30">
-            <div className="sticky left-0 z-40 flex bg-slate-50/50">
+            <div className="sticky left-0 z-40 flex bg-slate-50/50 shrink-0">
               {columns.filter(c => c.visible).map(col => (
                 <div
                   key={col.id}
                   style={{ width: `${col.width}px` }}
                   className={cn(
-                    "border-r border-slate-200 p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0 flex items-center",
+                    "border-r border-slate-200 p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0 flex items-center box-border",
                     ['wbs', 'duration', 'status', 'priority', 'start_date', 'end_date'].includes(col.id) ? "justify-center text-center" : "justify-start"
                   )}
                 >
@@ -687,10 +726,10 @@ export default function ProjectGantt({
               ))}
             </div>
 
-            <div className="flex-1 relative" style={{ height: zoomLevel === 'day' ? '40px' : '56px' }}>
+            <div className="relative shrink-0" style={{ height: zoomLevel === 'day' ? '40px' : '56px', width: `${containerWidth}px` }}>
               {/* Major Ticks */}
               {timeTicks?.map((tick) => {
-                const left = getPositionPercent(tick.toISOString());
+                const left = getPositionPx(tick);
                 let label = format(tick, 'MMM');
                 if (zoomLevel === 'day') label = format(tick, 'dd MMM');
                 if (zoomLevel === 'week') label = `WK${format(tick, 'ww')}`;
@@ -701,37 +740,33 @@ export default function ProjectGantt({
                   <div
                     key={tick.toISOString()}
                     className="absolute border-l border-slate-300 flex flex-col justify-start pt-1.5 pl-2 text-[10px] font-bold text-slate-600 uppercase whitespace-nowrap z-20"
-                    style={{ left: `${left}%`, height: '100%' }}
+                    style={{ left: `${left}px`, height: '100%' }}
                   >
                     {label}
                   </div>
                 );
               })}
 
-              {/* IMPROVED: Minor Ticks Level 1 with adjusted positioning */}
+              {/* Minor Ticks Level 1 */}
               {minorTicksLevel1?.map((tick) => {
-                const left = getPositionPercent(tick.toISOString());
+                const left = getPositionPx(tick);
                 let label = "";
                 let heightStyle = {};
                 let containerClass = "";
 
                 if (zoomLevel === 'year') {
-                  // Quarters in year view
                   label = `Q${format(tick, 'Q')}`;
                   heightStyle = { height: '50%', top: '18px' };
                   containerClass = "flex items-start pt-1 pl-1";
                 } else if (zoomLevel === 'quarter') {
-                  // Months in quarter view
                   label = format(tick, 'MMM');
                   heightStyle = { height: '50%', top: '18px' };
                   containerClass = "flex items-start pt-1 pl-1";
                 } else if (zoomLevel === 'month') {
-                  // Weeks in month view
                   label = `WK${format(tick, 'ww').padStart(2, '0')}`;
                   heightStyle = { height: '50%', top: '22px' };
                   containerClass = "flex items-start pt-1 pl-1";
                 } else if (zoomLevel === 'week') {
-                  // Days in week view
                   label = format(tick, 'd');
                   heightStyle = { height: '50%', bottom: 0 };
                   containerClass = "flex items-end pb-1 pl-1";
@@ -742,7 +777,7 @@ export default function ProjectGantt({
                     key={`minor1-${tick.toISOString()}`}
                     className={cn("absolute border-l border-slate-200", containerClass)}
                     style={{
-                      left: `${left}%`,
+                      left: `${left}px`,
                       ...heightStyle
                     }}
                   >
@@ -751,19 +786,16 @@ export default function ProjectGantt({
                 );
               })}
 
-              {/* IMPROVED: Minor Ticks Level 2 */}
+              {/* Minor Ticks Level 2 */}
               {minorTicksLevel2?.map((tick) => {
-                const left = getPositionPercent(tick.toISOString());
+                const left = getPositionPx(tick);
                 let label = "";
 
                 if (zoomLevel === 'year') {
-                  // Months in year view
                   label = format(tick, 'MMM');
                 } else if (zoomLevel === 'quarter') {
-                  // Weeks in quarter view
                   label = `WK${format(tick, 'ww').padStart(2, '0')}`;
                 } else if (zoomLevel === 'month') {
-                  // Days in month view
                   label = format(tick, 'd');
                 }
 
@@ -772,7 +804,7 @@ export default function ProjectGantt({
                     key={`minor2-${tick.toISOString()}`}
                     className="absolute border-l border-slate-100 flex items-end pb-0.5"
                     style={{
-                      left: `${left}%`,
+                      left: `${left}px`,
                       height: zoomLevel === 'year' || zoomLevel === 'quarter' ? '30%' : '25%',
                       bottom: 0
                     }}
@@ -786,14 +818,14 @@ export default function ProjectGantt({
             </div>
           </div>
 
-          {/* Content Rows */}
+          {/* Content Layer */}
           <div className="relative">
             {/* Time Regions Layer */}
-            <div style={{ left: `${sidebarWidth}px`, right: 0 }} className="absolute top-0 bottom-0 pointer-events-none z-0 overflow-hidden">
+            <div style={{ left: `${sidebarWidth}px`, width: `${containerWidth}px` }} className="absolute top-0 bottom-0 pointer-events-none z-0 overflow-hidden">
               {timeRegions.map(region => {
-                const startP = getPositionPercent(region.start_date);
-                const endP = getPositionPercent(region.end_date);
-                const width = endP - startP;
+                const startX = getPositionPx(region.start_date);
+                const endX = getPositionPx(region.end_date);
+                const width = endX - startX;
 
                 if (width <= 0) return null;
 
@@ -806,7 +838,7 @@ export default function ProjectGantt({
                         region.label_position === 'bottom' ? "items-center justify-end pb-8" :
                           "items-center justify-center"
                     )}
-                    style={{ left: `${startP}%`, width: `${width}%`, backgroundColor: region.color }}
+                    style={{ left: `${startX}px`, width: `${width}px`, backgroundColor: region.color }}
                   >
                     <span
                       className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap"
@@ -823,11 +855,10 @@ export default function ProjectGantt({
               })}
             </div>
 
-            {/* IMPROVED: SVG Layer with zoom-aware arrow markers and stroke widths */}
-            <div style={{ left: `${sidebarWidth}px` }} className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+            {/* SVG Layer */}
+            <div style={{ left: `${sidebarWidth}px`, width: `${containerWidth}px` }} className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
               <svg className="w-full h-full" viewBox={`0 0 ${containerWidth} ${svgHeight}`} preserveAspectRatio="none">
                 <defs>
-                  {/* IMPROVED: Zoom-aware arrow markers */}
                   <marker
                     id="arrowhead-blue"
                     markerWidth={arrowMarkerSize.width}
@@ -860,133 +891,244 @@ export default function ProjectGantt({
                   </marker>
                 </defs>
 
-                {/* Hierarchy Lines */}
-                {(() => {
-                  const lines: React.ReactNode[] = [];
-                  const drawHierarchy = (taskList: Task[]) => {
-                    taskList.forEach(task => {
-                      if (!showSubtasks || !task.subtasks || task.subtasks.length === 0) return;
-                      const parentItem = ganttItems.find(i => i.id === task.id);
-                      if (!parentItem) return;
-                      const startX = getPositionPx(task.start_date!);
-                      const startY = (parentItem as any).rowIndex * ROW_HEIGHT + (ROW_HEIGHT / 2);
-                      const renderedSubtasks = task.subtasks.map(st => ganttItems.find(i => i.id === st.id)).filter((st): st is GanttItem => !!st && !!st.start_date);
-                      if (renderedSubtasks.length === 0) return;
-                      const minChildX = Math.min(...renderedSubtasks.map(st => getPositionPx(st.start_date!)));
-
-                      // FIXED: Ensure spine stays within visible bounds (minimum 10px from left edge)
-                      const spineOffset = Math.max(10, 20 * (dayWidth / 60));
-                      const idealSpineX = Math.min(startX, minChildX) - spineOffset;
-                      const sharedSpineX = Math.max(10, idealSpineX);
-
-                      lines.push(
-                        <g key={`hier-group-${task.id}`}>
-                          {renderedSubtasks.map(st => (
-                            <path
-                              key={`hier-branch-${st.id}`}
-                              d={getOrthogonalPath(
-                                'left',
-                                startX,
-                                startY,
-                                getPositionPx(st.start_date!),
-                                st.rowIndex * ROW_HEIGHT + (ROW_HEIGHT / 2),
-                                dayWidth,
-                                sharedSpineX
-                              )}
-                              fill="none"
-                              stroke="#94a3b8"
-                              strokeWidth={getStrokeWidth(false)}
-                              strokeDasharray="3 3"
-                              strokeOpacity="0.5"
-                              vectorEffect="non-scaling-stroke"
-                            />
-                          ))}
-                        </g>
-                      );
-                      drawHierarchy(task.subtasks);
-                    });
-                  };
-                  drawHierarchy(tasks);
-                  return lines;
-                })()}
-
-                {/* Dependencies */}
-                {ganttItems.map((item: any) => {
-                  const combinedDeps = [...(item.blocked_by || [])];
-                  if (item.blocked_by_ids) {
-                    const existing = new Set(combinedDeps.map(d => d.predecessor_id));
-                    item.blocked_by_ids.forEach((bid: string) => {
-                      if (!existing.has(bid)) combinedDeps.push({
-                        id: `synth-${bid}`,
-                        successor_id: item.id,
-                        predecessor_id: bid,
-                        type: 'FS',
-                        lag_days: 0
-                      });
-                    });
-                  }
-                  return combinedDeps.map(dep => {
-                    const blocker = ganttItems.find(i => i.id === dep.predecessor_id);
-                    if (!blocker) return null;
-
-                    const sX = getPositionPx(getEffectiveEndDate(blocker)!) + dayWidth;
-                    const eX = getPositionPx(item.start_date!);
-                    const isConflict = eX < sX + (dep.lag_days || 0) * dayWidth;
-                    const isCritical = showCriticalPath && item.is_critical && blocker.is_critical;
-                    const color = isCritical ? "#ef4444" : (isConflict ? "#f59e0b" : "#2563eb");
-
-                    return (
-                      <g key={`${item.id}-${dep.predecessor_id}`}>
-                        {isCritical && (
-                          <path
-                            d={getOrthogonalPath(
-                              'right',
-                              sX,
-                              blocker.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2,
-                              eX,
-                              item.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2,
-                              dayWidth
-                            )}
-                            fill="none"
-                            stroke={color}
-                            strokeWidth={getStrokeWidth(true) * 2.5}
-                            vectorEffect="non-scaling-stroke"
-                            className="animate-pulse opacity-20"
-                          />
-                        )}
-                        <path
-                          d={getOrthogonalPath(
-                            'right',
-                            sX,
-                            blocker.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2,
-                            eX,
-                            item.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2,
-                            dayWidth
-                          )}
-                          fill="none"
-                          stroke={color}
-                          strokeWidth={getStrokeWidth(isCritical)}
-                          markerEnd={`url(#arrowhead-${isCritical ? 'red' : (isConflict ? 'amber' : 'blue')})`}
-                          vectorEffect="non-scaling-stroke"
-                        />
-                      </g>
-                    );
-                  });
-                })}
-              </svg>
+                                {/* Hierarchy Lines */}
+                                {(() => {
+                                  const lines: React.ReactNode[] = [];
+                                  const drawHierarchy = (taskList: Task[]) => {
+                                    taskList.forEach(task => {
+                                      if (!showSubtasks || !task.subtasks || task.subtasks.length === 0) return;
+                                      const parentItem = ganttItems.find(i => i.id === task.id);
+                                      if (!parentItem) return;
+                                      const startX = getItemLeftEdgePx(task);
+                                      const startY = (parentItem as any).rowIndex * ROW_HEIGHT + (ROW_HEIGHT / 2);
+                                      const renderedSubtasks = task.subtasks.map(st => ganttItems.find(i => i.id === st.id)).filter((st): st is GanttItem => !!st && !!st.start_date);
+                                      if (renderedSubtasks.length === 0) return;
+                                      const minChildX = Math.min(...renderedSubtasks.map(st => getItemLeftEdgePx(st)));
+                
+                                      const sharedSpineX = Math.max(10, Math.min(startX, minChildX) - Math.max(6, 20 * (dayWidth / 120)));
+                
+                                      lines.push(
+                                        <g key={`hier-group-${task.id}`}>
+                                          {renderedSubtasks.map(st => {
+                                            const isStCritical = st.is_critical || st.slack_days === 0;
+                                            const isHierCritical = showCriticalPath && isStCritical;
+                                            const color = isHierCritical ? "#ef4444" : "#94a3b8";
+                
+                                            return (
+                                              <g key={`hier-branch-group-${st.id}`}>
+                                                {isHierCritical && (
+                                                  <path
+                                                    d={getOrthogonalPath(
+                                                      'left',
+                                                      startX,
+                                                      startY,
+                                                      getItemLeftEdgePx(st),
+                                                      st.rowIndex * ROW_HEIGHT + (ROW_HEIGHT / 2),
+                                                      dayWidth,
+                                                      sharedSpineX
+                                                    )}
+                                                    fill="none"
+                                                    stroke={color}
+                                                    strokeWidth={getStrokeWidth(true) * 4}
+                                                    strokeOpacity="0.4"
+                                                    className="animate-pulse"
+                                                    vectorEffect="non-scaling-stroke"
+                                                  />
+                                                )}
+                                                <path
+                                                  key={`hier-branch-${st.id}`}
+                                                  d={getOrthogonalPath(
+                                                    'left',
+                                                    startX,
+                                                    startY,
+                                                    getItemLeftEdgePx(st),
+                                                    st.rowIndex * ROW_HEIGHT + (ROW_HEIGHT / 2),
+                                                    dayWidth,
+                                                    sharedSpineX
+                                                  )}
+                                                  fill="none"
+                                                  stroke={color}
+                                                  strokeWidth={getStrokeWidth(isHierCritical) * (isHierCritical ? 1.2 : 1)}
+                                                  strokeDasharray={isHierCritical ? "none" : "3 3"}
+                                                  strokeOpacity={isHierCritical ? 1 : 0.5}
+                                                  vectorEffect="non-scaling-stroke"
+                                                />
+                                              </g>
+                                            );
+                                          })}
+                                        </g>
+                                      );
+                                      drawHierarchy(task.subtasks);
+                                    });
+                                  };
+                                  drawHierarchy(tasks);
+                                  return lines;
+                                })()}
+                
+                                                {/* Dependency Lines */}
+                
+                                                {ganttItems.map((item: any) => {
+                
+                                                  const combinedDeps = [...(item.blocked_by || [])];
+                
+                                                  if (item.blocked_by_ids) {
+                
+                                                    const existing = new Set(combinedDeps.map(d => d.predecessor_id));
+                
+                                                    item.blocked_by_ids.forEach((bid: string) => {
+                
+                                                      if (!existing.has(bid)) combinedDeps.push({
+                
+                                                        id: `synth-${bid}`,
+                
+                                                        successor_id: item.id,
+                
+                                                        predecessor_id: bid,
+                
+                                                        type: 'FS',
+                
+                                                        lag_days: 0
+                
+                                                      });
+                
+                                                    });
+                
+                                                  }
+                
+                                                  return combinedDeps.map(dep => {
+                
+                                                    const blocker = ganttItems.find(i => i.id === dep.predecessor_id);
+                
+                                                    if (!blocker) return null;
+                
+                                
+                
+                                                    const sX = getItemRightEdgePx(blocker);
+                
+                                                    const eX = getItemLeftEdgePx(item);
+                
+                                                    const isConflict = eX < sX + (dep.lag_days || 0) * dayWidth;
+                
+                                                    
+                
+                                                    const itemIsCritical = item.is_critical || item.slack_days === 0;
+                
+                                
+                
+                                                    // IMPROVED: Less strict logic. 
+                
+                                                    // A line is "Critical" if:
+                
+                                                    // 1. CPM Critical Path is toggled AND the successor is critical
+                
+                                                    // 2. OR the task itself has a 'critical' priority label
+                
+                                                    const isCritical = (showCriticalPath && itemIsCritical) || (item.priority === 'critical');
+                
+                                                    
+                
+                                                    // Use Amber for 'high' priority or conflicts
+                
+                                                    const isHigh = item.priority === 'high' || isConflict;
+                
+                                                    
+                
+                                                    const color = isCritical ? "#ef4444" : (isHigh ? "#f59e0b" : "#2563eb");
+                
+                                
+                
+                                                    return (
+                
+                                                      <g key={`${item.id}-${dep.predecessor_id}`}>
+                
+                                                        {isCritical && (
+                
+                                                          <path
+                
+                                                            d={getOrthogonalPath(
+                
+                                                              'right',
+                
+                                                              sX,
+                
+                                                              blocker.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2,
+                
+                                                              eX,
+                
+                                                              item.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2,
+                
+                                                              dayWidth
+                
+                                                            )}
+                
+                                                            fill="none"
+                
+                                                            stroke={color}
+                
+                                                            strokeWidth={getStrokeWidth(true) * 6}
+                
+                                                            vectorEffect="non-scaling-stroke"
+                
+                                                            className="animate-pulse opacity-30"
+                
+                                                          />
+                
+                                                        )}
+                
+                                                        <path
+                
+                                                          d={getOrthogonalPath(
+                
+                                                            'right',
+                
+                                                            sX,
+                
+                                                            blocker.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2,
+                
+                                                            eX,
+                
+                                                            item.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2,
+                
+                                                            dayWidth
+                
+                                                          )}
+                
+                                                          fill="none"
+                
+                                                          stroke={color}
+                
+                                                          strokeWidth={getStrokeWidth(isCritical) * (isCritical ? 1.8 : 1)}
+                
+                                                          markerEnd={`url(#arrowhead-${isCritical ? 'red' : (isHigh ? 'amber' : 'blue')})`}
+                
+                                                          strokeOpacity={isCritical ? 1 : 0.8}
+                
+                                                          vectorEffect="non-scaling-stroke"
+                
+                                                        />
+                
+                                                      </g>
+                
+                                                    );
+                
+                                                  });
+                
+                                                })}              </svg>
             </div>
 
-            {/* Today Line */}
-            {todayPos >= 0 && todayPos <= 100 && (
-              <div
-                style={{ left: `${todayPos}%`, marginLeft: `${sidebarWidth}px` }}
-                className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-30 pointer-events-none"
-              >
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm w-max">
-                  TODAY
+            {/* Global Timeline Overlay */}
+            <div style={{ left: `${sidebarWidth}px`, width: `${containerWidth}px` }} className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+              {todayPx >= 0 && todayPx <= containerWidth && (
+                <div
+                  style={{ left: `${todayPx}px` }}
+                  className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-30 pointer-events-none"
+                >
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm w-max">
+                    TODAY
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Rows */}
             {ganttItems.map((item: any) => {
@@ -998,19 +1140,23 @@ export default function ProjectGantt({
                 <div
                   key={item.id}
                   className={cn(
-                    "flex border-b border-slate-100 hover:bg-slate-50 transition-colors group relative",
+                    "flex border-b border-slate-100 hover:bg-slate-50 transition-colors group relative box-border shrink-0",
                     !hasColor && (isWbsRoot ? "bg-slate-50/40" : "")
                   )}
-                  style={hasColor ? { backgroundColor: `${item.color}15` } : {}}
+                  style={{
+                    height: `${ROW_HEIGHT}px`,
+                    width: `${containerWidth + sidebarWidth}px`,
+                    backgroundColor: hasColor ? `${item.color}15` : undefined
+                  }}
                 >
                   {/* Sidebar Cells */}
-                  <div className="sticky left-0 z-20 flex bg-white shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                  <div className="sticky left-0 z-20 flex bg-white shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] h-full shrink-0">
                     {columns.filter(c => c.visible).map(col => (
                       <div
                         key={col.id}
                         style={{ width: `${col.width}px` }}
                         className={cn(
-                          "border-r border-slate-200 p-2 flex items-center min-w-0 shrink-0 text-xs",
+                          "border-r border-slate-200 p-2 flex items-center min-w-0 shrink-0 text-xs h-full box-border",
                           ['wbs', 'duration', 'status', 'priority', 'start_date', 'end_date'].includes(col.id) ? "justify-center" : "justify-start"
                         )}
                       >
@@ -1053,7 +1199,7 @@ export default function ProjectGantt({
                         )}
                         {col.id === 'start_date' && <span className="text-slate-500">{item.start_date ? format(parseISO(item.start_date), 'MMM d') : '-'}</span>}
                         {col.id === 'end_date' && <span className="text-slate-500">{item.due_date ? format(parseISO(item.due_date), 'MMM d') : '-'}</span>}
-                        {col.id === 'duration' && <span className="text-slate-500">{item.start_date ? differenceInDays(parseISO(getEffectiveEndDate(item)!), parseISO(item.start_date)) + 1 : '-'}</span>}
+                        {col.id === 'duration' && <span className="text-slate-500">{item.start_date ? differenceInCalendarDays(parseISO(getEffectiveEndDate(item)!), parseISO(item.start_date)) + 1 : '-'}</span>}
                         {col.id === 'status' && (
                           <div className="flex items-center gap-1.5">
                             <Circle className={cn("w-2 h-2 fill-current",
@@ -1081,23 +1227,23 @@ export default function ProjectGantt({
                   </div>
 
                   {/* Timeline Row */}
-                  <div className="flex-1 relative h-14">
+                  <div className="relative h-14 shrink-0" style={{ width: `${containerWidth}px` }}>
                     {/* Grid Lines */}
                     {timeTicks?.map(tick => (
-                      <div key={tick.toISOString()} className="absolute top-0 bottom-0 border-l border-slate-100 h-full z-0" style={{ left: `${getPositionPercent(tick.toISOString())}%` }} />
+                      <div key={tick.toISOString()} className="absolute top-0 bottom-0 border-l border-slate-100 h-full z-0" style={{ left: `${getPositionPx(tick)}px` }} />
                     ))}
                     {minorTicksLevel1?.map(tick => (
-                      <div key={`grid-minor1-${tick.toISOString()}`} className="absolute top-0 bottom-0 border-l border-slate-50 h-full z-0" style={{ left: `${getPositionPercent(tick.toISOString())}%` }} />
+                      <div key={`grid-minor1-${tick.toISOString()}`} className="absolute top-0 bottom-0 border-l border-slate-50 h-full z-0" style={{ left: `${getPositionPx(tick)}px` }} />
                     ))}
                     {minorTicksLevel2?.map(tick => (
-                      <div key={`grid-minor2-${tick.toISOString()}`} className="absolute top-0 bottom-0 border-l border-slate-50/40 h-full z-0" style={{ left: `${getPositionPercent(tick.toISOString())}%` }} />
+                      <div key={`grid-minor2-${tick.toISOString()}`} className="absolute top-0 bottom-0 border-l border-slate-50/40 h-full z-0" style={{ left: `${getPositionPx(tick)}px` }} />
                     ))}
 
                     {/* Deadline Indicator */}
                     {item.deadline_at && (
                       <div
                         className="absolute top-0 bottom-0 w-0.5 bg-purple-500 z-10 pointer-events-none opacity-40"
-                        style={{ left: `${getPositionPercent(item.deadline_at)}%` }}
+                        style={{ left: `${getPositionPx(item.deadline_at)}px` }}
                         title={`Deadline: ${format(parseISO(item.deadline_at), 'PPP')}`}
                       />
                     )}
@@ -1110,7 +1256,7 @@ export default function ProjectGantt({
                           getBarColor(item)
                         )}
                         style={{
-                          left: `calc(${getPositionPercent(item.start_date!)}% - 8px)`,
+                          left: `calc(${getPositionPx(item.start_date!)}px - 8px)`,
                           top: '20px'
                         }}
                         title={`${item.title} (Milestone)`}
@@ -1121,8 +1267,8 @@ export default function ProjectGantt({
                           <div
                             className="absolute h-7 bg-slate-200/50 border-r-2 border-slate-300 rounded-r-sm z-0"
                             style={{
-                              left: `${getPositionPercent(item.due_date)}%`,
-                              width: `${getPositionPercent(item.deadline_at) - getPositionPercent(item.due_date)}%`,
+                              left: `${getPositionPx(item.due_date)}px`,
+                              width: `${getPositionPx(item.deadline_at) - getPositionPx(item.due_date)}px`,
                               top: '14px'
                             }}
                           />
@@ -1136,8 +1282,8 @@ export default function ProjectGantt({
                             showCriticalPath && item.is_critical && "ring-2 ring-red-400 ring-offset-2 animate-pulse"
                           )}
                           style={{
-                            left: `${getPositionPercent(item.start_date!)}%`,
-                            width: `${getWidthPercent(item.start_date!, (item.due_date || item.start_date))}%`,
+                            left: `${getPositionPx(item.start_date!)}px`,
+                            width: `${getWidthPx(item.start_date!, (item.due_date || item.start_date))}px`,
                             top: '14px',
                             backgroundColor: `${getStatusHex(item.status)}33`,
                             borderColor: getStatusHex(item.status)
@@ -1172,22 +1318,16 @@ export default function ProjectGantt({
                           const conclusionDate = item.completed_at;
                           if (!conclusionDate) return null;
 
-                          const conclusionPos = getPositionPercent(conclusionDate);
-                          const barStart = getPositionPercent(item.start_date!);
-                          const barEnd = getPositionPercent(item.due_date || item.start_date!);
+                          const conclusionPx = getPositionPx(conclusionDate);
+                          const barStartPx = getPositionPx(item.start_date!);
 
-                          // Only show if conclusion is within or beyond the bar range
-                          if (conclusionPos < barStart) return null;
-
-                          const relativePos = conclusionPos - barStart;
-                          const barWidth = barEnd - barStart;
-                          const positionInBar = barWidth > 0 ? (relativePos / barWidth) * 100 : 0;
+                          if (conclusionPx < barStartPx) return null;
 
                           return (
                             <div
                               className="absolute w-0.5 h-9 bg-emerald-600 z-20 shadow-md"
                               style={{
-                                left: `${Math.min(positionInBar, 100)}%`,
+                                left: `${conclusionPx}px`,
                                 top: '12px'
                               }}
                               title={`Actually completed: ${format(parseISO(conclusionDate), 'PPP')}`}

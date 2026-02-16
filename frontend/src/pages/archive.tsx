@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
@@ -21,16 +22,19 @@ import {
   FolderKanban,
   Calendar,
   CheckCircle2,
-  User as UserIcon
+  User as UserIcon,
+  Download
 } from 'lucide-react';
 import { formatPercent } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import type { Project as ProjectType, Task as TaskType } from '@/types';
 import { toast } from 'sonner';
+import ProjectExportDialog from '@/components/project-export-dialog';
 
 export default function ArchivePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
   const { data: projects, isLoading: isLoadingProjects, isError: isErrorProjects } = useQuery({
     queryKey: ['projects', 'archived'],
@@ -106,9 +110,14 @@ export default function ArchivePage() {
           </h1>
           <p className="text-slate-500 mt-1">View and restore archived projects and individual tasks.</p>
         </div>
-        <Button variant="outline" onClick={() => navigate('/projects')}>
-          Back to Dashboard
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={() => setIsExportDialogOpen(true)} className="gap-2">
+            <Download className="w-4 h-4" /> Export
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/projects')}>
+            Back to Dashboard
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="projects" className="w-full">
@@ -298,6 +307,13 @@ export default function ArchivePage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <ProjectExportDialog 
+        open={isExportDialogOpen} 
+        onOpenChange={setIsExportDialogOpen} 
+        includeArchived={true} 
+        title="Export Archived Projects"
+      />
     </div>
   );
 }
