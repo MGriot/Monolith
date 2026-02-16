@@ -39,8 +39,6 @@ import {
   Loader2,
   AlertCircle,
   Lightbulb,
-  FileDown,
-  FileSpreadsheet,
   Archive,
   Download
 } from 'lucide-react';
