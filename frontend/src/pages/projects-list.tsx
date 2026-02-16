@@ -44,7 +44,7 @@ import { cn, formatPercent } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
-import ProjectExportDialog from '@/components/project-export-dialog';
+import DataExportDialog from '@/components/data-export-dialog';
 import type { Project as ProjectType, ProjectTemplate } from '@/types';
 
 export default function ProjectsListPage() {
@@ -282,11 +282,13 @@ export default function ProjectsListPage() {
         </Table>
       </div>
 
-      <ProjectExportDialog 
+      <DataExportDialog 
         open={isExportDialogOpen} 
         onOpenChange={setIsExportDialogOpen} 
-        includeArchived={false} 
+        endpoint="/projects/export/all"
+        params={{ include_archived: false }}
         title="Export Active Projects"
+        filenamePrefix="active_projects"
       />
 
       {/* Delete Confirmation Dialog */}

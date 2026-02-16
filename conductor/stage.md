@@ -4,11 +4,8 @@
 - N/A
 
 ## 📋 Recent History
+- **FRONT-075**: My Tasks Export UI
+- **BACK-040**: My Tasks Export (Summary/Details)
 - **FRONT-074**: Multi-Project Export UI
 - **BACK-039**: Multi-Project Export (Summary/Details)
 - **FRONT-073**: Fix: Task Edit Form completed_at initialization
-- **FRONT-072**: Fix: Task Conclusion Date Persistence & Display
-- **BACK-038**: Logic: Auto-set Completion Date
-
-## 🚀 Upcoming
-- N/A

@@ -41,12 +41,14 @@ import {
   Lightbulb,
   FileDown,
   FileSpreadsheet,
-  Archive
+  Archive,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { formatPercent } from '@/lib/utils';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
+import DataExportDialog from '@/components/data-export-dialog';
 import type { Project, Task } from '@/types';
 
 export default function ProjectDetailPage() {
@@ -55,6 +57,7 @@ export default function ProjectDetailPage() {
   const queryClient = useQueryClient();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isProjectEditDialogOpen, setIsProjectEditDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [parentTaskId, setParentTaskId] = useState<string | null>(null);
   const [initialStatus, setInitialStatus] = useState<string>("Todo");
@@ -345,27 +348,6 @@ export default function ProjectDetailPage() {
     moveTaskMutation.mutate({ taskId, newStatus: container, sortIndex });
   };
 
-  const handleExport = async (format: string) => {
-    try {
-      const response = await api.get(`/projects/${id}/export?format=${format}`, {
-        responseType: 'blob'
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      const ext = format === 'csv' ? 'csv' : 'xlsx';
-      link.setAttribute('download', `export_${project?.name}_${new Date().toISOString().split('T')[0]}.${ext}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      toast.success(`Project exported as ${format.toUpperCase()}`);
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to export project');
-    }
-  };
-
   const handleAddTask = (status?: string) => {
     setEditingTaskId(null);
     setParentTaskId(null);
@@ -627,18 +609,10 @@ export default function ProjectDetailPage() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => handleExport('csv')} 
+                onClick={() => setIsExportDialogOpen(true)} 
                 className="h-9 gap-2 text-[10px] font-black uppercase"
               >
-                <FileDown className="w-3.5 h-3.5" /> CSV
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => handleExport('excel')} 
-                className="h-9 gap-2 text-[10px] font-black uppercase"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+                <Download className="w-3.5 h-3.5" /> Export
               </Button>
               <Button onClick={() => handleAddTask()} className="gap-2 shadow-lg shadow-primary/20 h-9">
                 <Plus className="w-4 h-4" /> Add Task
@@ -907,6 +881,14 @@ export default function ProjectDetailPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <DataExportDialog 
+        open={isExportDialogOpen} 
+        onOpenChange={setIsExportDialogOpen} 
+        endpoint={`/projects/${id}/export`}
+        title={`Export Project: ${project.name}`}
+        filenamePrefix={`export_${project.name}`}
+      />
     </div>
   );
 }

@@ -20,19 +20,25 @@ import { Download, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
-interface ProjectExportDialogProps {
+interface DataExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  includeArchived?: boolean;
+  endpoint: string;
+  params?: Record<string, any>;
   title?: string;
+  description?: string;
+  filenamePrefix?: string;
 }
 
-export default function ProjectExportDialog({ 
+export default function DataExportDialog({ 
   open, 
   onOpenChange, 
-  includeArchived = false,
-  title = "Export Projects"
-}: ProjectExportDialogProps) {
+  endpoint,
+  params = {},
+  title = "Export Data",
+  description = "Choose the format and detail level for your export.",
+  filenamePrefix = "export"
+}: DataExportDialogProps) {
   const [format, setFormat] = useState<'csv' | 'excel'>('excel');
   const [mode, setMode] = useState<'summary' | 'details'>('summary');
   const [isLoading, setIsLoading] = useState(false);
@@ -40,9 +46,9 @@ export default function ProjectExportDialog({
   const handleExport = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get(`/projects/export/all`, {
+      const response = await api.get(endpoint, {
         params: {
-          include_archived: includeArchived,
+          ...params,
           mode,
           format
         },
@@ -53,7 +59,7 @@ export default function ProjectExportDialog({
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      const filename = `projects_export_${includeArchived ? 'archived' : 'active'}_${mode}_${new Date().toISOString().split('T')[0]}.${ext}`;
+      const filename = `${filenamePrefix}_${mode}_${new Date().toISOString().split('T')[0]}.${ext}`;
       link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
@@ -63,7 +69,7 @@ export default function ProjectExportDialog({
       onOpenChange(false);
     } catch (error) {
       console.error('Export failed:', error);
-      toast.error('Failed to export projects');
+      toast.error('Failed to export data');
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +84,7 @@ export default function ProjectExportDialog({
             {title}
           </DialogTitle>
           <DialogDescription>
-            Choose the format and detail level for your export.
+            {description}
           </DialogDescription>
         </DialogHeader>
 
@@ -103,8 +109,8 @@ export default function ProjectExportDialog({
                 <SelectValue placeholder="Select detail level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="summary">Summary (Project metadata only)</SelectItem>
-                <SelectItem value="details">Details (Tasks & subtasks explosion)</SelectItem>
+                <SelectItem value="summary">Summary (Metadata only)</SelectItem>
+                <SelectItem value="details">Details (Include hierarchy/explosion)</SelectItem>
               </SelectContent>
             </Select>
           </div>
