@@ -124,6 +124,7 @@ async def export_projects_multi(
 @router.get("/{project_id}/export")
 async def export_project(
     project_id: UUID,
+    mode: str = Query("details", pattern="^(summary|details)$"),
     format: str = Query("csv", pattern="^(csv|excel)$"),
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
@@ -141,41 +142,54 @@ async def export_project(
         if current_user.id not in member_ids:
             raise HTTPException(status_code=403, detail="Not enough permissions")
 
-    # Fetch hierarchical tasks
-    all_tasks_tree = await crud_task.task.get_multi_by_project(db, project_id=project_id, limit=1000)
-    
-    # Apply WBS codes (need to convert to schema or ensure model has the attribute)
-    from app.core.wbs import apply_wbs_codes
-    # apply_wbs_codes works on model objects too if they have subtasks and sort_index
-    apply_wbs_codes(all_tasks_tree)
-    
-    # Flatten the tree for export
-    data = []
-    def flatten_for_export(tasks):
-        for t in tasks:
-            duration = 0
-            if t.start_date and t.due_date:
-                duration = (t.due_date - t.start_date).days + 1
-            
-            data.append({
-                "WBS": getattr(t, 'wbs_code', ""),
-                "Title": t.title,
-                "Description": t.description or "",
-                "Status": t.status.value if hasattr(t.status, 'value') else str(t.status),
-                "Priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
-                "Start Date": t.start_date.strftime("%Y-%m-%d") if t.start_date else "",
-                "Due Date": t.due_date.strftime("%Y-%m-%d") if t.due_date else "",
-                "Deadline": t.deadline_at.strftime("%Y-%m-%d") if t.deadline_at else "",
-                "Completed At": t.completed_at.strftime("%Y-%m-%d %H:%M") if t.completed_at else "",
-                "Duration (Days)": duration,
-                "Assignees": ", ".join([u.full_name or u.email for u in t.assignees]),
-                "Milestone": "Yes" if t.is_milestone else "No",
-                "Tags": ", ".join(t.tags or [])
-            })
-            if t.subtasks:
-                flatten_for_export(t.subtasks)
+    if mode == "summary":
+        # Just project metadata
+        data = [{
+            "Project Name": project.name,
+            "Description": project.description or "",
+            "Status": project.status.value if hasattr(project.status, 'value') else str(project.status),
+            "Progress %": project.progress_percent,
+            "Start Date": project.start_date.strftime("%Y-%m-%d") if project.start_date else "",
+            "Due Date": project.due_date.strftime("%Y-%m-%d") if project.due_date else "",
+            "Archived": "Yes" if project.is_archived else "No",
+            "Owner": project.owner.full_name or project.owner.email if project.owner else "N/A",
+            "Tags": ", ".join(project.tags or [])
+        }]
+    else:
+        # Fetch hierarchical tasks (Details mode)
+        all_tasks_tree = await crud_task.task.get_multi_by_project(db, project_id=project_id, limit=1000)
+        
+        # Apply WBS codes
+        from app.core.wbs import apply_wbs_codes
+        apply_wbs_codes(all_tasks_tree)
+        
+        # Flatten the tree for export
+        data = []
+        def flatten_for_export(tasks):
+            for t in tasks:
+                duration = 0
+                if t.start_date and t.due_date:
+                    duration = (t.due_date - t.start_date).days + 1
+                
+                data.append({
+                    "WBS": getattr(t, 'wbs_code', ""),
+                    "Title": t.title,
+                    "Description": t.description or "",
+                    "Status": t.status.value if hasattr(t.status, 'value') else str(t.status),
+                    "Priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
+                    "Start Date": t.start_date.strftime("%Y-%m-%d") if t.start_date else "",
+                    "Due Date": t.due_date.strftime("%Y-%m-%d") if t.due_date else "",
+                    "Deadline": t.deadline_at.strftime("%Y-%m-%d") if t.deadline_at else "",
+                    "Completed At": t.completed_at.strftime("%Y-%m-%d %H:%M") if t.completed_at else "",
+                    "Duration (Days)": duration,
+                    "Assignees": ", ".join([u.full_name or u.email for u in t.assignees]),
+                    "Milestone": "Yes" if t.is_milestone else "No",
+                    "Tags": ", ".join(t.tags or [])
+                })
+                if t.subtasks:
+                    flatten_for_export(t.subtasks)
 
-    flatten_for_export(all_tasks_tree)
+        flatten_for_export(all_tasks_tree)
 
     df = pd.DataFrame(data)
     

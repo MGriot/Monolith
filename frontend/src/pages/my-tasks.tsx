@@ -9,10 +9,12 @@ import {
   CheckSquare,
   AlertCircle,
   Loader2,
-  Folder
+  Folder,
+  Download
 } from 'lucide-react';
 import KanbanBoard from '@/components/kanban-board';
 import ProjectGantt from '@/components/project-gantt';
+import DataExportDialog from '@/components/data-export-dialog';
 import {
   Table,
   TableBody,
@@ -28,6 +30,7 @@ export default function MyTasksPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
   const { data: tasks, isLoading, isError } = useQuery({
     queryKey: ['tasks', 'assigned'],
@@ -132,23 +135,29 @@ export default function MyTasksPage() {
             <p className="text-sm text-slate-500 mt-1">Focus on what's assigned to you across all projects.</p>
           </div>
           
-          <div className="bg-slate-100 p-1 rounded-lg flex items-center">
-            <Button 
-              variant={view === 'kanban' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              className={view === 'kanban' ? 'bg-white shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-slate-500'}
-              onClick={() => setView('kanban')}
-            >
-              <Trello className="w-3.5 h-3.5" /> Kanban
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" onClick={() => setIsExportDialogOpen(true)} className="gap-2 h-9">
+              <Download className="w-4 h-4" /> Export
             </Button>
-            <Button 
-              variant={view === 'list' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              className={view === 'list' ? 'bg-white shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-slate-500'}
-              onClick={() => setView('list')}
-            >
-              <ListIcon className="w-3.5 h-3.5" /> List
-            </Button>
+
+            <div className="bg-slate-100 p-1 rounded-lg flex items-center h-9">
+              <Button 
+                variant={view === 'kanban' ? 'secondary' : 'ghost'} 
+                size="sm" 
+                className={view === 'kanban' ? 'bg-white shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-slate-500'}
+                onClick={() => setView('kanban')}
+              >
+                <Trello className="w-3.5 h-3.5" /> Kanban
+              </Button>
+              <Button 
+                variant={view === 'list' ? 'secondary' : 'ghost'} 
+                size="sm" 
+                className={view === 'list' ? 'bg-white shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-slate-500'}
+                onClick={() => setView('list')}
+              >
+                <ListIcon className="w-3.5 h-3.5" /> List
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -231,6 +240,14 @@ export default function MyTasksPage() {
           </div>
         </div>
       </div>
+
+      <DataExportDialog 
+        open={isExportDialogOpen} 
+        onOpenChange={setIsExportDialogOpen} 
+        endpoint="/tasks/export"
+        title="Export My Tasks"
+        filenamePrefix="my_tasks"
+      />
     </div>
   );
 }

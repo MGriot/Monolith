@@ -29,11 +29,12 @@ import { formatPercent } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import type { Project as ProjectType, Task as TaskType } from '@/types';
 import { toast } from 'sonner';
-import ProjectExportDialog from '@/components/project-export-dialog';
+import DataExportDialog from '@/components/data-export-dialog';
 
 export default function ArchivePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<'projects' | 'tasks'>('projects');
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
   const { data: projects, isLoading: isLoadingProjects, isError: isErrorProjects } = useQuery({
@@ -112,7 +113,7 @@ export default function ArchivePage() {
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={() => setIsExportDialogOpen(true)} className="gap-2">
-            <Download className="w-4 h-4" /> Export
+            <Download className="w-4 h-4" /> Export {activeTab === 'projects' ? 'Projects' : 'Tasks'}
           </Button>
           <Button variant="outline" onClick={() => navigate('/projects')}>
             Back to Dashboard
@@ -120,7 +121,7 @@ export default function ArchivePage() {
         </div>
       </div>
 
-      <Tabs defaultValue="projects" className="w-full">
+      <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full">
         <TabsList className="grid w-[400px] grid-cols-2 mb-4">
           <TabsTrigger value="projects" className="gap-2">
             <FolderKanban className="w-4 h-4" />
@@ -308,11 +309,13 @@ export default function ArchivePage() {
         </TabsContent>
       </Tabs>
 
-      <ProjectExportDialog 
+      <DataExportDialog 
         open={isExportDialogOpen} 
         onOpenChange={setIsExportDialogOpen} 
-        includeArchived={true} 
-        title="Export Archived Projects"
+        endpoint={activeTab === 'projects' ? "/projects/export/all" : "/tasks/export"}
+        params={activeTab === 'projects' ? { include_archived: true } : { include_archived: true }}
+        title={activeTab === 'projects' ? "Export Archived Projects" : "Export Archived Tasks"}
+        filenamePrefix={activeTab === 'projects' ? "archived_projects" : "archived_tasks"}
       />
     </div>
   );

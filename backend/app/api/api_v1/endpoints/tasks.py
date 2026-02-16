@@ -18,7 +18,112 @@ from app.core.config import settings
 from app.core.enums import Status
 from datetime import datetime
 
+import io
+import pandas as pd
+from datetime import datetime
+from fastapi.responses import StreamingResponse
+
 router = APIRouter()
+
+@router.get("/export")
+async def export_tasks(
+    include_archived: bool = Query(False),
+    mode: str = Query("summary", pattern="^(summary|details)$"),
+    format: str = Query("csv", pattern="^(csv|excel)$"),
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Export tasks assigned to the current user as CSV or Excel.
+    Summary mode: flat list of tasks.
+    Details mode: flat list + subtasks explosion.
+    """
+    from app.models.task import Task as TaskModel
+    from app.models.project import Project as ProjectModel
+    from app.models.associations import task_assignees
+    from sqlalchemy import or_
+    
+    # We want tasks assigned to the user
+    query = (
+        select(TaskModel)
+        .join(task_assignees)
+        .join(ProjectModel, TaskModel.project_id == ProjectModel.id)
+        .filter(task_assignees.c.user_id == current_user.id)
+    )
+    
+    if not include_archived:
+        query = query.filter(TaskModel.is_archived == False).filter(ProjectModel.is_archived == False)
+        
+    query = query.options(
+        selectinload(TaskModel.owner),
+        selectinload(TaskModel.assignees),
+        selectinload(TaskModel.project),
+        selectinload(TaskModel.topics),
+        selectinload(TaskModel.types),
+        selectinload(TaskModel.subtasks) # For details explosion
+    )
+    
+    result = await db.execute(query)
+    tasks = result.scalars().all()
+
+    data = []
+    
+    def process_task(t, parent_title=None):
+        duration = 0
+        if t.start_date and t.due_date:
+            duration = (t.due_date - t.start_date).days + 1
+            
+        row = {
+            "Project": t.project.name if t.project else "N/A",
+            "Parent Task": parent_title or "",
+            "Title": t.title,
+            "Description": t.description or "",
+            "Status": t.status.value if hasattr(t.status, 'value') else str(t.status),
+            "Priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
+            "Start Date": t.start_date.strftime("%Y-%m-%d") if t.start_date else "",
+            "Due Date": t.due_date.strftime("%Y-%m-%d") if t.due_date else "",
+            "Completed At": t.completed_at.strftime("%Y-%m-%d %H:%M") if t.completed_at else "",
+            "Duration (Days)": duration,
+            "Assignees": ", ".join([u.full_name or u.email for u in t.assignees]),
+            "Milestone": "Yes" if t.is_milestone else "No",
+            "Tags": ", ".join(t.tags or [])
+        }
+        data.append(row)
+        
+        if mode == "details" and t.subtasks:
+            for st in t.subtasks:
+                # Need to load relationships for subtasks too if we want full explosion
+                # For now we'll do a simple explosion of what's already there
+                process_task(st, t.title)
+
+    for t in tasks:
+        process_task(t)
+
+    df = pd.DataFrame(data)
+    
+    if format == "csv":
+        stream = io.StringIO()
+        df.to_csv(stream, index=False)
+        response = StreamingResponse(
+            io.BytesIO(stream.getvalue().encode()),
+            media_type="text/csv",
+        )
+        filename = f"tasks_export_{datetime.now().strftime('%Y%m%d')}.csv"
+        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+        return response
+    else:
+        # Excel
+        stream = io.BytesIO()
+        with pd.ExcelWriter(stream, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='My Tasks')
+        
+        response = StreamingResponse(
+            io.BytesIO(stream.getvalue()),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        filename = f"tasks_export_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+        return response
 
 @router.get("/assigned", response_model=List[Task])
 async def read_assigned_tasks(

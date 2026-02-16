@@ -1178,5 +1178,23 @@
     "linked_req": "User Request: Multi-project export",
     "description": "Add Export buttons with Summary/Details toggle and CSV/Excel format selection to Projects List and Archive pages.",
     "verification_method": "Visually verify export buttons and functionality on Projects and Archive pages."
+  },
+  {
+    "id": "BACK-040",
+    "title": "My Tasks Export (Summary/Details)",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: My Tasks export",
+    "description": "Implement GET /tasks/export endpoint to export tasks assigned to the user with Summary (task metadata) or Details (including subtasks explosion) in CSV/Excel formats.",
+    "verification_method": "Test with curl: GET /api/v1/tasks/export?mode=summary"
+  },
+  {
+    "id": "FRONT-075",
+    "title": "My Tasks Export UI",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: My Tasks export",
+    "description": "Add Export button to My Tasks page using a generic DataExportDialog.",
+    "verification_method": "Visually verify export button and functionality on My Tasks page."
   }
 ]
