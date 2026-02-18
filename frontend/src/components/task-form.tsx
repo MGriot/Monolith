@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { User as UserIcon, Loader2, Milestone, Tag, Briefcase } from "lucide-react";
+import { Milestone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
-import type { User, Task, Topic, WorkType } from "@/types";
+import { AssigneeSelector } from "@/components/assignee-selector";
+import type { Task, Topic, WorkType } from "@/types";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -45,14 +46,6 @@ interface TaskFormProps {
 }
 
 export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading, allTasks, editingTaskId }: TaskFormProps) {
-  const { data: users, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const response = await api.get('/users/');
-      return response.data as User[];
-    },
-  });
-
   const { data: topics, isLoading: isLoadingTopics } = useQuery({
     queryKey: ['metadata', 'topics'],
     queryFn: async () => (await api.get('/metadata/topics')).data,
@@ -114,10 +107,6 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
   };
 
   // Transformation for RichDropdown
-  const userItems: RichDropdownItem[] = useMemo(() => 
-    users?.map(u => ({ id: u.id, label: u.full_name || u.email, icon: <UserIcon className="w-3 h-3" /> })) || []
-  , [users]);
-
   const topicItems: RichDropdownItem[] = useMemo(() => 
     topics?.map((t: Topic) => ({ id: t.id, label: t.name, color: t.color })) || []
   , [topics]);
@@ -262,16 +251,12 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
       </div>
 
       <div className="space-y-2">
-        <Label>Assignees</Label>
-        <RichDropdown 
-            items={userItems}
-            selectedValues={selectedAssignees}
-            onSelect={(id) => toggleItem("assignee_ids", id)}
-            onRemove={(id) => removeItem("assignee_ids", id)}
-            multi={true}
-            isLoading={isLoadingUsers}
-            placeholder="Assign members..."
-            searchPlaceholder="Search team..."
+        <AssigneeSelector 
+          label="Assignees"
+          selectedValues={selectedAssignees}
+          onSelect={(id) => toggleItem("assignee_ids", id)}
+          onRemove={(id) => removeItem("assignee_ids", id)}
+          placeholder="Assign users or teams..."
         />
       </div>
 

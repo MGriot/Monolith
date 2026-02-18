@@ -1256,10 +1256,10 @@
   {
     "id": "FRONT-080",
     "title": "UI: Two-Tier Assignee Selection with Preview",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 17.4",
-    "description": "Implement hierarchical selection for Users and Teams with a hover preview showing team members."
+    "description": "Implemented hierarchical selection for Users and Teams with a hover preview showing team members."
   },
   {
     "id": "BACK-044",
