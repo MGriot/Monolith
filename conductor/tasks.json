@@ -1232,7 +1232,7 @@
   {
     "id": "BACK-043",
     "title": "Logic: Template Taxonomy Presets",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 17.3",
     "description": "Update Project Template logic to include scoped Topic/WorkType definitions and instantiate them for new projects."

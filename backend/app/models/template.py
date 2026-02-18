@@ -14,6 +14,12 @@ class ProjectTemplate(Base):
     # Hierarchical task structure stored as JSON for simplicity in templates
     # Structure: List of {title, description, topic_id, type_id, priority, subtasks: [...]}
     tasks_json = Column(JSON, nullable=False, default=[])
+
+    # Scoped Taxonomy Presets
+    # topics_preset: List of {name, color}
+    # work_types_preset: List of {name, color, icon}
+    topics_preset = Column(JSON, nullable=False, default=[])
+    work_types_preset = Column(JSON, nullable=False, default=[])
     
     is_active = Column(Boolean, default=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
