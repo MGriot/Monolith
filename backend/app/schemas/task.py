@@ -63,7 +63,7 @@ class TaskShortCreate(BaseModel):
 
 class TaskCreate(TaskBase):
     title: str
-    project_id: UUID
+    project_id: Optional[UUID] = None
     parent_id: Optional[UUID] = None
     subtasks: Optional[List[TaskShortCreate]] = []
 
@@ -72,7 +72,7 @@ class TaskUpdate(TaskBase):
 
 class TaskInDBBase(TaskBase):
     id: UUID
-    project_id: UUID
+    project_id: Optional[UUID] = None
     parent_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime

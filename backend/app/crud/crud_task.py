@@ -148,6 +148,9 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return tasks
 
     async def sync_project_from_tasks(self, db: AsyncSession, project_id: UUID):
+        if not project_id:
+            return
+            
         from app.crud.crud_project import project as project_crud
         
         # Get all tasks for the project to aggregate data
@@ -318,12 +321,14 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         
         # Calculate next sort_index
         if "sort_index" not in obj_data:
+            query = select(self.model.sort_index).filter(self.model.parent_id == obj_data.get("parent_id"))
+            if obj_data.get("project_id"):
+                query = query.filter(self.model.project_id == obj_data["project_id"])
+            else:
+                query = query.filter(self.model.project_id == None)
+                
             result = await db.execute(
-                select(self.model.sort_index)
-                .filter(self.model.project_id == obj_data["project_id"])
-                .filter(self.model.parent_id == obj_data.get("parent_id"))
-                .order_by(self.model.sort_index.desc())
-                .limit(1)
+                query.order_by(self.model.sort_index.desc()).limit(1)
             )
             max_idx = result.scalar()
             obj_data["sort_index"] = (max_idx or 0) + 10
@@ -379,6 +384,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         from app.crud.crud_notification import notification as notification_crud
         from app.schemas.notification import NotificationCreate
         
+        link = f"/projects/{project_id}?task_id={item_id}" if project_id else f"/tasks?task_id={item_id}"
+        
         for user_id in user_ids:
             await notification_crud.create(
                 db,
@@ -387,7 +394,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                     title="New Assignment",
                     message=f"You have been assigned to task '{item_title}'.",
                     type="assignment",
-                    link=f"/projects/{project_id}?task_id={item_id}"
+                    link=link
                 )
             )
 

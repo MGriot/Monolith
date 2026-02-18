@@ -134,3 +134,65 @@ Address reported regressions and broken features.
 *   **Workflow Library:** Debug and fix the CRUD operations (Create/Edit/Delete) for Workflows, which are currently reported as broken.
 *   **Teams:** Fix the "Team Creator" functionality (Admin > Teams) which is failing to create new teams.
 *   **Metadata (Admin):** Fix the "Edit" modal for Topics and WorkTypes to correctly update Name, Color, and Status fields.
+
+## 17. Addendum: Enhanced Task Management & Advanced Planning (Feb 18, 2026)
+
+### 17.1 Feature: Independent Task Creation (Global Scope)
+Allow users to track work that isn't tied to a specific project structure.
+
+*   **Requirement:** Tasks can exist without a parent project.
+*   **Functionality:**
+    *   "MY TASKS" page must include a "Create Independent Task" action.
+    *   Independent tasks support full assignment logic, dates, priorities, and status tracking.
+    *   Backend must handle null `project_id` or associate these tasks with a system-level "Independent Tasks" container.
+
+### 17.2 Feature: Native File Previews
+Improve the experience of reviewing task attachments.
+
+*   **Behavior:** Clicking an attachment (Image or PDF) opens an in-app preview modal.
+*   **Supported Formats:** JPG, PNG, PDF.
+*   **UI:** Modal/Overlay with zoom/navigation controls; download remains available as a secondary action.
+
+### 17.3 Feature: Context-Aware Taxonomy (Scoped Topics & Worktypes)
+Enable project-specific categorization and templating.
+
+*   **Scoped Taxonomy:** Topics and Worktypes can be specific to a Project (or Independent Task) instance.
+*   **Templating:** Project Templates can define preset Topics/Worktypes. When instantiated, the project loads these presets.
+*   **Management:** Project owners can add/modify/remove Topics and Worktypes for their specific projects.
+
+### 17.4 Feature: Enhanced Selection UI (Dropdowns & Hierarchies)
+Replace simple chips with a more robust and informative selection interface.
+
+*   **Rich Dropdown Toggle:** Used in Edit/Create forms for Team Members, Topics, and Worktypes.
+*   **Assignee Logic:**
+    *   Two-tier selection: Select individual users OR entire Teams.
+    *   UI Preview: When hovering/selecting a Team, show a list of members included in that team.
+    *   Mixed Mode: A task can be assigned to a mix of individual users and teams.
+
+### 17.5 Feature: Advanced Task Dependencies
+Support complex scheduling relationships beyond Finish-to-Start.
+
+*   **Dependency Types:**
+    *   Finish-to-Start (FS): Successor starts when predecessor finishes.
+    *   Finish-to-Finish (FF): Successor finishes when predecessor finishes.
+    *   Start-to-Start (SS): Successor starts when predecessor starts.
+    *   Start-to-Finish (SF): Successor finishes when predecessor starts.
+*   **Data Model:** Update `Dependency` model to include `type` enum.
+*   **UI:** Frontend form must allow selecting the dependency type during creation/edit.
+
+### 17.6 Feature: Advanced Estimation (PERT Logic)
+Enable more accurate project scheduling through Three-Point Estimation.
+
+*   **Input Fields:**
+    *   **Optimistic (O):** Best-case duration.
+    *   **Normal (N):** Most likely duration.
+    *   **Pessimistic (P):** Worst-case duration.
+*   **Calculation:** System calculates `Expected Duration (Te) = (O + 4N + P) / 6`.
+*   **Implementation:** Calculated value automatically populates/updates the "Duration" field.
+
+### 17.7 Feature: Dynamic Date vs. Duration Logic (Bidirectional)
+Unlock date constraints to support different planning workflows.
+
+*   **Mode A (Date-Driven):** User selects Start Date + End Date -> System calculates Duration (Working Days).
+*   **Mode B (Duration-Driven):** User selects Start Date + Working Days -> System calculates End Date.
+*   **Validation:** Backend ensures consistency between start, end, and duration based on a working day calendar (Monday-Friday).
