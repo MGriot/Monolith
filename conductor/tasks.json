@@ -1196,5 +1196,125 @@
     "linked_req": "User Request: My Tasks export",
     "description": "Add Export button to My Tasks page using a generic DataExportDialog.",
     "verification_method": "Visually verify export button and functionality on My Tasks page."
+  },
+  {
+    "id": "BACK-041",
+    "title": "API: Support Independent Tasks",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 17.1",
+    "description": "Update Task model to allow null project_id and adjust API endpoints/access logic for project-less tasks."
+  },
+  {
+    "id": "FRONT-076",
+    "title": "UI: Create Independent Task",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 17.1",
+    "description": "Add 'Create Independent Task' button to My Tasks page and handle task creation without project context."
+  },
+  {
+    "id": "FRONT-077",
+    "title": "UI: Native File Previews (Modal)",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 17.2",
+    "description": "Implement a FilePreview component using a Modal to display Images and PDFs without downloading."
+  },
+  {
+    "id": "BACK-042",
+    "title": "Model: Scoped Taxonomy",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 17.3",
+    "description": "Refactor Topics and WorkTypes to support optional linking to specific Projects or Independent Tasks."
+  },
+  {
+    "id": "BACK-043",
+    "title": "Logic: Template Taxonomy Presets",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 17.3",
+    "description": "Update Project Template logic to include scoped Topic/WorkType definitions and instantiate them for new projects."
+  },
+  {
+    "id": "FRONT-078",
+    "title": "UI: Scoped Taxonomy Management",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 17.3",
+    "description": "Implement UI for project owners to manage their project-specific Topics and WorkTypes."
+  },
+  {
+    "id": "FRONT-079",
+    "title": "UI: Rich Dropdown Toggle Components",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 17.4",
+    "description": "Develop a generic RichDropdown component to replace chips in forms for Member/Topic/WorkType selection."
+  },
+  {
+    "id": "FRONT-080",
+    "title": "UI: Two-Tier Assignee Selection with Preview",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 17.4",
+    "description": "Implement hierarchical selection for Users and Teams with a hover preview showing team members."
+  },
+  {
+    "id": "BACK-044",
+    "title": "Model: Advanced Dependency Types",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 17.5",
+    "description": "Add 'type' field (FS, FF, SS, SF) to Dependency model and update related schemas."
+  },
+  {
+    "id": "FRONT-081",
+    "title": "UI: Dependency Type Selection",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 17.5",
+    "description": "Update Dependency Manager UI to allow users to select the dependency type (FS/FF/SS/SF)."
+  },
+  {
+    "id": "BACK-045",
+    "title": "Model: PERT Estimation Fields",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 17.6",
+    "description": "Add optimistic, normal, and pessimistic duration fields to the Task model."
+  },
+  {
+    "id": "BACK-046",
+    "title": "Logic: PERT Expected Duration Calculation",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 17.6",
+    "description": "Implement automated calculation of Expected Duration (Te) based on PERT inputs."
+  },
+  {
+    "id": "FRONT-082",
+    "title": "UI: PERT Estimation Form Fields",
+    "status": "todo",
+    "priority": "medium",
+    "linked_req": "PRD Section 17.6",
+    "description": "Add PERT input fields to the Task Edit/Create forms and show the calculated expected duration."
+  },
+  {
+    "id": "BACK-047",
+    "title": "Logic: Bidirectional Date/Duration Calculation",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 17.7",
+    "description": "Implement backend validation and automatic calculation for StartDate/EndDate/Duration consistency."
+  },
+  {
+    "id": "FRONT-083",
+    "title": "UI: Dynamic Date vs. Duration Inputs",
+    "status": "todo",
+    "priority": "high",
+    "linked_req": "PRD Section 17.7",
+    "description": "Implement bidirectional UI logic in Task forms to toggle between Date-driven and Duration-driven planning modes."
   }
 ]
