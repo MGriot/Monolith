@@ -15,6 +15,7 @@
     - Removed unused `CardDescription`, `DialogDescription`, `Switch`, and `cn` imports.
 - Cleaned up `frontend/src/pages/project-detail.tsx`:
     - Removed unused `DialogDescription`, `MarkdownRenderer`, `isProjectEditDialogOpen` imports/state.
+    - Removed unused `useMemo` import.
     - Removed unused local variables and parameters (`newTask`, `index`, `newIndex`, `taskId`, `direction`).
 - Verified all fixes with `npx tsc --noEmit`.
 
