@@ -59,11 +59,15 @@ class Task(Base):
     blocked_by = relationship("Dependency", foreign_keys="Dependency.successor_id", back_populates="successor")
     blocking = relationship("Dependency", foreign_keys="Dependency.predecessor_id", back_populates="predecessor")
 
-    topic_ref = relationship("Topic")
-    type_ref = relationship("WorkType")
+    topic_ref = relationship("Topic", foreign_keys=[topic_id])
+    type_ref = relationship("WorkType", foreign_keys=[type_id])
 
     topics = relationship("Topic", secondary=task_topics, backref="tasks")
     types = relationship("WorkType", secondary=task_types, backref="tasks")
+
+    # Scoped Taxonomy
+    topics_scoped = relationship("Topic", back_populates="task", foreign_keys="[Topic.task_id]", cascade="all, delete-orphan")
+    work_types_scoped = relationship("WorkType", back_populates="task", foreign_keys="[WorkType.task_id]", cascade="all, delete-orphan")
 
 class Subtask(Base):
     __tablename__ = "subtasks"

@@ -7,6 +7,8 @@ class TopicBase(BaseModel):
     name: Optional[str] = None
     color: Optional[str] = "#64748b"
     is_active: Optional[bool] = True
+    project_id: Optional[UUID] = None
+    task_id: Optional[UUID] = None
 
 class TopicCreate(TopicBase):
     name: str
@@ -24,6 +26,8 @@ class WorkTypeBase(BaseModel):
     color: Optional[str] = "#64748b"
     icon: Optional[str] = None
     is_active: Optional[bool] = True
+    project_id: Optional[UUID] = None
+    task_id: Optional[UUID] = None
 
 class WorkTypeCreate(WorkTypeBase):
     name: str

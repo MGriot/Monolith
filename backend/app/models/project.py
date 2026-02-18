@@ -47,9 +47,12 @@ class Project(Base):
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
     ideas = relationship("Idea", back_populates="project", cascade="all, delete-orphan")
     
-    topic_ref = relationship("Topic")
-    type_ref = relationship("WorkType")
+    topic_ref = relationship("Topic", foreign_keys=[topic_id])
+    type_ref = relationship("WorkType", foreign_keys=[type_id])
 
     topics = relationship("Topic", secondary=project_topics, backref="projects")
     types = relationship("WorkType", secondary=project_types, backref="projects")
-    
+
+    # Scoped Taxonomy
+    topics_scoped = relationship("Topic", back_populates="project", foreign_keys="[Topic.project_id]", cascade="all, delete-orphan")
+    work_types_scoped = relationship("WorkType", back_populates="project", foreign_keys="[WorkType.project_id]", cascade="all, delete-orphan")

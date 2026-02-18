@@ -1224,7 +1224,7 @@
   {
     "id": "BACK-042",
     "title": "Model: Scoped Taxonomy",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 17.3",
     "description": "Refactor Topics and WorkTypes to support optional linking to specific Projects or Independent Tasks."
