@@ -4,6 +4,7 @@
 - N/A
 
 ## 📋 Recent History
+- **FRONT-076**: UI: Create Independent Task
 - **BACK-041**: API: Support Independent Tasks
 - **FRONT-075**: My Tasks Export UI
 - **BACK-040**: My Tasks Export (Summary/Details)

@@ -10,7 +10,8 @@ import {
   AlertCircle,
   Loader2,
   Folder,
-  Download
+  Download,
+  Plus
 } from 'lucide-react';
 import KanbanBoard from '@/components/kanban-board';
 import ProjectGantt from '@/components/project-gantt';
@@ -23,6 +24,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import TaskForm, { type TaskFormValues } from '@/components/task-form';
 import { useNavigate } from 'react-router-dom';
 import type { Task } from '@/types';
 
@@ -31,6 +39,7 @@ export default function MyTasksPage() {
   const navigate = useNavigate();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
 
   const { data: tasks, isLoading, isError } = useQuery({
     queryKey: ['tasks', 'assigned'],
@@ -41,8 +50,22 @@ export default function MyTasksPage() {
   });
 
   const activeTasks = useMemo(() => {
-    return (tasks || []).filter(t => !t.is_archived && !t.project?.is_archived);
+    return (tasks || []).filter(t => !t.is_archived && (!t.project || !t.project.is_archived));
   }, [tasks]);
+
+  const createTaskMutation = useMutation({
+    mutationFn: async (data: TaskFormValues) => {
+      return api.post('/tasks/', { ...data, project_id: null });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'assigned'] });
+      setIsCreateTaskOpen(false);
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.detail || err.message;
+      alert(`Failed to create task: ${msg}`);
+    },
+  });
 
   const moveTaskMutation = useMutation({
     mutationFn: async ({ taskId, newStatus, sortIndex }: { taskId: string; newStatus: string; sortIndex?: number }) => {
@@ -136,6 +159,10 @@ export default function MyTasksPage() {
           </div>
           
           <div className="flex items-center gap-4">
+            <Button onClick={() => setIsCreateTaskOpen(true)} className="gap-2 h-9">
+              <Plus className="w-4 h-4" /> New Independent Task
+            </Button>
+
             <Button variant="outline" size="sm" onClick={() => setIsExportDialogOpen(true)} className="gap-2 h-9">
               <Download className="w-4 h-4" /> Export
             </Button>
@@ -170,8 +197,8 @@ export default function MyTasksPage() {
               onTaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx) : undefined })}
               onSubtaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx) : undefined })}
               onReorder={handleKanbanReorder}
-              onTaskClick={(task) => navigate(`/projects/${task.project_id}`)}
-              onSubtaskClick={(st) => navigate(`/projects/${st.project_id}`)}
+              onTaskClick={(task) => task.project_id ? navigate(`/projects/${task.project_id}`) : navigate(`/tasks?task_id=${task.id}`)}
+              onSubtaskClick={(st) => st.project_id ? navigate(`/projects/${st.project_id}`) : navigate(`/tasks?task_id=${st.id}`)}
             />
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -197,13 +224,13 @@ export default function MyTasksPage() {
                       <TableRow 
                         key={task.id} 
                         className="hover:bg-slate-50/50 cursor-pointer"
-                        onClick={() => navigate(`/projects/${task.project_id}`)}
+                        onClick={() => task.project_id ? navigate(`/projects/${task.project_id}`) : null}
                       >
                         <TableCell className="font-semibold text-slate-900">{task.title}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5 text-xs text-slate-600">
                             <Folder className="w-3 h-3 text-slate-400" />
-                            {task.project?.name || 'Unknown Project'}
+                            {task.project?.name || 'Independent'}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -240,6 +267,19 @@ export default function MyTasksPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={isCreateTaskOpen} onOpenChange={setIsCreateTaskOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Independent Task</DialogTitle>
+          </DialogHeader>
+          <TaskForm 
+            onSubmit={(data) => createTaskMutation.mutate(data)}
+            onCancel={() => setIsCreateTaskOpen(false)}
+            isLoading={createTaskMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
 
       <DataExportDialog 
         open={isExportDialogOpen} 

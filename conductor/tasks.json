@@ -1208,7 +1208,7 @@
   {
     "id": "FRONT-076",
     "title": "UI: Create Independent Task",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 17.1",
     "description": "Add 'Create Independent Task' button to My Tasks page and handle task creation without project context."
