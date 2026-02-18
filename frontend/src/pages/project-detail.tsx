@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import api from '@/lib/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -10,7 +10,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import KanbanBoard from '@/components/kanban-board';
@@ -24,7 +23,6 @@ import type { TaskFormValues } from '@/components/task-form';
 import DependencyManager from '@/components/dependency-manager';
 import AttachmentManager from '@/components/attachment-manager';
 import ScopedTaxonomyManager from '@/components/scoped-taxonomy-manager';
-import MarkdownRenderer from '@/components/markdown-renderer';
 import { toast } from 'sonner';
 import {
   Trello,
@@ -56,7 +54,6 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
-  const [isProjectEditDialogOpen, setIsProjectEditDialogOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [parentTaskId, setParentTaskId] = useState<string | null>(null);
@@ -114,7 +111,6 @@ export default function ProjectDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project', id] });
-      setIsProjectEditDialogOpen(false);
       toast.success("Project updated successfully");
     },
   });
@@ -131,11 +127,11 @@ export default function ProjectDetailPage() {
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: async (newTask: TaskFormValues) => {
-      const response = await api.post('/tasks/', { ...newTask, project_id: id });
+    mutationFn: async (data: TaskFormValues) => {
+      const response = await api.post('/tasks/', { ...data, project_id: id });
       return response.data;
     },
-    onSuccess: (newTask) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', id] });
       queryClient.invalidateQueries({ queryKey: ['project', id] });
       setIsTaskDialogOpen(false);
@@ -209,16 +205,16 @@ export default function ProjectDetailPage() {
     },
   });
 
-  const handleTaskMove = (taskId: string, newStatus: string, index?: number) => {
+  const handleTaskMove = (taskId: string, newStatus: string) => {
     // Basic move without sophisticated sort index calculation for now
     moveTaskMutation.mutate({ taskId, newStatus });
   };
 
-  const handleSubtaskMove = (subtaskId: string, newStatus: string, index?: number) => {
+  const handleSubtaskMove = (subtaskId: string, newStatus: string) => {
     moveTaskMutation.mutate({ taskId: subtaskId, newStatus });
   };
 
-  const handleKanbanReorder = (taskId: string, newIndex: number, container: string) => {
+  const handleKanbanReorder = (taskId: string, _newIndex: number, container: string) => {
     moveTaskMutation.mutate({ taskId, newStatus: container });
   };
 
@@ -267,11 +263,11 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleReorderTask = (taskId: string, direction: 'up' | 'down') => {
+  const handleReorderTask = () => {
     // Reorder logic omitted for brevity, should use sort_index
   };
 
-  const handleIndentTask = (taskId: string, direction: 'indent' | 'outdent') => {
+  const handleIndentTask = () => {
     // Indent logic omitted for brevity
   };
 
@@ -589,7 +585,10 @@ export default function ProjectDetailPage() {
               completed_at: editingTask.completed_at ? editingTask.completed_at.split('T')[0] : '',
               assignee_ids: editingTask.assignees?.map(u => u.id) || [],
               parent_id: editingTask.parent_id,
-              color: editingTask.color
+              color: editingTask.color,
+              optimistic_days: editingTask.optimistic_days,
+              normal_days: editingTask.normal_days,
+              pessimistic_days: editingTask.pessimistic_days
             } : {
               status: initialStatus,
               parent_id: parentTaskId
@@ -648,7 +647,7 @@ export default function ProjectDetailPage() {
                   const recurse = (list: Task[], prefix = "") => {
                     list.forEach(t => {
                       const title = prefix ? `${prefix} > ${t.title}` : t.title;
-                      flat.push({ id: t.id, title, blocked_by_ids: t.blocked_by_ids });
+                      flat.push({ ...t, title });
                       if (t.subtasks) recurse(t.subtasks, title);
                     });
                   };

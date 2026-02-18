@@ -17,15 +17,14 @@ import {
   Loader2,
   AlertCircle,
   Plus,
-  Info,
-  Check
+  Info
 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { Task, DependencyType, Dependency } from "@/types";
+import type { Task, DependencyType } from "@/types";
 
 interface DependencyManagerProps {
   item: Task;
