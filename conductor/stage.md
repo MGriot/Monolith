@@ -4,6 +4,7 @@
 - N/A
 
 ## 📋 Recent History
+- **BACK-042**: Model: Scoped Taxonomy
 - **FRONT-077**: UI: Native File Previews (Modal)
 - **FRONT-076**: UI: Create Independent Task
 - **BACK-041**: API: Support Independent Tasks
