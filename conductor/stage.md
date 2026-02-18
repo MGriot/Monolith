@@ -4,6 +4,7 @@
 - N/A
 
 ## 📋 Recent History
+- **BACK-047**: Logic: Bidirectional Date/Duration Calculation
 - **FRONT-082**: UI: PERT Estimation Form Fields
 - **BACK-046**: Logic: PERT Expected Duration Calculation
 - **BACK-045**: Model: PERT Estimation Fields

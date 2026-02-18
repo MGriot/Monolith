@@ -315,6 +315,25 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         topic_ids = getattr(obj_in, 'topic_ids', [])
         type_ids = getattr(obj_in, 'type_ids', [])
         
+        # 1. Bidirectional Date/Duration logic
+        from datetime import timedelta
+        start = obj_data.get("start_date")
+        due = obj_data.get("due_date")
+        dur = obj_data.get("duration_days")
+
+        if start and dur and dur > 0 and not due:
+            # Calculate due from start + dur (dur=1 means same day)
+            obj_data["due_date"] = start + timedelta(days=dur - 1)
+        elif start and due and not dur:
+            # Calculate dur from start/due
+            obj_data["duration_days"] = (due - start).days + 1
+        elif due and dur and dur > 0 and not start:
+            # Calculate start from due - dur
+            obj_data["start_date"] = due - timedelta(days=dur - 1)
+        elif start and due and dur:
+            # All 3 provided: prioritize duration to keep sync
+            obj_data["due_date"] = start + timedelta(days=dur - 1)
+
         # Status logic: set completed_at if created as DONE and not provided
         if obj_data.get("status") == Status.DONE and not obj_data.get("completed_at"):
             obj_data["completed_at"] = datetime.utcnow()
@@ -383,7 +402,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         res = await db.execute(select(Task.project_id).filter(Task.id == item_id))
         project_id = res.scalar()
         
-        from app.crud.crud_notification import notification as notification_crud
+        from app.crud.notification import notification as notification_crud
         from app.schemas.notification import NotificationCreate
         
         link = f"/projects/{project_id}?task_id={item_id}" if project_id else f"/tasks?task_id={item_id}"
@@ -421,7 +440,31 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         # 1. Clean data and naivify dates
         obj_data = clean_dict_datetimes(obj_data)
         
-        # 2. Status logic: check blockers ONLY if moving TO Done
+        # 2. Bidirectional Date/Duration logic
+        from datetime import timedelta
+        start = obj_data.get("start_date", db_obj.start_date)
+        due = obj_data.get("due_date", db_obj.due_date)
+        dur = obj_data.get("duration_days", db_obj.duration_days)
+
+        # Detect what changed to decide calculation priority
+        changed = obj_data.keys()
+        
+        if "duration_days" in changed:
+            # If duration changed, update due date (dur=1 means same day)
+            if start and dur and dur > 0:
+                obj_data["due_date"] = start + timedelta(days=dur - 1)
+        elif "start_date" in changed:
+            # If start changed, either update due (if dur exists) or dur (if due exists)
+            if dur and dur > 0:
+                obj_data["due_date"] = start + timedelta(days=dur - 1)
+            elif due:
+                obj_data["duration_days"] = (due - start).days + 1
+        elif "due_date" in changed:
+            # If due changed, update duration
+            if start:
+                obj_data["duration_days"] = (due - start).days + 1
+
+        # 3. Status logic: check blockers ONLY if moving TO Done
         if obj_data.get("status") == Status.DONE and db_obj.status != Status.DONE:
             active_blockers = await self.check_for_active_blockers(db, db_obj.id)
             if active_blockers:
@@ -432,7 +475,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             # Clear completed_at if moving away from DONE
             obj_data["completed_at"] = None
 
-        # 3. Dependency Logic: prevent circularity
+        # 4. Dependency Logic: prevent circularity
         if new_blocker_ids is not None:
             for b_id in new_blocker_ids:
                 if b_id == db_obj.id:
@@ -441,7 +484,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                     raise ValueError(f"Circular dependency detected with item ID: {b_id}")
             db_obj.blocked_by_ids = new_blocker_ids
 
-        # 4. M2M Relationships: Assignees
+        # 5. M2M Relationships: Assignees
         if new_assignee_ids is not None:
             current_ids = [u.id for u in db_obj.assignees]
             added_ids = [uid for uid in new_assignee_ids if uid not in current_ids]
@@ -453,7 +496,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if added_ids:
                 await self.notify_assignees(db, db_obj.id, added_ids, db_obj.title)
 
-        # 5. M2M Relationships: Topics & Types
+        # 6. M2M Relationships: Topics & Types
         if new_topic_ids is not None:
             res = await db.execute(select(Topic).filter(Topic.id.in_(new_topic_ids)))
             db_obj.topics = res.scalars().all()
@@ -462,7 +505,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             res = await db.execute(select(WorkType).filter(WorkType.id.in_(new_type_ids)))
             db_obj.types = res.scalars().all()
 
-        # 6. Parent circularity check
+        # 7. Parent circularity check
         if "parent_id" in obj_data and obj_data["parent_id"] is not None:
             new_p_id = UUID(str(obj_data["parent_id"]))
             if new_p_id == db_obj.id:
@@ -479,10 +522,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if await is_descendant(new_p_id, db_obj.id):
                 raise ValueError("Cannot set a descendant as a parent (circular hierarchy)")
 
-        # 7. Call base update for remaining fields
+        # 8. Call base update for remaining fields
         db_obj = await super().update(db, db_obj=db_obj, obj_in=obj_data)
         
-        # 8. Post-update bubbles
+        # 9. Post-update bubbles
         if old_parent_id:
             await self.update_parent_status_recursive(db, old_parent_id)
         if db_obj.parent_id and db_obj.parent_id != old_parent_id:

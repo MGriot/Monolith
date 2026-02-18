@@ -53,6 +53,7 @@ class TaskBase(BaseModel):
     normal_days: Optional[int] = 0
     pessimistic_days: Optional[int] = 0
     expected_duration_days: Optional[float] = 0.0
+    duration_days: Optional[int] = 0
 
 class TaskShortCreate(BaseModel):
     title: str

@@ -1304,10 +1304,10 @@
   {
     "id": "BACK-047",
     "title": "Logic: Bidirectional Date/Duration Calculation",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 17.7",
-    "description": "Implement backend validation and automatic calculation for StartDate/EndDate/Duration consistency."
+    "description": "Implemented backend validation and automatic calculation for StartDate/EndDate/Duration consistency."
   },
   {
     "id": "FRONT-083",

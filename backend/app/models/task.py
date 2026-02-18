@@ -52,6 +52,8 @@ class Task(Base):
     optimistic_days = Column(Integer, default=0)
     normal_days = Column(Integer, default=0)
     pessimistic_days = Column(Integer, default=0)
+    
+    duration_days = Column(Integer, default=0)
 
     @property
     def expected_duration_days(self) -> float:
