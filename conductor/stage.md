@@ -4,6 +4,7 @@
 - N/A
 
 ## 📋 Recent History
+- **FRONT-078**: UI: Scoped Taxonomy Management
 - **BACK-043**: Logic: Template Taxonomy Presets
 - **BACK-042**: Model: Scoped Taxonomy
 - **FRONT-077**: UI: Native File Previews (Modal)

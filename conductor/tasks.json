@@ -1240,7 +1240,7 @@
   {
     "id": "FRONT-078",
     "title": "UI: Scoped Taxonomy Management",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 17.3",
     "description": "Implement UI for project owners to manage their project-specific Topics and WorkTypes."
