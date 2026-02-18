@@ -536,7 +536,7 @@
     "status": "done",
     "priority": "high",
     "linked_req": "Settings Page Completion",
-    "description": "Implement forms for updating full name and password in the Settings page.",
+    "description": "Implement Hubs for updating full name and password in the Settings page.",
     "verification_method": "Submit form and verify successful update via API/UI."
   },
   {
@@ -1248,7 +1248,7 @@
   {
     "id": "FRONT-079",
     "title": "UI: Rich Dropdown Toggle Components",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 17.4",
     "description": "Develop a generic RichDropdown component to replace chips in forms for Member/Topic/WorkType selection."
