@@ -1280,26 +1280,26 @@
   {
     "id": "BACK-045",
     "title": "Model: PERT Estimation Fields",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 17.6",
-    "description": "Add optimistic, normal, and pessimistic duration fields to the Task model."
+    "description": "Added optimistic_days, normal_days, and pessimistic_days fields to the Task model."
   },
   {
     "id": "BACK-046",
     "title": "Logic: PERT Expected Duration Calculation",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 17.6",
-    "description": "Implement automated calculation of Expected Duration (Te) based on PERT inputs."
+    "description": "Implemented automated calculation of Expected Duration (expected_duration_days) using the PERT formula."
   },
   {
     "id": "FRONT-082",
     "title": "UI: PERT Estimation Form Fields",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 17.6",
-    "description": "Add PERT input fields to the Task Edit/Create forms and show the calculated expected duration."
+    "description": "Added PERT input fields to TaskForm with real-time expected duration calculation."
   },
   {
     "id": "BACK-047",

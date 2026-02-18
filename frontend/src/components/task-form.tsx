@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Milestone } from "lucide-react";
+import { Milestone, Calculator } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
 import { AssigneeSelector } from "@/components/assignee-selector";
@@ -32,6 +32,9 @@ const taskSchema = z.object({
   sort_index: z.number().optional(),
   parent_id: z.string().optional().nullable(),
   color: z.string().optional().nullable(),
+  optimistic_days: z.number().optional(),
+  normal_days: z.number().optional(),
+  pessimistic_days: z.number().optional(),
 });
 
 export type TaskFormValues = z.infer<typeof taskSchema>;
@@ -75,6 +78,9 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
       topic_ids: [],
       type_ids: [],
       color: null,
+      optimistic_days: 0,
+      normal_days: 0,
+      pessimistic_days: 0,
       ...initialValues,
       start_date: initialValues?.start_date?.split('T')[0] || null,
       due_date: initialValues?.due_date?.split('T')[0] || null,
@@ -88,6 +94,15 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
   const selectedTypeIds = watch("type_ids") || [];
   const selectedParentId = watch("parent_id");
   const selectedColor = watch("color");
+
+  const optDays = watch("optimistic_days") || 0;
+  const normDays = watch("normal_days") || 0;
+  const pessDays = watch("pessimistic_days") || 0;
+
+  const expectedDuration = useMemo(() => {
+    if (optDays === 0 && normDays === 0 && pessDays === 0) return 0;
+    return Math.round(((optDays + (4 * normDays) + pessDays) / 6) * 100) / 100;
+  }, [optDays, normDays, pessDays]);
 
   const toggleItem = (field: "assignee_ids" | "topic_ids" | "type_ids", id: string) => {
     const current = [...(watch(field) || [])];
@@ -286,6 +301,47 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
             placeholder="Select work types..."
             searchPlaceholder="Search types..."
           />
+        </div>
+      </div>
+
+      <div className="p-3 border rounded-lg bg-slate-50/50 space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
+            <Calculator className="w-3.5 h-3.5" />
+            PERT Estimation (Days)
+          </Label>
+          <div className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
+            Expected: {expectedDuration}d
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="optimistic_days" className="text-[10px] text-slate-500 uppercase">Optimistic</Label>
+            <Input 
+              id="optimistic_days" 
+              type="number" 
+              {...register("optimistic_days", { valueAsNumber: true })} 
+              className="h-8 text-xs bg-white"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="normal_days" className="text-[10px] text-slate-500 uppercase">Most Likely</Label>
+            <Input 
+              id="normal_days" 
+              type="number" 
+              {...register("normal_days", { valueAsNumber: true })} 
+              className="h-8 text-xs bg-white"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pessimistic_days" className="text-[10px] text-slate-500 uppercase">Pessimistic</Label>
+            <Input 
+              id="pessimistic_days" 
+              type="number" 
+              {...register("pessimistic_days", { valueAsNumber: true })} 
+              className="h-8 text-xs bg-white"
+            />
+          </div>
         </div>
       </div>
 

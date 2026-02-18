@@ -48,6 +48,26 @@ class Task(Base):
     blocked_by_ids = Column(ARRAY(UUID(as_uuid=True)), default=[])
     sort_index = Column(Integer, default=0)
     
+    # PERT Estimation Fields
+    optimistic_days = Column(Integer, default=0)
+    normal_days = Column(Integer, default=0)
+    pessimistic_days = Column(Integer, default=0)
+
+    @property
+    def expected_duration_days(self) -> float:
+        """
+        Calculate PERT Expected Duration (Te)
+        Te = (O + 4M + P) / 6
+        """
+        o = self.optimistic_days or 0
+        m = self.normal_days or 0
+        p = self.pessimistic_days or 0
+        
+        if o == 0 and m == 0 and p == 0:
+            return 0.0
+            
+        return round((o + (4 * m) + p) / 6.0, 2)
+
     # Relationships
     project = relationship("Project", back_populates="tasks")
     parent = relationship("Task", remote_side=[id], back_populates="subtasks")

@@ -4,6 +4,9 @@
 - N/A
 
 ## 📋 Recent History
+- **FRONT-082**: UI: PERT Estimation Form Fields
+- **BACK-046**: Logic: PERT Expected Duration Calculation
+- **BACK-045**: Model: PERT Estimation Fields
 - **FRONT-081**: UI: Dependency Type Selection
 - **BACK-044**: Model: Advanced Dependency Types
 - **FRONT-080**: UI: Two-Tier Assignee Selection with Preview
