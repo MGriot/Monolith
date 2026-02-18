@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,8 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Topic, WorkType } from "@/types";
+import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
+import type { Topic, WorkType, User } from "@/types";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -46,19 +49,19 @@ export default function ProjectForm({
   onCancel,
   isLoading
 }: ProjectFormProps) {
-  const { data: topics } = useQuery({
+  const { data: topics, isLoading: topicsLoading } = useQuery({
     queryKey: ['metadata', 'topics'],
     queryFn: async () => (await api.get('/metadata/topics')).data,
   });
 
-  const { data: workTypes } = useQuery({
+  const { data: workTypes, isLoading: typesLoading } = useQuery({
     queryKey: ['metadata', 'work-types'],
     queryFn: async () => (await api.get('/metadata/work-types')).data,
   });
 
-  const { data: users } = useQuery({
+  const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ['users'],
-    queryFn: async () => (await api.get('/users/')).data,
+    queryFn: async () => (await api.get('/users/')).data as User[],
   });
 
   const {
@@ -86,38 +89,35 @@ export default function ProjectForm({
   const selectedTypeIds = watch("type_ids") || [];
   const selectedMemberIds = watch("member_ids") || [];
 
-  const toggleTopic = (topicId: string) => {
-    const current = [...selectedTopicIds];
-    const index = current.indexOf(topicId);
+  const toggleItem = (field: "topic_ids" | "type_ids" | "member_ids", id: string) => {
+    const current = [...(watch(field) || [])];
+    const index = current.indexOf(id);
     if (index > -1) {
       current.splice(index, 1);
     } else {
-      current.push(topicId);
+      current.push(id);
     }
-    setValue("topic_ids", current);
+    setValue(field, current);
   };
 
-  const toggleType = (typeId: string) => {
-    const current = [...selectedTypeIds];
-    const index = current.indexOf(typeId);
-    if (index > -1) {
-      current.splice(index, 1);
-    } else {
-      current.push(typeId);
-    }
-    setValue("type_ids", current);
+  const removeItem = (field: "topic_ids" | "type_ids" | "member_ids", id: string) => {
+    const current = [...(watch(field) || [])];
+    const filtered = current.filter(item => item !== id);
+    setValue(field, filtered);
   };
 
-  const toggleMember = (userId: string) => {
-    const current = [...selectedMemberIds];
-    const index = current.indexOf(userId);
-    if (index > -1) {
-      current.splice(index, 1);
-    } else {
-      current.push(userId);
-    }
-    setValue("member_ids", current);
-  };
+  // Transformation for RichDropdown
+  const topicItems: RichDropdownItem[] = useMemo(() => 
+    topics?.map((t: Topic) => ({ id: t.id, label: t.name, color: t.color })) || []
+  , [topics]);
+
+  const typeItems: RichDropdownItem[] = useMemo(() => 
+    workTypes?.map((t: WorkType) => ({ id: t.id, label: t.name, color: t.color })) || []
+  , [workTypes]);
+
+  const userItems: RichDropdownItem[] = useMemo(() => 
+    users?.map((u: User) => ({ id: u.id, label: u.full_name || u.email, icon: <UserIcon className="w-3 h-3" /> })) || []
+  , [users]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -130,69 +130,42 @@ export default function ProjectForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Topics</Label>
-          <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-slate-50/50 min-h-[40px]">
-            {topics?.map((t: Topic) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => toggleTopic(t.id)}
-                className={cn(
-                  "px-2 py-0.5 rounded text-[10px] font-bold border transition-all",
-                  selectedTopicIds.includes(t.id)
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
-                )}
-              >
-                {t.name}
-              </button>
-            ))}
-          </div>
+          <RichDropdown 
+            items={topicItems}
+            selectedValues={selectedTopicIds}
+            onSelect={(id) => toggleItem("topic_ids", id)}
+            onRemove={(id) => removeItem("topic_ids", id)}
+            multi={true}
+            isLoading={topicsLoading}
+            placeholder="Select topics..."
+          />
         </div>
         <div className="space-y-2">
           <Label>Types</Label>
-          <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-slate-50/50 min-h-[40px]">
-            {workTypes?.map((t: WorkType) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => toggleType(t.id)}
-                className={cn(
-                  "px-2 py-0.5 rounded text-[10px] font-bold border transition-all",
-                  selectedTypeIds.includes(t.id)
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
-                )}
-              >
-                {t.name}
-              </button>
-            ))}
-          </div>
+          <RichDropdown 
+            items={typeItems}
+            selectedValues={selectedTypeIds}
+            onSelect={(id) => toggleItem("type_ids", id)}
+            onRemove={(id) => removeItem("type_ids", id)}
+            multi={true}
+            isLoading={typesLoading}
+            placeholder="Select types..."
+          />
         </div>
       </div>
 
       <div className="space-y-2">
         <Label>Project Members (Access Control)</Label>
-        <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-slate-50/50 min-h-[40px] max-h-[120px] overflow-y-auto">
-          {users?.map((u: any) => (
-            <button
-              key={u.id}
-              type="button"
-              onClick={() => toggleMember(u.id)}
-              className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-medium border transition-all flex items-center gap-1.5",
-                selectedMemberIds.includes(u.id)
-                  ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-200"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-              )}
-            >
-              <div className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                selectedMemberIds.includes(u.id) ? "bg-white" : "bg-slate-300"
-              )} />
-              {u.full_name || u.email}
-            </button>
-          ))}
-        </div>
+        <RichDropdown 
+            items={userItems}
+            selectedValues={selectedMemberIds}
+            onSelect={(id) => toggleItem("member_ids", id)}
+            onRemove={(id) => removeItem("member_ids", id)}
+            multi={true}
+            isLoading={usersLoading}
+            placeholder="Assign members..."
+            searchPlaceholder="Search team..."
+        />
         <p className="text-[10px] text-slate-500">Members selected here will have full visibility and access to this project.</p>
       </div>
 
@@ -247,7 +220,7 @@ export default function ProjectForm({
           Cancel
         </Button>
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : "Create Project"}
+          {isLoading ? "Saving..." : "Save Project"}
         </Button>
       </div>
     </form>

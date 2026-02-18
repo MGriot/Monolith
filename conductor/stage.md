@@ -4,6 +4,7 @@
 - N/A
 
 ## 📋 Recent History
+- **FRONT-079**: UI: Rich Dropdown Toggle Components
 - **FRONT-078**: UI: Scoped Taxonomy Management
 - **BACK-043**: Logic: Template Taxonomy Presets
 - **BACK-042**: Model: Scoped Taxonomy

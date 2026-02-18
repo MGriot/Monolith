@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { User as UserIcon, Loader2, Milestone } from "lucide-react";
+import { User as UserIcon, Loader2, Milestone, Tag, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
 import type { User, Task, Topic, WorkType } from "@/types";
 
 const taskSchema = z.object({
@@ -52,12 +53,12 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
     },
   });
 
-  const { data: topics } = useQuery({
+  const { data: topics, isLoading: isLoadingTopics } = useQuery({
     queryKey: ['metadata', 'topics'],
     queryFn: async () => (await api.get('/metadata/topics')).data,
   });
 
-  const { data: workTypes } = useQuery({
+  const { data: workTypes, isLoading: isLoadingTypes } = useQuery({
     queryKey: ['metadata', 'work-types'],
     queryFn: async () => (await api.get('/metadata/work-types')).data,
   });
@@ -95,38 +96,35 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
   const selectedParentId = watch("parent_id");
   const selectedColor = watch("color");
 
-  const toggleAssignee = (userId: string) => {
-    const current = [...selectedAssignees];
-    const index = current.indexOf(userId);
+  const toggleItem = (field: "assignee_ids" | "topic_ids" | "type_ids", id: string) => {
+    const current = [...(watch(field) || [])];
+    const index = current.indexOf(id);
     if (index > -1) {
       current.splice(index, 1);
     } else {
-      current.push(userId);
+      current.push(id);
     }
-    setValue("assignee_ids", current);
+    setValue(field, current);
   };
 
-  const toggleTopic = (topicId: string) => {
-    const current = [...selectedTopicIds];
-    const index = current.indexOf(topicId);
-    if (index > -1) {
-      current.splice(index, 1);
-    } else {
-      current.push(topicId);
-    }
-    setValue("topic_ids", current);
+  const removeItem = (field: "assignee_ids" | "topic_ids" | "type_ids", id: string) => {
+    const current = [...(watch(field) || [])];
+    const filtered = current.filter(item => item !== id);
+    setValue(field, filtered);
   };
 
-  const toggleType = (typeId: string) => {
-    const current = [...selectedTypeIds];
-    const index = current.indexOf(typeId);
-    if (index > -1) {
-      current.splice(index, 1);
-    } else {
-      current.push(typeId);
-    }
-    setValue("type_ids", current);
-  };
+  // Transformation for RichDropdown
+  const userItems: RichDropdownItem[] = useMemo(() => 
+    users?.map(u => ({ id: u.id, label: u.full_name || u.email, icon: <UserIcon className="w-3 h-3" /> })) || []
+  , [users]);
+
+  const topicItems: RichDropdownItem[] = useMemo(() => 
+    topics?.map((t: Topic) => ({ id: t.id, label: t.name, color: t.color })) || []
+  , [topics]);
+
+  const typeItems: RichDropdownItem[] = useMemo(() => 
+    workTypes?.map((t: WorkType) => ({ id: t.id, label: t.name, color: t.color })) || []
+  , [workTypes]);
 
   // Helper to flatten tasks for the select, excluding descendants of the current task
   const getAvailableParents = () => {
@@ -265,72 +263,44 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
 
       <div className="space-y-2">
         <Label>Assignees</Label>
-        <div className="flex flex-wrap gap-2 p-3 border rounded-md bg-slate-50/50 min-h-[60px]">
-          {isLoadingUsers ? (
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <Loader2 className="w-3 h-3 animate-spin" /> Loading team...
-            </div>
-          ) : (
-            users?.map(user => (
-              <button
-                key={user.id}
-                type="button"
-                onClick={() => toggleAssignee(user.id)}
-                className={cn(
-                  "flex items-center gap-2 px-2 py-1 rounded-full text-xs border transition-all",
-                  selectedAssignees.includes(user.id)
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                )}
-              >
-                <UserIcon className="w-3 h-3" />
-                {user.full_name || user.email}
-              </button>
-            ))
-          )}
-        </div>
+        <RichDropdown 
+            items={userItems}
+            selectedValues={selectedAssignees}
+            onSelect={(id) => toggleItem("assignee_ids", id)}
+            onRemove={(id) => removeItem("assignee_ids", id)}
+            multi={true}
+            isLoading={isLoadingUsers}
+            placeholder="Assign members..."
+            searchPlaceholder="Search team..."
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Topics</Label>
-          <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-slate-50/50 min-h-[40px]">
-            {topics?.map((t: Topic) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => toggleTopic(t.id)}
-                className={cn(
-                  "px-2 py-0.5 rounded text-[10px] font-bold border transition-all",
-                  selectedTopicIds.includes(t.id)
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
-                )}
-              >
-                {t.name}
-              </button>
-            ))}
-          </div>
+          <RichDropdown 
+            items={topicItems}
+            selectedValues={selectedTopicIds}
+            onSelect={(id) => toggleItem("topic_ids", id)}
+            onRemove={(id) => removeItem("topic_ids", id)}
+            multi={true}
+            isLoading={isLoadingTopics}
+            placeholder="Select topics..."
+            searchPlaceholder="Search categories..."
+          />
         </div>
         <div className="space-y-2">
           <Label>Types</Label>
-          <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-slate-50/50 min-h-[40px]">
-            {workTypes?.map((t: WorkType) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => toggleType(t.id)}
-                className={cn(
-                  "px-2 py-0.5 rounded text-[10px] font-bold border transition-all",
-                  selectedTypeIds.includes(t.id)
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
-                )}
-              >
-                {t.name}
-              </button>
-            ))}
-          </div>
+          <RichDropdown 
+            items={typeItems}
+            selectedValues={selectedTypeIds}
+            onSelect={(id) => toggleItem("type_ids", id)}
+            onRemove={(id) => removeItem("type_ids", id)}
+            multi={true}
+            isLoading={isLoadingTypes}
+            placeholder="Select work types..."
+            searchPlaceholder="Search types..."
+          />
         </div>
       </div>
 
