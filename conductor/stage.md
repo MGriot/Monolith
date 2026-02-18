@@ -4,6 +4,7 @@
 - N/A
 
 ## 📋 Recent History
+- **FRONT-083**: UI: Dynamic Date vs. Duration Inputs
 - **BACK-047**: Logic: Bidirectional Date/Duration Calculation
 - **FRONT-082**: UI: PERT Estimation Form Fields
 - **BACK-046**: Logic: PERT Expected Duration Calculation
