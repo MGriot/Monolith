@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Milestone, Calculator } from "lucide-react";
+import { Milestone, Calculator, CalendarDays, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
 import { AssigneeSelector } from "@/components/assignee-selector";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { addDays, differenceInDays, format, parseISO } from "date-fns";
 import type { Task, Topic, WorkType } from "@/types";
 
 const taskSchema = z.object({
@@ -35,6 +37,7 @@ const taskSchema = z.object({
   optimistic_days: z.number().optional(),
   normal_days: z.number().optional(),
   pessimistic_days: z.number().optional(),
+  duration_days: z.number().min(0).optional(),
 });
 
 export type TaskFormValues = z.infer<typeof taskSchema>;
@@ -49,6 +52,8 @@ interface TaskFormProps {
 }
 
 export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading, allTasks, editingTaskId }: TaskFormProps) {
+  const [planningMode, setPlanningMode] = useState<"dates" | "duration">("dates");
+
   const { data: topics, isLoading: isLoadingTopics } = useQuery({
     queryKey: ['metadata', 'topics'],
     queryFn: async () => (await api.get('/metadata/topics')).data,
@@ -81,6 +86,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
       optimistic_days: 0,
       normal_days: 0,
       pessimistic_days: 0,
+      duration_days: 0,
       ...initialValues,
       start_date: initialValues?.start_date?.split('T')[0] || null,
       due_date: initialValues?.due_date?.split('T')[0] || null,
@@ -95,6 +101,10 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
   const selectedParentId = watch("parent_id");
   const selectedColor = watch("color");
 
+  const startDate = watch("start_date");
+  const dueDate = watch("due_date");
+  const durationDays = watch("duration_days") || 0;
+
   const optDays = watch("optimistic_days") || 0;
   const normDays = watch("normal_days") || 0;
   const pessDays = watch("pessimistic_days") || 0;
@@ -103,6 +113,27 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
     if (optDays === 0 && normDays === 0 && pessDays === 0) return 0;
     return Math.round(((optDays + (4 * normDays) + pessDays) / 6) * 100) / 100;
   }, [optDays, normDays, pessDays]);
+
+  // Sync logic for the UI
+  useEffect(() => {
+    if (planningMode === "dates" && startDate && dueDate) {
+      const start = parseISO(startDate);
+      const end = parseISO(dueDate);
+      const diff = differenceInDays(end, start) + 1;
+      if (diff >= 0 && diff !== durationDays) {
+        setValue("duration_days", diff);
+      }
+    }
+  }, [startDate, dueDate, planningMode, setValue, durationDays]);
+
+  const handleDurationChange = (val: number) => {
+    setValue("duration_days", val);
+    if (planningMode === "duration" && startDate && val > 0) {
+      const start = parseISO(startDate);
+      const newEnd = addDays(start, val - 1);
+      setValue("due_date", format(newEnd, "yyyy-MM-dd"));
+    }
+  };
 
   const toggleItem = (field: "assignee_ids" | "topic_ids" | "type_ids", id: string) => {
     const current = [...(watch(field) || [])];
@@ -345,14 +376,50 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="start_date">Start Date</Label>
-          <Input id="start_date" type="date" {...register("start_date")} />
+      <div className="space-y-3 p-3 border rounded-lg bg-slate-50/50">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
+            <CalendarDays className="w-3.5 h-3.5" />
+            Scheduling & Timeline
+          </Label>
+          <Tabs value={planningMode} onValueChange={(v: any) => setPlanningMode(v)}>
+            <TabsList className="h-7 p-0.5 bg-slate-200/50">
+              <TabsTrigger value="dates" className="text-[10px] h-6 px-2">Fixed Dates</TabsTrigger>
+              <TabsTrigger value="duration" className="text-[10px] h-6 px-2">Duration Based</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="due_date">Due Date</Label>
-          <Input id="due_date" type="date" {...register("due_date")} />
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="start_date" className="text-[10px] text-slate-500 uppercase">Start Date</Label>
+            <Input id="start_date" type="date" {...register("start_date")} className="h-8 text-xs bg-white" />
+          </div>
+          
+          <div className="space-y-1.5">
+            <Label htmlFor="duration_days" className="text-[10px] text-slate-500 uppercase flex items-center gap-1">
+              <Clock className="w-2.5 h-2.5" /> Duration
+            </Label>
+            <Input 
+              id="duration_days" 
+              type="number" 
+              value={durationDays}
+              onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
+              className={cn("h-8 text-xs bg-white", planningMode === "dates" && "bg-slate-100 italic text-slate-400")}
+              disabled={planningMode === "dates"}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="due_date" className="text-[10px] text-slate-500 uppercase">Due Date</Label>
+            <Input 
+              id="due_date" 
+              type="date" 
+              {...register("due_date")} 
+              className={cn("h-8 text-xs bg-white", planningMode === "duration" && "bg-slate-100 italic text-slate-400")}
+              disabled={planningMode === "duration"}
+            />
+          </div>
         </div>
       </div>
 

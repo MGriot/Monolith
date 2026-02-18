@@ -1312,9 +1312,9 @@
   {
     "id": "FRONT-083",
     "title": "UI: Dynamic Date vs. Duration Inputs",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 17.7",
-    "description": "Implement bidirectional UI logic in Task forms to toggle between Date-driven and Duration-driven planning modes."
+    "description": "Implemented bidirectional UI logic in Task forms to toggle between Date-driven and Duration-driven planning modes."
   }
 ]
