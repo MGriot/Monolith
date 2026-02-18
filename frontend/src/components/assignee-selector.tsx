@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { 
@@ -18,7 +18,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
 import type { User, Team } from "@/types";
 
 interface AssigneeSelectorProps {
@@ -42,7 +41,6 @@ export function AssigneeSelector({
 }: AssigneeSelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [previewTeamId, setPreviewTeamId] = useState<string | null>(null);
 
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ['users'],
