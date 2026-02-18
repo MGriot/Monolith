@@ -53,6 +53,11 @@ export interface Task {
   color?: string | null;
   created_at: string;
   updated_at: string;
+  // PERT Estimation Fields
+  optimistic_days?: number;
+  normal_days?: number;
+  pessimistic_days?: number;
+  expected_duration_days?: number;
 }
 
 // Deprecated: use Task

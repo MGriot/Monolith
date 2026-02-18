@@ -48,6 +48,11 @@ class TaskBase(BaseModel):
     slack_days: Optional[int] = 0
     is_archived: bool = False
     archived_at: Optional[datetime] = None
+    # PERT Estimation Fields
+    optimistic_days: Optional[int] = 0
+    normal_days: Optional[int] = 0
+    pessimistic_days: Optional[int] = 0
+    expected_duration_days: Optional[float] = 0.0
 
 class TaskShortCreate(BaseModel):
     title: str
