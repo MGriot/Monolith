@@ -1216,7 +1216,7 @@
   {
     "id": "FRONT-077",
     "title": "UI: Native File Previews (Modal)",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 17.2",
     "description": "Implement a FilePreview component using a Modal to display Images and PDFs without downloading."

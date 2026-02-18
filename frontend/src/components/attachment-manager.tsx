@@ -8,8 +8,10 @@ import {
   FileText, 
   Download,
   Loader2,
-  Plus
+  Plus,
+  Eye
 } from "lucide-react";
+import FilePreviewDialog from "./file-preview-dialog";
 
 interface AttachmentManagerProps {
   taskId: string;
@@ -19,6 +21,7 @@ interface AttachmentManagerProps {
 export default function AttachmentManager({ taskId, attachments }: AttachmentManagerProps) {
   const queryClient = useQueryClient();
   const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -66,6 +69,11 @@ export default function AttachmentManager({ taskId, attachments }: AttachmentMan
     return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
   };
 
+  const isPdf = (url: string) => {
+    const ext = url.split('.').pop()?.toLowerCase();
+    return ext === 'pdf';
+  };
+
   return (
     <div className="space-y-4 pt-6 border-t mt-6">
       <div className="flex items-center justify-between">
@@ -103,13 +111,17 @@ export default function AttachmentManager({ taskId, attachments }: AttachmentMan
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {attachments.map((url) => {
           const fullUrl = url.startsWith('http') ? url : url; 
+          const canPreview = isImage(url) || isPdf(url);
           
           return (
             <div 
               key={url} 
               className="flex items-center gap-3 p-2 rounded-lg border bg-white group hover:border-primary/30 transition-all shadow-sm"
             >
-              <div className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden border">
+              <div 
+                className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => canPreview && setPreviewUrl(fullUrl)}
+              >
                 {isImage(url) ? (
                   <img 
                     src={fullUrl} 
@@ -121,24 +133,41 @@ export default function AttachmentManager({ taskId, attachments }: AttachmentMan
                 )}
               </div>
               
-              <div className="flex-1 min-w-0">
+              <div 
+                className="flex-1 min-w-0 cursor-pointer"
+                onClick={() => canPreview && setPreviewUrl(fullUrl)}
+              >
                 <p className="text-[10px] font-bold text-slate-700 truncate">
                   {getFileName(url)}
                 </p>
+                {canPreview && (
+                  <p className="text-[8px] text-primary font-black uppercase tracking-tight">Click to preview</p>
+                )}
               </div>
 
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {canPreview && (
+                  <button 
+                    onClick={() => setPreviewUrl(fullUrl)}
+                    className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-primary transition-colors"
+                    title="Preview"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <a 
                   href={fullUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-primary transition-colors"
+                  title="Download"
                 >
                   <Download className="w-3.5 h-3.5" />
                 </a>
                 <button 
                   onClick={() => removeMutation.mutate(url)}
                   className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-destructive transition-colors"
+                  title="Delete"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -151,6 +180,11 @@ export default function AttachmentManager({ taskId, attachments }: AttachmentMan
       {attachments.length === 0 && !isUploading && (
         <p className="text-xs text-slate-400 italic">No files attached.</p>
       )}
+
+      <FilePreviewDialog 
+        url={previewUrl}
+        onClose={() => setPreviewUrl(null)}
+      />
     </div>
   );
 }
