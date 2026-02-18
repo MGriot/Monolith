@@ -15,10 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
-import type { Topic, WorkType, User } from "@/types";
+import { AssigneeSelector } from "@/components/assignee-selector";
+import type { Topic, WorkType } from "@/types";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -57,11 +57,6 @@ export default function ProjectForm({
   const { data: workTypes, isLoading: typesLoading } = useQuery({
     queryKey: ['metadata', 'work-types'],
     queryFn: async () => (await api.get('/metadata/work-types')).data,
-  });
-
-  const { data: users, isLoading: usersLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => (await api.get('/users/')).data as User[],
   });
 
   const {
@@ -115,10 +110,6 @@ export default function ProjectForm({
     workTypes?.map((t: WorkType) => ({ id: t.id, label: t.name, color: t.color })) || []
   , [workTypes]);
 
-  const userItems: RichDropdownItem[] = useMemo(() => 
-    users?.map((u: User) => ({ id: u.id, label: u.full_name || u.email, icon: <UserIcon className="w-3 h-3" /> })) || []
-  , [users]);
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
@@ -155,16 +146,12 @@ export default function ProjectForm({
       </div>
 
       <div className="space-y-2">
-        <Label>Project Members (Access Control)</Label>
-        <RichDropdown 
-            items={userItems}
+        <AssigneeSelector 
+            label="Project Members (Access Control)"
             selectedValues={selectedMemberIds}
             onSelect={(id) => toggleItem("member_ids", id)}
             onRemove={(id) => removeItem("member_ids", id)}
-            multi={true}
-            isLoading={usersLoading}
             placeholder="Assign members..."
-            searchPlaceholder="Search team..."
         />
         <p className="text-[10px] text-slate-500">Members selected here will have full visibility and access to this project.</p>
       </div>

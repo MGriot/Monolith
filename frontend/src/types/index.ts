@@ -105,6 +105,15 @@ export interface ProjectTemplate {
   owner_id: string;
 }
 
+export interface Team {
+  id: string;
+  name: string;
+  description?: string | null;
+  owner_id?: string | null;
+  created_at: string;
+  members?: User[];
+}
+
 export interface Idea {
   id: string;
   project_id: string;
