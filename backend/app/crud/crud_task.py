@@ -307,7 +307,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                         
         return active_blocker_titles
 
-    async def create(self, db: AsyncSession, *, obj_in: TaskCreate) -> Task:
+    async def create(self, db: AsyncSession, *, obj_in: TaskCreate, owner_id: Optional[UUID] = None) -> Task:
         obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True, exclude={'topic_ids', 'type_ids'}))
         assignee_ids = obj_data.pop("assignee_ids", [])
         subtasks_data = obj_data.pop("subtasks", [])
@@ -334,6 +334,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             obj_data["sort_index"] = (max_idx or 0) + 10
             
         db_obj = self.model(**obj_data)
+        if owner_id:
+            db_obj.owner_id = owner_id
         
         if assignee_ids:
             from app.models.user import User

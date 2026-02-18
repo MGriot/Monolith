@@ -27,6 +27,7 @@ class ProjectBase(BaseModel):
 
 class ProjectCreate(ProjectBase):
     name: str
+    template_id: Optional[UUID] = None
 
 class ProjectUpdate(ProjectBase):
     pass
