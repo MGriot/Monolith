@@ -1264,18 +1264,18 @@
   {
     "id": "BACK-044",
     "title": "Model: Advanced Dependency Types",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "PRD Section 17.5",
-    "description": "Add 'type' field (FS, FF, SS, SF) to Dependency model and update related schemas."
+    "description": "Verified FS, FF, SS, SF types in Dependency model and updated related schemas."
   },
   {
     "id": "FRONT-081",
     "title": "UI: Dependency Type Selection",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "PRD Section 17.5",
-    "description": "Update Dependency Manager UI to allow users to select the dependency type (FS/FF/SS/SF)."
+    "description": "Updated Dependency Manager UI to support granular selection of dependency types and lag_days."
   },
   {
     "id": "BACK-045",

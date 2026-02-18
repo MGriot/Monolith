@@ -4,11 +4,13 @@ export interface User {
   email: string;
 }
 
+export type DependencyType = 'FS' | 'SS' | 'FF' | 'SF';
+
 export interface Dependency {
   id: string;
   successor_id: string;
   predecessor_id: string;
-  type: string;
+  type: DependencyType;
   lag_days: number;
 }
 
