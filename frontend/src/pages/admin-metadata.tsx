@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Edit2, Tag, Briefcase, Loader2 } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2, Edit2, Tag, Briefcase, Loader2, Globe, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Topic, WorkType } from '@/types';
@@ -29,13 +30,13 @@ export default function AdminMetadataPage() {
 
   // Queries
   const { data: topics, isLoading: topicsLoading } = useQuery<Topic[]>({
-    queryKey: ['metadata', 'topics'],
-    queryFn: async () => (await api.get('/metadata/topics')).data,
+    queryKey: ['metadata', 'topics', 'all'],
+    queryFn: async () => (await api.get('/metadata/topics?all_scopes=true')).data,
   });
 
   const { data: workTypes, isLoading: typesLoading } = useQuery<WorkType[]>({
-    queryKey: ['metadata', 'work-types'],
-    queryFn: async () => (await api.get('/metadata/work-types')).data,
+    queryKey: ['metadata', 'work-types', 'all'],
+    queryFn: async () => (await api.get('/metadata/work-types?all_scopes=true')).data,
   });
 
   // Mutations
@@ -124,11 +125,36 @@ export default function AdminMetadataPage() {
     });
   };
 
+  const ScopeBadge = ({ item }: { item: Topic | WorkType }) => {
+    if (!item.project_id && !item.task_id) {
+      return (
+        <Badge variant="outline" className="gap-1 bg-blue-50 text-blue-700 border-blue-200">
+          <Globe className="w-3 h-3" />
+          Global
+        </Badge>
+      );
+    }
+    if (item.task_id) {
+      return (
+        <Badge variant="outline" className="gap-1 bg-amber-50 text-amber-700 border-amber-200">
+          <Lock className="w-3 h-3" />
+          Task
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="gap-1 bg-indigo-50 text-indigo-700 border-indigo-200">
+        <Lock className="w-3 h-3" />
+        Project
+      </Badge>
+    );
+  };
+
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-slate-900">Metadata Management</h1>
-        <p className="text-slate-500">Configure global Topics and Work Types for projects and tasks.</p>
+        <p className="text-slate-500">Configure global and scoped Topics and Work Types for projects and tasks.</p>
       </div>
 
       <Tabs defaultValue="topics" className="w-full">
@@ -147,8 +173,8 @@ export default function AdminMetadataPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="md:col-span-1 h-fit">
               <CardHeader>
-                <CardTitle className="text-lg">Add New Topic</CardTitle>
-                <CardDescription>Create a new category label.</CardDescription>
+                <CardTitle className="text-lg">Add New Global Topic</CardTitle>
+                <CardDescription>Create a new category label visible everywhere.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -181,7 +207,7 @@ export default function AdminMetadataPage() {
                   disabled={!newTopicName || createTopicMutation.isPending}
                 >
                   {createTopicMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  Create Topic
+                  Create Global Topic
                 </Button>
               </CardContent>
             </Card>
@@ -192,6 +218,7 @@ export default function AdminMetadataPage() {
                   <TableRow>
                     <TableHead>Color</TableHead>
                     <TableHead>Name</TableHead>
+                    <TableHead>Scope</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -199,7 +226,7 @@ export default function AdminMetadataPage() {
                 <TableBody>
                   {topicsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8">
+                      <TableCell colSpan={5} className="text-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
                       </TableCell>
                     </TableRow>
@@ -212,6 +239,9 @@ export default function AdminMetadataPage() {
                         />
                       </TableCell>
                       <TableCell className="font-medium">{topic.name}</TableCell>
+                      <TableCell>
+                        <ScopeBadge item={topic} />
+                      </TableCell>
                       <TableCell>
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
@@ -249,8 +279,8 @@ export default function AdminMetadataPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="md:col-span-1 h-fit">
               <CardHeader>
-                <CardTitle className="text-lg">Add New Work Type</CardTitle>
-                <CardDescription>Define a type of activity.</CardDescription>
+                <CardTitle className="text-lg">Add New Global Work Type</CardTitle>
+                <CardDescription>Define a type of activity visible everywhere.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -283,7 +313,7 @@ export default function AdminMetadataPage() {
                   disabled={!newTypeName || createTypeMutation.isPending}
                 >
                   {createTypeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  Create Work Type
+                  Create Global Work Type
                 </Button>
               </CardContent>
             </Card>
@@ -294,6 +324,7 @@ export default function AdminMetadataPage() {
                   <TableRow>
                     <TableHead>Color</TableHead>
                     <TableHead>Name</TableHead>
+                    <TableHead>Scope</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -301,7 +332,7 @@ export default function AdminMetadataPage() {
                 <TableBody>
                   {typesLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8">
+                      <TableCell colSpan={5} className="text-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
                       </TableCell>
                     </TableRow>
@@ -314,6 +345,9 @@ export default function AdminMetadataPage() {
                         />
                       </TableCell>
                       <TableCell className="font-medium">{type.name}</TableCell>
+                      <TableCell>
+                        <ScopeBadge item={type} />
+                      </TableCell>
                       <TableCell>
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",

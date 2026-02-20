@@ -86,6 +86,8 @@ export interface Project {
   is_archived?: boolean;
   archived_at?: string | null;
   gantt_regions?: any[];
+  allowed_global_topics?: string[];
+  allowed_global_work_types?: string[];
 }
 
 export interface Topic {
@@ -93,6 +95,8 @@ export interface Topic {
   name: string;
   color: string;
   is_active: boolean;
+  project_id?: string | null;
+  task_id?: string | null;
 }
 
 export interface WorkType {
@@ -101,6 +105,8 @@ export interface WorkType {
   color: string;
   icon?: string;
   is_active: boolean;
+  project_id?: string | null;
+  task_id?: string | null;
 }
 
 export interface ProjectTemplate {
@@ -154,6 +160,20 @@ export interface Workflow {
   created_at: string;
   updated_at: string;
   owner?: User | null;
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  author_id: string;
+  project_id?: string | null;
+  task_id?: string | null;
+  idea_id?: string | null;
+  parent_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  author?: User | null;
+  replies?: Comment[];
 }
 
 

@@ -249,6 +249,13 @@ async def create_project(
     """
     Create new project.
     """
+    if project_in.template_id:
+        from app.crud.crud_template import project_template as crud_template
+        template = await crud_template.get(db, id=project_in.template_id)
+        if template:
+            project_in.allowed_global_topics = template.allowed_global_topics
+            project_in.allowed_global_work_types = template.allowed_global_work_types
+
     project = await crud_project.project.create_with_owner(
         db=db, obj_in=project_in, owner_id=current_user.id
     )

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, ChevronsUpDown, Search, X, Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, Search, X, Loader2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,7 @@ interface RichDropdownProps {
   selectedValues: string[];
   onSelect: (id: string) => void;
   onRemove?: (id: string) => void;
+  onCreate?: (name: string) => void;
   placeholder?: string;
   searchPlaceholder?: string;
   emptyText?: string;
@@ -35,6 +36,7 @@ export function RichDropdown({
   selectedValues,
   onSelect,
   onRemove,
+  onCreate,
   placeholder = "Select item...",
   searchPlaceholder = "Search...",
   emptyText = "No items found.",
@@ -43,7 +45,7 @@ export function RichDropdown({
   className,
 }: RichDropdownProps) {
   const [open, setOpen] = React.useState(false);
-  const [searchQuery, setSearchPlaceholder] = React.useState("");
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   const filteredItems = React.useMemo(() => {
     if (!searchQuery) return items;
@@ -125,43 +127,58 @@ export function RichDropdown({
               <Input
                 placeholder={searchPlaceholder}
                 value={searchQuery}
-                onChange={(e) => setSearchPlaceholder(e.target.value)}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none border-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
             <div className="flex-1 overflow-y-auto p-1">
-              {filteredItems.length === 0 ? (
+              {filteredItems.length === 0 && !onCreate ? (
                 <div className="py-6 text-center text-sm text-muted-foreground">
                   {emptyText}
                 </div>
               ) : (
-                filteredItems.map((item) => (
-                  <button
-                    key={item.id}
-                    className={cn(
-                      "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-                      selectedValues.includes(item.id) && "bg-slate-50 font-bold"
-                    )}
-                    onClick={() => {
-                      onSelect(item.id);
-                      if (!multi) setOpen(false);
-                    }}
-                  >
-                    <div className="flex items-center gap-2 flex-1">
-                      {item.color && (
-                        <div
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: item.color }}
-                        />
+                <>
+                  {filteredItems.map((item) => (
+                    <button
+                      key={item.id}
+                      className={cn(
+                        "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+                        selectedValues.includes(item.id) && "bg-slate-50 font-bold"
                       )}
-                      {item.icon && <span className="shrink-0">{item.icon}</span>}
-                      <span className="truncate">{item.label}</span>
-                    </div>
-                    {selectedValues.includes(item.id) && (
-                      <Check className="h-4 w-4 text-primary shrink-0 ml-2" />
-                    )}
-                  </button>
-                ))
+                      onClick={() => {
+                        onSelect(item.id);
+                        if (!multi) setOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center gap-2 flex-1">
+                        {item.color && (
+                          <div
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: item.color }}
+                          />
+                        )}
+                        {item.icon && <span className="shrink-0">{item.icon}</span>}
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                      {selectedValues.includes(item.id) && (
+                        <Check className="h-4 w-4 text-primary shrink-0 ml-2" />
+                      )}
+                    </button>
+                  ))}
+                  {onCreate && searchQuery && !filteredItems.find(i => i.label.toLowerCase() === searchQuery.toLowerCase()) && (
+                    <button
+                        className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 text-primary font-medium border-t mt-1"
+                        onClick={() => {
+                            onCreate(searchQuery);
+                            if (!multi) setOpen(false);
+                            setSearchQuery("");
+                        }}
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create "{searchQuery}"
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>

@@ -30,6 +30,10 @@ async def sync_db_schema():
         await run_stmt(conn, "ALTER TABLE tasks ADD COLUMN is_milestone BOOLEAN DEFAULT FALSE", "is_milestone to tasks")
         await run_stmt(conn, "ALTER TABLE tasks ADD COLUMN deadline_at TIMESTAMP WITHOUT TIME ZONE", "deadline_at to tasks")
         await run_stmt(conn, "ALTER TABLE tasks ADD COLUMN parent_id UUID REFERENCES tasks(id)", "parent_id to tasks")
+        await run_stmt(conn, "ALTER TABLE tasks ADD COLUMN optimistic_days INTEGER DEFAULT 0", "optimistic_days to tasks")
+        await run_stmt(conn, "ALTER TABLE tasks ADD COLUMN normal_days INTEGER DEFAULT 0", "normal_days to tasks")
+        await run_stmt(conn, "ALTER TABLE tasks ADD COLUMN pessimistic_days INTEGER DEFAULT 0", "pessimistic_days to tasks")
+        await run_stmt(conn, "ALTER TABLE tasks ADD COLUMN duration_days INTEGER DEFAULT 0", "duration_days to tasks")
         
         # Subtasks (still exist for now)
         await run_stmt(conn, "ALTER TABLE subtasks ADD COLUMN is_milestone BOOLEAN DEFAULT FALSE", "is_milestone to subtasks")
@@ -43,7 +47,13 @@ async def sync_db_schema():
         
         # Projects
         await run_stmt(conn, "ALTER TABLE projects ADD COLUMN gantt_regions JSONB DEFAULT '[]'::jsonb", "gantt_regions to projects")
+        await run_stmt(conn, "ALTER TABLE projects ADD COLUMN allowed_global_topics JSONB DEFAULT '[]'::jsonb", "allowed_global_topics to projects")
+        await run_stmt(conn, "ALTER TABLE projects ADD COLUMN allowed_global_work_types JSONB DEFAULT '[]'::jsonb", "allowed_global_work_types to projects")
         
+        # Project Templates
+        await run_stmt(conn, "ALTER TABLE project_templates ADD COLUMN allowed_global_topics JSON DEFAULT '[]'::json", "allowed_global_topics to project_templates")
+        await run_stmt(conn, "ALTER TABLE project_templates ADD COLUMN allowed_global_work_types JSON DEFAULT '[]'::json", "allowed_global_work_types to project_templates")
+
         # Enums
         # PostgreSQL enum updates need specialized handling
         try:

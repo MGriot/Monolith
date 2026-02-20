@@ -1316,5 +1316,68 @@
     "priority": "high",
     "linked_req": "PRD Section 17.7",
     "description": "Implemented bidirectional UI logic in Task forms to toggle between Date-driven and Duration-driven planning modes."
+  },
+  {
+    "id": "BACK-048",
+    "title": "Model: Universal Threaded Comments",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 18.1",
+    "description": "Create a polymorphic Comment model supporting threading (parent_id) and linking to Projects, Tasks, or Ideas.",
+    "verification_method": "Run database migration and verify schema."
+  },
+  {
+    "id": "BACK-049",
+    "title": "API: Universal Comment CRUD",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 18.1",
+    "description": "Implement CRUD endpoints for threaded comments with authorization checks.",
+    "verification_method": "Test endpoints with Postman/curl: GET/POST/PUT/DELETE /comments"
+  },
+  {
+    "id": "BACK-050",
+    "title": "Logic: Template Taxonomy Whitelisting",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 18.2",
+    "description": "Update Project Template model to store allowed Topic/WorkType IDs and enforce restrictions during project/task creation.",
+    "verification_method": "Unit test template instantiation with restricted taxonomy."
+  },
+  {
+    "id": "FRONT-084",
+    "title": "UI: Universal Threaded Comment Component",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 18.1",
+    "description": "Develop a reusable React component for displaying and interacting with threaded comments.",
+    "verification_method": "Visually verify threading and posting in UI."
+  },
+  {
+    "id": "FRONT-085",
+    "title": "UI: Taxonomy Selection with On-the-fly Creation",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 18.2",
+    "description": "Update RichDropdown to support creating new scoped topics/worktypes directly within the selection flow.",
+    "verification_method": "Create a new topic from the task creation dialog."
+  },
+  {
+    "id": "FRONT-086",
+    "title": "UI: Template Whitelist Configuration",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "PRD Section 18.2",
+    "description": "Add multi-select fields to the Template Management page for whitelisting Allowed Topics/WorkTypes.",
+    "verification_method": "Save a template with whitelisted categories and verify persistence."
+  },
+  {
+    "id": "FRONT-087",
+    "title": "UI: Enforce Taxonomy Restrictions",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "PRD Section 18.2",
+    "description": "Implement UI-level filtering in project/task forms to restrict Topic/WorkType selection based on the project's template.",
+    "verification_method": "Create a task in a templated project and verify only whitelisted topics are available."
   }
 ]

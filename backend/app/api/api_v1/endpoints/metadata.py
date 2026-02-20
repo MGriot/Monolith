@@ -1,5 +1,6 @@
-from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Any, List, Optional
+from uuid import UUID
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api import deps
 from app.crud import crud_metadata
@@ -15,8 +16,22 @@ async def read_topics(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
+    project_id: Optional[UUID] = None,
+    task_id: Optional[UUID] = None,
+    all_scopes: bool = Query(False, description="Fetch all topics regardless of scope (Admin only)"),
+    include_global: bool = True
 ) -> Any:
-    return await crud_metadata.topic.get_multi(db, skip=skip, limit=limit)
+    if all_scopes:
+        return await crud_metadata.topic.get_multi(db, skip=skip, limit=limit)
+    
+    return await crud_metadata.topic.get_multi_scoped(
+        db, 
+        skip=skip, 
+        limit=limit, 
+        project_id=project_id, 
+        task_id=task_id,
+        include_global=include_global
+    )
 
 @router.post("/topics", response_model=schemas.Topic)
 async def create_topic(
@@ -59,8 +74,22 @@ async def read_work_types(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
+    project_id: Optional[UUID] = None,
+    task_id: Optional[UUID] = None,
+    all_scopes: bool = Query(False, description="Fetch all work types regardless of scope (Admin only)"),
+    include_global: bool = True
 ) -> Any:
-    return await crud_metadata.work_type.get_multi(db, skip=skip, limit=limit)
+    if all_scopes:
+        return await crud_metadata.work_type.get_multi(db, skip=skip, limit=limit)
+    
+    return await crud_metadata.work_type.get_multi_scoped(
+        db, 
+        skip=skip, 
+        limit=limit, 
+        project_id=project_id, 
+        task_id=task_id,
+        include_global=include_global
+    )
 
 @router.post("/work-types", response_model=schemas.WorkType)
 async def create_work_type(

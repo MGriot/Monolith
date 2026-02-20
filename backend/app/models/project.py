@@ -41,6 +41,10 @@ class Project(Base):
     
     gantt_regions = Column(JSONB, nullable=True, default=[])
     
+    # Whitelisting
+    allowed_global_topics = Column(JSONB, nullable=False, default=[])
+    allowed_global_work_types = Column(JSONB, nullable=False, default=[])
+    
     # Relationships
     owner = relationship("User", backref="owned_projects", foreign_keys=[owner_id])
     members = relationship("User", secondary=project_members, backref="member_projects")

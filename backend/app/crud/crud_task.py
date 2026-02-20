@@ -402,7 +402,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         res = await db.execute(select(Task.project_id).filter(Task.id == item_id))
         project_id = res.scalar()
         
-        from app.crud.notification import notification as notification_crud
+        from app.crud.crud_notification import notification as notification_crud
         from app.schemas.notification import NotificationCreate
         
         link = f"/projects/{project_id}?task_id={item_id}" if project_id else f"/tasks?task_id={item_id}"
