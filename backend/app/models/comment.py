@@ -26,7 +26,7 @@ class Comment(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    author = relationship("User", backref="threaded_comments")
+    author = relationship("User", backref="threaded_comments", lazy="selectin")
     
     project = relationship("Project", backref="threaded_comments")
     task = relationship("Task", backref="threaded_comments")
@@ -34,4 +34,4 @@ class Comment(Base):
     
     # Threading Relationships
     parent = relationship("Comment", remote_side=[id], back_populates="replies")
-    replies = relationship("Comment", back_populates="parent", cascade="all, delete-orphan")
+    replies = relationship("Comment", back_populates="parent", cascade="all, delete-orphan", lazy="selectin")
