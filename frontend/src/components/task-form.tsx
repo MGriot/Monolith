@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdo
 import { AssigneeSelector } from "@/components/assignee-selector";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { addDays, differenceInDays, format, parseISO } from "date-fns";
-import type { Task, Topic, WorkType } from "@/types";
+import type { Task, Topic, WorkType, Project } from "@/types";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -49,19 +49,58 @@ interface TaskFormProps {
   isLoading?: boolean;
   allTasks?: Task[];
   editingTaskId?: string | null;
+  projectId?: string;
 }
 
-export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading, allTasks, editingTaskId }: TaskFormProps) {
+export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading, allTasks, editingTaskId, projectId }: TaskFormProps) {
+  const queryClient = useQueryClient();
   const [planningMode, setPlanningMode] = useState<"dates" | "duration">("dates");
 
+  // Fetch Project to check for whitelist
+  const { data: project } = useQuery({
+    queryKey: ['project', projectId],
+    queryFn: async () => {
+      if (!projectId) return null;
+      const response = await api.get(`/projects/${projectId}`);
+      return response.data as Project;
+    },
+    enabled: !!projectId,
+  });
+
   const { data: topics, isLoading: isLoadingTopics } = useQuery({
-    queryKey: ['metadata', 'topics'],
-    queryFn: async () => (await api.get('/metadata/topics')).data,
+    queryKey: ['metadata', 'topics', projectId, editingTaskId],
+    queryFn: async () => (await api.get('/metadata/topics', { 
+      params: { 
+        project_id: projectId, 
+        task_id: editingTaskId,
+        include_global: true 
+      } 
+    })).data as Topic[],
   });
 
   const { data: workTypes, isLoading: isLoadingTypes } = useQuery({
-    queryKey: ['metadata', 'work-types'],
-    queryFn: async () => (await api.get('/metadata/work-types')).data,
+    queryKey: ['metadata', 'work-types', projectId, editingTaskId],
+    queryFn: async () => (await api.get('/metadata/work-types', {
+      params: { 
+        project_id: projectId, 
+        task_id: editingTaskId,
+        include_global: true 
+      }
+    })).data as WorkType[],
+  });
+
+  const createTopicMutation = useMutation({
+    mutationFn: async (name: string) => {
+      await api.post('/metadata/topics', { name, project_id: projectId });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['metadata', 'topics'] })
+  });
+
+  const createWorkTypeMutation = useMutation({
+    mutationFn: async (name: string) => {
+      await api.post('/metadata/work-types', { name, project_id: projectId });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['metadata', 'work-types'] })
   });
 
   const {
@@ -152,14 +191,40 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
     setValue(field, filtered);
   };
 
-  // Transformation for RichDropdown
-  const topicItems: RichDropdownItem[] = useMemo(() => 
-    topics?.map((t: Topic) => ({ id: t.id, label: t.name, color: t.color })) || []
-  , [topics]);
+  // Transformation for RichDropdown with Whitelist Logic
+  const topicItems: RichDropdownItem[] = useMemo(() => {
+    if (!topics) return [];
+    let filtered = topics;
+    
+    // Apply whitelist if present
+    // allowed_global_topics is array of UUIDs (strings)
+    if (project?.allowed_global_topics && (project.allowed_global_topics as any).length > 0) {
+      const whitelist = new Set(project.allowed_global_topics as any);
+      filtered = filtered.filter((t: Topic) => {
+        // Always allow scoped topics (project or task specific)
+        if (t.project_id || t.task_id) return true;
+        // Check whitelist for globals
+        return whitelist.has(t.id);
+      });
+    }
+    
+    return filtered.map((t: Topic) => ({ id: t.id, label: t.name, color: t.color }));
+  }, [topics, project]);
 
-  const typeItems: RichDropdownItem[] = useMemo(() => 
-    workTypes?.map((t: WorkType) => ({ id: t.id, label: t.name, color: t.color })) || []
-  , [workTypes]);
+  const typeItems: RichDropdownItem[] = useMemo(() => {
+    if (!workTypes) return [];
+    let filtered = workTypes;
+    
+    if (project?.allowed_global_work_types && (project.allowed_global_work_types as any).length > 0) {
+      const whitelist = new Set(project.allowed_global_work_types as any);
+      filtered = filtered.filter((t: WorkType) => {
+        if (t.project_id || t.task_id) return true;
+        return whitelist.has(t.id);
+      });
+    }
+    
+    return filtered.map((t: WorkType) => ({ id: t.id, label: t.name, color: t.color }));
+  }, [workTypes, project]);
 
   // Helper to flatten tasks for the select, excluding descendants of the current task
   const getAvailableParents = () => {
@@ -314,6 +379,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
             selectedValues={selectedTopicIds}
             onSelect={(id) => toggleItem("topic_ids", id)}
             onRemove={(id) => removeItem("topic_ids", id)}
+            onCreate={projectId ? (name) => createTopicMutation.mutate(name) : undefined}
             multi={true}
             isLoading={isLoadingTopics}
             placeholder="Select topics..."
@@ -327,6 +393,7 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
             selectedValues={selectedTypeIds}
             onSelect={(id) => toggleItem("type_ids", id)}
             onRemove={(id) => removeItem("type_ids", id)}
+            onCreate={projectId ? (name) => createWorkTypeMutation.mutate(name) : undefined}
             multi={true}
             isLoading={isLoadingTypes}
             placeholder="Select work types..."

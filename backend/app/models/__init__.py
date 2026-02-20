@@ -9,3 +9,4 @@ from .team import Team
 from .idea import Idea
 from .idea_comment import IdeaComment
 from .workflow import Workflow
+from .comment import Comment

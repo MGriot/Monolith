@@ -24,6 +24,8 @@ class ProjectBase(BaseModel):
     is_archived: bool = False
     archived_at: Optional[datetime] = None
     gantt_regions: Optional[List[dict]] = []
+    allowed_global_topics: Optional[List[UUID]] = []
+    allowed_global_work_types: Optional[List[UUID]] = []
 
 class ProjectCreate(ProjectBase):
     name: str

@@ -18,6 +18,7 @@ import ProjectHeatmap from '@/components/project-heatmap';
 import ProjectTaskList from '@/components/project-task-list';
 import ResourceTimeline from '@/components/resource-timeline';
 import ProjectIdeas from '@/components/project-ideas';
+import CommentSection from '@/components/comments/comment-section';
 import TaskForm from '@/components/task-form';
 import type { TaskFormValues } from '@/components/task-form';
 import DependencyManager from '@/components/dependency-manager';
@@ -40,7 +41,8 @@ import {
   AlertCircle,
   Lightbulb,
   Archive,
-  Download
+  Download,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -427,6 +429,9 @@ export default function ProjectDetailPage() {
             <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
               <UsersIcon className="w-3.5 h-3.5" /> Team Workload
             </TabsTrigger>
+            <TabsTrigger value="activity" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
+              <MessageSquare className="w-3.5 h-3.5" /> Activity
+            </TabsTrigger>
             <TabsTrigger value="ideas" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
               <Lightbulb className="w-3.5 h-3.5" /> Ideas
             </TabsTrigger>
@@ -523,6 +528,23 @@ export default function ProjectDetailPage() {
           <ProjectIdeas projectId={id!} onPromoteSuccess={handlePromoteSuccess} />
         </TabsContent>
 
+        <TabsContent value="activity" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
+          <div className="max-w-4xl mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                  Project Activity
+                </CardTitle>
+                <CardDescription>Universal threaded discussion and change logs for this project.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CommentSection projectId={id} />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
         <TabsContent value="settings" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
           <div className="max-w-4xl mx-auto space-y-6">
             <Card>
@@ -532,6 +554,7 @@ export default function ProjectDetailPage() {
                 </CardHeader>
                 <CardContent>
                     <ProjectForm
+                        projectId={id}
                         initialValues={{
                             name: project.name,
                             description: project.description,
@@ -569,6 +592,7 @@ export default function ProjectDetailPage() {
           </DialogHeader>
 
           <TaskForm
+            projectId={id}
             initialValues={editingTask ? {
               title: editingTask.title,
               description: editingTask.description,
@@ -659,6 +683,14 @@ export default function ProjectDetailPage() {
                 taskId={editingTask.id}
                 attachments={editingTask.attachments || []}
               />
+              
+              <div className="pt-6 border-t mt-6">
+                <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  Task Activity
+                </h3>
+                <CommentSection taskId={editingTask.id} />
+              </div>
             </>
           )}
         </DialogContent>

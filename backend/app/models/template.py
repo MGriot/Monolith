@@ -21,6 +21,10 @@ class ProjectTemplate(Base):
     topics_preset = Column(JSON, nullable=False, default=[])
     work_types_preset = Column(JSON, nullable=False, default=[])
     
+    # Whitelisting
+    allowed_global_topics = Column(JSON, nullable=False, default=[])
+    allowed_global_work_types = Column(JSON, nullable=False, default=[])
+    
     is_active = Column(Boolean, default=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     

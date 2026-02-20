@@ -196,3 +196,28 @@ Unlock date constraints to support different planning workflows.
 *   **Mode A (Date-Driven):** User selects Start Date + End Date -> System calculates Duration (Working Days).
 *   **Mode B (Duration-Driven):** User selects Start Date + Working Days -> System calculates End Date.
 *   **Validation:** Backend ensures consistency between start, end, and duration based on a working day calendar (Monday-Friday).
+
+## 18. Addendum: Unified Activity Logs & Taxonomy Control (Feb 20, 2026)
+
+### 18.1 Feature: Universal Threaded Activity Logs
+Establish a unified communication and logging system across all core entities.
+
+*   **Scope:** Projects, Tasks (Project-linked and Independent), and Ideas.
+*   **Functionality:**
+    *   **Threaded Comments:** Users can post comments and reply to existing ones, creating hierarchical discussions ("threads").
+    *   **Independence:** This system operates independently of existing `description` or `note` fields.
+    *   **Activity Tracking:** Each entry logs the author, timestamp, and content.
+*   **UI/UX:**
+    *   A dedicated "Activity" or "Comments" tab/section in the detail views of Projects, Tasks, and Ideas.
+    *   Real-time updates (via polling or future WebSockets).
+
+### 18.2 Feature: Restricted Taxonomy & Template Presets
+Refine the categorization process to maintain data cleanliness and provide template-driven guidance.
+
+*   **Global vs. Scoped Choice:**
+    *   When creating/editing an entity, users can select from Global Topics/WorkTypes or Project-scoped ones.
+    *   **On-the-fly Creation:** Users can create new Scoped Topics/WorkTypes directly from the selection dropdown if they have the necessary permissions.
+*   **Template-Driven Restrictions:**
+    *   **Whitelist:** Project Templates can define a whitelist of "Allowed Topics" and "Allowed WorkTypes".
+    *   **Enforcement:** When a project is instantiated from such a template, the Topic and WorkType selection is STRICTLY limited to the whitelisted items.
+    *   **Benefit:** Ensures that projects following a specific methodology (e.g., "Software Development") only use relevant categories (e.g., "Feature", "Bug") instead of generic ones.

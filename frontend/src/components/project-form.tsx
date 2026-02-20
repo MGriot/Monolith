@@ -40,22 +40,28 @@ interface ProjectFormProps {
   onSubmit: (data: ProjectFormValues) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  projectId?: string;
 }
 
 export default function ProjectForm({
   initialValues,
   onSubmit,
   onCancel,
-  isLoading
+  isLoading,
+  projectId
 }: ProjectFormProps) {
   const { data: topics, isLoading: topicsLoading } = useQuery({
-    queryKey: ['metadata', 'topics'],
-    queryFn: async () => (await api.get('/metadata/topics')).data,
+    queryKey: ['metadata', 'topics', projectId],
+    queryFn: async () => (await api.get('/metadata/topics', {
+      params: { project_id: projectId, include_global: true }
+    })).data,
   });
 
   const { data: workTypes, isLoading: typesLoading } = useQuery({
-    queryKey: ['metadata', 'work-types'],
-    queryFn: async () => (await api.get('/metadata/work-types')).data,
+    queryKey: ['metadata', 'work-types', projectId],
+    queryFn: async () => (await api.get('/metadata/work-types', {
+      params: { project_id: projectId, include_global: true }
+    })).data,
   });
 
   const {

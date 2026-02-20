@@ -35,17 +35,23 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
 
   // Queries
   const { data: topics, isLoading: topicsLoading } = useQuery<Topic[]>({
-    queryKey: ['metadata', 'topics', projectId, taskId],
+    queryKey: ['metadata', 'topics', projectId, taskId, 'scoped'],
     queryFn: async () => {
-        const params = projectId ? { project_id: projectId } : taskId ? { task_id: taskId } : {};
+        const params = {
+          ...(projectId ? { project_id: projectId } : taskId ? { task_id: taskId } : {}),
+          include_global: false
+        };
         return (await api.get('/metadata/topics', { params })).data;
     }
   });
 
   const { data: workTypes, isLoading: typesLoading } = useQuery<WorkType[]>({
-    queryKey: ['metadata', 'work-types', projectId, taskId],
+    queryKey: ['metadata', 'work-types', projectId, taskId, 'scoped'],
     queryFn: async () => {
-        const params = projectId ? { project_id: projectId } : taskId ? { task_id: taskId } : {};
+        const params = {
+          ...(projectId ? { project_id: projectId } : taskId ? { task_id: taskId } : {}),
+          include_global: false
+        };
         return (await api.get('/metadata/work-types', { params })).data;
     }
   });
@@ -249,7 +255,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
                               if (window.confirm('Delete this scoped topic?')) deleteTopicMutation.mutate(topic.id);
                             }}
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </TableCell>
@@ -350,7 +356,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
                               if (window.confirm('Delete this scoped work type?')) deleteTypeMutation.mutate(type.id);
                             }}
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </TableCell>

@@ -8,6 +8,8 @@ class ProjectTemplateBase(BaseModel):
     tasks_json: Optional[List[Dict[str, Any]]] = []
     topics_preset: Optional[List[Dict[str, Any]]] = []
     work_types_preset: Optional[List[Dict[str, Any]]] = []
+    allowed_global_topics: Optional[List[UUID]] = []
+    allowed_global_work_types: Optional[List[UUID]] = []
     is_active: Optional[bool] = True
 
 class ProjectTemplateCreate(ProjectTemplateBase):

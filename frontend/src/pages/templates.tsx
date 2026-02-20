@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Edit2, Copy, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { ProjectTemplate } from '@/types';
+import type { ProjectTemplate, Topic, WorkType } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { RichDropdown } from '@/components/ui/rich-dropdown';
 
 // Helper to parse indented text into hierarchical tasks
 const parseTasks = (text: string) => {
@@ -85,13 +86,27 @@ export default function TemplatesPage() {
   // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [tasksText, setTasksText] = useState(''); // One task per line for simplicity
+  const [tasksText, setTasksText] = useState('');
+  const [allowedTopics, setAllowedTopics] = useState<string[]>([]);
+  const [allowedWorkTypes, setAllowedWorkTypes] = useState<string[]>([]);
 
+  // Queries
   const { data: templates, isLoading } = useQuery({
     queryKey: ['templates'],
     queryFn: async () => (await api.get('/templates/')).data as ProjectTemplate[],
   });
 
+  const { data: topics } = useQuery({
+    queryKey: ['topics'],
+    queryFn: async () => (await api.get('/metadata/topics')).data as Topic[],
+  });
+
+  const { data: workTypes } = useQuery({
+    queryKey: ['workTypes'],
+    queryFn: async () => (await api.get('/metadata/work-types')).data as WorkType[],
+  });
+
+  // Mutations
   const createMutation = useMutation({
     mutationFn: (newTemplate: any) => api.post('/templates/', newTemplate),
     onSuccess: () => {
@@ -124,13 +139,17 @@ export default function TemplatesPage() {
     setName('');
     setDescription('');
     setTasksText('');
+    setAllowedTopics([]);
+    setAllowedWorkTypes([]);
   };
 
-  const handleEdit = (template: ProjectTemplate) => {
+  const handleEdit = (template: any) => { // Use any here temporarily to avoid type errors with new fields
     setEditingTemplate(template);
     setName(template.name);
     setDescription(template.description || '');
     setTasksText(serializeTasks(template.tasks_json));
+    setAllowedTopics(template.allowed_global_topics || []);
+    setAllowedWorkTypes(template.allowed_global_work_types || []);
     setIsCreateDialogOpen(true);
   };
 
@@ -142,7 +161,13 @@ export default function TemplatesPage() {
 
     const tasks_json = parseTasks(tasksText);
 
-    const templateData = { name, description, tasks_json };
+    const templateData = { 
+      name, 
+      description, 
+      tasks_json,
+      allowed_global_topics: allowedTopics,
+      allowed_global_work_types: allowedWorkTypes
+    };
 
     if (editingTemplate) {
       updateMutation.mutate({ id: editingTemplate.id, data: templateData });
@@ -150,6 +175,9 @@ export default function TemplatesPage() {
       createMutation.mutate(templateData);
     }
   };
+
+  const topicItems = topics?.map(t => ({ id: t.id, label: t.name, color: t.color })) || [];
+  const workTypeItems = workTypes?.map(w => ({ id: w.id, label: w.name, color: w.color })) || [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -215,11 +243,11 @@ export default function TemplatesPage() {
       )}
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingTemplate ? 'Edit Template' : 'Create Project Template'}</DialogTitle>
             <DialogDescription>
-              Define a name, description, and the list of tasks to be created with this template.
+              Define a name, description, whitelist, and the list of tasks.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -231,6 +259,36 @@ export default function TemplatesPage() {
               <Label htmlFor="desc">Description</Label>
               <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this template for?" />
             </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label>Allowed Topics (Whitelist)</Label>
+                    <RichDropdown
+                        items={topicItems}
+                        selectedValues={allowedTopics}
+                        onSelect={(id) => setAllowedTopics([...allowedTopics, id])}
+                        onRemove={(id) => setAllowedTopics(allowedTopics.filter(tid => tid !== id))}
+                        multi
+                        placeholder="Select allowed topics..."
+                        emptyText="No topics found"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Leave empty to allow all global topics.</p>
+                </div>
+                <div className="space-y-2">
+                    <Label>Allowed Work Types (Whitelist)</Label>
+                    <RichDropdown
+                        items={workTypeItems}
+                        selectedValues={allowedWorkTypes}
+                        onSelect={(id) => setAllowedWorkTypes([...allowedWorkTypes, id])}
+                        onRemove={(id) => setAllowedWorkTypes(allowedWorkTypes.filter(tid => tid !== id))}
+                        multi
+                        placeholder="Select allowed types..."
+                        emptyText="No work types found"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Leave empty to allow all global types.</p>
+                </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="tasks">Tasks (use indentation for subtasks)</Label>
               <Textarea 

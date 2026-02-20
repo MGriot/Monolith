@@ -644,30 +644,30 @@ export default function ProjectGantt({
       </div>
 
       <div className="absolute top-[73px] right-4 flex flex-col gap-2 p-2 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-md shadow-lg z-50 pointer-events-none">
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Status (Fill)</span>
+        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Status (Theme)</span>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-slate-400" />
+            <div className="w-2.5 h-2.5 rounded-sm bg-slate-400/20 border border-slate-400" />
             <span className="text-[9px] font-bold text-slate-500 uppercase">Backlog</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-slate-500" />
+            <div className="w-2.5 h-2.5 rounded-sm bg-slate-500/20 border border-slate-500" />
             <span className="text-[9px] font-bold text-slate-500 uppercase">Todo</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-blue-500" />
+            <div className="w-2.5 h-2.5 rounded-sm bg-blue-500/20 border border-blue-500" />
             <span className="text-[9px] font-bold text-slate-500 uppercase">In Progress</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
+            <div className="w-2.5 h-2.5 rounded-sm bg-amber-500/20 border border-amber-500" />
             <span className="text-[9px] font-bold text-slate-500 uppercase">On Hold</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-purple-500" />
+            <div className="w-2.5 h-2.5 rounded-sm bg-purple-500/20 border border-purple-500" />
             <span className="text-[9px] font-bold text-slate-500 uppercase">Review</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+            <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/20 border border-emerald-500" />
             <span className="text-[9px] font-bold text-slate-500 uppercase">Done</span>
           </div>
         </div>
@@ -694,15 +694,39 @@ export default function ProjectGantt({
         </div>
 
         <div className="my-1 border-t border-slate-100" />
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Other</span>
+        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Indicators</span>
         <div className="grid grid-cols-1 gap-y-1.5">
           <div className="flex items-center gap-1.5">
-            <div className="w-0.5 h-2.5 bg-emerald-600" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Actual Completion</span>
+            <div className="w-4 h-2 rounded-sm border relative overflow-hidden" style={{ backgroundColor: '#cbd5e122', borderColor: '#94a3b8' }}>
+               <div className="absolute bottom-0 left-0 w-2/3 h-0.5 bg-slate-400" />
+            </div>
+            <span className="text-[9px] font-bold text-slate-500 uppercase">Progress Underline</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-0.5 h-2.5 bg-purple-500" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Deadline</span>
+            <div className="w-4 h-2 rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(-45deg, #cbd5e1, #cbd5e1 1px, transparent 1px, transparent 3px)', opacity: 0.6 }} />
+            <span className="text-[9px] font-bold text-slate-500 uppercase">Buffer (Grace Period)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-center w-4">
+                <div className="w-0.5 h-3 bg-emerald-500 relative">
+                    <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full" />
+                    <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full" />
+                </div>
+            </div>
+            <span className="text-[9px] font-bold text-slate-500 uppercase">Completed On-Time</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-center w-4">
+                <div className="w-0.5 h-3 bg-red-500 relative">
+                    <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full" />
+                    <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full" />
+                </div>
+            </div>
+            <span className="text-[9px] font-bold text-slate-500 uppercase">Completed Late</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-0.5 h-2.5 bg-purple-500 opacity-40" />
+            <span className="text-[9px] font-bold text-slate-500 uppercase">Hard Deadline</span>
           </div>
         </div>
       </div>
@@ -1262,21 +1286,24 @@ export default function ProjectGantt({
                         title={`${item.title} (Milestone)`}
                       />
                     ) : (
-                      <div className="relative h-full">
+                      <div className="relative h-full flex flex-col justify-center">
+                        {/* Buffer Zone (Grace Period) */}
                         {item.deadline_at && item.due_date && isAfter(parseISO(item.deadline_at), parseISO(item.due_date)) && (
                           <div
-                            className="absolute h-7 bg-slate-200/50 border-r-2 border-slate-300 rounded-r-sm z-0"
+                            className="absolute h-6 opacity-60 z-0"
                             style={{
                               left: `${getPositionPx(item.due_date)}px`,
                               width: `${getPositionPx(item.deadline_at) - getPositionPx(item.due_date)}px`,
-                              top: '14px'
+                              backgroundImage: 'repeating-linear-gradient(-45deg, #cbd5e1, #cbd5e1 2px, transparent 2px, transparent 6px)',
+                              borderRadius: '0 4px 4px 0'
                             }}
                           />
                         )}
 
+                        {/* Main Bar (Planned Time) */}
                         <div
                           className={cn(
-                            "absolute h-7 rounded shadow-sm flex items-center transition-all group-hover:z-10 border-[1.5px] overflow-hidden z-10",
+                            "absolute h-6 rounded shadow-sm flex items-center transition-all group-hover:z-10 border-[1.5px] overflow-hidden z-10",
                             getPriorityBorder(item.priority),
                             (item.deadline_at && isAfter(new Date(), parseISO(item.deadline_at)) && item.status.toLowerCase() !== 'done') && "ring-2 ring-red-500 ring-offset-1",
                             showCriticalPath && item.is_critical && "ring-2 ring-red-400 ring-offset-2 animate-pulse"
@@ -1284,56 +1311,48 @@ export default function ProjectGantt({
                           style={{
                             left: `${getPositionPx(item.start_date!)}px`,
                             width: `${getWidthPx(item.start_date!, (item.due_date || item.start_date))}px`,
-                            top: '14px',
-                            backgroundColor: `${getStatusHex(item.status)}33`,
+                            backgroundColor: `${getStatusHex(item.status)}22`,
                             borderColor: getStatusHex(item.status)
                           }}
                         >
+                          <span className="px-2 text-[10px] font-bold truncate text-slate-800 pointer-events-none">
+                            {item.title}
+                          </span>
+
+                          {/* Progress Indicator Underline */}
                           <div
-                            className="h-full transition-all duration-500 ease-in-out"
+                            className="h-1 absolute bottom-0 left-0 transition-all duration-500 ease-in-out"
                             style={{
                               width: getProgressWidth(item),
                               backgroundColor: getStatusHex(item.status),
                             }}
                           />
 
-                          <div className="absolute inset-0 flex items-center px-2 pointer-events-none overflow-hidden">
-                            <span
-                              className="text-[9px] font-black truncate drop-shadow-sm"
-                              style={{
-                                color: parseInt(getProgressWidth(item)) > 50 ? '#fff' : '#1e293b'
-                              }}
-                            >
-                              {item.title}
-                            </span>
-                          </div>
-
                           {(item.deadline_at && isAfter(new Date(), parseISO(item.deadline_at)) && item.status.toLowerCase() !== 'done') && (
                             <div className="absolute right-1 top-1 text-[8px] animate-pulse">⚠️</div>
                           )}
                         </div>
 
-                        {/* Conclusion Date Indicator */}
+                        {/* Actual Completion Pin */}
                         {(() => {
                           const conclusionDate = item.completed_at;
                           if (!conclusionDate) return null;
 
                           const conclusionPx = getPositionPx(conclusionDate);
-                          const barStartPx = getPositionPx(item.start_date!);
-
-                          if (conclusionPx < barStartPx) return null;
+                          
+                          const isLate = isAfter(parseISO(conclusionDate), parseISO(item.due_date || item.start_date!));
+                          const pinColor = isLate ? "bg-red-500" : "bg-emerald-500";
 
                           return (
                             <div
-                              className="absolute w-0.5 h-9 bg-emerald-600 z-20 shadow-md"
+                              className={cn("absolute w-0.5 h-8 z-20 shadow-sm", pinColor)}
                               style={{
                                 left: `${conclusionPx}px`,
-                                top: '12px'
                               }}
                               title={`Actually completed: ${format(parseISO(conclusionDate), 'PPP')}`}
                             >
-                              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-emerald-600 rounded-full" />
-                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-emerald-600 rounded-full" />
+                              <div className={cn("absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full shadow-sm", pinColor)} />
+                              <div className={cn("absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full shadow-sm", pinColor)} />
                             </div>
                           );
                         })()}

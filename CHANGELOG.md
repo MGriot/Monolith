@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0] - 2026-02-20
+
+### Added
+- **Universal Threaded Comments**: Implemented a system-wide activity log and discussion system. Comments can now be threaded (parent-child) and linked to Projects, Tasks, or Ideas.
+- **Deep Threading Support**: Backend now supports up to 5 levels of eager-loaded replies to ensure smooth async performance and prevent lazy-loading errors.
+- **Taxonomy Whitelisting**: Introduced the ability to restrict global Topic and WorkType selection based on the project's template. Project-specific scoped items always remain available.
+- **On-the-fly Metadata Creation**: Enhanced dropdowns to allow creating new project-scoped categories directly within the task creation flow.
+- **Hybrid Gantt Theme**: Implemented a high-precision visualization theme focusing on legibility (dark text on faint bars) and clear separation between time allocation (bar width) and effort (bottom progress underline).
+- **Gantt Variance Pins**: Added vertical completion pins that are color-coded (Red/Green) based on whether a task was finished before or after its planned due date.
+
+### Fixed
+- **Recursive Async Loading**: Resolved `MissingGreenlet` errors in the comment system by implementing deep eager loading for nested replies.
+- **Docker Build Integrity**: Fixed TypeScript errors related to missing interface properties and incorrect component prop types that were blocking container builds.
+- **Dependency Management**: Resolved module import errors for `@radix-ui/react-avatar` in the frontend production build.
+
 ## [2.3.1] - 2026-02-16
 
 ### Added
