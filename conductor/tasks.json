@@ -1391,11 +1391,11 @@
   },
   {
     "id": "FRONT-088",
-    "title": "UI: Integrated Blackboard (tldraw)",
+    "title": "UI: Integrated Blackboard (Excalidraw)",
     "status": "done",
     "priority": "medium",
-    "linked_req": "User Request: Blackboard",
-    "description": "Implement the blackboard feature using tldraw. Support saving to Project Library.",
+    "linked_req": "User Request: Blackboard Migration",
+    "description": "Implement the blackboard feature using Excalidraw. Support saving to Project Library.",
     "verification_method": "Open Blackboard, draw, save, and verify in Library."
   },
   {
@@ -1403,14 +1403,14 @@
     "title": "UI: Blackboard Integration (Tasks/Comments)",
     "status": "done",
     "priority": "medium",
-    "linked_req": "User Request: Blackboard",
+    "linked_req": "User Request: Blackboard Migration",
     "description": "Allow linking sketches to tasks and generating images for comments.",
     "verification_method": "Link sketch to task; verify image appears in comment."
   },
   {
     "id": "FRONT-090",
     "title": "Gantt: Hide Time Axis in Task Header Column",
-    "status": "todo",
+    "status": "done",
     "priority": "low",
     "linked_req": "User Request: UI Fixes",
     "description": "Hide the time axis (months, quarters, years) that currently appears in the task header column of the Gantt chart.",
@@ -1419,7 +1419,7 @@
   {
     "id": "FRONT-091",
     "title": "UI: Remove Project Settings Button from sub-nav",
-    "status": "todo",
+    "status": "done",
     "priority": "low",
     "linked_req": "User Request: UI Fixes",
     "description": "Remove the 'Settings' button from the Project view navigation row.",
@@ -1428,7 +1428,7 @@
   {
     "id": "FRONT-092",
     "title": "UI: Unify Independent Task Creation into Global Button",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: UI Fixes",
     "description": "Remove dedicated 'Create independent task' button and unify it into the global creation button.",
@@ -1437,7 +1437,7 @@
   {
     "id": "FRONT-093",
     "title": "UI: Merge Calendar and Roadmap into Unified View",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: UI Fixes",
     "description": "Merge Calendar and Roadmap into a single page and remove toggle buttons.",
@@ -1446,7 +1446,7 @@
   {
     "id": "FRONT-094",
     "title": "UI: Align Avatar Consistency in Comments",
-    "status": "todo",
+    "status": "done",
     "priority": "low",
     "linked_req": "User Request: UI Fixes",
     "description": "Update comment section to use the global user avatar component/logic.",
@@ -1455,7 +1455,7 @@
   {
     "id": "FRONT-095",
     "title": "Bug: Fix Independent Task Creation Payload",
-    "status": "todo",
+    "status": "done",
     "priority": "high",
     "linked_req": "User Request: Bug Fixes",
     "description": "Debug and fix the [object Object] error when creating independent tasks.",
@@ -1464,7 +1464,7 @@
   {
     "id": "FRONT-096",
     "title": "UI: SOP Library Markdown Editor & Update Flow",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: Bug Fixes",
     "description": "Fix SOP update flow and implement Markdown editor with image support.",
@@ -1473,7 +1473,7 @@
   {
     "id": "FRONT-097",
     "title": "Gantt: Fix Row Colors & Implement Toggle",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: Bug Fixes",
     "description": "Fix Gantt row color rendering and add a toggle to enable/disable them.",
@@ -1482,7 +1482,7 @@
   {
     "id": "FRONT-098",
     "title": "UI: Task Alert Icon Logic Refinement",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: Bug Fixes",
     "description": "Hide alert icon if 'Conclusion Date' <= 'Due Date' or 'Hard Deadline'.",
@@ -1491,7 +1491,7 @@
   {
     "id": "INFRA-003",
     "title": "Docker: Optimize Nginx removal",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: Infrastructure",
     "description": "Analyze and remove Nginx container if frontend can handle routing/serving securely.",
@@ -1500,10 +1500,64 @@
   {
     "id": "BACK-052",
     "title": "MCP: Enhance with official mcp library",
-    "status": "todo",
+    "status": "done",
     "priority": "medium",
     "linked_req": "User Request: Infrastructure",
     "description": "Complete MCP server integration using the official Anthropic mcp Python library.",
     "verification_method": "Verify full MCP capabilities (tools, resources, prompts) via client."
+  },
+  {
+    "id": "FRONT-099",
+    "title": "Research: Excalidraw Integration",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "User Request: Blackboard Migration",
+    "description": "Investigate Excalidraw React component, JSON persistence, and PNG export APIs.",
+    "verification_method": "Compare with tldraw implementation."
+  },
+  {
+    "id": "FRONT-100",
+    "title": "Migration: Install Excalidraw & Cleanup",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: Blackboard Migration",
+    "description": "Install @excalidraw/excalidraw and remove tldraw dependencies from package.json.",
+    "verification_method": "Build frontend successfully after dependency change."
+  },
+  {
+    "id": "FRONT-101",
+    "title": "Migration: Refactor BlackboardEditor",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: Blackboard Migration",
+    "description": "Replace Tldraw component with Excalidraw component in BlackboardEditor.tsx.",
+    "verification_method": "Verify canvas renders in project library."
+  },
+  {
+    "id": "FRONT-102",
+    "title": "Migration: Adapt Save/Load Persistence",
+    "status": "done",
+    "priority": "high",
+    "linked_req": "User Request: Blackboard Migration",
+    "description": "Update persistence logic to handle Excalidraw's JSON structure (elements + appState).",
+    "verification_method": "Save and reload a sketch; verify content parity."
+  },
+  {
+    "id": "FRONT-103",
+    "title": "Migration: Adapt Task Export Logic",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "User Request: Blackboard Migration",
+    "description": "Update handleExportToTask to use Excalidraw's exportToBlob utility for PNG generation.",
+    "verification_method": "Export sketch to task and verify PNG attachment."
+  },
+  {
+    "id": "FRONT-104",
+    "title": "Migration: UI & Theme Polishing",
+    "status": "done",
+    "priority": "low",
+    "linked_req": "User Request: Blackboard Migration",
+    "description": "Adjust Excalidraw UI components and theming to align with the Monolith aesthetic.",
+    "verification_method": "Visually inspect blackboard interface."
   }
 ]
