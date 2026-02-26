@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [2.6.0] - 2026-02-26
 
 ### Added
-- **Integrated Blackboard (Sketching)**: Implemented a full-stack drawing system using `@tldraw/tldraw`. Users can now create infinite-canvas sketches within projects or directly as task attachments.
+- **Integrated Blackboard (Excalidraw)**: Migrated from tldraw to Excalidraw for a superior sketching experience. Features optimized canvas rendering, a native hand-drawn aesthetic, and full integration with the task attachment system.
 - **Master Schedule View**: Merged the Calendar and Roadmap pages into a unified, high-performance scheduling interface at `/schedule`.
 - **Standardized User Avatars**: Integrated a centralized `UserAvatar` component with color-hash generation and automatic initials/Dicebear fallbacks.
 - **Independent Task Creation**: Expanded the global creation flow to support tasks not associated with any project, with dedicated views in "My Tasks."

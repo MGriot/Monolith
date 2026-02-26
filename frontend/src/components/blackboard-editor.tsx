@@ -1,6 +1,5 @@
-import { useState, useCallback } from 'react';
-import { Tldraw, Editor } from 'tldraw';
-import 'tldraw/tldraw.css';
+import { useState, useMemo } from 'react';
+import { Excalidraw, exportToBlob } from '@excalidraw/excalidraw';
 import { Button } from '@/components/ui/button';
 import { Save, Loader2, MessageSquarePlus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,28 +22,35 @@ export default function BlackboardEditor({
   onSave 
 }: BlackboardEditorProps) {
   const queryClient = useQueryClient();
-  const [editor, setEditor] = useState<Editor | null>(null);
+  const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const [title, setTitle] = useState(initialTitle);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  const handleMount = useCallback((editor: Editor) => {
-    setEditor(editor);
-    if (initialData) {
-      editor.loadSnapshot(initialData);
+  // Process initial data - handle potential tldraw compatibility issues
+  const processedInitialData = useMemo(() => {
+    if (!initialData) return null;
+    // Basic check: Excalidraw data usually has 'elements' array
+    if (initialData.elements && Array.isArray(initialData.elements)) {
+        return initialData;
     }
+    // If it's old tldraw data or unknown format, start fresh to avoid crashes
+    console.warn("Incompatible sketch data format detected. Starting fresh.");
+    return null;
   }, [initialData]);
 
   const handleSave = async () => {
-    if (!editor) return;
+    if (!excalidrawAPI) return;
 
     setIsSaving(true);
     try {
-      const snapshot = editor.getSnapshot();
+      const elements = excalidrawAPI.getSceneElements();
+      const appState = excalidrawAPI.getAppState();
+      const files = excalidrawAPI.getFiles();
       
       const payload = {
         title,
-        data: snapshot,
+        data: { elements, appState, files },
         project_id: projectId,
         task_id: taskId || null,
       };
@@ -61,46 +67,27 @@ export default function BlackboardEditor({
   };
 
   const handleExportToTask = async () => {
-    if (!editor || !taskId) return;
+    if (!excalidrawAPI || !taskId) return;
 
     setIsExporting(true);
     try {
-      const shapeIds = Array.from(editor.getCurrentPageShapeIds());
-      if (shapeIds.length === 0) {
+      const elements = excalidrawAPI.getSceneElements();
+      if (!elements || elements.length === 0) {
         toast.error("Sketch is empty");
         return;
       }
 
-      // In recent tldraw versions, the export logic can vary.
-      // We'll try to get the SVG and convert it to a Blob.
-      // If getSvg is not directly on editor, it might be on a utility or under a different name.
-      // We'll use a type-safe fallback.
-      
-      let blob: Blob;
-      
-      if ((editor as any).exportToBlob) {
-          blob = await (editor as any).exportToBlob({
-              ids: shapeIds,
-              format: 'png',
-              opts: { background: true }
-          });
-      } else {
-          // Fallback: Try to get SVG string if available
-          const svg = await (editor as any).getSvg(shapeIds, {
-              padding: 32,
-              background: true,
-          });
-          
-          if (svg instanceof SVGElement) {
-              const svgString = new XMLSerializer().serializeToString(svg);
-              blob = new Blob([svgString], { type: 'image/svg+xml' });
-          } else {
-              throw new Error("Could not generate export");
-          }
-      }
+      const blob = await exportToBlob({
+        elements,
+        appState: {
+          ...excalidrawAPI.getAppState(),
+          exportWithBackground: true,
+        },
+        files: excalidrawAPI.getFiles(),
+        mimeType: "image/png",
+      });
 
-      const extension = blob.type === 'image/svg+xml' ? 'svg' : 'png';
-      const file = new File([blob], `${title.replace(/\s+/g, '_')}.${extension}`, { type: blob.type });
+      const file = new File([blob], `${title.replace(/\s+/g, '_')}.png`, { type: 'image/png' });
       const formData = new FormData();
       formData.append("file", file);
 
@@ -144,7 +131,19 @@ export default function BlackboardEditor({
         </div>
       </div>
       <div className="flex-1 relative">
-        <Tldraw onMount={handleMount} />
+        <Excalidraw 
+            excalidrawAPI={(api) => setExcalidrawAPI(api)}
+            initialData={processedInitialData}
+            theme="light"
+            UIOptions={{
+                canvasActions: {
+                    loadScene: false,
+                    saveToActiveFile: false,
+                    export: false,
+                    saveAsImage: false,
+                },
+            }}
+        />
       </div>
     </div>
   );
