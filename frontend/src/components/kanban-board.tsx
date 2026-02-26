@@ -25,6 +25,7 @@ import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MoreVertical, GripVertical, Plus, User as UserIcon, Milestone, AlertTriangle, Folder } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { parseISO, isAfter } from 'date-fns';
 import type { Task, Subtask } from '@/types';
 
 interface KanbanItem {
@@ -36,12 +37,15 @@ interface KanbanItem {
   wbs_code?: string;
   is_milestone?: boolean;
   deadline_at?: string;
+  due_date?: string;
+  completed_at?: string;
   sort_index?: number;
   created_at?: string;
   assignees?: { id: string; full_name: string; email: string }[];
   type: 'task' | 'subtask';
   parentId?: string;
   project?: { id: string; name: string };
+  has_children?: boolean;
 }
 
 interface KanbanBoardProps {
@@ -58,7 +62,7 @@ const COLUMNS = [
   { id: 'Backlog', title: 'Backlog' },
   { id: 'Todo', title: 'To Do' },
   { id: 'In Progress', title: 'In Progress' },
-  { id: 'On hold', title: 'On hold' },
+  { id: 'On hold', title: 'On Hold' },
   { id: 'Review', title: 'Review' },
   { id: 'Done', title: 'Done' }
 ];
@@ -86,7 +90,8 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorde
                 type: task.parent_id ? 'subtask' : 'task', 
                 topic: task.topic || parent?.topic, 
                 parentId: task.parent_id || undefined,
-                project: task.project || parent?.project
+                project: task.project || parent?.project,
+                has_children: task.subtasks && task.subtasks.length > 0
             } as any);
             
             if (task.subtasks && task.subtasks.length > 0) {
@@ -294,7 +299,7 @@ interface KanbanColumnProps {
 }
 
 function KanbanColumn({ id, title, itemIds, kanbanItems, activeId, onAddTask, onItemClick }: KanbanColumnProps) {
-  const MAX_VISIBLE_ITEMS = 5;
+  const MAX_VISIBLE_ITEMS = 15; // Increased visible items for better UX
   
   const { setNodeRef, isOver } = useDroppable({
     id: id,
@@ -405,6 +410,23 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
   };
 
   const style = priorityStyles[item.priority] || priorityStyles.Medium;
+  
+  // Refined Alert Logic
+  const conclusionDate = item.completed_at ? parseISO(item.completed_at) : null;
+  const dueDate = item.due_date ? parseISO(item.due_date) : null;
+  const deadlineAt = item.deadline_at ? parseISO(item.deadline_at) : null;
+  const today = new Date();
+
+  const checkDate = conclusionDate || today;
+  const isPastDue = dueDate ? isAfter(checkDate, dueDate) : false;
+  const isPastDeadline = deadlineAt ? isAfter(checkDate, deadlineAt) : false;
+
+  const finishedOnTime = conclusionDate && (
+    (dueDate && !isAfter(conclusionDate, dueDate)) || 
+    (deadlineAt && !isAfter(conclusionDate, deadlineAt))
+  );
+
+  const overdue = !finishedOnTime && (isPastDue || isPastDeadline);
   const isDone = item.status === 'Done' || item.status === 'done';
 
   return (
@@ -438,7 +460,7 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
             )}>
                 {item.is_milestone && <Milestone className="w-3 h-3 text-blue-500 shrink-0" />}
                 {item.title}
-                {!isDone && (item as any).due_date && new Date((item as any).due_date) < new Date() && (
+                {overdue && (
                   <AlertTriangle className="w-3 h-3 text-red-500 animate-pulse" />
                 )}
             </CardTitle>

@@ -1,7 +1,7 @@
 from typing import List, Optional, ForwardRef
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
 from app.core.enums import Status, Priority, DependencyType
 from app.schemas.user import User as UserSchema
 from app.schemas.metadata import Topic, WorkType
@@ -27,8 +27,6 @@ class TaskBase(BaseModel):
     type: Optional[str] = None
     topic_id: Optional[UUID] = None
     type_id: Optional[UUID] = None
-    topic_ids: Optional[List[UUID]] = []
-    type_ids: Optional[List[UUID]] = []
     color: Optional[str] = None
     status: Optional[Status] = Status.TODO
     priority: Optional[Priority] = Priority.MEDIUM
@@ -41,7 +39,6 @@ class TaskBase(BaseModel):
     attachments: Optional[List[str]] = []
     owner_id: Optional[UUID] = None
     blocked_by_ids: Optional[List[UUID]] = []
-    assignee_ids: Optional[List[UUID]] = []
     sort_index: Optional[int] = 0
     wbs_code: Optional[str] = None
     is_critical: Optional[bool] = False
@@ -72,9 +69,14 @@ class TaskCreate(TaskBase):
     project_id: Optional[UUID] = None
     parent_id: Optional[UUID] = None
     subtasks: Optional[List[TaskShortCreate]] = []
+    topic_ids: Optional[List[UUID]] = []
+    type_ids: Optional[List[UUID]] = []
+    assignee_ids: Optional[List[UUID]] = []
 
 class TaskUpdate(TaskBase):
-    pass
+    topic_ids: Optional[List[UUID]] = None
+    type_ids: Optional[List[UUID]] = None
+    assignee_ids: Optional[List[UUID]] = None
 
 class TaskInDBBase(TaskBase):
     id: UUID
@@ -97,6 +99,21 @@ class Task(TaskInDBBase):
     topics: List[Topic] = []
     types: List[WorkType] = []
     project: Optional["ProjectInDBBase"] = None
+
+    @computed_field
+    @property
+    def topic_ids(self) -> List[UUID]:
+        return [t.id for t in self.topics]
+
+    @computed_field
+    @property
+    def type_ids(self) -> List[UUID]:
+        return [t.id for t in self.types]
+
+    @computed_field
+    @property
+    def assignee_ids(self) -> List[UUID]:
+        return [u.id for u in self.assignees] if hasattr(self, 'assignees') else []
 
 # For recursive models in Pydantic V2
 Task.model_rebuild()

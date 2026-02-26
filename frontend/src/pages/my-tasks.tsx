@@ -10,8 +10,7 @@ import {
   AlertCircle,
   Loader2,
   Folder,
-  Download,
-  Plus
+  Download
 } from 'lucide-react';
 import KanbanBoard from '@/components/kanban-board';
 import ProjectGantt from '@/components/project-gantt';
@@ -159,10 +158,6 @@ export default function MyTasksPage() {
           </div>
           
           <div className="flex items-center gap-4">
-            <Button onClick={() => setIsCreateTaskOpen(true)} className="gap-2 h-9">
-              <Plus className="w-4 h-4" /> New Independent Task
-            </Button>
-
             <Button variant="outline" size="sm" onClick={() => setIsExportDialogOpen(true)} className="gap-2 h-9">
               <Download className="w-4 h-4" /> Export
             </Button>

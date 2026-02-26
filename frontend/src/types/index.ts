@@ -114,8 +114,14 @@ export interface ProjectTemplate {
   name: string;
   description?: string;
   tasks_json: any[];
+  topics_preset: any[];
+  work_types_preset: any[];
+  allowed_global_topics: string[];
+  allowed_global_work_types: string[];
   is_active: boolean;
+  is_public: boolean;
   owner_id: string;
+  shared_with: User[];
 }
 
 export interface Team {
@@ -123,8 +129,10 @@ export interface Team {
   name: string;
   description?: string | null;
   owner_id?: string | null;
+  is_public: boolean;
   created_at: string;
-  members?: User[];
+  members: User[];
+  shared_with: User[];
 }
 
 export interface Idea {
@@ -156,10 +164,12 @@ export interface Workflow {
   title: string;
   description?: string | null;
   content: string;
+  is_public: boolean;
   owner_id: string;
   created_at: string;
   updated_at: string;
   owner?: User | null;
+  shared_with: User[];
 }
 
 export interface Comment {

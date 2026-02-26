@@ -17,7 +17,8 @@ import {
   startOfQuarter,
   endOfDay,
   eachQuarterOfInterval,
-  subDays
+  subDays,
+  addDays // Added addDays import
 } from 'date-fns';
 import { toPng } from 'html-to-image';
 import { cn } from '@/lib/utils';
@@ -146,7 +147,8 @@ const getOrthogonalPath = (
   x2: number,
   y2: number,
   dayWidth: number,
-  overrideSpineX?: number
+  overrideSpineX?: number,
+  endSide: 'left' | 'right' = 'left'
 ) => {
   const baseRadius = 8;
   const baseGutterOffset = 22;
@@ -171,24 +173,54 @@ const getOrthogonalPath = (
   const buffer = indent;
 
   if (startSide === 'left') {
-    const spineX = overrideSpineX ?? (Math.min(x1, x2) - indent);
     const ry = y2 > y1 ? r : -r;
-
-    return `
-      M ${x1} ${y1}
-      H ${spineX + r}
-      Q ${spineX} ${y1} ${spineX} ${y1 + ry}
-      V ${y2 - ry}
-      Q ${spineX} ${y2} ${spineX + r} ${y2}
-      H ${x2}
-    `.replace(/\s+/g, ' ');
+    if (endSide === 'left') {
+      const spineX = overrideSpineX ?? (Math.min(x1, x2) - indent);
+      return `
+        M ${x1} ${y1}
+        H ${spineX + r}
+        Q ${spineX} ${y1} ${spineX} ${y1 + ry}
+        V ${y2 - ry}
+        Q ${spineX} ${y2} ${spineX + r} ${y2}
+        H ${x2}
+      `.replace(/\s+/g, ' ');
+    } else {
+      // SF: Left to Right. Detour left then cross over.
+      const spineX = overrideSpineX ?? (x1 - indent);
+      return `
+        M ${x1} ${y1}
+        H ${spineX + r}
+        Q ${spineX} ${y1} ${spineX} ${y1 + ry}
+        V ${y2 - ry}
+        Q ${spineX} ${y2} ${spineX + r} ${y2}
+        H ${x2 + indent}
+        V ${y2}
+        H ${x2}
+      `.replace(/\s+/g, ' ');
+    }
   } else {
+    // startSide === 'right'
+    if (endSide === 'right') {
+      // FF: Right to Right
+      const spineX = overrideSpineX ?? (Math.max(x1, x2) + indent);
+      const ry = y2 > y1 ? r : -r;
+      return `
+        M ${x1} ${y1}
+        H ${spineX - r}
+        Q ${spineX} ${y1} ${spineX} ${y1 + ry}
+        V ${y2 - ry}
+        Q ${spineX} ${y2} ${spineX - r} ${y2}
+        H ${x2}
+      `.replace(/\s+/g, ' ');
+    }
+
+    // FS: Right to Left (Existing logic with conflict handling)
     const isConflict = x2 < x1 + buffer;
     const ry = y2 > y1 ? r : -r;
     const transitY = y1 + (y2 > y1 ? gutterOffset : -gutterOffset);
 
     if (!isConflict) {
-      const midX = x1 + buffer;
+      const midX = overrideSpineX ?? (x1 + (x2 - x1) / 2);
       return `
          M ${x1} ${y1}
          H ${midX - r}
@@ -230,6 +262,7 @@ export default function ProjectGantt({
 }: ProjectGanttProps) {
   const [showSubtasks, setShowSubtasks] = useState(initialShowSubtasks);
   const [showCriticalPath, setShowCriticalPath] = useState(false);
+  const [showTaskColors, setShowTaskColors] = useState(true);
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('month');
   const [isExporting, setIsExporting] = useState(false);
   const ganttRef = useRef<HTMLDivElement>(null);
@@ -580,6 +613,10 @@ export default function ProjectGantt({
             <Switch id="show-cpm" checked={showCriticalPath} onCheckedChange={setShowCriticalPath} />
             <Label htmlFor="show-cpm" className="text-xs font-medium text-red-500">Critical Path</Label>
           </div>
+          <div className="flex items-center space-x-2">
+            <Switch id="show-colors" checked={showTaskColors} onCheckedChange={setShowTaskColors} />
+            <Label htmlFor="show-colors" className="text-xs font-medium">Row Colors</Label>
+          </div>
 
           <div className="h-4 w-px bg-slate-300 mx-2" />
 
@@ -734,8 +771,8 @@ export default function ProjectGantt({
       <div className="overflow-x-auto relative" ref={ganttRef}>
         <div style={{ width: `${containerWidth + sidebarWidth}px` }} className="relative bg-white">
           {/* Header Row */}
-          <div className="flex border-b border-slate-200 bg-slate-50/50 sticky top-0 z-30">
-            <div className="sticky left-0 z-40 flex bg-slate-50/50 shrink-0">
+          <div className="flex border-b border-slate-200 bg-slate-50 sticky top-0 z-30">
+            <div className="sticky left-0 z-40 flex bg-slate-50 shrink-0">
               {columns.filter(c => c.visible).map(col => (
                 <div
                   key={col.id}
@@ -949,7 +986,8 @@ export default function ProjectGantt({
                                                       getItemLeftEdgePx(st),
                                                       st.rowIndex * ROW_HEIGHT + (ROW_HEIGHT / 2),
                                                       dayWidth,
-                                                      sharedSpineX
+                                                      sharedSpineX,
+                                                      'left'
                                                     )}
                                                     fill="none"
                                                     stroke={color}
@@ -968,7 +1006,8 @@ export default function ProjectGantt({
                                                     getItemLeftEdgePx(st),
                                                     st.rowIndex * ROW_HEIGHT + (ROW_HEIGHT / 2),
                                                     dayWidth,
-                                                    sharedSpineX
+                                                    sharedSpineX,
+                                                    'left'
                                                   )}
                                                   fill="none"
                                                   stroke={color}
@@ -1026,14 +1065,13 @@ export default function ProjectGantt({
                                                     if (!blocker) return null;
                 
                                 
-                
-                                                    const sX = getItemRightEdgePx(blocker);
-                
-                                                    const eX = getItemLeftEdgePx(item);
-                
-                                                    const isConflict = eX < sX + (dep.lag_days || 0) * dayWidth;
-                
+                                                    const startSide = (dep.type === 'SS' || dep.type === 'SF') ? 'left' : 'right';
+                                                    const endSide = (dep.type === 'FS' || dep.type === 'SS') ? 'left' : 'right';
                                                     
+                                                    const sX = startSide === 'left' ? getItemLeftEdgePx(blocker) : getItemRightEdgePx(blocker);
+                                                    const eX = endSide === 'left' ? getItemLeftEdgePx(item) : getItemRightEdgePx(item);
+                                                    
+                                                    const isConflict = (startSide === 'right' && endSide === 'left') ? eX < sX + (dep.lag_days || 0) * dayWidth : false;
                 
                                                     const itemIsCritical = item.is_critical || item.slack_days === 0;
                 
@@ -1071,7 +1109,7 @@ export default function ProjectGantt({
                 
                                                             d={getOrthogonalPath(
                 
-                                                              'right',
+                                                              startSide,
                 
                                                               sX,
                 
@@ -1081,7 +1119,9 @@ export default function ProjectGantt({
                 
                                                               item.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2,
                 
-                                                              dayWidth
+                                                              dayWidth,
+                                                              undefined,
+                                                              endSide
                 
                                                             )}
                 
@@ -1103,7 +1143,7 @@ export default function ProjectGantt({
                 
                                                           d={getOrthogonalPath(
                 
-                                                            'right',
+                                                            startSide,
                 
                                                             sX,
                 
@@ -1113,7 +1153,9 @@ export default function ProjectGantt({
                 
                                                             item.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2,
                 
-                                                            dayWidth
+                                                            dayWidth,
+                                                            undefined,
+                                                            endSide
                 
                                                           )}
                 
@@ -1267,7 +1309,7 @@ export default function ProjectGantt({
                     {item.deadline_at && (
                       <div
                         className="absolute top-0 bottom-0 w-0.5 bg-purple-500 z-10 pointer-events-none opacity-40"
-                        style={{ left: `${getPositionPx(item.deadline_at)}px` }}
+                        style={{ left: `${getPositionPx(item.deadline_at) + dayWidth}px` }}
                         title={`Deadline: ${format(parseISO(item.deadline_at), 'PPP')}`}
                       />
                     )}
@@ -1292,7 +1334,7 @@ export default function ProjectGantt({
                           <div
                             className="absolute h-6 opacity-60 z-0"
                             style={{
-                              left: `${getPositionPx(item.due_date)}px`,
+                              left: `${getPositionPx(addDays(parseISO(item.due_date), 1))}px`,
                               width: `${getPositionPx(item.deadline_at) - getPositionPx(item.due_date)}px`,
                               backgroundImage: 'repeating-linear-gradient(-45deg, #cbd5e1, #cbd5e1 2px, transparent 2px, transparent 6px)',
                               borderRadius: '0 4px 4px 0'

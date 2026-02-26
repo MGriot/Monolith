@@ -14,7 +14,11 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         result = await db.execute(
             select(self.model)
             .filter(self.model.id == id)
-            .options(selectinload(Team.members), selectinload(Team.owner))
+            .options(
+                selectinload(Team.members), 
+                selectinload(Team.owner),
+                selectinload(Team.shared_with)
+            )
         )
         return result.scalars().first()
 
@@ -23,7 +27,11 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
     ) -> List[Team]:
         result = await db.execute(
             select(self.model)
-            .options(selectinload(Team.members), selectinload(Team.owner))
+            .options(
+                selectinload(Team.members), 
+                selectinload(Team.owner),
+                selectinload(Team.shared_with)
+            )
             .offset(skip)
             .limit(limit)
         )
@@ -32,12 +40,16 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
     async def create(
         self, db: AsyncSession, *, obj_in: TeamCreate
     ) -> Team:
-        obj_in_data = obj_in.dict(exclude={'member_ids'})
+        obj_in_data = obj_in.dict(exclude={'member_ids', 'shared_with_ids'})
         db_obj = self.model(**obj_in_data)
         
         if obj_in.member_ids:
             members_result = await db.execute(select(User).filter(User.id.in_(obj_in.member_ids)))
             db_obj.members = members_result.scalars().all()
+
+        if obj_in.shared_with_ids:
+            shares_result = await db.execute(select(User).filter(User.id.in_(obj_in.shared_with_ids)))
+            db_obj.shared_with = shares_result.scalars().all()
             
         db.add(db_obj)
         await db.commit()
@@ -60,27 +72,43 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             else:
                 db_obj.members = []
 
-        return await super().update(db, db_obj=db_obj, obj_in=update_data)
+        if "shared_with_ids" in update_data:
+            shared_with_ids = update_data.pop("shared_with_ids")
+            if shared_with_ids:
+                shares_result = await db.execute(select(User).filter(User.id.in_(shared_with_ids)))
+                db_obj.shared_with = shares_result.scalars().all()
+            else:
+                db_obj.shared_with = []
+
+        await super().update(db, db_obj=db_obj, obj_in=update_data)
+        return await self.get(db, id=db_obj.id)
 
     async def get_multi_by_user(
         self, db: AsyncSession, *, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> List[Team]:
         """
-        Fetch teams where the user is either the owner OR a member.
+        Fetch teams where the user is either the owner OR a member OR it's shared OR it's public.
         """
-        from app.models.associations import team_members
+        from app.models.associations import team_members, team_shares
         from sqlalchemy import or_
         query = (
             select(self.model)
             .outerjoin(team_members)
+            .outerjoin(team_shares)
             .filter(
                 or_(
                     self.model.owner_id == user_id,
-                    team_members.c.user_id == user_id
+                    self.model.is_public == True,
+                    team_members.c.user_id == user_id,
+                    team_shares.c.user_id == user_id
                 )
             )
             .distinct()
-            .options(selectinload(Team.members), selectinload(Team.owner))
+            .options(
+                selectinload(Team.members), 
+                selectinload(Team.owner),
+                selectinload(Team.shared_with)
+            )
             .offset(skip)
             .limit(limit)
         )

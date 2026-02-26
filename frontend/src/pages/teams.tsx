@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Edit2, Users, Loader2, Mail, Check, ShieldCheck } from 'lucide-react';
+import { Plus, Trash2, Edit2, Users, Loader2, Mail, Check, ShieldCheck, Globe, Lock, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -20,13 +20,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from '@/lib/utils';
 import type { User } from '@/types';
+import { Switch } from '@/components/ui/switch';
+import { AssigneeSelector } from '@/components/assignee-selector';
 
 interface Team {
   id: string;
   name: string;
   description?: string;
   owner_id: string;
+  is_public: boolean;
   members: User[];
+  shared_with: User[];
   created_at: string;
 }
 
@@ -40,6 +44,8 @@ export default function TeamsPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [isPublic, setIsPublic] = useState(false);
+  const [sharedWithIds, setSharedWithIds] = useState<string[]>([]);
 
   const { data: teams, isLoading } = useQuery({
     queryKey: ['teams'],
@@ -90,6 +96,8 @@ export default function TeamsPage() {
     setName('');
     setDescription('');
     setSelectedMemberIds([]);
+    setIsPublic(false);
+    setSharedWithIds([]);
   };
 
   const handleEdit = (team: Team) => {
@@ -97,6 +105,8 @@ export default function TeamsPage() {
     setName(team.name);
     setDescription(team.description || '');
     setSelectedMemberIds(team.members.map(m => m.id));
+    setIsPublic(team.is_public || false);
+    setSharedWithIds(team.shared_with?.map(u => u.id) || []);
     setIsDialogOpen(true);
   };
 
@@ -109,7 +119,9 @@ export default function TeamsPage() {
     const teamData = { 
       name, 
       description, 
-      member_ids: selectedMemberIds 
+      member_ids: selectedMemberIds,
+      is_public: isPublic,
+      shared_with_ids: sharedWithIds
     };
 
     if (editingTeam) {
@@ -128,7 +140,9 @@ export default function TeamsPage() {
   };
 
   const canManageTeam = (team: Team) => {
-    return user?.is_superuser || team.owner_id === user?.id;
+    const isOwner = team.owner_id === user?.id;
+    const isCoOwner = team.shared_with?.some(u => u.id === user?.id);
+    return user?.is_superuser || isOwner || isCoOwner;
   };
 
   return (
@@ -154,19 +168,27 @@ export default function TeamsPage() {
             const canManage = canManageTeam(team);
             
             return (
-              <Card key={team.id} className="group hover:border-primary/30 transition-all border-slate-200 shadow-sm flex flex-col">
+              <Card key={team.id} className="group hover:border-primary/30 transition-all border-slate-200 shadow-sm flex flex-col relative">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex flex-col gap-2">
                       <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                         <Users className="w-5 h-5 text-primary" />
                       </div>
-                      {isOwner && (
-                        <Badge variant="secondary" className="w-fit text-[8px] font-black uppercase bg-blue-50 text-blue-600 border-blue-100 px-1 py-0 h-4">
-                          <ShieldCheck className="w-2.5 h-2.5 mr-1" />
-                          Owner
-                        </Badge>
-                      )}
+                      <div className="flex gap-1 flex-wrap">
+                        {isOwner && (
+                            <Badge variant="secondary" className="w-fit text-[8px] font-black uppercase bg-blue-50 text-blue-600 border-blue-100 px-1 py-0 h-4">
+                            <ShieldCheck className="w-2.5 h-2.5 mr-1" />
+                            Owner
+                            </Badge>
+                        )}
+                        {team.is_public && (
+                            <Badge variant="outline" className="w-fit text-[8px] font-black uppercase bg-emerald-50 text-emerald-600 border-emerald-100 px-1 py-0 h-4">
+                                <Globe className="w-2.5 h-2.5 mr-1" />
+                                Public
+                            </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className={cn("flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity", !canManage && "hidden")}>
                       <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-slate-500 hover:text-primary" onClick={() => handleEdit(team)}>
@@ -177,7 +199,10 @@ export default function TeamsPage() {
                       </Button>
                     </div>
                   </div>
-                  <CardTitle className="text-lg group-hover:text-primary transition-colors mt-2">{team.name}</CardTitle>
+                  <CardTitle className="text-lg group-hover:text-primary transition-colors mt-2 flex items-center gap-2">
+                    {team.name}
+                    {!team.is_public && <span title="Private"><Lock className="w-3 h-3 text-slate-400" /></span>}
+                  </CardTitle>
                   <CardDescription className="line-clamp-2 min-h-[40px]">{team.description || 'No description provided.'}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1">
@@ -206,7 +231,13 @@ export default function TeamsPage() {
                 </CardContent>
                 <CardFooter className="border-t bg-slate-50/50 p-3 flex justify-between items-center">
                   <span className="text-[10px] text-slate-400 font-medium italic">Created {new Date(team.created_at).toLocaleDateString()}</span>
-                  <Users className="w-3 h-3 text-slate-300" />
+                  <div className="flex -space-x-2 overflow-hidden">
+                    {team.shared_with?.slice(0, 3).map((u) => (
+                        <div key={u.id} className="w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[7px] font-bold" title={`Property shared with ${u.full_name}`}>
+                            {u.full_name?.charAt(0) || 'U'}
+                        </div>
+                    ))}
+                  </div>
                 </CardFooter>
               </Card>
             );
@@ -227,11 +258,11 @@ export default function TeamsPage() {
           <DialogHeader>
             <DialogTitle>{editingTeam ? 'Edit Team' : 'Create Team'}</DialogTitle>
             <DialogDescription>
-              Define the team identity and assign members.
+              Define Identity, Membership, and Access.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
-            <div className="space-y-4">
+            <div className="space-y-4 border-b pb-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Team Name</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Frontend Engineering" />
@@ -240,6 +271,29 @@ export default function TeamsPage() {
                 <Label htmlFor="desc">Description</Label>
                 <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What does this team do?" />
               </div>
+            </div>
+
+            <div className="space-y-4 border-b pb-6 bg-slate-50 p-4 rounded-lg border">
+                <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                    <Share2 className="w-4 h-4" /> Sharing & Access
+                </h4>
+                <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <Label className="text-sm">Make Public</Label>
+                        <p className="text-[10px] text-muted-foreground">Visible to all users, but only you can edit.</p>
+                    </div>
+                    <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-sm">Share Property (Co-Owners)</Label>
+                    <AssigneeSelector
+                        selectedValues={sharedWithIds}
+                        onSelect={(id) => setSharedWithIds([...sharedWithIds, id])}
+                        onRemove={(id) => setSharedWithIds(sharedWithIds.filter(uid => uid !== id))}
+                        placeholder="Select users to share property with..."
+                    />
+                    <p className="text-[10px] text-muted-foreground">Shared users can also manage members and details.</p>
+                </div>
             </div>
 
             <div className="space-y-3">

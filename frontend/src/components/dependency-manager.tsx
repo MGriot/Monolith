@@ -17,13 +17,17 @@ import {
   Loader2,
   AlertCircle,
   Plus,
-  Info
+  Info,
+  Edit2,
+  Check as CheckIcon
 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 import type { Task, DependencyType } from "@/types";
 
 interface DependencyManagerProps {
@@ -37,6 +41,11 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
   const [selectedBlockerId, setSelectedBlockerId] = useState<string | null>(null);
   const [depType, setDepType] = useState<DependencyType>("FS");
   const [lagDays, setLagDays] = useState(0);
+
+  // Edit state
+  const [editingDepId, setEditingDepId] = useState<string | null>(null);
+  const [editType, setEditType] = useState<DependencyType>("FS");
+  const [editLagDays, setEditLagDays] = useState(0);
 
   const addMutation = useMutation({
     mutationFn: async () => {
@@ -55,6 +64,25 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
       setSelectedBlockerId(null);
       setDepType("FS");
       setLagDays(0);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingDepId) return;
+      // We perform a delete and then an add to update the dependency
+      await api.delete(`/tasks/${item.id}/dependencies/${editingDepId}`);
+      return api.post(`/tasks/${item.id}/dependencies`, {
+        successor_id: item.id,
+        predecessor_id: editingDepId,
+        type: editType,
+        lag_days: editLagDays
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['project'] });
+      setEditingDepId(null);
     },
   });
 
@@ -86,6 +114,12 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
     SF: "Start-to-Finish: Successor finishes after Predecessor starts."
   };
 
+  const startEdit = (dep: any) => {
+    setEditingDepId(dep.predecessor_id);
+    setEditType(dep.type);
+    setEditLagDays(dep.lag_days);
+  };
+
   return (
     <div className="space-y-4 pt-6 border-t mt-6">
       <div className="flex items-center justify-between">
@@ -113,30 +147,99 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
           {activeDependencies.map(d => (
             <div 
               key={d.id} 
-              className="flex items-center justify-between p-2 rounded-md border bg-white group"
+              className={cn(
+                "flex flex-col p-2 rounded-md border bg-white group transition-all",
+                editingDepId === d.predecessor_id && "ring-2 ring-primary/20 border-primary/30"
+              )}
             >
-              <div className="flex flex-col overflow-hidden">
-                <span className="text-xs font-medium truncate">{getBlockerTitle(d.predecessor_id)}</span>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 bg-slate-50 text-slate-500 border-slate-200">
-                    {d.type}
-                  </Badge>
-                  {d.lag_days !== 0 && (
-                    <span className="text-[10px] text-slate-400">
-                      Lag: {d.lag_days > 0 ? `+${d.lag_days}` : d.lag_days}d
-                    </span>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col overflow-hidden flex-1">
+                  <span className="text-xs font-medium truncate">{getBlockerTitle(d.predecessor_id)}</span>
+                  
+                  {editingDepId !== d.predecessor_id ? (
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 bg-slate-50 text-slate-500 border-slate-200">
+                        {d.type}
+                      </Badge>
+                      {d.lag_days !== 0 && (
+                        <span className="text-[10px] text-slate-400">
+                          Lag: {d.lag_days > 0 ? `+${d.lag_days}` : d.lag_days}d
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="space-y-1">
+                        <Label className="text-[8px] uppercase font-black text-slate-400">Type</Label>
+                        <Select value={editType} onValueChange={(v: any) => setEditType(v)}>
+                          <SelectTrigger className="h-7 text-[10px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="FS">FS</SelectItem>
+                            <SelectItem value="SS">SS</SelectItem>
+                            <SelectItem value="FF">FF</SelectItem>
+                            <SelectItem value="SF">SF</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[8px] uppercase font-black text-slate-400">Lag</Label>
+                        <Input 
+                          type="number" 
+                          value={editLagDays} 
+                          onChange={(e) => setEditLagDays(parseInt(e.target.value) || 0)} 
+                          className="h-7 text-[10px]"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0 ml-2">
+                  {editingDepId !== d.predecessor_id ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => startEdit(d)}
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => removeMutation.mutate(d.predecessor_id)}
+                        disabled={removeMutation.isPending}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        onClick={() => updateMutation.mutate()}
+                        disabled={updateMutation.isPending}
+                      >
+                        {updateMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save Dependency"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400"
+                        onClick={() => setEditingDepId(null)}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => removeMutation.mutate(d.predecessor_id)}
-                disabled={removeMutation.isPending}
-              >
-                <X className="w-3.5 h-3.5" />
-              </Button>
             </div>
           ))}
         </div>
@@ -230,7 +333,7 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
                   <Input 
                     type="number" 
                     value={lagDays}
-                    onChange={(e) => setLagDays(parseInt(e.target.value) || 0)}
+                    onChange={(e) => setEditLagDays(parseInt(e.target.value) || 0)}
                     className="h-8 text-xs"
                   />
                 </div>
@@ -242,7 +345,7 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
                   onClick={() => addMutation.mutate()}
                   disabled={addMutation.isPending}
                 >
-                  {addMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save Dependency"}
+                  {addMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckIcon className="w-3.5 h-3.5" />}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -257,7 +360,7 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
         </div>
       )}
       
-      {(addMutation.isPending || removeMutation.isPending) && (
+      {(addMutation.isPending || removeMutation.isPending || updateMutation.isPending) && (
         <div className="flex items-center gap-2 text-[10px] text-slate-400">
           <Loader2 className="w-3 h-3 animate-spin" />
           Syncing dependencies...

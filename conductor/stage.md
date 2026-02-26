@@ -1,7 +1,7 @@
 # Monolith Development Stage
 
 ## 🟢 Active Focus
-- N/A
+- **BACK-051**: Model: Blackboard Sketches
 
 ## 📋 Recent History
 - **FRONT-083**: UI: Dynamic Date vs. Duration Inputs

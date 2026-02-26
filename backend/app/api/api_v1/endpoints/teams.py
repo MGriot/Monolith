@@ -111,12 +111,16 @@ async def update_team(
     current_user: models.user.User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Update a team. Owners and admins only.
+    Update a team. Owners, co-owners and admins only.
     """
     team = await crud.team.get(db, id=id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
-    if not current_user.is_superuser and team.owner_id != current_user.id:
+    
+    is_owner = team.owner_id == current_user.id
+    is_shared = any(u.id == current_user.id for u in team.shared_with)
+    
+    if not current_user.is_superuser and not is_owner and not is_shared:
         raise HTTPException(status_code=403, detail="Not enough permissions to manage this team")
     team = await crud.team.update(db, db_obj=team, obj_in=obj_in)
     return team
@@ -135,11 +139,16 @@ async def read_team(
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
     
-    # Check permissions: admin or owner or member
-    if not current_user.is_superuser and team.owner_id != current_user.id:
-        member_ids = [m.id for m in team.members]
-        if current_user.id not in member_ids:
-            raise HTTPException(status_code=403, detail="Not enough permissions to view this team")
+    # Public teams are viewable by all
+    if team.is_public:
+        return team
+        
+    is_owner = team.owner_id == current_user.id
+    is_shared = any(u.id == current_user.id for u in team.shared_with)
+    is_member = any(u.id == current_user.id for u in team.members)
+    
+    if not current_user.is_superuser and not is_owner and not is_shared and not is_member:
+        raise HTTPException(status_code=403, detail="Not enough permissions to view this team")
             
     return team
 

@@ -1,7 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 from app.core.enums import Status
 
 from .metadata import Topic, WorkType
@@ -14,9 +14,6 @@ class ProjectBase(BaseModel):
     type: Optional[str] = None
     topic_id: Optional[UUID] = None
     type_id: Optional[UUID] = None
-    topic_ids: Optional[List[UUID]] = []
-    type_ids: Optional[List[UUID]] = []
-    member_ids: Optional[List[UUID]] = []
     status: Optional[Status] = Status.TODO
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
@@ -30,9 +27,14 @@ class ProjectBase(BaseModel):
 class ProjectCreate(ProjectBase):
     name: str
     template_id: Optional[UUID] = None
+    topic_ids: Optional[List[UUID]] = []
+    type_ids: Optional[List[UUID]] = []
+    member_ids: Optional[List[UUID]] = []
 
 class ProjectUpdate(ProjectBase):
-    pass
+    topic_ids: Optional[List[UUID]] = None
+    type_ids: Optional[List[UUID]] = None
+    member_ids: Optional[List[UUID]] = None
 
 class ProjectInDBBase(ProjectBase):
     id: UUID
@@ -50,3 +52,18 @@ class Project(ProjectInDBBase):
     topics: List[Topic] = []
     types: List[WorkType] = []
     members: List[UserSchema] = []
+
+    @computed_field
+    @property
+    def topic_ids(self) -> List[UUID]:
+        return [t.id for t in self.topics]
+
+    @computed_field
+    @property
+    def type_ids(self) -> List[UUID]:
+        return [t.id for t in self.types]
+
+    @computed_field
+    @property
+    def member_ids(self) -> List[UUID]:
+        return [m.id for m in self.members]

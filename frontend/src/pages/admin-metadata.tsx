@@ -107,7 +107,9 @@ export default function AdminMetadataPage() {
       data: { 
         name: editingTopic.name, 
         color: editingTopic.color,
-        is_active: editingTopic.is_active 
+        is_active: editingTopic.is_active,
+        project_id: editingTopic.project_id,
+        task_id: editingTopic.task_id
       } 
     });
   };
@@ -120,7 +122,9 @@ export default function AdminMetadataPage() {
       data: { 
         name: editingWorkType.name, 
         color: editingWorkType.color,
-        is_active: editingWorkType.is_active 
+        is_active: editingWorkType.is_active,
+        project_id: editingWorkType.project_id,
+        task_id: editingWorkType.task_id
       } 
     });
   };

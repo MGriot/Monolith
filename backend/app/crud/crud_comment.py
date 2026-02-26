@@ -10,26 +10,25 @@ class CRUDComment:
     def _get_deep_options(self):
         """
         Helper to generate deep loading options for recursive replies.
-        Supports up to 5 levels of nesting.
+        Supports up to 15 levels of nesting to handle deep threads.
         """
-        return (
-            selectinload(Comment.author),
-            selectinload(Comment.replies).options(
-                selectinload(Comment.author),
-                selectinload(Comment.replies).options(
-                    selectinload(Comment.author),
-                    selectinload(Comment.replies).options(
-                        selectinload(Comment.author),
-                        selectinload(Comment.replies).options(
-                            selectinload(Comment.author),
-                            selectinload(Comment.replies).options(
-                                selectinload(Comment.author)
-                            )
-                        )
-                    )
-                )
-            )
-        )
+        # Load the author of the top-level comment
+        base_author = selectinload(Comment.author)
+        
+        # Build a recursive chain for replies and their authors
+        # selectinload(Comment.replies).selectinload(Comment.author)
+        # selectinload(Comment.replies).selectinload(Comment.replies).selectinload(Comment.author)
+        
+        options = [base_author]
+        
+        curr_replies = selectinload(Comment.replies)
+        for _ in range(15):
+            # Load author for the current level
+            options.append(curr_replies.selectinload(Comment.author))
+            # Move to the next level of replies
+            curr_replies = curr_replies.selectinload(Comment.replies)
+            
+        return options
 
     async def get(self, db: AsyncSession, id: UUID) -> Optional[Comment]:
         result = await db.execute(
