@@ -25,32 +25,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchUser = useCallback(async () => {
+    console.log('AuthProvider: fetchUser called');
     try {
       const response = await api.get('/users/me');
       setUser(response.data);
+      console.log('AuthProvider: User fetched successfully');
     } catch (error) {
-      console.error('Failed to fetch user', error);
+      console.error('AuthProvider: Failed to fetch user', error);
       logout();
     } finally {
       setIsLoading(false);
+      console.log('AuthProvider: setIsLoading(false) in fetchUser finally');
     }
   }, []);
 
   useEffect(() => {
+    console.log('AuthProvider: useEffect triggered. token:', token, 'isLoading:', isLoading);
     if (token) {
       fetchUser();
     } else {
       setIsLoading(false);
+      console.log('AuthProvider: No token found, setIsLoading(false)');
     }
   }, [token, fetchUser]);
 
   const login = async (newToken: string) => {
+    console.log('AuthProvider: login called with new token');
     localStorage.setItem('token', newToken);
     setToken(newToken);
     // User will be fetched by the useEffect
   };
 
   const logout = () => {
+    console.log('AuthProvider: logout called');
     setToken(null);
     setUser(null);
     localStorage.removeItem('token');

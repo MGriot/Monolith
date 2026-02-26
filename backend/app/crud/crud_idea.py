@@ -1,4 +1,4 @@
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Union, Dict
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -48,7 +48,13 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
         db.add(db_obj)
         await db.commit()
         await db.refresh(db_obj)
-        return db_obj
+        return await self.get(db, id=db_obj.id)
+
+    async def update(
+        self, db: AsyncSession, *, db_obj: Idea, obj_in: Union[IdeaUpdate, Dict[str, Any]]
+    ) -> Idea:
+        db_obj = await super().update(db, db_obj=db_obj, obj_in=obj_in)
+        return await self.get(db, id=db_obj.id)
 
     async def promote_to_task(self, db: AsyncSession, *, idea_id: UUID, owner_id: UUID) -> Task:
         idea = await self.get(db, id=idea_id)

@@ -3,6 +3,7 @@ from sqlalchemy import Column, String, Boolean, JSON, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.associations import template_shares
 
 class ProjectTemplate(Base):
     __tablename__ = "project_templates"
@@ -26,6 +27,8 @@ class ProjectTemplate(Base):
     allowed_global_work_types = Column(JSON, nullable=False, default=[])
     
     is_active = Column(Boolean, default=True)
+    is_public = Column(Boolean, default=False)
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     
-    owner = relationship("User", backref="project_templates")
+    owner = relationship("User", backref="project_templates", foreign_keys=[owner_id])
+    shared_with = relationship("User", secondary=template_shares, backref="shared_templates")

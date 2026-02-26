@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/popover";
 import { cn, formatPercent } from '@/lib/utils';
 import TaskCreateDialog from '@/components/task-create-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // --- Calendar View Component ---
 
@@ -384,32 +383,29 @@ function RoadmapView() {
 
 export default function SchedulePage() {
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-8 max-w-7xl mx-auto space-y-12">
             <div>
                 <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Master Schedule</h1>
-                <p className="text-slate-500 mt-1">Visualize deadlines and project roadmaps in one place.</p>
+                <p className="text-slate-500 mt-1">Unified view of project roadmaps and discrete deadlines.</p>
             </div>
 
-            <Tabs defaultValue="calendar" className="w-full">
-                <TabsList className="mb-4 bg-white border border-slate-200 p-1 h-12 rounded-lg">
-                    <TabsTrigger value="calendar" className="gap-2 h-10 px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                        <CalendarIcon className="w-4 h-4" />
-                        Calendar View
-                    </TabsTrigger>
-                    <TabsTrigger value="roadmap" className="gap-2 h-10 px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                        <GanttChart className="w-4 h-4" />
-                        Roadmap View
-                    </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="calendar" className="outline-none">
-                    <CalendarView />
-                </TabsContent>
-                
-                <TabsContent value="roadmap" className="outline-none">
+            <div className="space-y-16">
+                <section>
+                    <div className="flex items-center gap-2 mb-4">
+                        <GanttChart className="w-5 h-5 text-primary" />
+                        <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Project Roadmaps</h2>
+                    </div>
                     <RoadmapView />
-                </TabsContent>
-            </Tabs>
+                </section>
+
+                <section>
+                    <div className="flex items-center gap-2 mb-4 border-t pt-12">
+                        <CalendarIcon className="w-5 h-5 text-primary" />
+                        <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Discrete Deadlines</h2>
+                    </div>
+                    <CalendarView />
+                </section>
+            </div>
         </div>
     );
 }

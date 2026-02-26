@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union, Dict, Any
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -7,7 +7,24 @@ from app.crud.base import CRUDBase
 from app.models.metadata import Topic, WorkType
 from app.schemas.metadata import TopicCreate, TopicUpdate, WorkTypeCreate, WorkTypeUpdate
 
+def format_metadata_name(name: str) -> str:
+    if not name:
+        return name
+    return name.strip().title()
+
 class CRUDTopic(CRUDBase[Topic, TopicCreate, TopicUpdate]):
+    async def create(self, db: AsyncSession, *, obj_in: TopicCreate) -> Topic:
+        obj_in.name = format_metadata_name(obj_in.name)
+        return await super().create(db, obj_in=obj_in)
+
+    async def update(self, db: AsyncSession, *, db_obj: Topic, obj_in: Union[TopicUpdate, Dict[str, Any]]) -> Topic:
+        if isinstance(obj_in, dict):
+            if "name" in obj_in:
+                obj_in["name"] = format_metadata_name(obj_in["name"])
+        elif obj_in.name is not None:
+            obj_in.name = format_metadata_name(obj_in.name)
+        return await super().update(db, db_obj=db_obj, obj_in=obj_in)
+
     async def get_multi_scoped(
         self, 
         db: AsyncSession, 
@@ -49,6 +66,18 @@ class CRUDTopic(CRUDBase[Topic, TopicCreate, TopicUpdate]):
         return result.scalars().all()
 
 class CRUDWorkType(CRUDBase[WorkType, WorkTypeCreate, WorkTypeUpdate]):
+    async def create(self, db: AsyncSession, *, obj_in: WorkTypeCreate) -> WorkType:
+        obj_in.name = format_metadata_name(obj_in.name)
+        return await super().create(db, obj_in=obj_in)
+
+    async def update(self, db: AsyncSession, *, db_obj: WorkType, obj_in: Union[WorkTypeUpdate, Dict[str, Any]]) -> WorkType:
+        if isinstance(obj_in, dict):
+            if "name" in obj_in:
+                obj_in["name"] = format_metadata_name(obj_in["name"])
+        elif obj_in.name is not None:
+            obj_in.name = format_metadata_name(obj_in.name)
+        return await super().update(db, db_obj=db_obj, obj_in=obj_in)
+
     async def get_multi_scoped(
         self, 
         db: AsyncSession, 

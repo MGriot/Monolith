@@ -7,3 +7,4 @@ from .crud_template import project_template
 from .crud_team import team
 from .crud_workflow import workflow
 from .crud_comment import crud_comment
+from .crud_blackboard import blackboard

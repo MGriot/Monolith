@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Milestone, Calculator, CalendarDays, Clock } from "lucide-react";
+import { Milestone, Calculator, CalendarDays, Clock, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
 import { AssigneeSelector } from "@/components/assignee-selector";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { addDays, differenceInDays, format, parseISO } from "date-fns";
+import DependencyManager from "./dependency-manager";
 import type { Task, Topic, WorkType, Project } from "@/types";
 
 const taskSchema = z.object({
@@ -21,8 +22,6 @@ const taskSchema = z.object({
   description: z.string().optional().nullable(),
   status: z.string().min(1, "Status is required"),
   priority: z.string().min(1, "Priority is required"),
-  topic_id: z.string().optional().nullable(),
-  type_id: z.string().optional().nullable(),
   topic_ids: z.array(z.string()).optional(),
   type_ids: z.array(z.string()).optional(),
   is_milestone: z.boolean().optional(),
@@ -43,7 +42,8 @@ const taskSchema = z.object({
 export type TaskFormValues = z.infer<typeof taskSchema>;
 
 interface TaskFormProps {
-  initialValues?: Partial<TaskFormValues>;
+  initialValues?: Partial<TaskFormValues> & { topics?: Topic[], types?: WorkType[] };
+  taskObject?: Task | null;
   onSubmit: (data: TaskFormValues) => void;
   onCancel: () => void;
   isLoading?: boolean;
@@ -52,7 +52,16 @@ interface TaskFormProps {
   projectId?: string;
 }
 
-export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading, allTasks, editingTaskId, projectId }: TaskFormProps) {
+export default function TaskForm({ 
+  initialValues, 
+  taskObject,
+  onSubmit, 
+  onCancel, 
+  isLoading, 
+  allTasks, 
+  editingTaskId, 
+  projectId 
+}: TaskFormProps) {
   const queryClient = useQueryClient();
   const [planningMode, setPlanningMode] = useState<"dates" | "duration">("dates");
 
@@ -103,22 +112,13 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['metadata', 'work-types'] })
   });
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<TaskFormValues>({
-    resolver: zodResolver(taskSchema),
-    defaultValues: useMemo(() => ({
+  const processedInitialValues = useMemo(() => {
+    const vals = {
       status: "Todo",
       priority: "Medium",
       is_milestone: false,
       assignee_ids: [],
       parent_id: null,
-      topic_id: null,
-      type_id: null,
       topic_ids: [],
       type_ids: [],
       color: null,
@@ -127,11 +127,27 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
       pessimistic_days: 0,
       duration_days: 0,
       ...initialValues,
-      start_date: initialValues?.start_date?.split('T')[0] || null,
-      due_date: initialValues?.due_date?.split('T')[0] || null,
-      deadline_at: initialValues?.deadline_at?.split('T')[0] || null,
-      completed_at: initialValues?.completed_at?.split('T')[0] || null,
-    }), [initialValues]),
+    };
+
+    if (initialValues?.topics && vals.topic_ids?.length === 0) {
+        vals.topic_ids = initialValues.topics.map(t => t.id);
+    }
+    if (initialValues?.types && vals.type_ids?.length === 0) {
+        vals.type_ids = initialValues.types.map(t => t.id);
+    }
+
+    return vals;
+  }, [initialValues]);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<TaskFormValues>({
+    resolver: zodResolver(taskSchema),
+    defaultValues: processedInitialValues as any,
   });
 
   const selectedAssignees = watch("assignee_ids") || [];
@@ -197,7 +213,6 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
     let filtered = topics;
     
     // Apply whitelist if present
-    // allowed_global_topics is array of UUIDs (strings)
     if (project?.allowed_global_topics && (project.allowed_global_topics as any).length > 0) {
       const whitelist = new Set(project.allowed_global_topics as any);
       filtered = filtered.filter((t: Topic) => {
@@ -267,253 +282,303 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
     return flat;
   };
 
+  const handleFormSubmit = (data: TaskFormValues) => {
+    const cleanedData = {
+      ...data,
+      parent_id: data.parent_id === "" ? null : data.parent_id,
+      color: data.color === "" ? null : data.color,
+      description: data.description === "" ? null : data.description,
+    };
+    onSubmit(cleanedData);
+  };
+
   const availableParents = getAvailableParents();
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="parent_id">Parent Task (WBS)</Label>
-          <select
-            id="parent_id"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            value={selectedParentId || ""}
-            onChange={(e) => setValue("parent_id", e.target.value || null)}
-          >
-            <option value="">None (Root Task)</option>
-            {availableParents.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="color">Row Color (Gantt)</Label>
-          <div className="flex gap-2">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 pt-4">
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="grid grid-cols-3 w-full mb-6">
+          <TabsTrigger value="general" className="text-xs font-bold uppercase tracking-tight">General</TabsTrigger>
+          <TabsTrigger value="scheduling" className="text-xs font-bold uppercase tracking-tight">Timeline</TabsTrigger>
+          <TabsTrigger value="dependencies" disabled={!editingTaskId} className="text-xs font-bold uppercase tracking-tight gap-1.5">
+            <LinkIcon className="w-3 h-3" /> Dependencies
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general" className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="parent_id">Parent Task (WBS)</Label>
+              <select
+                id="parent_id"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={selectedParentId || ""}
+                onChange={(e) => setValue("parent_id", e.target.value || null)}
+              >
+                <option value="">None (Root Task)</option>
+                {availableParents.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="color">Row Color (Gantt)</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  id="color-picker"
+                  className="w-12 h-10 p-1 cursor-pointer"
+                  value={selectedColor || "#ffffff"}
+                  onChange={(e) => setValue("color", e.target.value)}
+                />
+                <Input
+                  id="color"
+                  placeholder="#ffffff"
+                  {...register("color")}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
             <Input
-              type="color"
-              id="color-picker"
-              className="w-12 h-10 p-1 cursor-pointer"
-              value={selectedColor || "#ffffff"}
-              onChange={(e) => setValue("color", e.target.value)}
+              id="title"
+              placeholder="Task title"
+              {...register("title")}
             />
-            <Input
-              id="color"
-              placeholder="#ffffff"
-              {...register("color")}
-            />
+            {errors.title && (
+              <p className="text-sm text-destructive">{errors.title.message}</p>
+            )}
           </div>
-        </div>
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          placeholder="Task title"
-          {...register("title")}
-        />
-        {errors.title && (
-          <p className="text-sm text-destructive">{errors.title.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <textarea
-          id="description"
-          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          placeholder="Describe the task..."
-          {...register("description")}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <select
-            id="status"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            {...register("status")}
-          >
-            <option value="Backlog">Backlog</option>
-            <option value="Todo">Todo</option>
-            <option value="In Progress">In Progress</option>
-            <option value="On hold">On hold</option>
-            <option value="Review">Review</option>
-            <option value="Done">Done</option>
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="priority">Priority</Label>
-          <select
-            id="priority"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            {...register("priority")}
-          >
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Critical">Critical</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <AssigneeSelector 
-          label="Assignees"
-          selectedValues={selectedAssignees}
-          onSelect={(id) => toggleItem("assignee_ids", id)}
-          onRemove={(id) => removeItem("assignee_ids", id)}
-          placeholder="Assign users or teams..."
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Topics</Label>
-          <RichDropdown 
-            items={topicItems}
-            selectedValues={selectedTopicIds}
-            onSelect={(id) => toggleItem("topic_ids", id)}
-            onRemove={(id) => removeItem("topic_ids", id)}
-            onCreate={projectId ? (name) => createTopicMutation.mutate(name) : undefined}
-            multi={true}
-            isLoading={isLoadingTopics}
-            placeholder="Select topics..."
-            searchPlaceholder="Search categories..."
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Types</Label>
-          <RichDropdown 
-            items={typeItems}
-            selectedValues={selectedTypeIds}
-            onSelect={(id) => toggleItem("type_ids", id)}
-            onRemove={(id) => removeItem("type_ids", id)}
-            onCreate={projectId ? (name) => createWorkTypeMutation.mutate(name) : undefined}
-            multi={true}
-            isLoading={isLoadingTypes}
-            placeholder="Select work types..."
-            searchPlaceholder="Search types..."
-          />
-        </div>
-      </div>
-
-      <div className="p-3 border rounded-lg bg-slate-50/50 space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
-            <Calculator className="w-3.5 h-3.5" />
-            PERT Estimation (Days)
-          </Label>
-          <div className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
-            Expected: {expectedDuration}d
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="optimistic_days" className="text-[10px] text-slate-500 uppercase">Optimistic</Label>
-            <Input 
-              id="optimistic_days" 
-              type="number" 
-              {...register("optimistic_days", { valueAsNumber: true })} 
-              className="h-8 text-xs bg-white"
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <textarea
+              id="description"
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder="Describe the task..."
+              {...register("description")}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="normal_days" className="text-[10px] text-slate-500 uppercase">Most Likely</Label>
-            <Input 
-              id="normal_days" 
-              type="number" 
-              {...register("normal_days", { valueAsNumber: true })} 
-              className="h-8 text-xs bg-white"
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                {...register("status")}
+              >
+                <option value="Backlog">Backlog</option>
+                <option value="Todo">Todo</option>
+                <option value="In Progress">In Progress</option>
+                <option value="On hold">On Hold</option>
+                <option value="Review">Review</option>
+                <option value="Done">Done</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="priority">Priority</Label>
+              <select
+                id="priority"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                {...register("priority")}
+              >
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <AssigneeSelector 
+              label="Assignees"
+              selectedValues={selectedAssignees}
+              onSelect={(id) => toggleItem("assignee_ids", id)}
+              onRemove={(id) => removeItem("assignee_ids", id)}
+              placeholder="Assign users or teams..."
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="pessimistic_days" className="text-[10px] text-slate-500 uppercase">Pessimistic</Label>
-            <Input 
-              id="pessimistic_days" 
-              type="number" 
-              {...register("pessimistic_days", { valueAsNumber: true })} 
-              className="h-8 text-xs bg-white"
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Topics</Label>
+              <RichDropdown 
+                items={topicItems}
+                selectedValues={selectedTopicIds}
+                onSelect={(id) => toggleItem("topic_ids", id)}
+                onRemove={(id) => removeItem("topic_ids", id)}
+                onCreate={projectId ? (name) => createTopicMutation.mutate(name) : undefined}
+                multi={true}
+                isLoading={isLoadingTopics}
+                placeholder="Select topics..."
+                searchPlaceholder="Search categories..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Types</Label>
+              <RichDropdown 
+                items={typeItems}
+                selectedValues={selectedTypeIds}
+                onSelect={(id) => toggleItem("type_ids", id)}
+                onRemove={(id) => removeItem("type_ids", id)}
+                onCreate={projectId ? (name) => createWorkTypeMutation.mutate(name) : undefined}
+                multi={true}
+                isLoading={isLoadingTypes}
+                placeholder="Select work types..."
+                searchPlaceholder="Search types..."
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 pt-2">
+            <Switch
+              id="is_milestone"
+              checked={watch("is_milestone")}
+              onCheckedChange={(checked) => setValue("is_milestone", checked)}
             />
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-3 p-3 border rounded-lg bg-slate-50/50">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
-            <CalendarDays className="w-3.5 h-3.5" />
-            Scheduling & Timeline
-          </Label>
-          <Tabs value={planningMode} onValueChange={(v: any) => setPlanningMode(v)}>
-            <TabsList className="h-7 p-0.5 bg-slate-200/50">
-              <TabsTrigger value="dates" className="text-[10px] h-6 px-2">Fixed Dates</TabsTrigger>
-              <TabsTrigger value="duration" className="text-[10px] h-6 px-2">Duration Based</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="start_date" className="text-[10px] text-slate-500 uppercase">Start Date</Label>
-            <Input id="start_date" type="date" {...register("start_date")} className="h-8 text-xs bg-white" />
-          </div>
-          
-          <div className="space-y-1.5">
-            <Label htmlFor="duration_days" className="text-[10px] text-slate-500 uppercase flex items-center gap-1">
-              <Clock className="w-2.5 h-2.5" /> Duration
+            <Label htmlFor="is_milestone" className="flex items-center gap-1.5 cursor-pointer">
+              <Milestone className="w-3.5 h-3.5 text-blue-500" />
+              Mark as Milestone
             </Label>
-            <Input 
-              id="duration_days" 
-              type="number" 
-              value={durationDays}
-              onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
-              className={cn("h-8 text-xs bg-white", planningMode === "dates" && "bg-slate-100 italic text-slate-400")}
-              disabled={planningMode === "dates"}
-            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="scheduling" className="space-y-4">
+          <div className="p-3 border rounded-lg bg-slate-50/50 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
+                <Calculator className="w-3.5 h-3.5" />
+                PERT Estimation (Days)
+              </Label>
+              <div className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
+                Expected: {expectedDuration}d
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="optimistic_days" className="text-[10px] text-slate-500 uppercase">Optimistic</Label>
+                <Input 
+                  id="optimistic_days" 
+                  type="number" 
+                  {...register("optimistic_days", { valueAsNumber: true })} 
+                  className="h-8 text-xs bg-white"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="normal_days" className="text-[10px] text-slate-500 uppercase">Most Likely</Label>
+                <Input 
+                  id="normal_days" 
+                  type="number" 
+                  {...register("normal_days", { valueAsNumber: true })} 
+                  className="h-8 text-xs bg-white"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="pessimistic_days" className="text-[10px] text-slate-500 uppercase">Pessimistic</Label>
+                <Input 
+                  id="pessimistic_days" 
+                  type="number" 
+                  {...register("pessimistic_days", { valueAsNumber: true })} 
+                  className="h-8 text-xs bg-white"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="due_date" className="text-[10px] text-slate-500 uppercase">Due Date</Label>
-            <Input 
-              id="due_date" 
-              type="date" 
-              {...register("due_date")} 
-              className={cn("h-8 text-xs bg-white", planningMode === "duration" && "bg-slate-100 italic text-slate-400")}
-              disabled={planningMode === "duration"}
-            />
+          <div className="space-y-3 p-3 border rounded-lg bg-slate-50/50">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
+                <CalendarDays className="w-3.5 h-3.5" />
+                Scheduling & Timeline
+              </Label>
+              <Tabs value={planningMode} onValueChange={(v: any) => setPlanningMode(v)}>
+                <TabsList className="h-7 p-0.5 bg-slate-200/50">
+                  <TabsTrigger value="dates" className="text-[10px] h-6 px-2">Fixed Dates</TabsTrigger>
+                  <TabsTrigger value="duration" className="text-[10px] h-6 px-2">Duration Based</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="start_date" className="text-[10px] text-slate-500 uppercase">Start Date</Label>
+                <Input id="start_date" type="date" {...register("start_date")} className="h-8 text-xs bg-white" />
+              </div>
+              
+              <div className="space-y-1.5">
+                <Label htmlFor="duration_days" className="text-[10px] text-slate-500 uppercase flex items-center gap-1">
+                  <Clock className="w-2.5 h-2.5" /> Duration
+                </Label>
+                <Input 
+                  id="duration_days" 
+                  type="number" 
+                  value={durationDays}
+                  onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
+                  className={cn("h-8 text-xs bg-white", planningMode === "dates" && "bg-slate-100 italic text-slate-400")}
+                  disabled={planningMode === "dates"}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="due_date" className="text-[10px] text-slate-500 uppercase">Due Date</Label>
+                <Input 
+                  id="due_date" 
+                  type="date" 
+                  {...register("due_date")} 
+                  className={cn("h-8 text-xs bg-white", planningMode === "duration" && "bg-slate-100 italic text-slate-400")}
+                  disabled={planningMode === "duration"}
+                />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="deadline_at">Hard Deadline</Label>
-          <Input id="deadline_at" type="date" {...register("deadline_at")} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="completed_at">Conclusion Date</Label>
-          <Input id="completed_at" type="date" {...register("completed_at")} />
-        </div>
-      </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="deadline_at">Hard Deadline</Label>
+              <Input id="deadline_at" type="date" {...register("deadline_at")} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="completed_at">Conclusion Date</Label>
+              <Input id="completed_at" type="date" {...register("completed_at")} />
+            </div>
+          </div>
+        </TabsContent>
 
-      <div className="flex items-center space-x-2 pt-2">
-        <Switch
-          id="is_milestone"
-          checked={watch("is_milestone")}
-          onCheckedChange={(checked) => setValue("is_milestone", checked)}
-        />
-        <Label htmlFor="is_milestone" className="flex items-center gap-1.5 cursor-pointer">
-          <Milestone className="w-3.5 h-3.5 text-blue-500" />
-          Mark as Milestone
-        </Label>
-      </div>
+        <TabsContent value="dependencies" className="pt-2">
+          {editingTaskId && taskObject && (
+            <DependencyManager
+              item={taskObject}
+              allPossibleBlockers={(() => {
+                const flat: any[] = [];
+                const recurse = (list: Task[], prefix = "") => {
+                  list.forEach(t => {
+                    const title = prefix ? `${prefix} > ${t.title}` : t.title;
+                    flat.push({ ...t, title });
+                    if (t.subtasks) recurse(t.subtasks, title);
+                  });
+                };
+                recurse(allTasks || []);
+                return flat;
+              })()}
+            />
+          )}
+          {!editingTaskId && (
+            <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-2 border border-dashed rounded-lg">
+              <LinkIcon className="w-8 h-8 opacity-20" />
+              <p className="text-xs font-medium">Dependencies can be added after the task is created.</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex justify-end gap-3 pt-4 border-t">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
@@ -524,3 +589,4 @@ export default function TaskForm({ initialValues, onSubmit, onCancel, isLoading,
     </form>
   );
 }
+

@@ -57,3 +57,24 @@ team_members = Table(
     Column("team_id", UUID(as_uuid=True), ForeignKey("teams.id"), primary_key=True),
     Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
 )
+
+template_shares = Table(
+    "template_shares",
+    Base.metadata,
+    Column("template_id", UUID(as_uuid=True), ForeignKey("project_templates.id"), primary_key=True),
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+)
+
+team_shares = Table(
+    "team_shares",
+    Base.metadata,
+    Column("team_id", UUID(as_uuid=True), ForeignKey("teams.id"), primary_key=True),
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+)
+
+workflow_shares = Table(
+    "workflow_shares",
+    Base.metadata,
+    Column("workflow_id", UUID(as_uuid=True), ForeignKey("workflows.id"), primary_key=True),
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+)

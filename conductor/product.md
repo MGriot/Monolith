@@ -220,4 +220,36 @@ Refine the categorization process to maintain data cleanliness and provide templ
 *   **Template-Driven Restrictions:**
     *   **Whitelist:** Project Templates can define a whitelist of "Allowed Topics" and "Allowed WorkTypes".
     *   **Enforcement:** When a project is instantiated from such a template, the Topic and WorkType selection is STRICTLY limited to the whitelisted items.
-    *   **Benefit:** Ensures that projects following a specific methodology (e.g., "Software Development") only use relevant categories (e.g., "Feature", "Bug") instead of generic ones.
+        *   **Benefit:** Ensures that projects following a specific methodology (e.g., "Software Development") only use relevant categories (e.g., "Feature", "Bug") instead of generic ones.
+    
+    ## 19. Addendum: Integrated Blackboard & System Refinements (Feb 26, 2026)
+    
+    ### 19.1 Feature: Integrated Blackboard / Sketching Tool
+    Enable visual collaboration and technical sketching directly within the platform.
+    
+    *   **Requirement:** A free, local-first whiteboard tool for drawing shapes, lines, text, and embedding assets.
+    *   **Technology:** Implementation using `@tldraw/tldraw`.
+    *   **Integration:**
+        *   **Storage:** Sketches saved as JSON/SVG in the Project Library.
+        *   **Linking:** Ability to link a specific sketch to a Task for context.
+        *   **Comments:** Generate image exports from sketches to embed directly into task/thread comments.
+    
+    ### 19.2 UI/UX Consolidation & Polish
+    Streamline navigation and improve visual consistency.
+    
+    *   **Gantt Refinement:** Hide the time axis (months/quarters/years) from the left-side task header column to maximize space and reduce clutter.
+    *   **Sub-Nav Cleanup:** Remove the redundant "Settings" button from the project-level navigation row.
+    *   **Unified Creation:** Remove the dedicated "Independent Task" button. The global "Add" button in the header will now handle both Project and Task (including independent) creation.
+    *   **View Merge:** Consolidate "Calendar" and "Roadmap" into a single "Master Schedule" page.
+    *   **Avatar Parity:** Ensure the comment/thread section uses the global `Avatar` component for consistency with the rest of the application.
+    
+    ### 19.3 Bug Fixes & Logic Adjustments
+    *   **Independent Task Payload:** Fix the serialization error ([object Object]) in the independent task creation flow.
+    *   **SOP Enhancements:** Fix the update flow for Standard Operating Procedures and upgrade the editor to support Markdown and image uploads (parity with comments).
+    *   **Gantt Color Control:** Fix row color rendering and add a toggle in the Gantt controls to enable/disable task-specific colors.
+    *   **Smart Alert Logic:** Only show the "Overdue/Deadline" alert icon if the task's `Conclusion Date` (if present) is NOT earlier than the `Due Date` or `Hard Deadline`.
+    
+    ### 19.4 Infrastructure Optimization
+    *   **Container Thinning:** Evaluate and remove the `nginx` container if the Vite/React frontend can handle routing and serving securely, reducing deployment overhead.
+    *   **Official MCP Integration:** Complete the Model Context Protocol implementation using the official Anthropic `mcp` Python library for full standard compliance.
+    

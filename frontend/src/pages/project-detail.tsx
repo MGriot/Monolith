@@ -18,10 +18,10 @@ import ProjectHeatmap from '@/components/project-heatmap';
 import ProjectTaskList from '@/components/project-task-list';
 import ResourceTimeline from '@/components/resource-timeline';
 import ProjectIdeas from '@/components/project-ideas';
+import ProjectLibrary from '@/components/project-library';
 import CommentSection from '@/components/comments/comment-section';
 import TaskForm from '@/components/task-form';
 import type { TaskFormValues } from '@/components/task-form';
-import DependencyManager from '@/components/dependency-manager';
 import AttachmentManager from '@/components/attachment-manager';
 import ScopedTaxonomyManager from '@/components/scoped-taxonomy-manager';
 import { toast } from 'sonner';
@@ -32,7 +32,6 @@ import {
   Plus,
   List as ListIcon,
   Users as UsersIcon,
-  Settings as SettingsIcon,
   User as UserIcon,
   FolderKanban,
   LayoutDashboard,
@@ -42,7 +41,8 @@ import {
   Lightbulb,
   Archive,
   Download,
-  MessageSquare
+  MessageSquare,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -108,6 +108,9 @@ export default function ProjectDetailPage() {
         tags: values.tags ? values.tags.split(',').map(t => t.trim()) : [],
         start_date: values.start_date ? new Date(values.start_date).toISOString() : null,
         due_date: values.due_date ? new Date(values.due_date).toISOString() : null,
+        topic_ids: values.topic_ids || [],
+        type_ids: values.type_ids || [],
+        member_ids: values.member_ids || [],
       };
       return api.put(`/projects/${id}`, formattedValues);
     },
@@ -208,7 +211,6 @@ export default function ProjectDetailPage() {
   });
 
   const handleTaskMove = (taskId: string, newStatus: string) => {
-    // Basic move without sophisticated sort index calculation for now
     moveTaskMutation.mutate({ taskId, newStatus });
   };
 
@@ -265,13 +267,8 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleReorderTask = () => {
-    // Reorder logic omitted for brevity, should use sort_index
-  };
-
-  const handleIndentTask = () => {
-    // Indent logic omitted for brevity
-  };
+  const handleReorderTask = () => {};
+  const handleIndentTask = () => {};
 
   const handlePromoteSuccess = (task: Task) => {
     setActiveTab("overview");
@@ -281,8 +278,13 @@ export default function ProjectDetailPage() {
 
   if (isProjectLoading || isTasksLoading || isStatsLoading) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[400px]">
+      <div className="flex items-center justify-center h-full min-h-[400px] text-slate-500">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="ml-4 text-sm">
+          {isProjectLoading && "Loading project data..."}
+          {isTasksLoading && "Loading tasks..."}
+          {isStatsLoading && "Loading project statistics..."}
+        </p>
       </div>
     );
   }
@@ -307,15 +309,6 @@ export default function ProjectDetailPage() {
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{project.name}</h1>
               <Badge variant="secondary" className="capitalize px-2 py-0 h-5 text-[10px]">{project.status}</Badge>
               <div className="flex items-center gap-1">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-slate-400 hover:text-primary transition-colors"
-                    onClick={() => setActiveTab("settings")}
-                    title="Settings"
-                >
-                    <SettingsIcon className="w-4 h-4" />
-                </Button>
                 {!project.is_archived && (
                     <Button
                         variant="ghost"
@@ -435,8 +428,8 @@ export default function ProjectDetailPage() {
             <TabsTrigger value="ideas" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
               <Lightbulb className="w-3.5 h-3.5" /> Ideas
             </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
-              <SettingsIcon className="w-3.5 h-3.5" /> Settings
+            <TabsTrigger value="library" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
+              <BookOpen className="w-3.5 h-3.5" /> Library
             </TabsTrigger>
           </TabsList>
         </div>
@@ -528,6 +521,10 @@ export default function ProjectDetailPage() {
           <ProjectIdeas projectId={id!} onPromoteSuccess={handlePromoteSuccess} />
         </TabsContent>
 
+        <TabsContent value="library" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
+          <ProjectLibrary projectId={id!} onOpenSettings={() => setActiveTab("settings")} />
+        </TabsContent>
+
         <TabsContent value="activity" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
           <div className="max-w-4xl mx-auto">
             <Card>
@@ -556,16 +553,10 @@ export default function ProjectDetailPage() {
                     <ProjectForm
                         projectId={id}
                         initialValues={{
-                            name: project.name,
-                            description: project.description,
-                            topic_id: project.topic_id || undefined,
-                            type_id: project.type_id || undefined,
+                            ...project,
+                            tags: project.tags || [],
                             topic_ids: project.topic_ids || project.topics?.map(t => t.id) || [],
                             type_ids: project.type_ids || project.types?.map(t => t.id) || [],
-                            status: project.status,
-                            start_date: project.start_date?.split('T')[0],
-                            due_date: project.due_date?.split('T')[0],
-                            tags: project.tags?.join(', '),
                             member_ids: project.members?.map(m => m.id) || []
                         }}
                         onSubmit={(data) => updateProjectMutation.mutate(data)}
@@ -593,20 +584,19 @@ export default function ProjectDetailPage() {
 
           <TaskForm
             projectId={id}
+            taskObject={editingTask}
             initialValues={editingTask ? {
               title: editingTask.title,
               description: editingTask.description,
               status: editingTask.status,
               priority: editingTask.priority,
-              topic_id: editingTask.topic_id || undefined,
-              type_id: editingTask.type_id || undefined,
               topic_ids: editingTask.topic_ids || editingTask.topics?.map(t => t.id) || [],
               type_ids: editingTask.type_ids || editingTask.types?.map(t => t.id) || [],
               is_milestone: editingTask.is_milestone,
-              start_date: editingTask.start_date ? editingTask.start_date.split('T')[0] : '',
-              due_date: editingTask.due_date ? editingTask.due_date.split('T')[0] : '',
-              deadline_at: editingTask.deadline_at ? editingTask.deadline_at.split('T')[0] : '',
-              completed_at: editingTask.completed_at ? editingTask.completed_at.split('T')[0] : '',
+              start_date: editingTask.start_date || '',
+              due_date: editingTask.due_date || '',
+              deadline_at: editingTask.deadline_at || '',
+              completed_at: editingTask.completed_at || '',
               assignee_ids: editingTask.assignees?.map(u => u.id) || [],
               parent_id: editingTask.parent_id,
               color: editingTask.color,
@@ -664,23 +654,9 @@ export default function ProjectDetailPage() {
 
           {editingTask && (
             <>
-              <DependencyManager
-                item={editingTask}
-                allPossibleBlockers={(() => {
-                  const flat: any[] = [];
-                  const recurse = (list: Task[], prefix = "") => {
-                    list.forEach(t => {
-                      const title = prefix ? `${prefix} > ${t.title}` : t.title;
-                      flat.push({ ...t, title });
-                      if (t.subtasks) recurse(t.subtasks, title);
-                    });
-                  };
-                  recurse(tasks || []);
-                  return flat;
-                })()}
-              />
               <AttachmentManager
                 taskId={editingTask.id}
+                projectId={id}
                 attachments={editingTask.attachments || []}
               />
               

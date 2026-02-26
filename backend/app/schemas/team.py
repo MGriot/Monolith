@@ -8,13 +8,18 @@ class TeamBase(BaseModel):
     name: str
     description: Optional[str] = None
     owner_id: Optional[UUID] = None
+    is_public: Optional[bool] = False
 
 class TeamCreate(TeamBase):
     member_ids: Optional[List[UUID]] = []
+    shared_with_ids: Optional[List[UUID]] = []
 
-class TeamUpdate(TeamBase):
+class TeamUpdate(BaseModel):
     name: Optional[str] = None
+    description: Optional[str] = None
+    is_public: Optional[bool] = None
     member_ids: Optional[List[UUID]] = []
+    shared_with_ids: Optional[List[UUID]] = []
 
 class TeamInDBBase(TeamBase):
     id: UUID
@@ -25,3 +30,4 @@ class TeamInDBBase(TeamBase):
 class Team(TeamInDBBase):
     members: List[UserSchema] = []
     owner: Optional[UserSchema] = None
+    shared_with: List[UserSchema] = []

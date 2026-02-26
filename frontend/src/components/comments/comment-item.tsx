@@ -2,13 +2,17 @@ import { useState } from 'react';
 import type { Comment } from '@/types';
 import { CommentInput } from './comment-input';
 import { formatDistanceToNow } from 'date-fns';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { 
   MoreHorizontal, 
   Trash2, 
   Edit2, 
-  Reply 
+  Reply,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -24,6 +28,9 @@ interface CommentItemProps {
   onEdit: (commentId: string, content: string) => Promise<void>;
   onDelete: (commentId: string) => Promise<void>;
   depth?: number;
+  projectId?: string;
+  taskId?: string;
+  ideaId?: string;
 }
 
 export function CommentItem({ 
@@ -32,14 +39,19 @@ export function CommentItem({
   onReply, 
   onEdit, 
   onDelete, 
-  depth = 0 
+  depth = 0,
+  projectId,
+  taskId,
+  ideaId
 }: CommentItemProps) {
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const handleReplySubmit = async (content: string) => {
     await onReply(comment.id, content);
     setIsReplying(false);
+    setIsExpanded(true);
   };
 
   const handleEditSubmit = async (content: string) => {
@@ -48,18 +60,16 @@ export function CommentItem({
   };
 
   const isAuthor = currentUserId === comment.author_id;
+  const hasReplies = comment.replies && comment.replies.length > 0;
 
   return (
     <div className={`flex gap-3 ${depth > 0 ? 'ml-8 mt-4 relative' : 'mt-6'}`}>
       {depth > 0 && (
           <div className="absolute -left-6 top-0 bottom-0 w-px bg-border" />
       )}
-      <Avatar className="h-8 w-8">
-        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.author?.full_name || 'U'}`} />
-        <AvatarFallback>{comment.author?.full_name?.charAt(0) || 'U'}</AvatarFallback>
-      </Avatar>
+      <UserAvatar user={comment.author} className="h-8 w-8" />
       
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 space-y-2 overflow-hidden">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-medium text-sm">{comment.author?.full_name || 'Unknown User'}</span>
@@ -95,24 +105,44 @@ export function CommentItem({
             onSubmit={handleEditSubmit}
             onCancel={() => setIsEditing(false)}
             submitLabel="Save"
+            projectId={projectId || comment.project_id || undefined}
+            taskId={taskId || comment.task_id || undefined}
+            ideaId={ideaId || comment.idea_id || undefined}
           />
         ) : (
-          <div className="text-sm prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-            {comment.content}
+          <div className="text-sm prose prose-sm max-w-none text-foreground prose-slate dark:prose-invert">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {comment.content}
+            </ReactMarkdown>
           </div>
         )}
 
         {!isEditing && (
-           <div className="flex items-center gap-2">
+           <div className="flex items-center gap-3">
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-auto p-0 text-muted-foreground hover:text-foreground"
+              className="h-auto p-0 text-muted-foreground hover:text-foreground text-[11px]"
               onClick={() => setIsReplying(!isReplying)}
             >
-              <Reply className="h-3 w-3 mr-1" />
+              <Reply className="h-3.5 w-3.5 mr-1" />
               Reply
             </Button>
+            
+            {hasReplies && (
+               <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-auto p-0 text-muted-foreground hover:text-foreground text-[11px]"
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                {isExpanded ? (
+                  <><ChevronUp className="h-3.5 w-3.5 mr-1" /> Hide Replies ({comment.replies?.length})</>
+                ) : (
+                  <><ChevronDown className="h-3.5 w-3.5 mr-1" /> Show Replies ({comment.replies?.length})</>
+                )}
+              </Button>
+            )}
           </div>
         )}
 
@@ -123,14 +153,17 @@ export function CommentItem({
               onCancel={() => setIsReplying(false)}
               submitLabel="Reply"
               placeholder="Write a reply..."
+              projectId={projectId || comment.project_id || undefined}
+              taskId={taskId || comment.task_id || undefined}
+              ideaId={ideaId || comment.idea_id || undefined}
             />
           </div>
         )}
 
         {/* Recursive Replies */}
-        {comment.replies && comment.replies.length > 0 && (
+        {hasReplies && isExpanded && (
           <div className="pt-2">
-             {comment.replies.map(reply => (
+             {comment.replies!.map(reply => (
                <CommentItem
                  key={reply.id}
                  comment={reply}
@@ -139,6 +172,9 @@ export function CommentItem({
                  onEdit={onEdit}
                  onDelete={onDelete}
                  depth={depth + 1}
+                 projectId={projectId}
+                 taskId={taskId}
+                 ideaId={ideaId}
                />
              ))}
           </div>

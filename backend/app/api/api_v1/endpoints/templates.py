@@ -21,8 +21,8 @@ async def read_templates(
     if current_user.is_superuser:
         templates = await crud.project_template.get_multi(db, skip=skip, limit=limit)
     else:
-        templates = await crud.project_template.get_multi_by_owner(
-            db, owner_id=current_user.id, skip=skip, limit=limit
+        templates = await crud.project_template.get_multi_by_user(
+            db, user_id=current_user.id, skip=skip, limit=limit
         )
     return templates
 
@@ -55,8 +55,14 @@ async def update_template(
     template = await crud.project_template.get(db, id=id)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
-    if not current_user.is_superuser and (template.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+    
+    # Check if user is owner or co-owner (shared_with)
+    is_owner = template.owner_id == current_user.id
+    is_shared = any(u.id == current_user.id for u in template.shared_with)
+    
+    if not current_user.is_superuser and not is_owner and not is_shared:
+        raise HTTPException(status_code=403, detail="Not enough permissions to modify this template")
+        
     template = await crud.project_template.update(db, db_obj=template, obj_in=obj_in)
     return template
 
@@ -73,8 +79,16 @@ async def read_template(
     template = await crud.project_template.get(db, id=id)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
-    if not current_user.is_superuser and (template.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+        
+    # Public templates are readable by anyone
+    if template.is_public:
+        return template
+        
+    is_owner = template.owner_id == current_user.id
+    is_shared = any(u.id == current_user.id for u in template.shared_with)
+    
+    if not current_user.is_superuser and not is_owner and not is_shared:
+        raise HTTPException(status_code=403, detail="Not enough permissions to view this template")
     return template
 
 @router.delete("/{id}", response_model=schemas.template.ProjectTemplate)
@@ -90,7 +104,9 @@ async def delete_template(
     template = await crud.project_template.get(db, id=id)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
+        
     if not current_user.is_superuser and (template.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+        raise HTTPException(status_code=403, detail="Only the owner can delete this template")
+        
     template = await crud.project_template.remove(db, id=id)
     return template

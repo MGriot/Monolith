@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Edit2, Copy, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, Copy, Loader2, Globe, Lock, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ProjectTemplate, Topic, WorkType } from '@/types';
 import {
@@ -18,6 +18,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { RichDropdown } from '@/components/ui/rich-dropdown';
+import { Switch } from '@/components/ui/switch';
+import { AssigneeSelector } from '@/components/assignee-selector';
+import { useAuth } from '@/components/auth-provider';
 
 // Helper to parse indented text into hierarchical tasks
 const parseTasks = (text: string) => {
@@ -55,8 +58,6 @@ const parseTasks = (text: string) => {
         parent.subtasks.push(task);
         stack.push({ level, item: task });
       } else {
-        // Fallback if indentation is weird (e.g. level 2 without level 1)
-        // Just add to root to avoid losing data
         root.push(task);
         stack.push({ level, item: task });
       }
@@ -80,6 +81,7 @@ const serializeTasks = (tasks: any[], level = 0): string => {
 
 export default function TemplatesPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ProjectTemplate | null>(null);
   
@@ -89,6 +91,8 @@ export default function TemplatesPage() {
   const [tasksText, setTasksText] = useState('');
   const [allowedTopics, setAllowedTopics] = useState<string[]>([]);
   const [allowedWorkTypes, setAllowedWorkTypes] = useState<string[]>([]);
+  const [isPublic, setIsPublic] = useState(false);
+  const [sharedWithIds, setSharedWithIds] = useState<string[]>([]);
 
   // Queries
   const { data: templates, isLoading } = useQuery({
@@ -141,15 +145,19 @@ export default function TemplatesPage() {
     setTasksText('');
     setAllowedTopics([]);
     setAllowedWorkTypes([]);
+    setIsPublic(false);
+    setSharedWithIds([]);
   };
 
-  const handleEdit = (template: any) => { // Use any here temporarily to avoid type errors with new fields
+  const handleEdit = (template: ProjectTemplate) => {
     setEditingTemplate(template);
     setName(template.name);
     setDescription(template.description || '');
     setTasksText(serializeTasks(template.tasks_json));
     setAllowedTopics(template.allowed_global_topics || []);
     setAllowedWorkTypes(template.allowed_global_work_types || []);
+    setIsPublic(template.is_public || false);
+    setSharedWithIds(template.shared_with?.map(u => u.id) || []);
     setIsCreateDialogOpen(true);
   };
 
@@ -166,7 +174,9 @@ export default function TemplatesPage() {
       description, 
       tasks_json,
       allowed_global_topics: allowedTopics,
-      allowed_global_work_types: allowedWorkTypes
+      allowed_global_work_types: allowedWorkTypes,
+      is_public: isPublic,
+      shared_with_ids: sharedWithIds
     };
 
     if (editingTemplate) {
@@ -176,8 +186,8 @@ export default function TemplatesPage() {
     }
   };
 
-  const topicItems = topics?.map(t => ({ id: t.id, label: t.name, color: t.color })) || [];
-  const workTypeItems = workTypes?.map(w => ({ id: w.id, label: w.name, color: w.color })) || [];
+  const topicItems = useMemo(() => topics?.map(t => ({ id: t.id, label: t.name, color: t.color })) || [], [topics]);
+  const workTypeItems = useMemo(() => workTypes?.map(w => ({ id: w.id, label: w.name, color: w.color })) || [], [workTypes]);
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -197,41 +207,75 @@ export default function TemplatesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {templates?.map((template) => (
-            <Card key={template.id} className="group hover:border-primary/30 transition-all border-slate-200 shadow-sm">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg group-hover:text-primary transition-colors">{template.name}</CardTitle>
-                  <Copy className="w-4 h-4 text-slate-300 group-hover:text-primary/50" />
-                </div>
-                <CardDescription className="line-clamp-2">{template.description || 'No description provided.'}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Predefined Tasks ({template.tasks_json.length})</p>
-                  <div className="space-y-1">
-                    {template.tasks_json.slice(0, 5).map((task: any, idx: number) => (
-                      <div key={idx} className="text-xs text-slate-600 flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-slate-300" />
-                        {task.title}
-                      </div>
+          {templates?.map((template) => {
+            const isOwner = user?.id === template.owner_id;
+            const canEdit = isOwner || user?.is_superuser;
+            
+            return (
+              <Card key={template.id} className="group hover:border-primary/30 transition-all border-slate-200 shadow-sm relative">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                        <CardTitle className="text-lg group-hover:text-primary transition-colors flex items-center gap-2">
+                            {template.name}
+                            {template.is_public ? (
+                                <span title="Public"><Globe className="w-3 h-3 text-blue-500" /></span>
+                            ) : (
+                                <span title="Private"><Lock className="w-3 h-3 text-slate-400" /></span>
+                            )}
+                        </CardTitle>
+                        <CardDescription className="line-clamp-2">{template.description || 'No description provided.'}</CardDescription>
+                    </div>
+                    <Copy className="w-4 h-4 text-slate-300 group-hover:text-primary/50 shrink-0" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Predefined Tasks ({template.tasks_json.length})</p>
+                    <div className="space-y-1">
+                      {template.tasks_json.slice(0, 5).map((task: any, idx: number) => (
+                        <div key={idx} className="text-xs text-slate-600 flex items-center gap-2">
+                          <div className="w-1 h-1 rounded-full bg-slate-300" />
+                          {task.title}
+                        </div>
+                      ))}
+                      {template.tasks_json.length > 5 && (
+                        <p className="text-[10px] text-slate-400 italic">+ {template.tasks_json.length - 5} more tasks</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="border-t bg-slate-50/50 flex justify-between items-center p-3">
+                  <div className="flex -space-x-2 overflow-hidden">
+                    {template.shared_with?.slice(0, 3).map((u) => (
+                        <div key={u.id} className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[8px] font-bold" title={`Shared with ${u.full_name}`}>
+                            {u.full_name?.charAt(0) || 'U'}
+                        </div>
                     ))}
-                    {template.tasks_json.length > 5 && (
-                      <p className="text-[10px] text-slate-400 italic">+ {template.tasks_json.length - 5} more tasks</p>
+                    {template.shared_with && template.shared_with.length > 3 && (
+                        <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-500">
+                            +{template.shared_with.length - 3}
+                        </div>
                     )}
                   </div>
-                </div>
-              </CardContent>
-              <CardFooter className="border-t bg-slate-50/50 flex justify-end gap-2 p-3">
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500 hover:text-primary" onClick={() => handleEdit(template)}>
-                  <Edit2 className="w-3.5 h-3.5" />
-                </Button>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500 hover:text-destructive" onClick={() => deleteMutation.mutate(template.id)}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                  <div className="flex gap-2">
+                    {canEdit && (
+                        <>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500 hover:text-primary" onClick={() => handleEdit(template)}>
+                                <Edit2 className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500 hover:text-destructive" onClick={() => {
+                                if (confirm('Delete this template?')) deleteMutation.mutate(template.id);
+                            }}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                        </>
+                    )}
+                  </div>
+                </CardFooter>
+              </Card>
+            );
+          })}
           
           {templates?.length === 0 && (
             <div className="col-span-full py-20 text-center border-2 border-dashed rounded-xl border-slate-200">
@@ -247,20 +291,45 @@ export default function TemplatesPage() {
           <DialogHeader>
             <DialogTitle>{editingTemplate ? 'Edit Template' : 'Create Project Template'}</DialogTitle>
             <DialogDescription>
-              Define a name, description, whitelist, and the list of tasks.
+              Define structure, whitelist, and visibility.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Template Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Standard Feature Release" />
+          <div className="space-y-6 py-4">
+            <div className="space-y-4 border-b pb-6">
+                <div className="space-y-2">
+                    <Label htmlFor="name">Template Name</Label>
+                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Standard Feature Release" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="desc">Description</Label>
+                    <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this template for?" rows={2} />
+                </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="desc">Description</Label>
-              <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this template for?" />
+
+            <div className="space-y-4 border-b pb-6 bg-slate-50 p-4 rounded-lg border">
+                <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                    <Share2 className="w-4 h-4" /> Sharing & Access
+                </h4>
+                <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <Label className="text-sm">Make Public</Label>
+                        <p className="text-[10px] text-muted-foreground">Visible to all users, but only you can edit.</p>
+                    </div>
+                    <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-sm">Share Property (Co-Owners)</Label>
+                    <AssigneeSelector
+                        selectedValues={sharedWithIds}
+                        onSelect={(id) => setSharedWithIds([...sharedWithIds, id])}
+                        onRemove={(id) => setSharedWithIds(sharedWithIds.filter(uid => uid !== id))}
+                        placeholder="Select users to share with..."
+                    />
+                    <p className="text-[10px] text-muted-foreground">Shared users can also modify this template.</p>
+                </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 border-b pb-6">
                 <div className="space-y-2">
                     <Label>Allowed Topics (Whitelist)</Label>
                     <RichDropdown
@@ -272,7 +341,6 @@ export default function TemplatesPage() {
                         placeholder="Select allowed topics..."
                         emptyText="No topics found"
                     />
-                    <p className="text-[10px] text-muted-foreground">Leave empty to allow all global topics.</p>
                 </div>
                 <div className="space-y-2">
                     <Label>Allowed Work Types (Whitelist)</Label>
@@ -285,7 +353,6 @@ export default function TemplatesPage() {
                         placeholder="Select allowed types..."
                         emptyText="No work types found"
                     />
-                    <p className="text-[10px] text-muted-foreground">Leave empty to allow all global types.</p>
                 </div>
             </div>
 

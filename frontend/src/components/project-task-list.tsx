@@ -48,13 +48,29 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = task.subtasks && task.subtasks.length > 0;
 
-  // New Overdue Logic: only if (today or completed_at) > deadline_at
-  const isDone = task.status === 'Done' || task.status === 'done';
-  const deadlineDate = task.deadline_at ? parseISO(task.deadline_at) : null;
-  const endDate = isDone
-    ? (task.completed_at ? parseISO(task.completed_at) : (task.due_date ? parseISO(task.due_date) : null))
-    : new Date();
-  const overdue = !!(deadlineDate && endDate && isAfter(endDate, deadlineDate));
+  // Refined Alert Logic: 
+  // 1. If concluded, show alert ONLY if concluded late (past both due date and deadline if present).
+  // 2. If not concluded, show alert if Today is past due date or deadline.
+  // 3. User spec: "If Conclusion Date <= Due Date OR Conclusion Date <= Hard Deadline, do NOT show."
+  const conclusionDate = task.completed_at ? parseISO(task.completed_at) : null;
+  const dueDate = task.due_date ? parseISO(task.due_date) : null;
+  const deadlineAt = task.deadline_at ? parseISO(task.deadline_at) : null;
+  const today = new Date();
+
+  const checkDate = conclusionDate || today;
+  
+  // Is it past due?
+  const isPastDue = dueDate ? isAfter(checkDate, dueDate) : false;
+  // Is it past deadline?
+  const isPastDeadline = deadlineAt ? isAfter(checkDate, deadlineAt) : false;
+
+  // Apply "on-time" grace: if finished on or before EITHER date, it's NOT overdue.
+  const finishedOnTime = conclusionDate && (
+    (dueDate && !isAfter(conclusionDate, dueDate)) || 
+    (deadlineAt && !isAfter(conclusionDate, deadlineAt))
+  );
+
+  const overdue = !finishedOnTime && (isPastDue || isPastDeadline);
 
   const duration = task.start_date && task.due_date 
     ? differenceInDays(parseISO(task.due_date), parseISO(task.start_date)) + 1

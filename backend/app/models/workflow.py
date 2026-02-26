@@ -1,8 +1,9 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.associations import workflow_shares
 from datetime import datetime
 
 class Workflow(Base):
@@ -12,6 +13,7 @@ class Workflow(Base):
     title = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
     content = Column(Text, nullable=False) # Markdown content
+    is_public = Column(Boolean, default=False)
     
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     
@@ -20,3 +22,4 @@ class Workflow(Base):
 
     # Relationships
     owner = relationship("User", backref="workflows")
+    shared_with = relationship("User", secondary=workflow_shares, backref="shared_workflows")

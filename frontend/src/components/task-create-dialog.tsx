@@ -18,6 +18,7 @@ import {
 import { Label } from "@/components/ui/label";
 import TaskForm, { type TaskFormValues } from '@/components/task-form';
 import type { Project } from '@/types';
+import { toast } from 'sonner';
 
 interface TaskCreateDialogProps {
   open: boolean;
@@ -39,13 +40,11 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
 
   const createTaskMutation = useMutation({
     mutationFn: async (newTask: TaskFormValues) => {
-      if (!selectedProjectId) throw new Error("Please select a project first.");
-      
       const formatDate = (d?: string | null) => (d && d.trim()) ? new Date(d).toISOString() : null;
       
       const formattedTask = {
         ...newTask,
-        project_id: selectedProjectId,
+        project_id: selectedProjectId === "none" ? null : selectedProjectId,
         start_date: formatDate(newTask.start_date),
         due_date: formatDate(newTask.due_date),
         deadline_at: formatDate(newTask.deadline_at),
@@ -60,7 +59,12 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
       queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       onOpenChange(false);
       setSelectedProjectId("");
+      toast.success("Task created successfully");
     },
+    onError: (err: any) => {
+      const msg = err.response?.data?.detail || err.message;
+      toast.error(`Failed to create task: ${typeof msg === 'object' ? JSON.stringify(msg) : msg}`);
+    }
   });
 
   return (
@@ -69,18 +73,19 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
         <DialogHeader>
           <DialogTitle>Quick Create Task</DialogTitle>
           <DialogDescription>
-            Select a project and enter task details.
+            Select a project (or Independent) and enter task details.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Select Project</Label>
+            <Label>Context</Label>
             <Select onValueChange={setSelectedProjectId} value={selectedProjectId}>
               <SelectTrigger>
-                <SelectValue placeholder={isProjectsLoading ? "Loading projects..." : "Choose a project"} />
+                <SelectValue placeholder={isProjectsLoading ? "Loading projects..." : "Choose a project or independent"} />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="none">Independent Task (No Project)</SelectItem>
                 {projects?.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name}

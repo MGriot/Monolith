@@ -17,18 +17,16 @@ import {
 } from "@/components/ui/select";
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
 import { AssigneeSelector } from "@/components/assignee-selector";
-import type { Topic, WorkType } from "@/types";
+import type { Topic, WorkType, Project } from "@/types";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
   description: z.string().optional(),
-  topic_id: z.string().optional().nullable(),
-  type_id: z.string().optional().nullable(),
   topic_ids: z.array(z.string()).optional(),
   type_ids: z.array(z.string()).optional(),
   status: z.string().min(1, "Status is required"),
-  start_date: z.string().optional(),
-  due_date: z.string().optional(),
+  start_date: z.string().optional().nullable(),
+  due_date: z.string().optional().nullable(),
   tags: z.string().optional(),
   member_ids: z.array(z.string()).optional(),
 });
@@ -36,7 +34,7 @@ const projectSchema = z.object({
 export type ProjectFormValues = z.infer<typeof projectSchema>;
 
 interface ProjectFormProps {
-  initialValues?: Partial<ProjectFormValues>;
+  initialValues?: Partial<Project> & { topic_ids?: string[], type_ids?: string[], member_ids?: string[] };
   onSubmit: (data: ProjectFormValues) => void;
   onCancel: () => void;
   isLoading?: boolean;
@@ -64,6 +62,22 @@ export default function ProjectForm({
     })).data,
   });
 
+  const processedInitialValues = useMemo(() => {
+    if (!initialValues) return { status: "Todo", name: "", topic_ids: [], type_ids: [], member_ids: [] };
+    
+    return {
+        ...initialValues,
+        status: initialValues.status || "Todo",
+        name: initialValues.name || "",
+        topic_ids: initialValues.topic_ids || initialValues.topics?.map(t => t.id) || [],
+        type_ids: initialValues.type_ids || initialValues.types?.map(t => t.id) || [],
+        member_ids: initialValues.member_ids || initialValues.members?.map(m => m.id) || [],
+        start_date: initialValues.start_date ? new Date(initialValues.start_date).toISOString().split('T')[0] : "",
+        due_date: initialValues.due_date ? new Date(initialValues.due_date).toISOString().split('T')[0] : "",
+        tags: Array.isArray(initialValues.tags) ? initialValues.tags.join(', ') : initialValues.tags || "",
+    };
+  }, [initialValues]);
+
   const {
     register,
     handleSubmit,
@@ -72,16 +86,7 @@ export default function ProjectForm({
     formState: { errors },
   } = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
-    defaultValues: {
-      status: "Todo",
-      name: "",
-      topic_id: null,
-      type_id: null,
-      topic_ids: [],
-      type_ids: [],
-      member_ids: [],
-      ...initialValues,
-    },
+    defaultValues: processedInitialValues as any,
   });
 
   const statusValue = watch("status");
@@ -174,7 +179,7 @@ export default function ProjectForm({
             <SelectItem value="Backlog">Backlog</SelectItem>
             <SelectItem value="Todo">Todo</SelectItem>
             <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="On hold">On hold</SelectItem>
+            <SelectItem value="On hold">On Hold</SelectItem>
             <SelectItem value="Review">Review</SelectItem>
             <SelectItem value="Done">Done</SelectItem>
           </SelectContent>

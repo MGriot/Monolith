@@ -97,6 +97,9 @@ export default function CommentSection({ projectId, taskId, ideaId }: CommentSec
         <CommentInput 
           onSubmit={async (content) => await createMutation.mutateAsync(content)}
           isSubmitting={createMutation.isPending}
+          projectId={projectId}
+          taskId={taskId}
+          ideaId={ideaId}
         />
       </div>
     </div>

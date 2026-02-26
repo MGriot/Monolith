@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.0] - 2026-02-26
+
+### Added
+- **Integrated Blackboard (Sketching)**: Implemented a full-stack drawing system using `@tldraw/tldraw`. Users can now create infinite-canvas sketches within projects or directly as task attachments.
+- **Master Schedule View**: Merged the Calendar and Roadmap pages into a unified, high-performance scheduling interface at `/schedule`.
+- **Standardized User Avatars**: Integrated a centralized `UserAvatar` component with color-hash generation and automatic initials/Dicebear fallbacks.
+- **Independent Task Creation**: Expanded the global creation flow to support tasks not associated with any project, with dedicated views in "My Tasks."
+- **Gantt Row Color Toggle**: Added a control to tint Gantt rows based on task-specific colors for improved visual grouping.
+- **Enhanced MCP Server**: Upgraded to the official Anthropic `mcp` library and added tools for sketches, taxonomy management, and advanced search.
+
+### Changed
+- **Navigation Simplification**: Consolidated Project Settings and Scoped Taxonomy management into the **Library** tab, removing cluttered header buttons.
+- **Docker Architecture Optimization**: Merged the separate Nginx container into the frontend container, simplifying deployment and reducing resource footprint.
+- **Intelligent Overdue Alerts**: Refined the overdue icon logic to automatically hide alerts for tasks completed on or before their deadlines.
+
+### Fixed
+- **UUID Serialization Bug**: Resolved a critical issue where empty form strings caused backend validation failures during task creation.
+- **Gantt Header Clipping**: Fixed a visual bug where timeline axes would bleed through sticky sidebar cells by applying solid backgrounds.
+- **SOP Update Flow**: Corrected the save logic in the Workflows page and upgraded to `SimpleMDE` for better Markdown support.
+- **Build Integrity**: Resolved multiple TypeScript and backend attribute errors discovered during production container builds.
+
+## [2.5.0] - 2026-02-24
+
+### Added
+- **Advanced Threaded Discussions**: Integrated `SimpleMDE` for rich Markdown editing and support for inline images. Removed nesting limits by implementing 15-level eager loading on the backend.
+- **Contextual Image Gallery**: Added a "Gallery" feature to discussions that allows users to select and insert images already uploaded to the project or task.
+- **Decentralized Co-Ownership**: Implemented a sharing system for Teams, Templates, and Workflows, allowing co-owners and public visibility.
+- **Office File Previews**: Added inline rendering support for CSV, XLSX, DOCX, TXT, and Email files within the attachment manager.
+- **Enhanced Kanban Visualization**: Cards now display WBS codes and subtask indicators. Columns aligned to standard project lifecycles (Backlog to Done).
+- **Metadata Management**: Added automatic Title Case formatting and the ability to promote metadata from Project/Task scope to Global scope.
+
+### Fixed
+- **Attachment Preview UI**: Fixed a bug where the "Preview" button was missing for office and text file types in the attachment section.
+- **JSON Serialization & ID Persistence**: Resolved an issue where Topic/Type dropdowns in project settings appeared empty after saving by implementing `@computed_field` ID extraction in the backend schemas.
+- **SQLAlchemy MissingGreenlet**: Fixed critical ASGI crashes during entity serialization by implementing robust recursive `selectinload` and post-update refetching for all organizatonal models.
+- **Template Persistence Bug**: Fixed a `500 Internal Server Error` during template saving by implementing a recursive UUID-to-string conversion utility for JSONB columns.
+- **Database Schema Sync**: Established new association tables (`template_shares`, `team_shares`, `workflow_shares`) and added `is_public` columns to existing models.
+- **Build Integrity**: Resolved multiple TypeScript and dependency errors to ensure a clean Docker production build.
+
 ## [2.4.0] - 2026-02-20
 
 ### Added
@@ -16,6 +55,7 @@ All notable changes to this project will be documented in this file.
 - **Recursive Async Loading**: Resolved `MissingGreenlet` errors in the comment system by implementing deep eager loading for nested replies.
 - **Docker Build Integrity**: Fixed TypeScript errors related to missing interface properties and incorrect component prop types that were blocking container builds.
 - **Dependency Management**: Resolved module import errors for `@radix-ui/react-avatar` in the frontend production build.
+- **Gantt Chart Buffer Zone**: Adjusted the start of the "buffer zone" (grace period) to begin one day after the due date, enhancing visual clarity. (FRONT-088)
 
 ## [2.3.1] - 2026-02-16
 
