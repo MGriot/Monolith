@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import BlackboardEditor from "./blackboard-editor";
+import WhiteboardEditor from "./whiteboard-editor";
 import { toast } from "sonner";
 
 interface AttachmentManagerProps {
@@ -34,11 +34,11 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [editingSketch, setEditingSketch] = useState<any | null>(null);
+  const [editingWhiteboard, setEditingWhiteboard] = useState<any | null>(null);
 
-  const { data: sketches } = useQuery({
-    queryKey: ['sketches', taskId],
-    queryFn: async () => (await api.get(`/blackboards/?task_id=${taskId}`)).data,
+  const { data: whiteboards } = useQuery({
+    queryKey: ['whiteboards', taskId],
+    queryFn: async () => (await api.get(`/whiteboards/?task_id=${taskId}`)).data,
     enabled: !!taskId
   });
 
@@ -71,11 +71,11 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
     }
   });
 
-  const deleteSketchMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/blackboards/${id}`),
+  const deleteWhiteboardMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/whiteboards/${id}`),
     onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['sketches', taskId] });
-        toast.success('Sketch removed');
+        queryClient.invalidateQueries({ queryKey: ['whiteboards', taskId] });
+        toast.success('Whiteboard removed');
     }
   });
 
@@ -108,9 +108,9 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
           <Paperclip className="w-4 h-4 text-slate-400" />
-          Attachments & Sketches
+          Attachments & Whiteboards
           <span className="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-            {attachments.length + (sketches?.length || 0)}
+            {attachments.length + (whiteboards?.length || 0)}
           </span>
         </h4>
         
@@ -121,12 +121,12 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
               size="sm" 
               className="h-7 text-xs gap-1"
               onClick={() => {
-                setEditingSketch(null);
+                setEditingWhiteboard(null);
                 setIsEditorOpen(true);
               }}
             >
               <Pencil className="w-3 h-3" />
-              New Sketch
+              New Whiteboard
             </Button>
           )}
           <div className="relative">
@@ -154,16 +154,16 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Sketches */}
-        {sketches?.map((bb: any) => (
+        {/* Whiteboards */}
+        {whiteboards?.map((wb: any) => (
             <div 
-              key={bb.id} 
+              key={wb.id} 
               className="flex items-center gap-3 p-2 rounded-lg border border-blue-100 bg-blue-50/30 group hover:border-blue-300 transition-all shadow-sm"
             >
               <div 
                 className="w-10 h-10 rounded bg-white flex items-center justify-center shrink-0 overflow-hidden border border-blue-100 cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => {
-                    setEditingSketch(bb);
+                    setEditingWhiteboard(wb);
                     setIsEditorOpen(true);
                 }}
               >
@@ -173,21 +173,21 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
               <div 
                 className="flex-1 min-w-0 cursor-pointer"
                 onClick={() => {
-                    setEditingSketch(bb);
+                    setEditingWhiteboard(wb);
                     setIsEditorOpen(true);
                 }}
               >
                 <p className="text-[10px] font-bold text-slate-700 truncate">
-                  {bb.title}
+                  {wb.title}
                 </p>
-                <p className="text-[8px] text-blue-600 font-black uppercase tracking-tight">Sketch • Click to edit</p>
+                <p className="text-[8px] text-blue-600 font-black uppercase tracking-tight">Whiteboard • Click to edit</p>
               </div>
 
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button 
-                  onClick={() => deleteSketchMutation.mutate(bb.id)}
+                  onClick={() => deleteWhiteboardMutation.mutate(wb.id)}
                   className="p-1 hover:bg-white rounded text-slate-400 hover:text-destructive transition-colors"
-                  title="Remove Sketch"
+                  title="Remove Whiteboard"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -264,8 +264,8 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
         })}
       </div>
 
-      {attachments.length === 0 && (sketches?.length || 0) === 0 && !isUploading && (
-        <p className="text-xs text-slate-400 italic">No files or sketches attached.</p>
+      {attachments.length === 0 && (whiteboards?.length || 0) === 0 && !isUploading && (
+        <p className="text-xs text-slate-400 italic">No files or whiteboards attached.</p>
       )}
 
       <FilePreviewDialog 
@@ -274,19 +274,21 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
       />
 
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="sm:max-w-[95vw] h-[90vh] p-0 overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-[95vw] h-[90vh] p-0 overflow-hidden flex flex-col [&>button:last-child]:hidden">
             <DialogHeader className="p-4 border-b sr-only">
-                <DialogTitle>Blackboard Editor</DialogTitle>
+                <DialogTitle>Whiteboard Editor</DialogTitle>
             </DialogHeader>
             <div className="flex-1 overflow-hidden">
-                <BlackboardEditor 
+                <WhiteboardEditor 
+                    id={editingWhiteboard?.id}
                     projectId={projectId || ""} 
                     taskId={taskId}
-                    initialData={editingSketch?.data}
-                    title={editingSketch?.title}
+                    initialData={editingWhiteboard?.data}
+                    title={editingWhiteboard?.title}
                     onSave={() => {
-                        queryClient.invalidateQueries({ queryKey: ['sketches', taskId] });
+                        queryClient.invalidateQueries({ queryKey: ['whiteboards', taskId] });
                     }}
+                    onClose={() => setIsEditorOpen(false)}
                 />
             </div>
         </DialogContent>

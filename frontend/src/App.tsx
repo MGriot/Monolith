@@ -13,6 +13,7 @@ import TemplatesPage from "./pages/templates";
 import MyTasksPage from "./pages/my-tasks";
 import TeamsPage from "./pages/teams";
 import WorkflowsPage from "./pages/workflows";
+import WhiteboardPage from "./pages/whiteboard";
 
 import DashboardPage from "./pages/dashboard";
 import ProjectsListPage from "./pages/projects-list";
@@ -29,6 +30,17 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
     </div>
   );
   return token ? <Layout>{children}</Layout> : <Navigate to="/login" />;
+};
+
+const LayoutFreePrivateRoute = ({ children }: { children: React.ReactNode }) => {
+  const { token, isLoading } = useAuth();
+  if (isLoading) return (
+    <div className="flex flex-col items-center justify-center min-h-screen text-slate-500">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3"></div>
+      <p>Authentication is loading...</p>
+    </div>
+  );
+  return token ? <>{children}</> : <Navigate to="/login" />;
 };
 
 function App() {
@@ -61,6 +73,7 @@ function App() {
             <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
             <Route path="/admin/metadata" element={<PrivateRoute><AdminMetadataPage /></PrivateRoute>} />
             <Route path="/workflows" element={<PrivateRoute><WorkflowsPage /></PrivateRoute>} />
+            <Route path="/projects/:projectId/whiteboards/:whiteboardId" element={<LayoutFreePrivateRoute><WhiteboardPage /></LayoutFreePrivateRoute>} />
           </Routes>
         </Router>
       </AuthProvider>

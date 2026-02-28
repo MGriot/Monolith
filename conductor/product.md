@@ -222,13 +222,13 @@ Refine the categorization process to maintain data cleanliness and provide templ
     *   **Enforcement:** When a project is instantiated from such a template, the Topic and WorkType selection is STRICTLY limited to the whitelisted items.
         *   **Benefit:** Ensures that projects following a specific methodology (e.g., "Software Development") only use relevant categories (e.g., "Feature", "Bug") instead of generic ones.
     
-    ## 19. Addendum: Integrated Blackboard & System Refinements (Feb 26, 2026)
+    ## 19. Addendum: Integrated Whiteboard & System Refinements (Feb 26, 2026)
     
-    ### 19.1 Feature: Integrated Blackboard / Sketching Tool
+    ### 19.1 Feature: Integrated Whiteboard / Sketching Tool
     Enable visual collaboration and technical sketching directly within the platform.
     
     *   **Requirement:** A free, local-first whiteboard tool for drawing shapes, lines, text, and embedding assets.
-    *   **Technology:** Implementation using `@tldraw/tldraw`.
+    *   **Technology:** Implementation using `@excalidraw/excalidraw`.
     *   **Integration:**
         *   **Storage:** Sketches saved as JSON/SVG in the Project Library.
         *   **Linking:** Ability to link a specific sketch to a Task for context.
