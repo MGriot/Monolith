@@ -1185,7 +1185,7 @@
     "status": "done",
     "priority": "high",
     "linked_req": "User Request: My Tasks export",
-    "description": "Implement GET /tasks/export endpoint to export tasks assigned to the user with Summary (task metadata) or Details (including subtasks explosion) in CSV/Excel formats.",
+    "description": "Implement GET /api/v1/tasks/export endpoint to export tasks assigned to the user with Summary (task metadata) or Details (including subtasks explosion) in CSV/Excel formats.",
     "verification_method": "Test with curl: GET /api/v1/tasks/export?mode=summary"
   },
   {
@@ -1382,28 +1382,28 @@
   },
   {
     "id": "BACK-051",
-    "title": "Model: Blackboard Sketches",
+    "title": "Model: Whiteboard Sketches",
     "status": "done",
     "priority": "medium",
-    "linked_req": "User Request: Blackboard",
-    "description": "Create a model for storing blackboard sketches (JSON data, metadata, project/task links).",
+    "linked_req": "User Request: Whiteboard",
+    "description": "Create a model for storing whiteboard sketches (JSON data, metadata, project/task links).",
     "verification_method": "Run DB migration and check tables."
   },
   {
     "id": "FRONT-088",
-    "title": "UI: Integrated Blackboard (Excalidraw)",
+    "title": "UI: Integrated Whiteboard (Excalidraw)",
     "status": "done",
     "priority": "medium",
-    "linked_req": "User Request: Blackboard Migration",
-    "description": "Implement the blackboard feature using Excalidraw. Support saving to Project Library.",
-    "verification_method": "Open Blackboard, draw, save, and verify in Library."
+    "linked_req": "User Request: Whiteboard Migration",
+    "description": "Implement the whiteboard feature using Excalidraw. Support saving to Project Library.",
+    "verification_method": "Open Whiteboard, draw, save, and verify in Library."
   },
   {
     "id": "FRONT-089",
-    "title": "UI: Blackboard Integration (Tasks/Comments)",
+    "title": "UI: Whiteboard Integration (Tasks/Comments)",
     "status": "done",
     "priority": "medium",
-    "linked_req": "User Request: Blackboard Migration",
+    "linked_req": "User Request: Whiteboard Migration",
     "description": "Allow linking sketches to tasks and generating images for comments.",
     "verification_method": "Link sketch to task; verify image appears in comment."
   },
@@ -1511,7 +1511,7 @@
     "title": "Research: Excalidraw Integration",
     "status": "done",
     "priority": "medium",
-    "linked_req": "User Request: Blackboard Migration",
+    "linked_req": "User Request: Whiteboard Migration",
     "description": "Investigate Excalidraw React component, JSON persistence, and PNG export APIs.",
     "verification_method": "Compare with tldraw implementation."
   },
@@ -1520,17 +1520,17 @@
     "title": "Migration: Install Excalidraw & Cleanup",
     "status": "done",
     "priority": "high",
-    "linked_req": "User Request: Blackboard Migration",
+    "linked_req": "User Request: Whiteboard Migration",
     "description": "Install @excalidraw/excalidraw and remove tldraw dependencies from package.json.",
     "verification_method": "Build frontend successfully after dependency change."
   },
   {
     "id": "FRONT-101",
-    "title": "Migration: Refactor BlackboardEditor",
+    "title": "Migration: Refactor WhiteboardEditor",
     "status": "done",
     "priority": "high",
-    "linked_req": "User Request: Blackboard Migration",
-    "description": "Replace Tldraw component with Excalidraw component in BlackboardEditor.tsx.",
+    "linked_req": "User Request: Whiteboard Migration",
+    "description": "Replace Tldraw component with Excalidraw component in WhiteboardEditor.tsx.",
     "verification_method": "Verify canvas renders in project library."
   },
   {
@@ -1538,7 +1538,7 @@
     "title": "Migration: Adapt Save/Load Persistence",
     "status": "done",
     "priority": "high",
-    "linked_req": "User Request: Blackboard Migration",
+    "linked_req": "User Request: Whiteboard Migration",
     "description": "Update persistence logic to handle Excalidraw's JSON structure (elements + appState).",
     "verification_method": "Save and reload a sketch; verify content parity."
   },
@@ -1547,7 +1547,7 @@
     "title": "Migration: Adapt Task Export Logic",
     "status": "done",
     "priority": "medium",
-    "linked_req": "User Request: Blackboard Migration",
+    "linked_req": "User Request: Whiteboard Migration",
     "description": "Update handleExportToTask to use Excalidraw's exportToBlob utility for PNG generation.",
     "verification_method": "Export sketch to task and verify PNG attachment."
   },
@@ -1556,8 +1556,53 @@
     "title": "Migration: UI & Theme Polishing",
     "status": "done",
     "priority": "low",
-    "linked_req": "User Request: Blackboard Migration",
+    "linked_req": "User Request: Whiteboard Migration",
     "description": "Adjust Excalidraw UI components and theming to align with the Monolith aesthetic.",
-    "verification_method": "Visually inspect blackboard interface."
+    "verification_method": "Visually inspect whiteboard interface."
+  },
+  {
+    "id": "REFACTOR-001",
+    "title": "Rename: Backend Whiteboard files",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "User Request: Terminology Alignment",
+    "description": "Rename whiteboard.py files across models, schemas, crud, and endpoints.",
+    "verification_method": "Confirm files renamed and directory structure updated."
+  },
+  {
+    "id": "REFACTOR-002",
+    "title": "Rename: Backend Whiteboard symbols",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "User Request: Terminology Alignment",
+    "description": "Rename Whiteboard class and associated functions/variables in backend code.",
+    "verification_method": "Run backend tests and verify no import errors."
+  },
+  {
+    "id": "REFACTOR-003",
+    "title": "Rename: Frontend Whiteboard files",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "User Request: Terminology Alignment",
+    "description": "Rename whiteboard-editor.tsx and associated frontend files.",
+    "verification_method": "Confirm files renamed and directory structure updated."
+  },
+  {
+    "id": "REFACTOR-004",
+    "title": "Rename: Frontend Whiteboard symbols",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "User Request: Terminology Alignment",
+    "description": "Rename WhiteboardEditor component and update imports/variables.",
+    "verification_method": "Build frontend successfully."
+  },
+  {
+    "id": "REFACTOR-005",
+    "title": "Rename: API Routes and Database terminology",
+    "status": "done",
+    "priority": "medium",
+    "linked_req": "User Request: Terminology Alignment",
+    "description": "Update API router paths to /whiteboards and update any UI labels.",
+    "verification_method": "Verify API responses and UI labels in browser."
   }
 ]

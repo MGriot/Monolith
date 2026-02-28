@@ -10,4 +10,4 @@ from .idea import Idea
 from .idea_comment import IdeaComment
 from .workflow import Workflow
 from .comment import Comment
-from .blackboard import Blackboard
+from .whiteboard import Whiteboard

@@ -1,9 +1,9 @@
 from mcp.server.fastmcp import FastMCP
-from app.crud import crud_project, crud_task, crud_user, crud_blackboard
+from app.crud import crud_project, crud_task, crud_user, crud_whiteboard
 from app.db.session import AsyncSessionLocal
 from app.schemas.task import TaskCreate, TaskUpdate
 from app.schemas.project import ProjectCreate, ProjectUpdate
-from app.schemas.blackboard import BlackboardCreate
+from app.schemas.whiteboard import WhiteboardCreate
 from app.core.enums import Status, Priority
 from uuid import UUID
 from datetime import datetime
@@ -290,30 +290,30 @@ async def list_types() -> str:
         types = sorted(list(set([p.type for p in projects if p.type])))
         return "\n".join([f"- {t}" for t in types]) if types else "No types defined."
 
-# --- BLACKBOARD TOOLS ---
+# --- WHITEBOARD TOOLS ---
 
 @mcp.tool()
-async def create_sketch(title: str, project_id: str, task_id: str = None, description: str = None) -> str:
-    """Create a new Blackboard sketch for a project or task."""
+async def create_whiteboard_sketch(title: str, project_id: str, task_id: str = None, description: str = None) -> str:
+    """Create a new Whiteboard sketch for a project or task."""
     async with AsyncSessionLocal() as db:
         try:
-            bb_in = BlackboardCreate(
+            wb_in = WhiteboardCreate(
                 title=title,
                 description=description,
                 project_id=UUID(project_id),
                 task_id=UUID(task_id) if task_id else None,
                 data={} # Initial empty sketch
             )
-            bb_obj = await crud_blackboard.blackboard.create(db, obj_in=bb_in)
-            return f"Successfully created sketch '{title}' with ID: {bb_obj.id}"
+            wb_obj = await crud_whiteboard.whiteboard.create(db, obj_in=wb_in)
+            return f"Successfully created sketch '{title}' with ID: {wb_obj.id}"
         except Exception as e:
             return f"Error creating sketch: {str(e)}"
 
 @mcp.tool()
-async def list_project_sketches(project_id: str) -> str:
-    """List all sketches associated with a project."""
+async def list_project_whiteboards(project_id: str) -> str:
+    """List all whiteboards associated with a project."""
     async with AsyncSessionLocal() as db:
-        sketches = await crud_blackboard.blackboard.get_multi_by_project(db, project_id=UUID(project_id))
+        sketches = await crud_whiteboard.whiteboard.get_multi_by_project(db, project_id=UUID(project_id))
         if not sketches:
-            return f"No sketches found for project {project_id}."
+            return f"No whiteboards found for project {project_id}."
         return "\n".join([f"- {s.title} (ID: {s.id}, Created: {s.created_at})" for s in sketches])

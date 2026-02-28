@@ -4,7 +4,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>Monolith Planner</title>
+    <script>
+      // Required for @excalidraw/excalidraw
+      // Point to the dedicated assets folder in public
+      window.EXCALIDRAW_ASSET_PATH = "/excalidraw-assets/";
+      // Excalidraw expects process.env.NODE_ENV to be defined in some environments
+      window.process = { env: { NODE_ENV: 'production' } };
+    </script>
   </head>
   <body>
     <div id="root"></div>

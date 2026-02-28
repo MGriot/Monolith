@@ -2,10 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.7.0] - 2026-02-28
+
+### Added
+- **Dedicated Whiteboard Route**: Refactored the Excalidraw editor from a nested modal into a full-screen standalone page route (`/projects/:id/whiteboards/:id`), providing a distraction-free environment and perfect coordinate isolation.
+- **Universal Live Collaboration Trigger**: Integrated the official `LiveCollaborationTrigger` component into the `renderTopRightUI` prop, featuring a visual demo of multi-user indicators and avatars.
+
+### Changed
+- **Navigation Flow Optimization**: Relocated the "Back to Project" action to the primary editor header, resolving overlapping UI conflicts with the sketch title input.
+- **Naming Standardization**: Finalized the transition from "Blackboard" to "Whiteboard" across the entire codebase, including API endpoints, database schemas, and frontend components.
+
+### Fixed
+- **Canvas Alignment Displacement**: Resolved the persistent ~60px offset between mouse pointer and drawing ink by enforcing strict absolute positioning for Excalidraw canvas layers in `index.css`.
+- **Sketch Restoration Bug**: Fixed a critical crash (blank page) when reloading existing sketches by intelligently filtering out brittle internal `appState` during the save and restore cycles.
+
 ## [2.6.0] - 2026-02-26
 
 ### Added
-- **Integrated Blackboard (Excalidraw)**: Migrated from tldraw to Excalidraw for a superior sketching experience. Features optimized canvas rendering, a native hand-drawn aesthetic, and full integration with the task attachment system.
+- **Integrated Whiteboard (Excalidraw)**: Migrated from tldraw to Excalidraw for a superior sketching experience. Features optimized canvas rendering, a native hand-drawn aesthetic, and full integration with the task attachment system.
 - **Master Schedule View**: Merged the Calendar and Roadmap pages into a unified, high-performance scheduling interface at `/schedule`.
 - **Standardized User Avatars**: Integrated a centralized `UserAvatar` component with color-hash generation and automatic initials/Dicebear fallbacks.
 - **Independent Task Creation**: Expanded the global creation flow to support tasks not associated with any project, with dedicated views in "My Tasks."

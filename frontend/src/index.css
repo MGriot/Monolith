@@ -67,3 +67,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fix for Excalidraw static vs interactive canvas alignment */
+.excalidraw .excalidraw__canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin: 0 !important;
+}
