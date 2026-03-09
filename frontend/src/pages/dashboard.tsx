@@ -11,7 +11,8 @@ import {
   ArrowRight,
   TrendingUp,
   Activity,
-  Users
+  Users,
+  LayoutDashboard
 } from 'lucide-react';
 import { cn, formatPercent } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -102,327 +103,334 @@ export default function DashboardPage() {
   const completionRate = data?.total_tasks ? (data.tasks_done / data.total_tasks) * 100 : 0;
 
   return (
-    <div className="space-y-8 pb-12">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard</h1>
-          <p className="text-slate-500">Welcome back! Here's what's happening in your projects.</p>
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+      <div className="p-6 bg-white border-b border-slate-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <LayoutDashboard className="w-6 h-6 text-primary" />
+              Overview
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">Welcome back! Here's what's happening in your projects.</p>
+          </div>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Active Projects</CardTitle>
-            <FolderKanban className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data?.total_projects}</div>
-            <p className="text-xs text-slate-500 mt-1">Across your organization</p>
-          </CardContent>
-        </Card>
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Active Tasks</CardTitle>
-            <Clock className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{(data?.tasks_in_progress || 0) + (data?.tasks_review || 0)}</div>
-            <p className="text-xs text-slate-500 mt-1">In Progress & Review</p>
-          </CardContent>
-        </Card>
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Blocked / Hold</CardTitle>
-            <AlertCircle className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data?.tasks_on_hold}</div>
-            <p className="text-xs text-slate-500 mt-1">Currently on hold</p>
-          </CardContent>
-        </Card>
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Completion Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatPercent(completionRate)}%</div>
-            <div className="mt-2 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500" style={{ width: `${completionRate}%` }} />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
+        {/* Stats Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-500">Active Projects</CardTitle>
+              <FolderKanban className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{data?.total_projects}</div>
+              <p className="text-xs text-slate-500 mt-1">Across your organization</p>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-500">Active Tasks</CardTitle>
+              <Clock className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{(data?.tasks_in_progress || 0) + (data?.tasks_review || 0)}</div>
+              <p className="text-xs text-slate-500 mt-1">In Progress & Review</p>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-500">Blocked / Hold</CardTitle>
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{data?.tasks_on_hold}</div>
+              <p className="text-xs text-slate-500 mt-1">Currently on hold</p>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-500">Completion Rate</CardTitle>
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatPercent(completionRate)}%</div>
+              <div className="mt-2 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500" style={{ width: `${completionRate}%` }} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Task Status Breakdown */}
-      <Card className="border-slate-200 shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <Activity className="w-4 h-4 text-slate-400" />
-            Task Status Breakdown
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="flex flex-col gap-1 p-3 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-[10px] font-black uppercase text-slate-400">Backlog</span>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-slate-700">{data?.tasks_backlog}</span>
-                <Badge variant="outline" className="text-[9px] bg-white text-slate-500 border-slate-200">{formatPercent((data?.tasks_backlog || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 p-3 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-[10px] font-black uppercase text-slate-400">To Do</span>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-slate-700">{data?.tasks_todo}</span>
-                <Badge variant="outline" className="text-[9px] bg-white text-slate-500 border-slate-200">{formatPercent((data?.tasks_todo || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 p-3 rounded-xl bg-blue-50/50 border border-blue-100">
-              <span className="text-[10px] font-black uppercase text-blue-400">In Progress</span>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-blue-700">{data?.tasks_in_progress}</span>
-                <Badge variant="outline" className="text-[9px] bg-white text-blue-600 border-blue-100">{formatPercent((data?.tasks_in_progress || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 p-3 rounded-xl bg-amber-50/50 border border-amber-100">
-              <span className="text-[10px] font-black uppercase text-amber-400">On Hold</span>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-amber-700">{data?.tasks_on_hold}</span>
-                <Badge variant="outline" className="text-[9px] bg-white text-amber-600 border-amber-100">{formatPercent((data?.tasks_on_hold || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 p-3 rounded-xl bg-purple-50/50 border border-purple-100">
-              <span className="text-[10px] font-black uppercase text-purple-400">Review</span>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-purple-700">{data?.tasks_review}</span>
-                <Badge variant="outline" className="text-[9px] bg-white text-purple-600 border-purple-100">{formatPercent((data?.tasks_review || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 p-3 rounded-xl bg-emerald-50/50 border border-emerald-100">
-              <span className="text-[10px] font-black uppercase text-emerald-400">Done</span>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-emerald-700">{data?.tasks_done}</span>
-                <Badge variant="outline" className="text-[9px] bg-white text-emerald-600 border-emerald-100">{formatPercent((data?.tasks_done || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 md:grid-cols-7">
-        {/* Upcoming Deadlines */}
-        <Card className="md:col-span-4 border-slate-200 shadow-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base font-semibold">Upcoming Deadlines</CardTitle>
-                <CardDescription>Tasks due in the next 7 days.</CardDescription>
-              </div>
-              <Calendar className="h-4 w-4 text-slate-400" />
-            </div>
+        {/* Task Status Breakdown */}
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Activity className="w-4 h-4 text-slate-400" />
+              Task Status Breakdown
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {data?.upcoming_deadlines.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-slate-400">
-                  <p className="text-sm">No upcoming deadlines.</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-black uppercase text-slate-400">Backlog</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-slate-700">{data?.tasks_backlog}</span>
+                  <Badge variant="outline" className="text-[9px] bg-white text-slate-500 border-slate-200">{formatPercent((data?.tasks_backlog || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
                 </div>
-              ) : (
-                data?.upcoming_deadlines.map((task) => (
-                  <Link 
-                    key={task.id} 
-                    to={`/projects/${task.project_id}`}
-                    className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-primary/20 hover:bg-slate-50 transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900 group-hover:text-primary transition-colors">{task.title}</p>
-                        <p className="text-[10px] text-slate-500 font-medium">Due {format(parseISO(task.due_date), 'MMM d, h:mm a')}</p>
+              </div>
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-black uppercase text-slate-400">To Do</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-slate-700">{data?.tasks_todo}</span>
+                  <Badge variant="outline" className="text-[9px] bg-white text-slate-500 border-slate-200">{formatPercent((data?.tasks_todo || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-blue-50/50 border border-blue-100">
+                <span className="text-[10px] font-black uppercase text-blue-400">In Progress</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-blue-700">{data?.tasks_in_progress}</span>
+                  <Badge variant="outline" className="text-[9px] bg-white text-blue-600 border-blue-100">{formatPercent((data?.tasks_in_progress || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-amber-50/50 border border-amber-100">
+                <span className="text-[10px] font-black uppercase text-amber-400">On Hold</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-amber-700">{data?.tasks_on_hold}</span>
+                  <Badge variant="outline" className="text-[9px] bg-white text-amber-600 border-amber-100">{formatPercent((data?.tasks_on_hold || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-purple-50/50 border border-purple-100">
+                <span className="text-[10px] font-black uppercase text-purple-400">Review</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-purple-700">{data?.tasks_review}</span>
+                  <Badge variant="outline" className="text-[9px] bg-white text-purple-600 border-purple-100">{formatPercent((data?.tasks_review || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                <span className="text-[10px] font-black uppercase text-emerald-400">Done</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-emerald-700">{data?.tasks_done}</span>
+                  <Badge variant="outline" className="text-[9px] bg-white text-emerald-600 border-emerald-100">{formatPercent((data?.tasks_done || 0) / (data?.total_tasks || 1) * 100)}%</Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-6 md:grid-cols-7">
+          {/* Upcoming Deadlines */}
+          <Card className="md:col-span-4 border-slate-200 shadow-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-semibold">Upcoming Deadlines</CardTitle>
+                  <CardDescription>Tasks due in the next 7 days.</CardDescription>
+                </div>
+                <Calendar className="h-4 w-4 text-slate-400" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {data?.upcoming_deadlines.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+                    <p className="text-sm">No upcoming deadlines.</p>
+                  </div>
+                ) : (
+                  data?.upcoming_deadlines.map((task) => (
+                    <Link 
+                      key={task.id} 
+                      to={`/projects/${task.project_id}`}
+                      className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-primary/20 hover:bg-slate-50 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900 group-hover:text-primary transition-colors">{task.title}</p>
+                          <p className="text-[10px] text-slate-500 font-medium">Due {format(parseISO(task.due_date), 'MMM d, h:mm a')}</p>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                    </Link>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity */}
+          <Card className="md:col-span-3 border-slate-200 shadow-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
+                  <CardDescription>Latest completed tasks.</CardDescription>
+                </div>
+                <Activity className="h-4 w-4 text-slate-400" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="relative space-y-4">
+                <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-slate-100" />
+                {data?.recent_activity.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+                    <p className="text-sm">No recent activity.</p>
+                  </div>
+                ) : (
+                  data?.recent_activity.map((activity) => (
+                    <div key={activity.id} className="relative pl-7 flex flex-col gap-0.5">
+                      <div className="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-emerald-50 border-2 border-white flex items-center justify-center">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-900 leading-tight">{activity.title}</p>
+                      <p className="text-[10px] text-slate-500">Completed {format(parseISO(activity.completed_at), 'MMM d, p')}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Team Activity Feed (only if there is activity) */}
+        {(teamActivity && teamActivity.length > 0) && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 px-1">
+              <Users className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-bold text-slate-900">Teammate Activity</h2>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {teamActivity.map((activity) => (
+                <Card key={activity.id} className="border-slate-200 shadow-sm hover:border-primary/20 transition-all group">
+                  <CardHeader className="p-4 pb-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
+                        {activity.user.full_name ? activity.user.full_name.charAt(0) : activity.user.email.charAt(0).toUpperCase()}
+                      </div>
+                      <Badge variant="outline" className="text-[8px] font-black uppercase text-emerald-600 bg-emerald-50 border-emerald-100">Done</Badge>
+                    </div>
+                    <CardTitle className="text-xs font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                      {activity.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="flex flex-col gap-1.5 mt-2">
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
+                        <FolderKanban className="w-3 h-3" />
+                        <span className="truncate">{activity.project_name}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                        <Clock className="w-3 h-3" />
+                        <span>{format(parseISO(activity.completed_at), 'MMM d, h:mm a')}</span>
                       </div>
                     </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                  </Link>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity */}
-        <Card className="md:col-span-3 border-slate-200 shadow-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
-                <CardDescription>Latest completed tasks.</CardDescription>
-              </div>
-              <Activity className="h-4 w-4 text-slate-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="relative space-y-4">
-              <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-slate-100" />
-              {data?.recent_activity.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-slate-400">
-                  <p className="text-sm">No recent activity.</p>
-                </div>
-              ) : (
-                data?.recent_activity.map((activity) => (
-                  <div key={activity.id} className="relative pl-7 flex flex-col gap-0.5">
-                    <div className="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-emerald-50 border-2 border-white flex items-center justify-center">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-900">{activity.user.full_name || activity.user.email}</span>
+                      <Link to={`/projects/${activity.project_id}`} className="text-[9px] font-black text-primary uppercase hover:underline flex items-center gap-0.5">
+                        View <ArrowRight className="w-2 h-2" />
+                      </Link>
                     </div>
-                    <p className="text-sm font-medium text-slate-900 leading-tight">{activity.title}</p>
-                    <p className="text-[10px] text-slate-500">Completed {format(parseISO(activity.completed_at), 'MMM d, p')}</p>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Team Activity Feed (only if there is activity) */}
-      {(teamActivity && teamActivity.length > 0) && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 px-1">
-            <Users className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-slate-900">Teammate Activity</h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {teamActivity.map((activity) => (
-              <Card key={activity.id} className="border-slate-200 shadow-sm hover:border-primary/20 transition-all group">
-                <CardHeader className="p-4 pb-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
-                      {activity.user.full_name ? activity.user.full_name.charAt(0) : activity.user.email.charAt(0).toUpperCase()}
-                    </div>
-                    <Badge variant="outline" className="text-[8px] font-black uppercase text-emerald-600 bg-emerald-50 border-emerald-100">Done</Badge>
-                  </div>
-                  <CardTitle className="text-xs font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">
-                    {activity.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="flex flex-col gap-1.5 mt-2">
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
-                      <FolderKanban className="w-3 h-3" />
-                      <span className="truncate">{activity.project_name}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                      <Clock className="w-3 h-3" />
-                      <span>{format(parseISO(activity.completed_at), 'MMM d, h:mm a')}</span>
-                    </div>
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-900">{activity.user.full_name || activity.user.email}</span>
-                    <Link to={`/projects/${activity.project_id}`} className="text-[9px] font-black text-primary uppercase hover:underline flex items-center gap-0.5">
-                      View <ArrowRight className="w-2 h-2" />
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Quick Links */}
-      <div className={cn("grid gap-4", user?.is_superuser ? "md:grid-cols-3" : "md:grid-cols-2")}>
-        <Link 
-          to="/projects" 
-          className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-primary/30 transition-all flex items-center justify-between group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-              <FolderKanban className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Manage Projects</p>
-              <p className="text-xs text-slate-500">View all your active work</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
-          <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
-        </Link>
+        )}
 
-        <Link 
-          to="/roadmap" 
-          className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-primary/30 transition-all flex items-center justify-between group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Roadmap</p>
-              <p className="text-xs text-slate-500">Track timelines and goals</p>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
-        </Link>
-
-        {user?.is_superuser && (
+        {/* Quick Links */}
+        <div className={cn("grid gap-4", user?.is_superuser ? "md:grid-cols-3" : "md:grid-cols-2")}>
           <Link 
-            to="/users" 
+            to="/projects" 
             className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-primary/30 transition-all flex items-center justify-between group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                <FolderKanban className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold">Team Stats</p>
-                <p className="text-xs text-slate-500">See contribution patterns</p>
+                <p className="text-sm font-semibold">Manage Projects</p>
+                <p className="text-xs text-slate-500">View all your active work</p>
               </div>
             </div>
             <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
           </Link>
-        )}
-      </div>
 
-      {/* Global Activity Heatmap */}
-      <div className={cn("grid gap-6", user?.is_superuser ? "md:grid-cols-2" : "grid-cols-1")}>
-        {user?.is_superuser && (
-          <Card className="border-slate-200 shadow-sm overflow-hidden flex flex-col">
-            <CardHeader className="bg-white">
+          <Link 
+            to="/roadmap" 
+            className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-primary/30 transition-all flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Roadmap</p>
+                <p className="text-xs text-slate-500">Track timelines and goals</p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
+          </Link>
+
+          {user?.is_superuser && (
+            <Link 
+              to="/users" 
+              className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-primary/30 transition-all flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Team Stats</p>
+                  <p className="text-xs text-slate-500">See contribution patterns</p>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          )}
+        </div>
+
+        {/* Global Activity Heatmap */}
+        <div className={cn("grid gap-6", user?.is_superuser ? "md:grid-cols-2" : "grid-cols-1")}>
+          {user?.is_superuser && (
+            <Card className="border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <CardHeader className="bg-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base font-semibold">Team Workload</CardTitle>
+                    <CardDescription>Current task distribution across your team.</CardDescription>
+                  </div>
+                  <TrendingUp className="h-4 w-4 text-slate-400" />
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 flex-1 min-h-[400px]">
+                <ResourceTimeline 
+                    tasks={(calendarData?.items || []).filter((i: any) => i.item_type !== 'project').map((i: any) => ({
+                        ...i,
+                        project: { name: i.project_name }
+                    }))} 
+                    title="Global Resource Load"
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className={cn("border-slate-200 shadow-sm", !user?.is_superuser && "max-w-4xl mx-auto w-full")}>
+            <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base font-semibold">Team Workload</CardTitle>
-                  <CardDescription>Current task distribution across your team.</CardDescription>
+                  <CardTitle className="text-base font-semibold">System-wide Activity</CardTitle>
+                  <CardDescription>Consolidated completions over the last year.</CardDescription>
                 </div>
-                <TrendingUp className="h-4 w-4 text-slate-400" />
+                <Activity className="h-4 w-4 text-slate-400" />
               </div>
             </CardHeader>
-            <CardContent className="p-0 flex-1 min-h-[400px]">
-              <ResourceTimeline 
-                  tasks={(calendarData?.items || []).filter((i: any) => i.item_type !== 'project').map((i: any) => ({
-                      ...i,
-                      project: { name: i.project_name }
-                  }))} 
-                  title="Global Resource Load"
-              />
+            <CardContent>
+              <ProjectHeatmap stats={data?.global_activity || []} />
             </CardContent>
           </Card>
-        )}
-
-        <Card className={cn("border-slate-200 shadow-sm", !user?.is_superuser && "max-w-4xl mx-auto w-full")}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base font-semibold">System-wide Activity</CardTitle>
-                <CardDescription>Consolidated completions over the last year.</CardDescription>
-              </div>
-              <Activity className="h-4 w-4 text-slate-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ProjectHeatmap stats={data?.global_activity || []} />
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );

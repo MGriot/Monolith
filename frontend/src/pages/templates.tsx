@@ -190,101 +190,108 @@ export default function TemplatesPage() {
   const workTypeItems = useMemo(() => workTypes?.map(w => ({ id: w.id, label: w.name, color: w.color })) || [], [workTypes]);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Project Templates</h1>
-          <p className="text-slate-500 mt-1">Manage reusable project structures and task lists.</p>
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+      <div className="p-6 bg-white border-b border-slate-200">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <Copy className="w-6 h-6 text-primary" />
+              Project Templates
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">Manage reusable project structures and task lists.</p>
+          </div>
+          <Button size="sm" onClick={() => { resetForm(); setEditingTemplate(null); setIsCreateDialogOpen(true); }} className="gap-2 shadow-lg shadow-primary/20 h-9">
+            <Plus className="w-4 h-4" /> Create Template
+          </Button>
         </div>
-        <Button onClick={() => { resetForm(); setEditingTemplate(null); setIsCreateDialogOpen(true); }} className="gap-2 shadow-lg shadow-primary/20">
-          <Plus className="w-4 h-4" /> Create Template
-        </Button>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {templates?.map((template) => {
-            const isOwner = user?.id === template.owner_id;
-            const canEdit = isOwner || user?.is_superuser;
-            
-            return (
-              <Card key={template.id} className="group hover:border-primary/30 transition-all border-slate-200 shadow-sm relative">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                        <CardTitle className="text-lg group-hover:text-primary transition-colors flex items-center gap-2">
-                            {template.name}
-                            {template.is_public ? (
-                                <span title="Public"><Globe className="w-3 h-3 text-blue-500" /></span>
-                            ) : (
-                                <span title="Private"><Lock className="w-3 h-3 text-slate-400" /></span>
-                            )}
-                        </CardTitle>
-                        <CardDescription className="line-clamp-2">{template.description || 'No description provided.'}</CardDescription>
+      <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {templates?.map((template) => {
+              const isOwner = user?.id === template.owner_id;
+              const canEdit = isOwner || user?.is_superuser;
+              
+              return (
+                <Card key={template.id} className="group hover:border-primary/30 transition-all border-slate-200 shadow-sm relative flex flex-col">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                          <CardTitle className="text-lg group-hover:text-primary transition-colors flex items-center gap-2">
+                              {template.name}
+                              {template.is_public ? (
+                                  <span title="Public"><Globe className="w-3 h-3 text-blue-500" /></span>
+                              ) : (
+                                  <span title="Private"><Lock className="w-3 h-3 text-slate-400" /></span>
+                              )}
+                          </CardTitle>
+                          <CardDescription className="line-clamp-2 min-h-[40px]">{template.description || 'No description provided.'}</CardDescription>
+                      </div>
+                      <Copy className="w-4 h-4 text-slate-300 group-hover:text-primary/50 shrink-0" />
                     </div>
-                    <Copy className="w-4 h-4 text-slate-300 group-hover:text-primary/50 shrink-0" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Predefined Tasks ({template.tasks_json.length})</p>
-                    <div className="space-y-1">
-                      {template.tasks_json.slice(0, 5).map((task: any, idx: number) => (
-                        <div key={idx} className="text-xs text-slate-600 flex items-center gap-2">
-                          <div className="w-1 h-1 rounded-full bg-slate-300" />
-                          {task.title}
-                        </div>
+                  </CardHeader>
+                  <CardContent className="flex-1">
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Predefined Tasks ({template.tasks_json.length})</p>
+                      <div className="space-y-1">
+                        {template.tasks_json.slice(0, 5).map((task: any, idx: number) => (
+                          <div key={idx} className="text-xs text-slate-600 flex items-center gap-2">
+                            <div className="w-1 h-1 rounded-full bg-slate-300" />
+                            <span className="truncate">{task.title}</span>
+                          </div>
+                        ))}
+                        {template.tasks_json.length > 5 && (
+                          <p className="text-[10px] text-slate-400 italic">+ {template.tasks_json.length - 5} more tasks</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="border-t bg-slate-50/50 flex justify-between items-center p-3">
+                    <div className="flex -space-x-2 overflow-hidden">
+                      {template.shared_with?.slice(0, 3).map((u) => (
+                          <div key={u.id} className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[8px] font-bold" title={`Shared with ${u.full_name}`}>
+                              {u.full_name?.charAt(0) || 'U'}
+                          </div>
                       ))}
-                      {template.tasks_json.length > 5 && (
-                        <p className="text-[10px] text-slate-400 italic">+ {template.tasks_json.length - 5} more tasks</p>
+                      {template.shared_with && template.shared_with.length > 3 && (
+                          <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-500">
+                              +{template.shared_with.length - 3}
+                          </div>
                       )}
                     </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="border-t bg-slate-50/50 flex justify-between items-center p-3">
-                  <div className="flex -space-x-2 overflow-hidden">
-                    {template.shared_with?.slice(0, 3).map((u) => (
-                        <div key={u.id} className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[8px] font-bold" title={`Shared with ${u.full_name}`}>
-                            {u.full_name?.charAt(0) || 'U'}
-                        </div>
-                    ))}
-                    {template.shared_with && template.shared_with.length > 3 && (
-                        <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-500">
-                            +{template.shared_with.length - 3}
-                        </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    {canEdit && (
-                        <>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500 hover:text-primary" onClick={() => handleEdit(template)}>
-                                <Edit2 className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500 hover:text-destructive" onClick={() => {
-                                if (confirm('Delete this template?')) deleteMutation.mutate(template.id);
-                            }}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                        </>
-                    )}
-                  </div>
-                </CardFooter>
-              </Card>
-            );
-          })}
-          
-          {templates?.length === 0 && (
-            <div className="col-span-full py-20 text-center border-2 border-dashed rounded-xl border-slate-200">
-              <p className="text-slate-500 font-medium">No templates found.</p>
-              <Button variant="link" onClick={() => setIsCreateDialogOpen(true)}>Create your first template</Button>
-            </div>
-          )}
-        </div>
-      )}
+                    <div className="flex gap-2">
+                      {canEdit && (
+                          <>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500 hover:text-primary" onClick={() => handleEdit(template)}>
+                                  <Edit2 className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500 hover:text-destructive" onClick={() => {
+                                  if (confirm('Delete this template?')) deleteMutation.mutate(template.id);
+                              }}>
+                                  <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                          </>
+                      )}
+                    </div>
+                  </CardFooter>
+                </Card>
+              );
+            })}
+            
+            {templates?.length === 0 && (
+              <div className="col-span-full py-20 text-center border-2 border-dashed rounded-xl border-slate-200 bg-white">
+                <p className="text-slate-500 font-medium">No templates found.</p>
+                <Button variant="link" onClick={() => setIsCreateDialogOpen(true)}>Create your first template</Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">

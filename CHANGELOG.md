@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.0] - 2026-03-09
+
+### Added
+- **Real-time Hot-Reloading**: Overhauled the Docker development environment to support instant previews. Frontend now runs Vite with polling (optimizing for Windows hosts) and automatic backend proxying.
+- **Layout Homogeneity**: Standardized all primary pages (Dashboard, Projects, Archive, etc.) to a unified "Sub-Header" pattern, providing consistent padding, typography, and iconography across the platform.
+
+### Changed
+- **Header De-cluttering**: Optimized the global application header by removing redundant titles and icons, delegating page-specific context to the new sub-header system.
+- **Dynamic Library Grid**: Upgraded the Project Library to a responsive grid that scales from 3 to 6 columns based on viewport width, improving the density of whiteboard previews.
+- **Settings Navigation**: Relocated "Project Settings" from a nested button in the Library tab to a high-visibility icon in the primary project header.
+
+### Fixed
+- **Project Detail Crash**: Resolved a critical white-screen failure caused by a missing utility import (`cn`) after layout refactoring.
+- **Teams Syntax Error**: Fixed a JSX parsing error in `teams.tsx` that prevented the page from rendering correctly.
+
 ## [2.7.0] - 2026-02-28
 
 ### Added

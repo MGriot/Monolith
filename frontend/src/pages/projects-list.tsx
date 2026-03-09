@@ -89,7 +89,7 @@ export default function ProjectsListPage() {
         start_date: values.start_date ? new Date(values.start_date).toISOString() : null,
         due_date: values.due_date ? new Date(values.due_date).toISOString() : null,
       };
-      
+
       const projectResponse = await api.post('/projects/', formattedValues);
       const newProject = projectResponse.data;
 
@@ -170,116 +170,123 @@ export default function ProjectsListPage() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Projects</h1>
-          <p className="text-slate-500 mt-1">Manage and track all your active projects.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => setIsExportDialogOpen(true)} className="gap-2">
-              <Download className="w-4 h-4" /> Export
-          </Button>
-          <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2 shadow-lg shadow-primary/20">
-              <Plus className="w-4 h-4" /> New Project
-          </Button>
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+      <div className="p-6 bg-white border-b border-slate-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <FolderKanban className="w-6 h-6 text-primary" />
+              Projects
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">Manage and track all your active projects.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={() => setIsExportDialogOpen(true)} className="gap-2 h-9">
+                <Download className="w-4 h-4" /> Export
+            </Button>
+            <Button size="sm" onClick={() => setIsCreateDialogOpen(true)} className="gap-2 shadow-lg shadow-primary/20 h-9">
+                <Plus className="w-4 h-4" /> New Project
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50/50">
-              <TableHead className="w-[300px]">Project Name</TableHead>
-              <TableHead>Topic & Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-[200px]">Progress</TableHead>
-              <TableHead>Due Date</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {projects?.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-slate-500">
-                  <div className="flex flex-col items-center gap-2">
-                    <p>No projects found. Create one to get started.</p>
-                    <Button variant="outline" size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-                      Create your first project
-                    </Button>
-                  </div>
-                </TableCell>
+      <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50/50">
+                <TableHead className="w-[300px]">Project Name</TableHead>
+                <TableHead>Topic & Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-[200px]">Progress</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              projects?.map((project) => (
-                <TableRow key={project.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => navigate(`/projects/${project.id}`)}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20 shrink-0 group-hover:scale-105 transition-transform">
-                        <FolderKanban className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="font-semibold text-slate-900 truncate group-hover:text-primary transition-colors">{project.name}</span>
+            </TableHeader>
+            <TableBody>
+              {projects?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center text-slate-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <p>No projects found. Create one to get started.</p>
+                      <Button variant="outline" size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+                        Create your first project
+                      </Button>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex flex-wrap gap-1 max-w-[150px]">
-                        {project.topics && project.topics.length > 0 ? project.topics.map(t => (
-                          <Badge key={t.id} variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-slate-100 text-slate-600 border-none">{t.name}</Badge>
-                        )) : <span className="text-xs font-medium text-slate-700">{project.topic || 'General'}</span>}
-                      </div>
-                      <div className="flex flex-wrap gap-1 max-w-[150px]">
-                        {project.types && project.types.length > 0 ? project.types.map(t => (
-                          <Badge key={t.id} variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-slate-200 text-slate-500">{t.name}</Badge>
-                        )) : <span className="text-[10px] text-slate-500 capitalize">{project.type || 'Standard'}</span>}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="capitalize bg-slate-50">
-                      {project.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-[10px] font-medium text-slate-500">
-                        <span>{formatPercent(project.progress_percent)}%</span>
-                      </div>
-                      <Progress value={project.progress_percent} className="h-1.5" />
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                      <Calendar className="w-3 h-3" />
-                      <span>{project.due_date ? format(parseISO(project.due_date), 'MMM d, yyyy') : 'No date'}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/projects/${project.id}`) }}>
-                          <ArrowRight className="w-4 h-4 mr-2" /> View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={(e: React.MouseEvent) => handleArchiveProject(e, project)}>
-                          <Archive className="w-4 h-4 mr-2" /> Archive
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600" onClick={(e: React.MouseEvent) => handleDeleteProject(e, project)}>
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                projects?.map((project) => (
+                  <TableRow key={project.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => navigate(`/projects/${project.id}`)}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20 shrink-0 group-hover:scale-105 transition-transform">
+                          <FolderKanban className="w-4 h-4 text-primary" />
+                        </div>
+                        <span className="font-semibold text-slate-900 truncate group-hover:text-primary transition-colors">{project.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex flex-wrap gap-1 max-w-[150px]">
+                          {project.topics && project.topics.length > 0 ? project.topics.map(t => (
+                            <Badge key={t.id} variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-slate-100 text-slate-600 border-none">{t.name}</Badge>
+                          )) : <span className="text-xs font-medium text-slate-700">{project.topic || 'General'}</span>}
+                        </div>
+                        <div className="flex flex-wrap gap-1 max-w-[150px]">
+                          {project.types && project.types.length > 0 ? project.types.map(t => (
+                            <Badge key={t.id} variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-slate-200 text-slate-500">{t.name}</Badge>
+                          )) : <span className="text-[10px] text-slate-500 capitalize">{project.type || 'Standard'}</span>}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize bg-slate-50">
+                        {project.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-medium text-slate-500">
+                          <span>{formatPercent(project.progress_percent)}%</span>
+                        </div>
+                        <Progress value={project.progress_percent} className="h-1.5" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <Calendar className="w-3 h-3" />
+                        <span>{project.due_date ? format(parseISO(project.due_date), 'MMM d, yyyy') : 'No date'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/projects/${project.id}`) }}>
+                            <ArrowRight className="w-4 h-4 mr-2" /> View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={(e: React.MouseEvent) => handleArchiveProject(e, project)}>
+                            <Archive className="w-4 h-4 mr-2" /> Archive
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600" onClick={(e: React.MouseEvent) => handleDeleteProject(e, project)}>
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <DataExportDialog 
@@ -329,7 +336,7 @@ export default function ProjectsListPage() {
               {creationStep === 'type' ? 'Choose a template or start with a blank project.' : 'Enter the project details to get started.'}
             </DialogDescription>
           </DialogHeader>
-          
+
           {creationStep === 'type' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
               <Card 

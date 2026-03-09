@@ -67,11 +67,6 @@ export default function ProjectLibrary({ projectId, onOpenSettings }: ProjectLib
                     />
                 </div>
                 <div className="flex items-center gap-2">
-                    {onOpenSettings && (
-                        <Button variant="outline" onClick={onOpenSettings} className="gap-2">
-                            <Settings className="w-4 h-4" /> Project Settings
-                        </Button>
-                    )}
                     <Button onClick={handleCreate} className="gap-2">
                         <Plus className="w-4 h-4" /> New Sketch
                     </Button>
@@ -83,7 +78,7 @@ export default function ProjectLibrary({ projectId, onOpenSettings }: ProjectLib
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     {filteredWhiteboards?.map((wb: any) => (
                         <Card key={wb.id} className="group hover:shadow-md transition-all border-slate-200">
                             <CardHeader className="p-4 pb-2">

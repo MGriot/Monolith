@@ -20,7 +20,8 @@ import {
   Key, 
   ShieldAlert,
   Loader2,
-  Archive
+  Archive,
+  Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ResourceTimeline from '@/components/resource-timeline';
@@ -94,28 +95,34 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Users & Team</h1>
-          <p className="text-slate-500">Manage your team members and their roles.</p>
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+      <div className="p-6 bg-white border-b border-slate-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <Users className="w-6 h-6 text-primary" />
+              Team Members
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">Manage your team members and their roles.</p>
+          </div>
+          <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                  if (confirm("Run auto-archive? This will archive all DONE projects older than 7 days.")) {
+                      autoArchiveMutation.mutate();
+                  }
+              }}
+              disabled={autoArchiveMutation.isPending}
+              className="gap-2 h-9"
+          >
+              {autoArchiveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
+              Run Auto-Archive
+          </Button>
         </div>
-        <Button 
-            variant="outline" 
-            onClick={() => {
-                if (confirm("Run auto-archive? This will archive all DONE projects older than 7 days.")) {
-                    autoArchiveMutation.mutate();
-                }
-            }}
-            disabled={autoArchiveMutation.isPending}
-            className="gap-2"
-        >
-            {autoArchiveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
-            Run Auto-Archive
-        </Button>
       </div>
 
-      <div className="grid gap-6">
+      <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <Table>
             <TableHeader>

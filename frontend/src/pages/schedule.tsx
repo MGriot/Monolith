@@ -383,13 +383,20 @@ function RoadmapView() {
 
 export default function SchedulePage() {
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-12">
-            <div>
-                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Master Schedule</h1>
-                <p className="text-slate-500 mt-1">Unified view of project roadmaps and discrete deadlines.</p>
+        <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+            <div className="p-6 bg-white border-b border-slate-200">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                            <CalendarIcon className="w-6 h-6 text-primary" />
+                            Master Schedule
+                        </h1>
+                        <p className="text-sm text-slate-500 mt-1">Unified view of project roadmaps and discrete deadlines.</p>
+                    </div>
+                </div>
             </div>
 
-            <div className="space-y-16">
+            <div className="flex-1 overflow-auto p-6 space-y-16 pb-12">
                 <section>
                     <div className="flex items-center gap-2 mb-4">
                         <GanttChart className="w-5 h-5 text-primary" />

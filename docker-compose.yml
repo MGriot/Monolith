@@ -34,12 +34,38 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-monolith_user}:${POSTGRES_PASSWORD:-monolith_password}@db:5432/${POSTGRES_DB:-monolith_db}
       SECRET_KEY: ${SECRET_KEY:-changeme_in_prod}
+    ports:
+      - "8000:8000" # Expose backend directly for API docs / debugging
     volumes:
       - ./backend:/app
       - monolith_media:/app/media
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - monolith_net
+
+  # ---------------------------------------------------------------------------
+  # Frontend: React (Vite) - Development Mode with Hot Reload
+  # ---------------------------------------------------------------------------
+  frontend:
+    # Use the build stage from the Dockerfile but override the command
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: build-stage
+    container_name: monolith_frontend
+    restart: always
+    ports:
+      - "5173:5173" # Vite HMR port
+      - "8180:5173" # Map the "old" 8180 port to the dev server as well
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Avoid overwriting node_modules inside the container
+    # Run the development server instead of building for production
+    command: npm run dev -- --host 0.0.0.0
+    depends_on:
+      - backend
     networks:
       - monolith_net
 
@@ -63,24 +89,6 @@ services:
         condition: service_healthy
     networks:
       - monolith_net
-
-  # ---------------------------------------------------------------------------
-  # Frontend: React (Vite) + Reverse Proxy
-  # ---------------------------------------------------------------------------
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: monolith_frontend
-    restart: always
-    ports:
-      - "8180:80"
-    depends_on:
-      - backend
-    networks:
-      - monolith_net
-
-# (Removed separate Nginx container as its functionality was merged into the frontend service)
 
 volumes:
   monolith_pgdata:

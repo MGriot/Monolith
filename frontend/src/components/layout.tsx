@@ -51,20 +51,23 @@ export default function Layout({ children }: LayoutProps) {
     ] : []),
   ];
 
-  const getPageTitle = () => {
+  const getPageInfo = () => {
     const path = location.pathname;
-    if (path === '/') return 'Overview';
-    if (path === '/projects') return 'Projects';
-    if (path.startsWith('/projects/')) return 'Project Details';
-    if (path === '/tasks') return 'My Tasks';
-    if (path === '/schedule') return 'Master Schedule';
-    if (path === '/archive') return 'Archive';
-    if (path === '/templates') return 'Project Templates';
-    if (path === '/teams') return 'Team Definitions';
-    if (path === '/users') return 'Team Management';
-    if (path === '/workflows') return 'SOP Library';
-    return path.substring(1);
+    let item = filteredNavItems.find(i => i.href === path);
+
+    // Fallback for nested routes
+    if (!item && path !== '/') {
+      item = filteredNavItems.find(i => i.href !== '/' && path.startsWith(i.href));
+    }
+
+    if (path === '/') return { icon: LayoutDashboard, label: 'Overview' };
+    if (path.startsWith('/projects/')) return { icon: FolderKanban, label: 'Project Details' };
+    if (path === '/settings') return { icon: Settings, label: 'Settings' };
+
+    return item ? { icon: item.icon, label: item.label } : { icon: LayoutDashboard, label: path.substring(1) };
   };
+
+  const pageInfo = getPageInfo();
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -122,11 +125,7 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 flex-shrink-0 z-10 shadow-sm shadow-slate-100">
-          <div className="flex items-center gap-6 flex-1">
-            <h2 className="text-sm font-semibold text-slate-900 capitalize">
-              {getPageTitle()}
-            </h2>
-          </div>
+          <div className="flex-1" /> {/* Spacer where the title was */}
 
           <div className="flex items-center gap-3">
             <Popover>
@@ -180,11 +179,11 @@ export default function Layout({ children }: LayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto scroll-smooth">
+        <main className="flex-1 overflow-hidden">
           {children}
         </main>
       </div>
       <TaskCreateDialog open={isTaskCreateOpen} onOpenChange={setIsTaskCreateOpen} />
     </div>
   );
-}
+  }
