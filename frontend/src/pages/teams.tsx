@@ -146,112 +146,119 @@ export default function TeamsPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Teams</h1>
-          <p className="text-slate-500 mt-1">Define organizational units and group members.</p>
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+      <div className="p-6 bg-white border-b border-slate-200">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <Users className="w-6 h-6 text-primary" />
+              Teams
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">Define organizational units and group members.</p>
+          </div>
+          <Button size="sm" onClick={() => { resetForm(); setEditingTeam(null); setIsDialogOpen(true); }} className="gap-2 shadow-lg shadow-primary/20 h-9">
+            <Plus className="w-4 h-4" /> Create Team
+          </Button>
         </div>
-        <Button onClick={() => { resetForm(); setEditingTeam(null); setIsDialogOpen(true); }} className="gap-2 shadow-lg shadow-primary/20">
-          <Plus className="w-4 h-4" /> Create Team
-        </Button>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {teams?.map((team) => {
-            const isOwner = team.owner_id === user?.id;
-            const canManage = canManageTeam(team);
-            
-            return (
-              <Card key={team.id} className="group hover:border-primary/30 transition-all border-slate-200 shadow-sm flex flex-col relative">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex flex-col gap-2">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                        <Users className="w-5 h-5 text-primary" />
-                      </div>
-                      <div className="flex gap-1 flex-wrap">
-                        {isOwner && (
-                            <Badge variant="secondary" className="w-fit text-[8px] font-black uppercase bg-blue-50 text-blue-600 border-blue-100 px-1 py-0 h-4">
-                            <ShieldCheck className="w-2.5 h-2.5 mr-1" />
-                            Owner
-                            </Badge>
-                        )}
-                        {team.is_public && (
-                            <Badge variant="outline" className="w-fit text-[8px] font-black uppercase bg-emerald-50 text-emerald-600 border-emerald-100 px-1 py-0 h-4">
-                                <Globe className="w-2.5 h-2.5 mr-1" />
-                                Public
-                            </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className={cn("flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity", !canManage && "hidden")}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-slate-500 hover:text-primary" onClick={() => handleEdit(team)}>
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-slate-500 hover:text-destructive" onClick={() => { if(confirm('Delete team?')) deleteMutation.mutate(team.id)}}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                  <CardTitle className="text-lg group-hover:text-primary transition-colors mt-2 flex items-center gap-2">
-                    {team.name}
-                    {!team.is_public && <span title="Private"><Lock className="w-3 h-3 text-slate-400" /></span>}
-                  </CardTitle>
-                  <CardDescription className="line-clamp-2 min-h-[40px]">{team.description || 'No description provided.'}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Team Members ({team.members.length})</p>
-                    <div className="flex flex-wrap gap-2">
-                      {team.members.slice(0, 6).map((member) => (
-                        <div 
-                          key={member.id} 
-                          className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 shadow-sm"
-                          title={member.full_name || member.email}
-                        >
-                          {member.full_name ? member.full_name.charAt(0) : member.email.charAt(0).toUpperCase()}
+      <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {teams?.map((team) => {
+              const isOwner = team.owner_id === user?.id;
+              const canManage = canManageTeam(team);
+              
+              return (
+                <Card key={team.id} className="group hover:border-primary/30 transition-all border-slate-200 shadow-sm flex flex-col relative">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="flex flex-col gap-2">
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                          <Users className="w-5 h-5 text-primary" />
                         </div>
+                        <div className="flex gap-1 flex-wrap">
+                          {isOwner && (
+                              <Badge variant="secondary" className="w-fit text-[8px] font-black uppercase bg-blue-50 text-blue-600 border-blue-100 px-1 py-0 h-4">
+                              <ShieldCheck className="w-2.5 h-2.5 mr-1" />
+                              Owner
+                              </Badge>
+                          )}
+                          {team.is_public && (
+                              <Badge variant="outline" className="w-fit text-[8px] font-black uppercase bg-emerald-50 text-emerald-600 border-emerald-100 px-1 py-0 h-4">
+                                  <Globe className="w-2.5 h-2.5 mr-1" />
+                                  Public
+                              </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className={cn("flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity", !canManage && "hidden")}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-slate-500 hover:text-primary" onClick={() => handleEdit(team)}>
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-slate-500 hover:text-destructive" onClick={() => { if(confirm('Delete team?')) deleteMutation.mutate(team.id)}}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    <CardTitle className="text-lg group-hover:text-primary transition-colors mt-2 flex items-center gap-2">
+                      {team.name}
+                      {!team.is_public && <span title="Private"><Lock className="w-3 h-3 text-slate-400" /></span>}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2 min-h-[40px]">{team.description || 'No description provided.'}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1">
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Team Members ({team.members.length})</p>
+                      <div className="flex flex-wrap gap-2">
+                        {team.members.slice(0, 6).map((member) => (
+                          <div 
+                            key={member.id} 
+                            className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 shadow-sm"
+                            title={member.full_name || member.email}
+                          >
+                            {member.full_name ? member.full_name.charAt(0) : member.email.charAt(0).toUpperCase()}
+                          </div>
+                        ))}
+                        {team.members.length > 6 && (
+                          <div className="w-7 h-7 rounded-full bg-slate-50 border border-slate-200 border-dashed flex items-center justify-center text-[10px] font-bold text-slate-400">
+                            +{team.members.length - 6}
+                          </div>
+                        )}
+                        {team.members.length === 0 && (
+                          <p className="text-xs text-slate-400 italic">Empty team</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="border-t bg-slate-50/50 p-3 flex justify-between items-center">
+                    <span className="text-[10px] text-slate-400 font-medium italic">Created {new Date(team.created_at).toLocaleDateString()}</span>
+                    <div className="flex -space-x-2 overflow-hidden">
+                      {team.shared_with?.slice(0, 3).map((u) => (
+                          <div key={u.id} className="w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[7px] font-bold" title={`Property shared with ${u.full_name}`}>
+                              {u.full_name?.charAt(0) || 'U'}
+                          </div>
                       ))}
-                      {team.members.length > 6 && (
-                        <div className="w-7 h-7 rounded-full bg-slate-50 border border-slate-200 border-dashed flex items-center justify-center text-[10px] font-bold text-slate-400">
-                          +{team.members.length - 6}
-                        </div>
-                      )}
-                      {team.members.length === 0 && (
-                        <p className="text-xs text-slate-400 italic">Empty team</p>
-                      )}
                     </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="border-t bg-slate-50/50 p-3 flex justify-between items-center">
-                  <span className="text-[10px] text-slate-400 font-medium italic">Created {new Date(team.created_at).toLocaleDateString()}</span>
-                  <div className="flex -space-x-2 overflow-hidden">
-                    {team.shared_with?.slice(0, 3).map((u) => (
-                        <div key={u.id} className="w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[7px] font-bold" title={`Property shared with ${u.full_name}`}>
-                            {u.full_name?.charAt(0) || 'U'}
-                        </div>
-                    ))}
-                  </div>
-                </CardFooter>
-              </Card>
-            );
-          })}
-          
-          {teams?.length === 0 && (
-            <div className="col-span-full py-20 text-center border-2 border-dashed rounded-xl border-slate-200">
-              <Users className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-              <p className="text-slate-500 font-medium">No teams defined yet.</p>
-              <Button variant="link" onClick={() => setIsDialogOpen(true)}>Create your first team</Button>
-            </div>
-          )}
-        </div>
-      )}
+                  </CardFooter>
+                </Card>
+              );
+            })}
+            
+            {teams?.length === 0 && (
+              <div className="col-span-full py-20 text-center border-2 border-dashed rounded-xl border-slate-200">
+                <Users className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                <p className="text-slate-500 font-medium">No teams defined yet.</p>
+                <Button variant="link" onClick={() => { resetForm(); setEditingTeam(null); setIsDialogOpen(true); }}>Create your first team</Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -334,7 +341,7 @@ export default function TeamsPage() {
               </div>
             </div>
           </div>
-          <DialogFooter className="sticky bottom-0 bg-white pt-4 border-t">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
               {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-3 h-3 animate-spin mr-2" />}

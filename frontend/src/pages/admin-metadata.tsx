@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Edit2, Tag, Briefcase, Loader2, Globe, Lock } from 'lucide-react';
+import { Plus, Trash2, Edit2, Tag, Briefcase, Loader2, Globe, Lock, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Topic, WorkType } from '@/types';
@@ -155,254 +155,263 @@ export default function AdminMetadataPage() {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Metadata Management</h1>
-        <p className="text-slate-500">Configure global and scoped Topics and Work Types for projects and tasks.</p>
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+      <div className="p-6 bg-white border-b border-slate-200">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <Database className="w-6 h-6 text-primary" />
+              Taxonomy Management
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">Configure global and scoped Topics and Work Types for projects and tasks.</p>
+          </div>
+        </div>
       </div>
 
-      <Tabs defaultValue="topics" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="topics" className="gap-2">
-            <Tag className="w-4 h-4" />
-            Topics
-          </TabsTrigger>
-          <TabsTrigger value="work-types" className="gap-2">
-            <Briefcase className="w-4 h-4" />
-            Work Types
-          </TabsTrigger>
-        </TabsList>
+      <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
+        <Tabs defaultValue="topics" className="w-full">
+          <TabsList className="mb-8">
+            <TabsTrigger value="topics" className="gap-2">
+              <Tag className="w-4 h-4" />
+              Topics
+            </TabsTrigger>
+            <TabsTrigger value="work-types" className="gap-2">
+              <Briefcase className="w-4 h-4" />
+              Work Types
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="topics">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="md:col-span-1 h-fit">
-              <CardHeader>
-                <CardTitle className="text-lg">Add New Global Topic</CardTitle>
-                <CardDescription>Create a new category label visible everywhere.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
-                  <Input
-                    placeholder="e.g. Backend"
-                    value={newTopicName}
-                    onChange={(e) => setNewTopicName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
-                  <div className="flex gap-2">
+          <TabsContent value="topics">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <Card className="md:col-span-1 h-fit shadow-sm border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-lg">Add New Global Topic</CardTitle>
+                  <CardDescription>Create a new category label visible everywhere.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
                     <Input
-                      type="color"
-                      className="w-12 h-10 p-1 cursor-pointer"
-                      value={newTopicColor}
-                      onChange={(e) => setNewTopicColor(e.target.value)}
-                    />
-                    <Input
-                      value={newTopicColor}
-                      onChange={(e) => setNewTopicColor(e.target.value)}
-                      placeholder="#64748b"
+                      placeholder="e.g. Backend"
+                      value={newTopicName}
+                      onChange={(e) => setNewTopicName(e.target.value)}
                     />
                   </div>
-                </div>
-                <Button
-                  className="w-full gap-2"
-                  onClick={() => createTopicMutation.mutate({ name: newTopicName, color: newTopicColor })}
-                  disabled={!newTopicName || createTopicMutation.isPending}
-                >
-                  {createTopicMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  Create Global Topic
-                </Button>
-              </CardContent>
-            </Card>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        className="w-12 h-10 p-1 cursor-pointer"
+                        value={newTopicColor}
+                        onChange={(e) => setNewTopicColor(e.target.value)}
+                      />
+                      <Input
+                        value={newTopicColor}
+                        onChange={(e) => setNewTopicColor(e.target.value)}
+                        placeholder="#64748b"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => createTopicMutation.mutate({ name: newTopicName, color: newTopicColor })}
+                    disabled={!newTopicName || createTopicMutation.isPending}
+                  >
+                    {createTopicMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    Create Global Topic
+                  </Button>
+                </CardContent>
+              </Card>
 
-            <Card className="md:col-span-2">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Color</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Scope</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topicsLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
-                      </TableCell>
+              <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50">
+                      <TableHead className="w-12">Color</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Scope</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ) : topics?.map((topic) => (
-                    <TableRow key={topic.id}>
-                      <TableCell>
-                        <div
-                          className="w-6 h-6 rounded-full border border-slate-200"
-                          style={{ backgroundColor: topic.color }}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">{topic.name}</TableCell>
-                      <TableCell>
-                        <ScopeBadge item={topic} />
-                      </TableCell>
-                      <TableCell>
-                        <span className={cn(
-                          "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                          topic.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
-                        )}>
-                          {topic.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingTopic(topic)}>
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                            onClick={() => {
-                              if (window.confirm('Are you sure you want to delete this topic?')) deleteTopicMutation.mutate(topic.id);
-                            }}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </div>
-        </TabsContent>
+                  </TableHeader>
+                  <TableBody>
+                    {topicsLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-12">
+                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+                        </TableCell>
+                      </TableRow>
+                    ) : topics?.map((topic) => (
+                      <TableRow key={topic.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell>
+                          <div
+                            className="w-6 h-6 rounded-full border border-slate-200 shadow-sm"
+                            style={{ backgroundColor: topic.color }}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium text-slate-900">{topic.name}</TableCell>
+                        <TableCell>
+                          <ScopeBadge item={topic} />
+                        </TableCell>
+                        <TableCell>
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                            topic.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+                          )}>
+                            {topic.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" onClick={() => setEditingTopic(topic)}>
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this topic?')) deleteTopicMutation.mutate(topic.id);
+                              }}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
+            </div>
+          </TabsContent>
 
-        <TabsContent value="work-types">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="md:col-span-1 h-fit">
-              <CardHeader>
-                <CardTitle className="text-lg">Add New Global Work Type</CardTitle>
-                <CardDescription>Define a type of activity visible everywhere.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
-                  <Input
-                    placeholder="e.g. Development"
-                    value={newTypeName}
-                    onChange={(e) => setNewTypeName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
-                  <div className="flex gap-2">
+          <TabsContent value="work-types">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <Card className="md:col-span-1 h-fit shadow-sm border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-lg">Add New Global Work Type</CardTitle>
+                  <CardDescription>Define a type of activity visible everywhere.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
                     <Input
-                      type="color"
-                      className="w-12 h-10 p-1 cursor-pointer"
-                      value={newTypeColor}
-                      onChange={(e) => setNewTypeColor(e.target.value)}
-                    />
-                    <Input
-                      value={newTypeColor}
-                      onChange={(e) => setNewTypeColor(e.target.value)}
-                      placeholder="#64748b"
+                      placeholder="e.g. Development"
+                      value={newTypeName}
+                      onChange={(e) => setNewTypeName(e.target.value)}
                     />
                   </div>
-                </div>
-                <Button
-                  className="w-full gap-2"
-                  onClick={() => createTypeMutation.mutate({ name: newTypeName, color: newTypeColor })}
-                  disabled={!newTypeName || createTypeMutation.isPending}
-                >
-                  {createTypeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  Create Global Work Type
-                </Button>
-              </CardContent>
-            </Card>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        className="w-12 h-10 p-1 cursor-pointer"
+                        value={newTypeColor}
+                        onChange={(e) => setNewTypeColor(e.target.value)}
+                      />
+                      <Input
+                        value={newTypeColor}
+                        onChange={(e) => setNewTypeColor(e.target.value)}
+                        placeholder="#64748b"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => createTypeMutation.mutate({ name: newTypeName, color: newTypeColor })}
+                    disabled={!newTypeName || createTypeMutation.isPending}
+                  >
+                    {createTypeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    Create Global Work Type
+                  </Button>
+                </CardContent>
+              </Card>
 
-            <Card className="md:col-span-2">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Color</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Scope</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {typesLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
-                      </TableCell>
+              <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50">
+                      <TableHead className="w-12">Color</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Scope</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ) : workTypes?.map((type) => (
-                    <TableRow key={type.id}>
-                      <TableCell>
-                        <div
-                          className="w-6 h-6 rounded-full border border-slate-200"
-                          style={{ backgroundColor: type.color }}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">{type.name}</TableCell>
-                      <TableCell>
-                        <ScopeBadge item={type} />
-                      </TableCell>
-                      <TableCell>
-                        <span className={cn(
-                          "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                          type.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
-                        )}>
-                          {type.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingWorkType(type)}>
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                            onClick={() => {
-                              if (window.confirm('Are you sure you want to delete this work type?')) deleteTypeMutation.mutate(type.id);
-                            }}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+                  </TableHeader>
+                  <TableBody>
+                    {typesLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-12">
+                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+                        </TableCell>
+                      </TableRow>
+                    ) : workTypes?.map((type) => (
+                      <TableRow key={type.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell>
+                          <div
+                            className="w-6 h-6 rounded-full border border-slate-200 shadow-sm"
+                            style={{ backgroundColor: type.color }}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium text-slate-900">{type.name}</TableCell>
+                        <TableCell>
+                          <ScopeBadge item={type} />
+                        </TableCell>
+                        <TableCell>
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                            type.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+                          )}>
+                            {type.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" onClick={() => setEditingWorkType(type)}>
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this work type?')) deleteTypeMutation.mutate(type.id);
+                              }}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {/* Edit Topic Dialog */}
       <Dialog open={!!editingTopic} onOpenChange={(open) => !open && setEditingTopic(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Topic</DialogTitle>
             <DialogDescription>Modify topic details.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdateTopic} className="space-y-4">
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
               <Input 
                 value={editingTopic?.name || ''} 
                 onChange={(e) => setEditingTopic(prev => prev ? ({...prev, name: e.target.value}) : null)} 
               />
             </div>
             <div className="space-y-2">
-              <Label>Color</Label>
+              <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
               <div className="flex gap-2">
                 <Input 
                   type="color" 
@@ -416,14 +425,14 @@ export default function AdminMetadataPage() {
                 />
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <Label>Active Status</Label>
+            <div className="flex items-center justify-between py-2 border-t border-b">
+              <Label className="text-sm font-medium">Active Status</Label>
               <Switch 
                 checked={editingTopic?.is_active || false} 
                 onCheckedChange={(checked) => setEditingTopic(prev => prev ? ({...prev, is_active: checked}) : null)} 
               />
             </div>
-            <DialogFooter>
+            <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => setEditingTopic(null)}>Cancel</Button>
               <Button type="submit" disabled={updateTopicMutation.isPending}>
                 {updateTopicMutation.isPending && <Loader2 className="w-3 h-3 animate-spin mr-2" />}
@@ -436,21 +445,21 @@ export default function AdminMetadataPage() {
 
       {/* Edit Work Type Dialog */}
       <Dialog open={!!editingWorkType} onOpenChange={(open) => !open && setEditingWorkType(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Work Type</DialogTitle>
             <DialogDescription>Modify work type details.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdateWorkType} className="space-y-4">
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
               <Input 
                 value={editingWorkType?.name || ''} 
                 onChange={(e) => setEditingWorkType(prev => prev ? ({...prev, name: e.target.value}) : null)} 
               />
             </div>
             <div className="space-y-2">
-              <Label>Color</Label>
+              <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
               <div className="flex gap-2">
                 <Input 
                   type="color" 
@@ -464,14 +473,14 @@ export default function AdminMetadataPage() {
                 />
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <Label>Active Status</Label>
+            <div className="flex items-center justify-between py-2 border-t border-b">
+              <Label className="text-sm font-medium">Active Status</Label>
               <Switch 
                 checked={editingWorkType?.is_active || false} 
                 onCheckedChange={(checked) => setEditingWorkType(prev => prev ? ({...prev, is_active: checked}) : null)} 
               />
             </div>
-            <DialogFooter>
+            <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => setEditingWorkType(null)}>Cancel</Button>
               <Button type="submit" disabled={updateTypeMutation.isPending}>
                 {updateTypeMutation.isPending && <Loader2 className="w-3 h-3 animate-spin mr-2" />}

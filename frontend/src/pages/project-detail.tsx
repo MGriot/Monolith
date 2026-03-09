@@ -42,11 +42,12 @@ import {
   Archive,
   Download,
   MessageSquare,
-  BookOpen
+  BookOpen,
+  Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { formatPercent } from '@/lib/utils';
+import { cn, formatPercent } from '@/lib/utils';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 import DataExportDialog from '@/components/data-export-dialog';
 import type { Project, Task } from '@/types';
@@ -306,25 +307,44 @@ export default function ProjectDetailPage() {
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
           <div className="space-y-4 flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{project.name}</h1>
-              <Badge variant="secondary" className="capitalize px-2 py-0 h-5 text-[10px]">{project.status}</Badge>
-              <div className="flex items-center gap-1">
-                {!project.is_archived && (
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
+                <FolderKanban className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{project.name}</h1>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <Badge variant="secondary" className="capitalize px-2 py-0 h-4 text-[9px] font-black uppercase bg-slate-100 text-slate-600 border-none">{project.status}</Badge>
+                  <div className="flex items-center gap-0.5">
+                    {!project.is_archived && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 text-slate-400 hover:text-amber-600 transition-colors"
+                            onClick={() => {
+                                if (confirm("Archive this project?")) {
+                                    archiveProjectMutation.mutate();
+                                }
+                            }}
+                            disabled={archiveProjectMutation.isPending}
+                            title="Archive Project"
+                        >
+                            {archiveProjectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Archive className="w-3 h-3" />}
+                        </Button>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-slate-400 hover:text-amber-600 transition-colors"
-                        onClick={() => {
-                            if (confirm("Archive this project?")) {
-                                archiveProjectMutation.mutate();
-                            }
-                        }}
-                        disabled={archiveProjectMutation.isPending}
-                        title="Archive Project"
+                        className={cn(
+                            "h-5 w-5 text-slate-400 hover:text-primary transition-colors",
+                            activeTab === 'settings' && "text-primary"
+                        )}
+                        onClick={() => setActiveTab('settings')}
+                        title="Project Settings"
                     >
-                        {archiveProjectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderKanban className="w-4 h-4" />}
+                        <Settings className="w-3.5 h-3.5" />
                     </Button>
-                )}
+                  </div>
+                </div>
               </div>
             </div>
 

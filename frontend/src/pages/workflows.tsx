@@ -186,64 +186,65 @@ export default function WorkflowsPage() {
 
     if (selectedWorkflow) {
         return (
-            <div className="p-8 max-w-5xl mx-auto space-y-6">
-                <Button variant="ghost" onClick={() => setSelectedWorkflow(null)} className="gap-2 -ml-2 text-slate-500 hover:text-slate-900">
-                    <ChevronLeft className="w-4 h-4" /> Back to Library
-                </Button>
-
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="p-8 border-b border-slate-100 bg-slate-50/30">
-                        <div className="flex justify-between items-start gap-4">
-                            <div className="space-y-2">
-                                <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+            <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+                <div className="p-6 bg-white border-b border-slate-200">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <Button variant="ghost" size="icon" onClick={() => setSelectedWorkflow(null)} className="h-8 w-8 text-slate-500 hover:text-slate-900">
+                                <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                            <div>
+                                <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                                     {selectedWorkflow.title}
                                     {selectedWorkflow.is_public ? (
-                                        <span title="Public"><Globe className="w-4 h-4 text-blue-500" /></span>
+                                        <span title="Public"><Globe className="w-3.5 h-3.5 text-blue-500" /></span>
                                     ) : (
-                                        <span title="Private"><Lock className="w-4 h-4 text-slate-400" /></span>
+                                        <span title="Private"><Lock className="w-3.5 h-3.5 text-slate-400" /></span>
                                     )}
                                 </h1>
-                                <p className="text-slate-500 text-lg leading-relaxed">{selectedWorkflow.description || "Standard Operating Procedure"}</p>
-                            </div>
-                            <div className="flex gap-2 shrink-0">
-                                {canManageWorkflow(selectedWorkflow) && (
-                                    <>
-                                        <Button variant="outline" size="sm" onClick={() => handleEdit(selectedWorkflow)} className="gap-2">
-                                            <Edit3 className="w-3.5 h-3.5" /> Edit
-                                        </Button>
-                                        <Button variant="ghost" size="icon" onClick={() => { if(confirm('Delete this workflow?')) deleteMutation.mutate(selectedWorkflow.id) }} className="h-9 w-9 text-slate-400 hover:text-destructive">
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </>
-                                )}
+                                <p className="text-xs text-slate-500 font-medium">Standard Operating Procedure • Updated {format(parseISO(selectedWorkflow.updated_at), 'MMM d, yyyy')}</p>
                             </div>
                         </div>
-                        
-                        <div className="flex items-center justify-between mt-6">
-                            <div className="flex items-center gap-6 text-xs text-slate-400 font-medium">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 shadow-sm uppercase">
-                                        {selectedWorkflow.owner?.full_name?.charAt(0) || selectedWorkflow.owner?.email.charAt(0) || '?'}
-                                    </div>
-                                    <span>Authored by {selectedWorkflow.owner?.full_name || selectedWorkflow.owner?.email}</span>
+                        <div className="flex gap-2">
+                            {canManageWorkflow(selectedWorkflow) && (
+                                <>
+                                    <Button variant="outline" size="sm" onClick={() => handleEdit(selectedWorkflow)} className="gap-2">
+                                        <Edit3 className="w-3.5 h-3.5" /> Edit
+                                    </Button>
+                                    <Button variant="ghost" size="icon" onClick={() => { if(confirm('Delete this workflow?')) deleteMutation.mutate(selectedWorkflow.id) }} className="h-9 w-9 text-slate-400 hover:text-destructive">
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-auto p-8">
+                    <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="p-8 lg:p-12">
+                            {selectedWorkflow.description && (
+                                <p className="text-slate-500 text-lg leading-relaxed mb-8 italic border-l-4 border-primary/20 pl-6">
+                                    {selectedWorkflow.description}
+                                </p>
+                            )}
+                            <MarkdownRenderer content={selectedWorkflow.content} className="max-w-none" />
+                        </div>
+                        <div className="px-8 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs text-slate-400">
+                                <div className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 shadow-sm uppercase">
+                                    {selectedWorkflow.owner?.full_name?.charAt(0) || selectedWorkflow.owner?.email.charAt(0) || '?'}
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5" />
-                                    <span>Updated {format(parseISO(selectedWorkflow.updated_at), 'MMM d, yyyy')}</span>
-                                </div>
+                                <span>Authored by {selectedWorkflow.owner?.full_name || selectedWorkflow.owner?.email}</span>
                             </div>
                             <div className="flex -space-x-2 overflow-hidden">
                                 {selectedWorkflow.shared_with?.map(u => (
-                                    <div key={u.id} className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-500" title={`Shared with ${u.full_name}`}>
+                                    <div key={u.id} className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-500 shadow-sm" title={`Shared with ${u.full_name}`}>
                                         {u.full_name?.charAt(0)}
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    </div>
-                    
-                    <div className="p-8 lg:p-12">
-                        <MarkdownRenderer content={selectedWorkflow.content} className="max-w-none" />
                     </div>
                 </div>
             </div>
@@ -251,105 +252,112 @@ export default function WorkflowsPage() {
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">Workflow Library</h1>
-                    <p className="text-slate-500 mt-1">
-                        Standard Operating Procedures (SOPs) and best practices for your organization.
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="relative w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <Input 
-                            placeholder="Search procedures..." 
-                            className="pl-9 h-10 border-slate-200"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+        <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+            <div className="p-6 bg-white border-b border-slate-200">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                            <BookOpen className="w-6 h-6 text-primary" />
+                            Workflows
+                        </h1>
+                        <p className="text-sm text-slate-500 mt-1">
+                            Standard Operating Procedures (SOPs) and best practices.
+                        </p>
                     </div>
-                    <Button onClick={handleCreate} className="gap-2 shadow-lg shadow-primary/20 h-10">
-                        <Plus className="w-4 h-4" />
-                        Create SOP
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        <div className="relative w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Input 
+                                placeholder="Search procedures..." 
+                                className="pl-9 h-10 border-slate-200 bg-white"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Button onClick={handleCreate} className="gap-2 shadow-lg shadow-primary/20 h-10">
+                            <Plus className="w-4 h-4" />
+                            Create SOP
+                        </Button>
+                    </div>
                 </div>
             </div>
 
-            {isLoading ? (
-                <div className="flex justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredWorkflows?.map((wf) => {
-                        const canManage = canManageWorkflow(wf);
-                        return (
-                            <Card 
-                                key={wf.id} 
-                                className="group hover:shadow-md transition-all cursor-pointer border-slate-200 hover:border-primary/30 flex flex-col relative"
-                                onClick={() => setSelectedWorkflow(wf)}
-                            >
-                                <CardHeader className="pb-3">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="w-10 h-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary group-hover:bg-primary/10 transition-colors">
-                                            <BookOpen className="w-5 h-5" />
-                                        </div>
-                                        {canManage && (
-                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={(e) => { e.stopPropagation(); handleEdit(wf); }}>
-                                                    <Edit3 className="w-3.5 h-3.5" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive" onClick={(e) => { e.stopPropagation(); if(confirm('Delete this SOP?')) deleteMutation.mutate(wf.id); }}>
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </Button>
+            <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
+                {isLoading ? (
+                    <div className="flex justify-center py-20">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredWorkflows?.map((wf) => {
+                            const canManage = canManageWorkflow(wf);
+                            return (
+                                <Card 
+                                    key={wf.id} 
+                                    className="group hover:shadow-md transition-all cursor-pointer border-slate-200 hover:border-primary/30 flex flex-col relative"
+                                    onClick={() => setSelectedWorkflow(wf)}
+                                >
+                                    <CardHeader className="pb-3">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="w-10 h-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary group-hover:bg-primary/10 transition-colors">
+                                                <BookOpen className="w-5 h-5" />
                                             </div>
-                                        )}
-                                    </div>
-                                    <CardTitle className="text-lg group-hover:text-primary transition-colors flex items-center gap-2">
-                                        {wf.title}
-                                        {wf.is_public ? (
-                                            <span title="Public"><Globe className="w-3 h-3 text-blue-500" /></span>
-                                        ) : (
-                                            <span title="Private"><Lock className="w-3 h-3 text-slate-400" /></span>
-                                        )}
-                                    </CardTitle>
-                                    <CardDescription className="line-clamp-2 mt-1.5 min-h-[400px]">
-                                        {wf.description || "No description provided."}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="flex-1">
-                                    <div className="flex items-center text-[10px] font-bold text-slate-400 gap-2 uppercase tracking-tight">
-                                        <div className="w-5 h-5 rounded-full bg-slate-100 border border-white shadow-sm flex items-center justify-center shrink-0">
-                                            <UserIcon className="w-2.5 h-2.5 text-slate-500" />
+                                            {canManage && (
+                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={(e) => { e.stopPropagation(); handleEdit(wf); }}>
+                                                        <Edit3 className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive" onClick={(e) => { e.stopPropagation(); if(confirm('Delete this SOP?')) deleteMutation.mutate(wf.id); }}>
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </div>
+                                            )}
                                         </div>
-                                        <span className="truncate">{wf.owner?.full_name || wf.owner?.email}</span>
-                                    </div>
-                                </CardContent>
-                                <CardFooter className="pt-0 p-4 bg-slate-50/50 border-t border-slate-100">
-                                    <Button variant="ghost" className="w-full justify-between group text-xs font-bold text-slate-600 hover:bg-transparent hover:text-primary px-0 h-auto">
-                                        Read Procedure
-                                        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        );
-                    })}
+                                        <CardTitle className="text-lg group-hover:text-primary transition-colors flex items-center gap-2">
+                                            {wf.title}
+                                            {wf.is_public ? (
+                                                <span title="Public"><Globe className="w-3 h-3 text-blue-500" /></span>
+                                            ) : (
+                                                <span title="Private"><Lock className="w-3 h-3 text-slate-400" /></span>
+                                            )}
+                                        </CardTitle>
+                                        <CardDescription className="line-clamp-2 mt-1.5 min-h-[40px]">
+                                            {wf.description || "No description provided."}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="flex-1">
+                                        <div className="flex items-center text-[10px] font-bold text-slate-400 gap-2 uppercase tracking-tight">
+                                            <div className="w-5 h-5 rounded-full bg-slate-100 border border-white shadow-sm flex items-center justify-center shrink-0">
+                                                <UserIcon className="w-2.5 h-2.5 text-slate-500" />
+                                            </div>
+                                            <span className="truncate">{wf.owner?.full_name || wf.owner?.email}</span>
+                                        </div>
+                                    </CardContent>
+                                    <CardFooter className="pt-0 p-4 bg-slate-50/50 border-t border-slate-100">
+                                        <Button variant="ghost" className="w-full justify-between group text-xs font-bold text-slate-600 hover:bg-transparent hover:text-primary px-0 h-auto">
+                                            Read Procedure
+                                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            );
+                        })}
 
-                    <Card 
-                        onClick={handleCreate}
-                        className="border-dashed border-2 border-slate-200 shadow-none bg-slate-50/50 flex flex-col items-center justify-center p-6 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer min-h-[220px]"
-                    >
-                        <div className="h-12 w-12 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-4 text-slate-400">
-                            <FileText className="w-6 h-6" />
-                        </div>
-                        <h3 className="font-semibold text-slate-900">Draft New SOP</h3>
-                        <p className="text-sm text-slate-500 text-center mt-1">
-                            Document a new process for the library
-                        </p>
-                    </Card>
-                </div>
-            )}
+                        <Card 
+                            onClick={handleCreate}
+                            className="border-dashed border-2 border-slate-200 shadow-none bg-slate-50/50 flex flex-col items-center justify-center p-6 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer min-h-[220px]"
+                        >
+                            <div className="h-12 w-12 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-4 text-slate-400">
+                                <FileText className="w-6 h-6" />
+                            </div>
+                            <h3 className="font-semibold text-slate-900">Draft New SOP</h3>
+                            <p className="text-sm text-slate-500 text-center mt-1">
+                                Document a new process for the library
+                            </p>
+                        </Card>
+                    </div>
+                )}
+            </div>
 
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col p-0">

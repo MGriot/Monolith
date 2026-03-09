@@ -3,13 +3,26 @@
 This tutorial will guide you through your first steps in Monolith, from launching the application to creating your first project hierarchy.
 
 ## 1. Launch the Environment
-Ensure you have Docker and Docker Compose installed. In your terminal, run:
+
+Monolith supports two primary modes of operation via Docker Compose.
+
+### Production Mode
+For a stable, pre-built experience:
+```bash
+docker-compose up -d
+```
+
+### Development Mode (with Hot Reload)
+To see code changes in real-time without rebuilding containers:
 ```bash
 docker-compose up -d --build
 ```
+- **Frontend:** Runs Vite on `http://localhost:5173`. Any changes to `./frontend/src` will reflect instantly via Hot Module Replacement (HMR).
+- **Backend:** Runs Uvicorn on `http://localhost:8000`. Any changes to `./backend/app` will trigger an automatic server restart.
+- **Note for Windows Users:** Hot-reload uses polling to ensure file system events are captured reliably across the Docker volume boundary.
 
 ## 2. Log In
-Open your browser and navigate to `http://localhost:8080`.
+Open your browser and navigate to `http://localhost:5173` (Dev) or `http://localhost:8180` (Prod).
 Log in with the default administrator credentials:
 - **Email:** `admin@admin.com`
 - **Password:** `admin123` (Initial default)
