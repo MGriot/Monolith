@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import { RichDropdown } from '@/components/ui/rich-dropdown';
 import { Switch } from '@/components/ui/switch';
 import { AssigneeSelector } from '@/components/assignee-selector';
 import { useAuth } from '@/components/auth-provider';
+import { useTitle } from '@/components/layout';
 
 // Helper to parse indented text into hierarchical tasks
 const parseTasks = (text: string) => {
@@ -84,6 +85,7 @@ export default function TemplatesPage() {
   const { user } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ProjectTemplate | null>(null);
+  const { setActions } = useTitle();
   
   // Form state
   const [name, setName] = useState('');
@@ -93,6 +95,15 @@ export default function TemplatesPage() {
   const [allowedWorkTypes, setAllowedWorkTypes] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(false);
   const [sharedWithIds, setSharedWithIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setActions(
+      <Button size="sm" onClick={() => { resetForm(); setEditingTeam(null); setIsCreateDialogOpen(true); }} className="gap-2 shadow-lg shadow-primary/20 h-9">
+        <Plus className="w-4 h-4" /> Create Template
+      </Button>
+    );
+    return () => setActions(null);
+  }, [setActions]);
 
   // Queries
   const { data: templates, isLoading } = useQuery({
@@ -191,21 +202,6 @@ export default function TemplatesPage() {
 
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-      <div className="p-6 bg-white border-b border-slate-200">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Copy className="w-6 h-6 text-primary" />
-              Project Templates
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">Manage reusable project structures and task lists.</p>
-          </div>
-          <Button size="sm" onClick={() => { resetForm(); setEditingTemplate(null); setIsCreateDialogOpen(true); }} className="gap-2 shadow-lg shadow-primary/20 h-9">
-            <Plus className="w-4 h-4" /> Create Template
-          </Button>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         {isLoading ? (
           <div className="flex justify-center py-20">

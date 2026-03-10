@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -51,6 +51,7 @@ import { cn, formatPercent } from '@/lib/utils';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 import DataExportDialog from '@/components/data-export-dialog';
 import type { Project, Task } from '@/types';
+import { useTitle } from '@/components/layout';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -62,6 +63,7 @@ export default function ProjectDetailPage() {
   const [parentTaskId, setParentTaskId] = useState<string | null>(null);
   const [initialStatus, setInitialStatus] = useState<string>("Todo");
   const [activeTab, setActiveTab] = useState<string>("overview");
+  const { setTitle, setActions } = useTitle();
 
   const { data: project, isLoading: isProjectLoading, error: projectError } = useQuery({
     queryKey: ['project', id],
@@ -79,6 +81,73 @@ export default function ProjectDetailPage() {
       return response.data as Task[];
     },
   });
+
+  const archiveProjectMutation = useMutation({
+    mutationFn: async () => {
+      return api.post(`/projects/${id}/archive`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      navigate('/projects');
+      toast.success("Project archived successfully");
+    },
+  });
+
+  useEffect(() => {
+    if (project) {
+      setTitle(project.name);
+      setActions(
+        <div className="flex items-center gap-3">
+          <Badge variant="secondary" className="capitalize px-2 py-0 h-4 text-[9px] font-black uppercase bg-slate-100 text-slate-600 border-none">{project.status}</Badge>
+          <div className="flex items-center gap-0.5 mr-2">
+            {!project.is_archived && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-400 hover:text-amber-600 transition-colors"
+                onClick={() => {
+                  if (confirm("Archive this project?")) {
+                    archiveProjectMutation.mutate();
+                  }
+                }}
+                disabled={archiveProjectMutation.isPending}
+                title="Archive Project"
+              >
+                {archiveProjectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Archive className="w-4 h-4" />}
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-8 w-8 text-slate-400 hover:text-primary transition-colors",
+                activeTab === 'settings' && "text-primary"
+              )}
+              onClick={() => setActiveTab('settings')}
+              title="Project Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setIsExportDialogOpen(true)} 
+            className="h-9 gap-2 text-[10px] font-black uppercase"
+          >
+            <Download className="w-3.5 h-3.5" /> Export
+          </Button>
+          <Button onClick={() => handleAddTask()} size="sm" className="gap-2 shadow-lg shadow-primary/20 h-9">
+            <Plus className="w-4 h-4" /> Add Task
+          </Button>
+        </div>
+      );
+    }
+    return () => {
+      setTitle(null);
+      setActions(null);
+    };
+  }, [project, setTitle, setActions, activeTab, archiveProjectMutation.isPending]);
 
   // Recursive find to handle deep WBS hierarchy
   const findTaskRecursive = (taskList: Task[], taskId: string): Task | null => {
@@ -200,17 +269,6 @@ export default function ProjectDetailPage() {
     },
   });
 
-  const archiveProjectMutation = useMutation({
-    mutationFn: async () => {
-      return api.post(`/projects/${id}/archive`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      navigate('/projects');
-      toast.success("Project archived successfully");
-    },
-  });
-
   const handleTaskMove = (taskId: string, newStatus: string) => {
     moveTaskMutation.mutate({ taskId, newStatus });
   };
@@ -302,133 +360,6 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-      {/* Project Header */}
-      <div className="p-6 bg-white border-b border-slate-200">
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-          <div className="space-y-4 flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-                <FolderKanban className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{project.name}</h1>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <Badge variant="secondary" className="capitalize px-2 py-0 h-4 text-[9px] font-black uppercase bg-slate-100 text-slate-600 border-none">{project.status}</Badge>
-                  <div className="flex items-center gap-0.5">
-                    {!project.is_archived && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-5 w-5 text-slate-400 hover:text-amber-600 transition-colors"
-                            onClick={() => {
-                                if (confirm("Archive this project?")) {
-                                    archiveProjectMutation.mutate();
-                                }
-                            }}
-                            disabled={archiveProjectMutation.isPending}
-                            title="Archive Project"
-                        >
-                            {archiveProjectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Archive className="w-3 h-3" />}
-                        </Button>
-                    )}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                            "h-5 w-5 text-slate-400 hover:text-primary transition-colors",
-                            activeTab === 'settings' && "text-primary"
-                        )}
-                        onClick={() => setActiveTab('settings')}
-                        title="Project Settings"
-                    >
-                        <Settings className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-md bg-blue-100 flex items-center justify-center shrink-0">
-                  <FolderKanban className="w-3.5 h-3.5 text-blue-600" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <Label className="text-[8px] uppercase text-slate-400 font-black leading-none mb-1">Topics</Label>
-                  <div className="flex flex-wrap gap-1">
-                    {project.topics && project.topics.length > 0 ? project.topics.map(t => (
-                      <Badge key={t.id} variant="secondary" className="text-[9px] px-1 py-0 h-4 bg-white border-slate-200" style={{ color: t.color }}>{t.name}</Badge>
-                    )) : (
-                      <p className="text-xs font-bold text-slate-700 truncate">General</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-md bg-purple-100 flex items-center justify-center shrink-0">
-                  <ListIcon className="w-3.5 h-3.5 text-purple-600" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <Label className="text-[8px] uppercase text-slate-400 font-black leading-none mb-1">Types</Label>
-                  <div className="flex flex-wrap gap-1">
-                    {project.types && project.types.length > 0 ? project.types.map(t => (
-                      <Badge key={t.id} variant="outline" className="text-[9px] px-1 py-0 h-4 bg-white border-slate-200">{t.name}</Badge>
-                    )) : (
-                      <p className="text-xs font-bold text-slate-700 truncate">Standard</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
-                  <CalendarIcon className="w-3.5 h-3.5 text-emerald-600" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <Label className="text-[8px] uppercase text-slate-400 font-black leading-none mb-1">Start</Label>
-                  <p className="text-xs font-bold text-slate-700 truncate">
-                    {project.start_date ? new Date(project.start_date).toLocaleDateString() : '-'}
-                  </p>
-                </div>
-              </div>
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
-                  <CalendarIcon className="w-3.5 h-3.5 text-amber-600" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <Label className="text-[8px] uppercase text-slate-400 font-black leading-none mb-1">Due</Label>
-                  <p className="text-xs font-bold text-amber-700 truncate">
-                    {project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-row lg:flex-col items-center lg:items-end gap-4 shrink-0">
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setIsExportDialogOpen(true)} 
-                className="h-9 gap-2 text-[10px] font-black uppercase"
-              >
-                <Download className="w-3.5 h-3.5" /> Export
-              </Button>
-              <Button onClick={() => handleAddTask()} className="gap-2 shadow-lg shadow-primary/20 h-9">
-                <Plus className="w-4 h-4" /> Add Task
-              </Button>
-            </div>
-            <div className="w-48 space-y-1.5">
-              <div className="flex justify-between text-[10px] font-black uppercase tracking-wider">
-                <span className="text-slate-400">Progress</span>
-                <span className="text-primary">{formatPercent(project.progress_percent)}%</span>
-              </div>
-              <Progress value={project.progress_percent} className="h-1.5" />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 bg-white">
         <div className="px-6 py-2 border-b border-slate-100 bg-white">
@@ -455,6 +386,62 @@ export default function ProjectDetailPage() {
         </div>
 
         <TabsContent value="overview" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30 space-y-6">
+          {/* Metadata Card */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="shadow-sm border-slate-200">
+                <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-[10px] font-black uppercase text-slate-400">Topics</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                    <div className="flex flex-wrap gap-1">
+                        {project.topics && project.topics.length > 0 ? project.topics.map(t => (
+                            <Badge key={t.id} variant="secondary" className="text-[9px] px-1 py-0 h-4 bg-slate-100 text-slate-600 border-none" style={{ color: t.color }}>{t.name}</Badge>
+                        )) : (
+                            <p className="text-xs font-bold text-slate-700">General</p>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+            <Card className="shadow-sm border-slate-200">
+                <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-[10px] font-black uppercase text-slate-400">Work Types</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                    <div className="flex flex-wrap gap-1">
+                        {project.types && project.types.length > 0 ? project.types.map(t => (
+                            <Badge key={t.id} variant="outline" className="text-[9px] px-1 py-0 h-4 border-slate-200 text-slate-500">{t.name}</Badge>
+                        )) : (
+                            <p className="text-xs font-bold text-slate-700">Standard</p>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+            <Card className="shadow-sm border-slate-200">
+                <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-[10px] font-black uppercase text-slate-400">Timeline</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                    <div className="flex flex-col gap-1">
+                        <p className="text-[10px] text-slate-500 font-medium">Start: {project.start_date ? new Date(project.start_date).toLocaleDateString() : '-'}</p>
+                        <p className="text-[10px] text-amber-600 font-bold">Due: {project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}</p>
+                    </div>
+                </CardContent>
+            </Card>
+            <Card className="shadow-sm border-slate-200">
+                <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-[10px] font-black uppercase text-slate-400">Progress</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                    <div className="space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-bold text-primary">
+                            <span>{formatPercent(project.progress_percent)}%</span>
+                        </div>
+                        <Progress value={project.progress_percent} className="h-1.5" />
+                    </div>
+                </CardContent>
+            </Card>
+          </div>
+
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
             <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">

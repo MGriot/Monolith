@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ import {
 import TaskForm, { type TaskFormValues } from '@/components/task-form';
 import { useNavigate } from 'react-router-dom';
 import type { Task } from '@/types';
+import { useTitle } from '@/components/layout';
 
 export default function MyTasksPage() {
   const queryClient = useQueryClient();
@@ -39,6 +40,37 @@ export default function MyTasksPage() {
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const { setActions } = useTitle();
+
+  useEffect(() => {
+    setActions(
+      <div className="flex items-center gap-4">
+        <Button variant="outline" size="sm" onClick={() => setIsExportDialogOpen(true)} className="gap-2 h-9">
+          <Download className="w-4 h-4" /> Export
+        </Button>
+
+        <div className="bg-slate-100 p-1 rounded-lg flex items-center h-9">
+          <Button 
+            variant={view === 'kanban' ? 'secondary' : 'ghost'} 
+            size="sm" 
+            className={view === 'kanban' ? 'bg-white shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-slate-500'}
+            onClick={() => setView('kanban')}
+          >
+            <Trello className="w-3.5 h-3.5" /> Kanban
+          </Button>
+          <Button 
+            variant={view === 'list' ? 'secondary' : 'ghost'} 
+            size="sm" 
+            className={view === 'list' ? 'bg-white shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-slate-500'}
+            onClick={() => setView('list')}
+          >
+            <ListIcon className="w-3.5 h-3.5" /> List
+          </Button>
+        </div>
+      </div>
+    );
+    return () => setActions(null);
+  }, [setActions, view]);
 
   const { data: tasks, isLoading, isError } = useQuery({
     queryKey: ['tasks', 'assigned'],
@@ -147,43 +179,6 @@ export default function MyTasksPage() {
 
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-      <div className="p-6 bg-white border-b border-slate-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <CheckSquare className="w-6 h-6 text-primary" />
-              My Tasks
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">Focus on what's assigned to you across all projects.</p>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => setIsExportDialogOpen(true)} className="gap-2 h-9">
-              <Download className="w-4 h-4" /> Export
-            </Button>
-
-            <div className="bg-slate-100 p-1 rounded-lg flex items-center h-9">
-              <Button 
-                variant={view === 'kanban' ? 'secondary' : 'ghost'} 
-                size="sm" 
-                className={view === 'kanban' ? 'bg-white shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-slate-500'}
-                onClick={() => setView('kanban')}
-              >
-                <Trello className="w-3.5 h-3.5" /> Kanban
-              </Button>
-              <Button 
-                variant={view === 'list' ? 'secondary' : 'ghost'} 
-                size="sm" 
-                className={view === 'list' ? 'bg-white shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-slate-500'}
-                onClick={() => setView('list')}
-              >
-                <ListIcon className="w-3.5 h-3.5" /> List
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-auto p-6 space-y-6">
         <div className="min-h-[500px]">
           {view === 'kanban' ? (

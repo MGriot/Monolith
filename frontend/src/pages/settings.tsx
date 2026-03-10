@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { User, Lock, Save, Shield, Settings } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { useTitle } from '@/components/layout';
 
 interface ProfileFormValues {
   full_name: string;
@@ -24,6 +25,12 @@ export default function SettingsPage() {
   const { user, token } = useAuth();
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  const { setTitle } = useTitle();
+
+  useEffect(() => {
+    setTitle("Settings");
+    return () => setTitle(null);
+  }, [setTitle]);
 
   const profileForm = useForm<ProfileFormValues>({
     defaultValues: {
@@ -71,18 +78,6 @@ export default function SettingsPage() {
 
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-      <div className="p-6 bg-white border-b border-slate-200">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Settings className="w-6 h-6 text-primary" />
-              Settings
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">Manage your account settings and preferences.</p>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1">

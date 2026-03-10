@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '@/components/auth-provider';
@@ -39,11 +39,13 @@ import { Switch } from '@/components/ui/switch';
 import { AssigneeSelector } from '@/components/assignee-selector';
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
+import { useTitle } from '@/components/layout';
 
 export default function WorkflowsPage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
+    const { setTitle, setActions } = useTitle();
     
     // View state
     const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
@@ -51,11 +53,58 @@ export default function WorkflowsPage() {
     const [editingWorkflow, setEditingWorkflow] = useState<Workflow | null>(null);
 
     // Form state
-    const [title, setTitle] = useState('');
+    const [title, setTitleState] = useState('');
     const [description, setDescription] = useState('');
     const [content, setContent] = useState('');
     const [isPublic, setIsPublic] = useState(false);
     const [sharedWithIds, setSharedWithIds] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (selectedWorkflow) {
+            setTitle(selectedWorkflow.title);
+            setActions(
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedWorkflow(null)} className="h-8 w-8 text-slate-500 hover:text-slate-900">
+                        <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <div className="h-6 w-[1px] bg-slate-200 mx-1" />
+                    {canManageWorkflow(selectedWorkflow) && (
+                        <>
+                            <Button variant="outline" size="sm" onClick={() => handleEdit(selectedWorkflow)} className="gap-2 h-9">
+                                <Edit3 className="w-3.5 h-3.5" /> Edit
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => { if(confirm('Delete this workflow?')) deleteMutation.mutate(selectedWorkflow.id) }} className="h-9 w-9 text-slate-400 hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        </>
+                    )}
+                </div>
+            );
+        } else {
+            setTitle("Workflows");
+            setActions(
+                <div className="flex items-center gap-3">
+                    <div className="relative w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input 
+                            placeholder="Search procedures..." 
+                            className="pl-9 h-10 border-slate-200 bg-white"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <Button onClick={handleCreate} className="gap-2 shadow-lg shadow-primary/20 h-10">
+                        <Plus className="w-4 h-4" />
+                        Create SOP
+                    </Button>
+                </div>
+            );
+        }
+        return () => {
+            setTitle(null);
+            setActions(null);
+        };
+    }, [selectedWorkflow, setTitle, setActions, searchTerm]);
 
     const { data: workflows, isLoading } = useQuery({
         queryKey: ['workflows'],
@@ -136,7 +185,7 @@ export default function WorkflowsPage() {
 
     const handleEdit = (wf: Workflow) => {
         setEditingWorkflow(wf);
-        setTitle(wf.title);
+        setTitleState(wf.title);
         setDescription(wf.description || '');
         setContent(wf.content);
         setIsPublic(wf.is_public || false);
@@ -146,7 +195,7 @@ export default function WorkflowsPage() {
 
     const handleCreate = () => {
         setEditingWorkflow(null);
-        setTitle('');
+        setTitleState('');
         setDescription('');
         setContent('');
         setIsPublic(false);
@@ -187,39 +236,6 @@ export default function WorkflowsPage() {
     if (selectedWorkflow) {
         return (
             <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-                <div className="p-6 bg-white border-b border-slate-200">
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                            <Button variant="ghost" size="icon" onClick={() => setSelectedWorkflow(null)} className="h-8 w-8 text-slate-500 hover:text-slate-900">
-                                <ChevronLeft className="w-4 h-4" />
-                            </Button>
-                            <div>
-                                <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                                    {selectedWorkflow.title}
-                                    {selectedWorkflow.is_public ? (
-                                        <span title="Public"><Globe className="w-3.5 h-3.5 text-blue-500" /></span>
-                                    ) : (
-                                        <span title="Private"><Lock className="w-3.5 h-3.5 text-slate-400" /></span>
-                                    )}
-                                </h1>
-                                <p className="text-xs text-slate-500 font-medium">Standard Operating Procedure • Updated {format(parseISO(selectedWorkflow.updated_at), 'MMM d, yyyy')}</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-2">
-                            {canManageWorkflow(selectedWorkflow) && (
-                                <>
-                                    <Button variant="outline" size="sm" onClick={() => handleEdit(selectedWorkflow)} className="gap-2">
-                                        <Edit3 className="w-3.5 h-3.5" /> Edit
-                                    </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => { if(confirm('Delete this workflow?')) deleteMutation.mutate(selectedWorkflow.id) }} className="h-9 w-9 text-slate-400 hover:text-destructive">
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
                 <div className="flex-1 overflow-auto p-8">
                     <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="p-8 lg:p-12">
@@ -253,35 +269,6 @@ export default function WorkflowsPage() {
 
     return (
         <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-            <div className="p-6 bg-white border-b border-slate-200">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                            <BookOpen className="w-6 h-6 text-primary" />
-                            Workflows
-                        </h1>
-                        <p className="text-sm text-slate-500 mt-1">
-                            Standard Operating Procedures (SOPs) and best practices.
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="relative w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <Input 
-                                placeholder="Search procedures..." 
-                                className="pl-9 h-10 border-slate-200 bg-white"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <Button onClick={handleCreate} className="gap-2 shadow-lg shadow-primary/20 h-10">
-                            <Plus className="w-4 h-4" />
-                            Create SOP
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
             <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
                 {isLoading ? (
                     <div className="flex justify-center py-20">
@@ -372,7 +359,7 @@ export default function WorkflowsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-6">
                             <div className="space-y-2">
                                 <Label htmlFor="wf-title" className="text-xs font-bold uppercase text-slate-500">Title</Label>
-                                <Input id="wf-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. CI/CD Pipeline Setup" />
+                                <Input id="wf-title" value={title} onChange={(e) => setTitleState(e.target.value)} placeholder="e.g. CI/CD Pipeline Setup" />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="wf-desc" className="text-xs font-bold uppercase text-slate-500">Short Description</Label>

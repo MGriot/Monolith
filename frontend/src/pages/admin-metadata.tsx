@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,11 @@ import { Plus, Trash2, Edit2, Tag, Briefcase, Loader2, Globe, Lock, Database } f
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Topic, WorkType } from '@/types';
+import { useTitle } from '@/components/layout';
 
 export default function AdminMetadataPage() {
   const queryClient = useQueryClient();
+  const { setTitle } = useTitle();
   
   // State
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
@@ -27,6 +29,11 @@ export default function AdminMetadataPage() {
   const [newTopicColor, setNewTopicColor] = useState('#64748b');
   const [newTypeName, setNewTypeName] = useState('');
   const [newTypeColor, setNewTypeColor] = useState('#64748b');
+
+  useEffect(() => {
+    setTitle("Taxonomy Management");
+    return () => setTitle(null);
+  }, [setTitle]);
 
   // Queries
   const { data: topics, isLoading: topicsLoading } = useQuery<Topic[]>({
@@ -156,18 +163,6 @@ export default function AdminMetadataPage() {
 
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-      <div className="p-6 bg-white border-b border-slate-200">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Database className="w-6 h-6 text-primary" />
-              Taxonomy Management
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">Configure global and scoped Topics and Work Types for projects and tasks.</p>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         <Tabs defaultValue="topics" className="w-full">
           <TabsList className="mb-8">

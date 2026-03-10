@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
@@ -30,12 +30,28 @@ import { format, parseISO } from 'date-fns';
 import type { Project as ProjectType, Task as TaskType } from '@/types';
 import { toast } from 'sonner';
 import DataExportDialog from '@/components/data-export-dialog';
+import { useTitle } from '@/components/layout';
 
 export default function ArchivePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'projects' | 'tasks'>('projects');
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const { setActions } = useTitle();
+
+  useEffect(() => {
+    setActions(
+      <div className="flex items-center gap-3">
+        <Button variant="outline" size="sm" onClick={() => setIsExportDialogOpen(true)} className="gap-2 h-9">
+          <Download className="w-4 h-4" /> Export {activeTab === 'projects' ? 'Projects' : 'Tasks'}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => navigate('/projects')} className="h-9">
+          Back to Dashboard
+        </Button>
+      </div>
+    );
+    return () => setActions(null);
+  }, [setActions, activeTab, navigate]);
 
   const { data: projects, isLoading: isLoadingProjects, isError: isErrorProjects } = useQuery({
     queryKey: ['projects', 'archived'],
@@ -103,26 +119,6 @@ export default function ArchivePage() {
 
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-      <div className="p-6 bg-white border-b border-slate-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Archive className="w-6 h-6 text-primary" />
-              Archive
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">View and restore archived projects and individual tasks.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => setIsExportDialogOpen(true)} className="gap-2 h-9">
-              <Download className="w-4 h-4" /> Export {activeTab === 'projects' ? 'Projects' : 'Tasks'}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/projects')} className="h-9">
-              Back to Dashboard
-            </Button>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full">
           <TabsList className="grid w-[400px] grid-cols-2 mb-4">
