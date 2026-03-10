@@ -104,18 +104,6 @@ export default function DashboardPage() {
 
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-      <div className="p-6 bg-white border-b border-slate-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <LayoutDashboard className="w-6 h-6 text-primary" />
-              Overview
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">Welcome back! Here's what's happening in your projects.</p>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -46,6 +46,7 @@ import { toast } from 'sonner';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 import DataExportDialog from '@/components/data-export-dialog';
 import type { Project as ProjectType, ProjectTemplate } from '@/types';
+import { useTitle } from '@/components/layout';
 
 export default function ProjectsListPage() {
   const navigate = useNavigate();
@@ -56,6 +57,21 @@ export default function ProjectsListPage() {
   const [creationStep, setCreationStep] = useState<'type' | 'form'>('type');
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<ProjectType | null>(null);
+  const { setActions } = useTitle();
+
+  useEffect(() => {
+    setActions(
+      <div className="flex items-center gap-3">
+        <Button variant="outline" size="sm" onClick={() => setIsExportDialogOpen(true)} className="gap-2 h-9">
+            <Download className="w-4 h-4" /> Export
+        </Button>
+        <Button size="sm" onClick={() => setIsCreateDialogOpen(true)} className="gap-2 shadow-lg shadow-primary/20 h-9">
+            <Plus className="w-4 h-4" /> New Project
+        </Button>
+      </div>
+    );
+    return () => setActions(null);
+  }, [setActions]);
 
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
@@ -171,26 +187,6 @@ export default function ProjectsListPage() {
 
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-      <div className="p-6 bg-white border-b border-slate-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <FolderKanban className="w-6 h-6 text-primary" />
-              Projects
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">Manage and track all your active projects.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => setIsExportDialogOpen(true)} className="gap-2 h-9">
-                <Download className="w-4 h-4" /> Export
-            </Button>
-            <Button size="sm" onClick={() => setIsCreateDialogOpen(true)} className="gap-2 shadow-lg shadow-primary/20 h-9">
-                <Plus className="w-4 h-4" /> New Project
-            </Button>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <Table>

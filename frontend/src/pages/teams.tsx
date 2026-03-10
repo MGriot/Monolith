@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '@/components/auth-provider';
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import type { User } from '@/types';
 import { Switch } from '@/components/ui/switch';
 import { AssigneeSelector } from '@/components/assignee-selector';
+import { useTitle } from '@/components/layout';
 
 interface Team {
   id: string;
@@ -39,6 +40,7 @@ export default function TeamsPage() {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const { setActions } = useTitle();
   
   // Form state
   const [name, setName] = useState('');
@@ -46,6 +48,15 @@ export default function TeamsPage() {
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(false);
   const [sharedWithIds, setSharedWithIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setActions(
+      <Button size="sm" onClick={() => { resetForm(); setEditingTeam(null); setIsDialogOpen(true); }} className="gap-2 shadow-lg shadow-primary/20 h-9">
+        <Plus className="w-4 h-4" /> Create Team
+      </Button>
+    );
+    return () => setActions(null);
+  }, [setActions]);
 
   const { data: teams, isLoading } = useQuery({
     queryKey: ['teams'],
@@ -147,21 +158,6 @@ export default function TeamsPage() {
 
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-      <div className="p-6 bg-white border-b border-slate-200">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Users className="w-6 h-6 text-primary" />
-              Teams
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">Define organizational units and group members.</p>
-          </div>
-          <Button size="sm" onClick={() => { resetForm(); setEditingTeam(null); setIsDialogOpen(true); }} className="gap-2 shadow-lg shadow-primary/20 h-9">
-            <Plus className="w-4 h-4" /> Create Team
-          </Button>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         {isLoading ? (
           <div className="flex justify-center py-20">

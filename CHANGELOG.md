@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.0] - 2026-03-10
+
+### Added
+- **Dynamic Header System**: Implemented `TitleContext` and `useTitle` hook to manage page titles, icons, and actions centrally from the main Layout.
+- **Unified Navigation Header**: Page titles and icons are now displayed in the primary persistent header, aligned with user profile info, providing a cleaner and more efficient use of vertical space.
+
+### Changed
+- **Sub-Header Removal**: Eliminated redundant white "blanc banners" from all primary pages (Dashboard, Projects, My Tasks, etc.), reducing visual clutter and streamlining the interface.
+- **Action Relocation**: Moved page-specific buttons (e.g., "Export," "New Project," "Create SOP") from local page headers to the global application header.
+- **Project Detail Metadata**: Reorganized project-level metadata (Topics, Types, Timeline, Progress) into a high-visibility card grid within the Overview tab.
+
+### Fixed
+- **Archive Page Restoration**: Fixed a critical "blank page" error on the Archive route caused by a missing `useEffect` import after the layout refactoring.
+
 ## [2.8.0] - 2026-03-09
 
 ### Added

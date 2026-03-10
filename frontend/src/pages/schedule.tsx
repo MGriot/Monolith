@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/popover";
 import { cn, formatPercent } from '@/lib/utils';
 import TaskCreateDialog from '@/components/task-create-dialog';
+import { useTitle } from '@/components/layout';
 
 // --- Calendar View Component ---
 
@@ -382,20 +383,15 @@ function RoadmapView() {
 // --- Main Schedule Page ---
 
 export default function SchedulePage() {
+    const { setTitle } = useTitle();
+
+    useEffect(() => {
+        setTitle("Master Schedule");
+        return () => setTitle(null);
+    }, [setTitle]);
+
     return (
         <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-            <div className="p-6 bg-white border-b border-slate-200">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                            <CalendarIcon className="w-6 h-6 text-primary" />
-                            Master Schedule
-                        </h1>
-                        <p className="text-sm text-slate-500 mt-1">Unified view of project roadmaps and discrete deadlines.</p>
-                    </div>
-                </div>
-            </div>
-
             <div className="flex-1 overflow-auto p-6 space-y-16 pb-12">
                 <section>
                     <div className="flex items-center gap-2 mb-4">

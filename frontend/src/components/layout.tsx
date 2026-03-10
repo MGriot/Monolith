@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, createContext, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './auth-provider';
 import {
@@ -26,6 +26,23 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+interface TitleContextType {
+  title: string | null;
+  setTitle: (title: string | null) => void;
+  icon: React.ElementType | null;
+  setIcon: (icon: React.ElementType | null) => void;
+  actions: React.ReactNode | null;
+  setActions: (actions: React.ReactNode | null) => void;
+}
+
+const TitleContext = createContext<TitleContextType | undefined>(undefined);
+
+export const useTitle = () => {
+  const context = useContext(TitleContext);
+  if (!context) throw new Error('useTitle must be used within a TitleProvider');
+  return context;
+};
+
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -35,6 +52,9 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [isTaskCreateOpen, setIsTaskCreateOpen] = useState(false);
+  const [title, setTitle] = useState<string | null>(null);
+  const [icon, setIcon] = useState<React.ElementType | null>(null);
+  const [actions, setActions] = useState<React.ReactNode | null>(null);
 
   const filteredNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
@@ -68,8 +88,11 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const pageInfo = getPageInfo();
+  const displayTitle = title || pageInfo.label;
+  const DisplayIcon = icon || pageInfo.icon;
 
   return (
+    <TitleContext.Provider value={{ title, setTitle, icon, setIcon, actions, setActions }}>
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0">
@@ -125,9 +148,13 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 flex-shrink-0 z-10 shadow-sm shadow-slate-100">
-          <div className="flex-1" /> {/* Spacer where the title was */}
+          <div className="flex items-center gap-3">
+             {DisplayIcon && <DisplayIcon className="w-5 h-5 text-primary" />}
+             <h1 className="text-xl font-bold text-slate-900 tracking-tight">{displayTitle}</h1>
+          </div>
 
           <div className="flex items-center gap-3">
+            {actions}
             <Popover>
               <PopoverTrigger asChild>
                 <Button size="icon" className="h-8 w-8 rounded-full shadow-md shadow-primary/20">
@@ -185,5 +212,6 @@ export default function Layout({ children }: LayoutProps) {
       </div>
       <TaskCreateDialog open={isTaskCreateOpen} onOpenChange={setIsTaskCreateOpen} />
     </div>
+    </TitleContext.Provider>
   );
-  }
+}
