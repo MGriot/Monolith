@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 from app.core.enums import IdeaStatus
 from app.schemas.user import User as UserSchema
-from app.schemas.idea_comment import IdeaComment
+from app.schemas.comment import CommentResponse
 
 class IdeaBase(BaseModel):
     title: Optional[str] = None
@@ -30,5 +30,5 @@ class IdeaInDBBase(IdeaBase):
 
 class Idea(IdeaInDBBase):
     author: Optional[UserSchema] = None
-    comments: List[IdeaComment] = []
+    threaded_comments: List[CommentResponse] = []
 

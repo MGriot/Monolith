@@ -29,5 +29,4 @@ class Idea(Base):
     project = relationship("Project", back_populates="ideas")
     author = relationship("User", foreign_keys=[author_id])
     converted_task = relationship("Task", foreign_keys=[converted_task_id])
-    comments = relationship("IdeaComment", back_populates="idea", cascade="all, delete-orphan")
 
