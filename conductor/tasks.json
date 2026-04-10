@@ -25,5 +25,41 @@
     "target_files": ["backend/tests/test_notifications.py"],
     "verification_method": "pytest backend/tests/test_notifications.py",
     "priority": 1
+  },
+  {
+    "id": "NOTIF-04",
+    "title": "Create SummaryGenerator utility",
+    "description": "Implement SummaryGenerator in backend/app/core/summaries.py to aggregate data for weekly summaries.",
+    "status": "in_progress",
+    "target_files": ["backend/app/core/summaries.py"],
+    "verification_method": "python -c \"from app.core.summaries import SummaryGenerator; assert SummaryGenerator\"",
+    "priority": 2
+  },
+  {
+    "id": "NOTIF-05",
+    "title": "Implement generate_weekly_summary for Standard Users",
+    "description": "Add logic to aggregate tasks due/overdue for individual users.",
+    "status": "todo",
+    "target_files": ["backend/app/core/summaries.py"],
+    "verification_method": "pytest backend/tests/test_summaries.py",
+    "priority": 2
+  },
+  {
+    "id": "NOTIF-06",
+    "title": "Implement generate_weekly_summary for Owners",
+    "description": "Add logic for team activity and project health summaries for owners.",
+    "status": "todo",
+    "target_files": ["backend/app/core/summaries.py"],
+    "verification_method": "pytest backend/tests/test_summaries.py",
+    "priority": 2
+  },
+  {
+    "id": "NOTIF-07",
+    "title": "Integrate weekly summary scheduler",
+    "description": "Setup a simple loop or APScheduler task to dispatch summaries on Mondays.",
+    "status": "todo",
+    "target_files": ["backend/app/main.py"],
+    "verification_method": "Check logs for scheduled task registration",
+    "priority": 2
   }
 ]
