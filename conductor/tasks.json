@@ -84,7 +84,7 @@
     "id": "REAL-03",
     "title": "Setup WebSocket Connection Manager",
     "description": "Implement a manager class in backend to handle active WebSocket connections by user ID.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/app/core/websockets.py"],
     "verification_method": "python -c \"from app.core.websockets import ConnectionManager; m = ConnectionManager(); assert m\"",
     "priority": 1
