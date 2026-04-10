@@ -12,7 +12,7 @@
     "id": "NOTIF-02",
     "title": "Implement send_email method in EmailService",
     "description": "Replace print stub with functional send_email method using smtplib.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/app/core/notifications.py"],
     "verification_method": "pytest backend/tests/test_notifications.py",
     "priority": 1
@@ -21,7 +21,7 @@
     "id": "NOTIF-03",
     "title": "Add unit tests for EmailService with mock SMTP",
     "description": "Create backend/tests/test_notifications.py and add unit tests using mock SMTP server.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/tests/test_notifications.py"],
     "verification_method": "pytest backend/tests/test_notifications.py",
     "priority": 1

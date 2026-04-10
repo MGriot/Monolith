@@ -1,6 +1,7 @@
 import logging
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from typing import List, Optional
 from app.core.config import settings
 
@@ -14,13 +15,20 @@ class EmailService:
         self.smtp_password = settings.SMTP_PASSWORD
         self.from_email = settings.EMAILS_FROM_EMAIL
 
-    def send_email(self, recipient: str, subject: str, body: str):
+    def send_email(self, recipient: str, subject: str, body: str, html_body: Optional[str] = None):
         """
         Synchronously send an email notification using SMTP.
+        Supports both text and optional HTML content.
         """
         logger.info(f"Preparing email to {recipient}")
 
-        msg = MIMEText(body)
+        if html_body:
+            msg = MIMEMultipart("alternative")
+            msg.attach(MIMEText(body, "plain"))
+            msg.attach(MIMEText(html_body, "html"))
+        else:
+            msg = MIMEText(body)
+
         msg["Subject"] = subject
         msg["From"] = self.from_email
         msg["To"] = recipient
@@ -34,7 +42,6 @@ class EmailService:
             logger.info(f"Email sent successfully to {recipient}")
         except Exception as e:
             logger.error(f"Failed to send email to {recipient}: {e}")
-            # Re-raise or handle as per project policy. For now, we log and proceed.
             raise e
 
 email_service = EmailService()
