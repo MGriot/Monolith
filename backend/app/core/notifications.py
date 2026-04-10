@@ -46,7 +46,7 @@ class EmailService:
 
 email_service = EmailService()
 
-async def send_email_notification(recipient: str, subject: str, body: str):
+async def send_email_notification(recipient: str, subject: str, body: str, html_body: Optional[str] = None):
     """
     Asynchronously send an email notification.
     Uses the EmailService for actual delivery.
@@ -54,7 +54,7 @@ async def send_email_notification(recipient: str, subject: str, body: str):
     # In a production environment, this should be offloaded to a background task (e.g., Celery or FastAPI BackgroundTasks)
     # For now, we call the synchronous service method.
     try:
-        email_service.send_email(recipient, subject, body)
+        email_service.send_email(recipient, subject, body, html_body=html_body)
     except Exception:
         # We don't want notification failures to crash the main request flow if called inline
         pass

@@ -22,6 +22,12 @@
 
 ## Milestone 4: Advanced Logic & AI
 **Goal:** Smart features and external connectivity.
-- [ ] Dependency Logic (Blocking/Unblocking notifications).
-- [ ] MCP Module Integration (AI Agent access).
-- [ ] Email Notifications.
+- [x] Dependency Logic (Blocking/Unblocking notifications).
+- [x] MCP Module Integration (AI Agent access).
+- [x] Email Notifications (Weekly Summaries).
+
+## Milestone 5: Real-time & High Signal UX
+**Goal:** Improve collaboration and data integrity.
+- [ ] Real-time Notifications (WebSockets).
+- [ ] Universal Threaded Activity (Idea migration).
+- [ ] Mobile Layout Optimizations.
