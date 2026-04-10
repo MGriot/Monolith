@@ -29,11 +29,13 @@ async def on_startup():
     from app.db.session import engine, Base
     import app.models  # Ensure all models are loaded
     from app.db.init_db import seed_users
+    from app.core.scheduler import start_scheduler
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
     await seed_users()
+    start_scheduler()
 
 @app.get("/api/health")
 async def health_check():

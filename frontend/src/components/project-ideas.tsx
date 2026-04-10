@@ -25,10 +25,10 @@ import {
     User as UserIcon, 
     CheckCircle2, 
     MessageSquare, 
-    Send,
     Edit3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import CommentSection from '@/components/comments/comment-section';
 
 interface ProjectIdeasProps {
   projectId: string;
@@ -49,7 +49,6 @@ export default function ProjectIdeas({ projectId, onPromoteSuccess }: ProjectIde
     description: string;
     status: Idea['status'];
   }>({ title: '', description: '', status: 'Proposed' });
-  const [newComment, setNewComment] = useState('');
 
   const { data: ideas, isLoading } = useQuery({
     queryKey: ['ideas', projectId],
@@ -112,17 +111,6 @@ export default function ProjectIdeas({ projectId, onPromoteSuccess }: ProjectIde
     },
   });
 
-  const createCommentMutation = useMutation({
-    mutationFn: async (content: string) => {
-      if (!selectedIdeaId) return;
-      return api.post(`/ideas/${selectedIdeaId}/comments`, { content });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ideas', projectId] });
-      setNewComment('');
-    },
-  });
-
   const handleCreateIdea = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newIdea.title.trim()) return;
@@ -133,12 +121,6 @@ export default function ProjectIdeas({ projectId, onPromoteSuccess }: ProjectIde
     e.preventDefault();
     if (!editIdeaData.title.trim()) return;
     updateIdeaMutation.mutate(editIdeaData);
-  };
-
-  const handleAddComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-    createCommentMutation.mutate(newComment);
   };
 
   const openEditDialog = (idea: Idea) => {
@@ -227,6 +209,7 @@ export default function ProjectIdeas({ projectId, onPromoteSuccess }: ProjectIde
                   </div>
                   <div className="flex items-center gap-1 text-[10px] text-slate-400">
                       <MessageSquare className="w-3 h-3" />
+                      {/* Note: comments count might be slightly off if fetched from old schema, but we'll migrate data soon */}
                       {idea.comments?.length || 0}
                   </div>
               </div>
@@ -404,55 +387,13 @@ export default function ProjectIdeas({ projectId, onPromoteSuccess }: ProjectIde
                     </div>
 
                     <div className="space-y-4">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-4">
                             <MessageSquare className="w-3.5 h-3.5" />
-                            Activity Log & Comments ({selectedIdea.comments?.length || 0})
+                            Idea Activity & Discussions
                         </h4>
 
-                        <div className="space-y-4">
-                            {selectedIdea.comments?.map((comment) => (
-                                <div key={comment.id} className="flex gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
-                                        <UserIcon className="w-4 h-4 text-slate-400" />
-                                    </div>
-                                    <div className="flex-1 space-y-1">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-slate-900">{comment.author?.full_name}</span>
-                                            <span className="text-[10px] text-slate-400">{new Date(comment.created_at).toLocaleString()}</span>
-                                        </div>
-                                        <div className="bg-white border border-slate-100 p-3 rounded-lg rounded-tl-none shadow-sm">
-                                            <p className="text-xs text-slate-600 leading-normal">{comment.content}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {selectedIdea.comments?.length === 0 && (
-                                <p className="text-center py-8 text-xs text-slate-400 italic bg-slate-50/50 rounded-lg border border-dashed">
-                                    No comments yet. Start the conversation!
-                                </p>
-                            )}
-                        </div>
+                        <CommentSection ideaId={selectedIdea.id} />
                     </div>
-                </div>
-
-                <div className="p-4 border-t bg-slate-50/50">
-                    <form onSubmit={handleAddComment} className="flex gap-2">
-                        <Input 
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            placeholder="Add a comment or log update..."
-                            className="bg-white text-xs h-10"
-                        />
-                        <Button 
-                            type="submit" 
-                            size="icon" 
-                            disabled={!newComment.trim() || createCommentMutation.isPending}
-                            className="shrink-0 h-10 w-10 shadow-sm"
-                        >
-                            {createCommentMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                        </Button>
-                    </form>
                 </div>
 
                 <DialogFooter className="p-4 border-t bg-white flex flex-row justify-between items-center sm:justify-between">

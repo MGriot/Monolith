@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from uuid import uuid4
 
 from app.core.summaries import SummaryGenerator
@@ -12,13 +12,16 @@ from app.core.enums import Status, Priority
 
 @pytest.fixture
 def mock_db():
-    return MagicMock()
+    mock = MagicMock()
+    mock.execute = AsyncMock()
+    return mock
 
 @pytest.fixture
 def summary_generator(mock_db):
     return SummaryGenerator(db=mock_db)
 
-def test_get_user_tasks_due_soon(summary_generator, mock_db):
+@pytest.mark.asyncio
+async def test_get_user_tasks_due_soon(summary_generator, mock_db):
     user_id = uuid4()
     mock_tasks = [
         Task(id=uuid4(), title="Task 1", due_date=datetime.utcnow() + timedelta(days=2), status=Status.TODO),
@@ -27,7 +30,7 @@ def test_get_user_tasks_due_soon(summary_generator, mock_db):
     
     mock_db.execute.return_value.scalars.return_value.all.return_value = mock_tasks
     
-    tasks = summary_generator.get_user_tasks_due_soon(user_id)
+    tasks = await summary_generator.get_user_tasks_due_soon(user_id)
     
     assert len(tasks) == 2
     assert tasks[0].title == "Task 1"
@@ -50,14 +53,10 @@ def test_generate_user_weekly_summary_html(summary_generator):
     assert "📅 Due Soon" in html
     assert "Future Task" in html
 
-def test_get_team_activity_summary(summary_generator, mock_db):
+@pytest.mark.asyncio
+async def test_get_team_activity_summary(summary_generator, mock_db):
     team_id = uuid4()
     
-    # Mocking the multiple db.execute calls
-    # 1. member_ids
-    # 2. completions
-    # 3. new_tasks
-    # 4. blockers
     mock_db.execute.side_effect = [
         MagicMock(scalars=lambda: MagicMock(all=lambda: [uuid4(), uuid4()])), # member_ids
         MagicMock(scalar=lambda: 5), # completions
@@ -65,7 +64,7 @@ def test_get_team_activity_summary(summary_generator, mock_db):
         MagicMock(scalar=lambda: 2) # blockers
     ]
     
-    summary = summary_generator.get_team_activity_summary(team_id)
+    summary = await summary_generator.get_team_activity_summary(team_id)
     
     assert summary["completions"] == 5
     assert summary["new_tasks"] == 10
@@ -83,7 +82,8 @@ def test_generate_team_summary_html(summary_generator):
     assert "10 tasks created" in html
     assert "2 active high-priority tasks" in html
 
-def test_get_project_health_report(summary_generator, mock_db):
+@pytest.mark.asyncio
+async def test_get_project_health_report(summary_generator, mock_db):
     project_id = uuid4()
     now = datetime.utcnow()
     mock_tasks = [
@@ -95,7 +95,7 @@ def test_get_project_health_report(summary_generator, mock_db):
     
     mock_db.execute.return_value.scalars.return_value.all.return_value = mock_tasks
     
-    report = summary_generator.get_project_health_report(project_id)
+    report = await summary_generator.get_project_health_report(project_id)
     
     assert report["completion_rate"] == 50.0
     assert report["overdue_count"] == 1
@@ -112,3 +112,26 @@ def test_generate_project_health_html(summary_generator):
     assert "75.0%" in html
     assert "Overdue Tasks: <b>0</b>" in html
     assert "10 days remaining" in html
+
+@pytest.mark.asyncio
+async def test_dispatch_all_summaries(summary_generator, mock_db):
+    # Mocking dispatch_all_summaries internals
+    with patch("app.core.summaries.send_email_notification", new_callable=AsyncMock) as mock_send:
+        # Mocking db returns for users, teams, and projects
+        mock_db.execute.side_effect = [
+            MagicMock(scalars=lambda: MagicMock(all=lambda: [User(id=uuid4(), email="u@t.com")])), # users
+            MagicMock(scalars=lambda: MagicMock(all=lambda: [Task(title="T1")])), # tasks for user
+            MagicMock(scalars=lambda: MagicMock(all=lambda: [Team(id=uuid4(), name="T1", owner_id=uuid4())])), # teams
+            MagicMock(scalars=lambda: MagicMock(all=lambda: [uuid4()])), # team members (for active count)
+            MagicMock(scalar=lambda: 1), # completions
+            MagicMock(scalar=lambda: 1), # new_tasks
+            MagicMock(scalar=lambda: 1), # blockers
+            MagicMock(scalar_one_or_none=lambda: User(email="o@t.com")), # team owner
+            MagicMock(scalars=lambda: MagicMock(all=lambda: [Project(id=uuid4(), name="P1", owner_id=uuid4())])), # projects
+            MagicMock(scalars=lambda: MagicMock(all=lambda: [Task(status=Status.DONE)])), # tasks for project
+            MagicMock(scalar_one_or_none=lambda: User(email="po@t.com")), # project owner
+        ]
+        
+        await summary_generator.dispatch_all_summaries()
+        
+        assert mock_send.call_count == 3 # User + Team + Project

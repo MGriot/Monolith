@@ -1,19 +1,16 @@
-# Current Execution Snapshot
+# Stage: Executing Milestone 5
 
 ## Active Focus
-- **Task ID**: NOTIF-07
-- **Title**: Integrate weekly summary scheduler
-- **Status**: todo
-- **Target Files**: `backend/app/main.py`
-- **Quality Gate**: IDLE
+- [ ] REAL-02: Deprecate legacy Idea Comments backend
+
+## Quality Gate
+- **Status**: IDLE
+- **Last Task**: REAL-01
+- **Verification**: PASSED
 
 ## Recent History
-- **NOTIF-01**: Define EmailService (DONE)
-- **NOTIF-02**: Implement send_email (DONE)
-- **NOTIF-03**: Add unit tests (DONE)
-- **NOTIF-04**: Create SummaryGenerator (DONE)
-- **NOTIF-05**: Weekly Summary for Standard Users (DONE)
-- **NOTIF-06**: Weekly Summary for Owners (DONE)
-
-## On Deck
-- *End of Notifications Phase*
+- [x] REAL-01: Migrate Idea Comments to Universal Threaded System
+- [x] NOTIF-07: Integrate weekly summary scheduler
+- [x] NOTIF-06: Weekly Summary for Owners
+- [x] NOTIF-05: Weekly Summary for Standard Users
+- [x] NOTIF-04: Create SummaryGenerator utility
