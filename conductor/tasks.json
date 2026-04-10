@@ -93,7 +93,7 @@
     "id": "REAL-04",
     "title": "Broadcast Notifications via WebSockets",
     "description": "Update notification CRUD to broadcast new notifications to active WebSocket connections.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/app/crud/crud_notification.py"],
     "verification_method": "Manual check: Real-time bell update without refresh.",
     "priority": 2
