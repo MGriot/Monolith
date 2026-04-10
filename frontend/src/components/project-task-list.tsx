@@ -280,8 +280,9 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
 export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask }: ProjectTaskListProps) {
   return (
     <div className="rounded-md border border-slate-200 bg-white overflow-hidden shadow-sm">
-      <Table>
-        <TableHeader className="bg-slate-50">
+      <div className="table-container">
+        <Table>
+          <TableHeader className="bg-slate-50">
           <TableRow className="border-b border-slate-100 hover:bg-slate-50">
             <TableHead className="w-10"></TableHead>
             <TableHead className="w-16 text-[10px] font-black uppercase tracking-widest text-slate-500">WBS</TableHead>
@@ -321,6 +322,7 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
