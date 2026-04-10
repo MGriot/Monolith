@@ -1,20 +1,56 @@
 import logging
-from typing import List
+import smtplib
+from email.mime.text import MIMEText
+from typing import List, Optional
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+class EmailService:
+    def __init__(self):
+        self.smtp_host = settings.SMTP_HOST
+        self.smtp_port = settings.SMTP_PORT
+        self.smtp_user = settings.SMTP_USER
+        self.smtp_password = settings.SMTP_PASSWORD
+        self.from_email = settings.EMAILS_FROM_EMAIL
+
+    def send_email(self, recipient: str, subject: str, body: str):
+        """
+        Synchronously send an email notification using SMTP.
+        """
+        logger.info(f"Preparing email to {recipient}")
+
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = self.from_email
+        msg["To"] = recipient
+
+        try:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                if self.smtp_user and self.smtp_password:
+                    server.starttls()
+                    server.login(self.smtp_user, self.smtp_password)
+                server.send_message(msg)
+            logger.info(f"Email sent successfully to {recipient}")
+        except Exception as e:
+            logger.error(f"Failed to send email to {recipient}: {e}")
+            # Re-raise or handle as per project policy. For now, we log and proceed.
+            raise e
+
+email_service = EmailService()
+
 async def send_email_notification(recipient: str, subject: str, body: str):
     """
     Asynchronously send an email notification.
-    Stub implementation for now.
+    Uses the EmailService for actual delivery.
     """
-    logger.info(f"Sending email to {recipient}")
-    print(f"\n[EMAIL STUB] To: {recipient}\n[EMAIL STUB] Subject: {subject}\n[EMAIL STUB] Body:\n{body}\n")
-    
-    # In a real implementation, you would use a library like fastapi-mail or a background task with smtplib.
-    # For now, we just log it.
-    pass
+    # In a production environment, this should be offloaded to a background task (e.g., Celery or FastAPI BackgroundTasks)
+    # For now, we call the synchronous service method.
+    try:
+        email_service.send_email(recipient, subject, body)
+    except Exception:
+        # We don't want notification failures to crash the main request flow if called inline
+        pass
 
 async def notify_critical_update(user_email: str, title: str, message: str):
     """
