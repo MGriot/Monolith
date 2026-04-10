@@ -111,7 +111,7 @@
     "id": "REAL-06",
     "title": "Optimize Mobile Layout & Navigation",
     "description": "Improve sidebar responsiveness and table scrolling for mobile devices.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["frontend/src/components/layout.tsx", "frontend/src/index.css"],
     "verification_method": "Visual check using browser mobile emulation.",
     "priority": 3

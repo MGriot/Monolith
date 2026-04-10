@@ -75,3 +75,18 @@
   left: 0 !important;
   margin: 0 !important;
 }
+
+/* Responsive Table Container */
+.table-container {
+  @apply w-full overflow-x-auto;
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

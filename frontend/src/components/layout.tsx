@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext } from 'react';
+import React, { useState, createContext, useContext, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './auth-provider';
 import {
@@ -14,7 +14,9 @@ import {
   Copy,
   CheckSquare,
   BookOpen,
-  Archive
+  Archive,
+  Menu,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -55,6 +57,12 @@ export default function Layout({ children }: LayoutProps) {
   const [title, setTitle] = useState<string | null>(null);
   const [icon, setIcon] = useState<React.ElementType | null>(null);
   const [actions, setActions] = useState<React.ReactNode | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Close mobile menu on navigation
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const filteredNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
@@ -93,14 +101,33 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <TitleContext.Provider value={{ title, setTitle, icon, setIcon, actions, setActions }}>
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-slate-50 overflow-hidden relative">
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm transition-all"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0">
-        <div className="p-6">
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 transition-transform duration-300 lg:static lg:translate-x-0",
+        !isMobileMenuOpen && "-translate-x-full"
+      )}>
+        <div className="p-6 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">M</div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Monolith</h1>
           </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="lg:hidden text-slate-400"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
 
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
@@ -147,17 +174,28 @@ export default function Layout({ children }: LayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 flex-shrink-0 z-10 shadow-sm shadow-slate-100">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 flex-shrink-0 z-10 shadow-sm shadow-slate-100">
           <div className="flex items-center gap-3">
-             {DisplayIcon && <DisplayIcon className="w-5 h-5 text-primary" />}
-             <h1 className="text-xl font-bold text-slate-900 tracking-tight">{displayTitle}</h1>
+             <Button 
+               variant="ghost" 
+               size="icon" 
+               className="lg:hidden mr-1 text-slate-500"
+               onClick={() => setIsMobileMenuOpen(true)}
+             >
+               <Menu className="w-5 h-5" />
+             </Button>
+             {DisplayIcon && <DisplayIcon className="w-5 h-5 text-primary hidden sm:block" />}
+             <h1 className="text-lg lg:text-xl font-bold text-slate-900 tracking-tight truncate">{displayTitle}</h1>
           </div>
 
-          <div className="flex items-center gap-3">
-            {actions}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1 sm:gap-2 mr-1 sm:mr-2">
+                {actions}
+            </div>
+            
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="icon" className="h-8 w-8 rounded-full shadow-md shadow-primary/20">
+                <Button size="icon" className="h-8 w-8 rounded-full shadow-md shadow-primary/20 shrink-0">
                   <Plus className="w-4 h-4" />
                 </Button>
               </PopoverTrigger>
@@ -192,9 +230,9 @@ export default function Layout({ children }: LayoutProps) {
             </Popover>
 
             <NotificationPopover />
-            <div className="h-6 w-[1px] bg-slate-200 mx-1" />
+            <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block" />
             <div className="flex items-center gap-3 pl-1">
-              <div className="text-right hidden sm:block">
+              <div className="text-right hidden md:block">
                 <p className="text-[11px] font-bold text-slate-900 leading-none">{user?.full_name || 'User'}</p>
                 <p className="text-[9px] text-slate-500 leading-none mt-1">{user?.email}</p>
               </div>
