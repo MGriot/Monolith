@@ -1,14 +1,55 @@
 from typing import Any, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from jose import jwt, JWTError
 
 from app.api import deps
 from app.crud import notification as crud_notification
 from app.schemas.notification import Notification, NotificationUpdate
 from app.models.user import User
+from app.core.websockets import manager
+from app.core.config import settings
+from app.core import security
+from app.db.session import AsyncSessionLocal
+from app.crud import crud_user
 
 router = APIRouter()
+
+@router.websocket("/ws/{token}")
+async def websocket_endpoint(websocket: WebSocket, token: str):
+    """
+    WebSocket endpoint for real-time notifications.
+    """
+    async with AsyncSessionLocal() as db:
+        try:
+            # Validate token
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+            )
+            user_id = payload.get("sub")
+            if not user_id:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+            
+            user = await crud_user.get(db, id=UUID(user_id))
+            if not user:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+                
+            await manager.connect(websocket, user.id)
+            try:
+                while True:
+                    # Wait for any data from client (ping/pong)
+                    data = await websocket.receive_text()
+                    if data == "ping":
+                        await websocket.send_text("pong")
+            except WebSocketDisconnect:
+                manager.disconnect(websocket, user.id)
+        except (JWTError, Exception) as e:
+            import logging
+            logging.getLogger(__name__).error(f"WebSocket auth failed: {e}")
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
 
 @router.get("/", response_model=List[Notification])
 async def read_notifications(

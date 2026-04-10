@@ -1,14 +1,15 @@
 # Stage: Executing Milestone 5
 
 ## Active Focus
-- [ ] REAL-04: Broadcast Notifications via WebSockets
+- [ ] Universal Cleanup and Polish
 
 ## Quality Gate
 - **Status**: IDLE
-- **Last Task**: REAL-03
+- **Last Task**: REAL-04
 - **Verification**: PASSED
 
 ## Recent History
+- [x] REAL-04: Broadcast Notifications via WebSockets
 - [x] REAL-03: Setup WebSocket Connection Manager
 - [x] REAL-02: Deprecate legacy Idea Comments backend
 - [x] REAL-01: Migrate Idea Comments to Universal Threaded System
