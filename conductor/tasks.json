@@ -39,7 +39,7 @@
     "id": "NOTIF-05",
     "title": "Implement generate_weekly_summary for Standard Users",
     "description": "Add logic to aggregate tasks due/overdue for individual users.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/app/core/summaries.py"],
     "verification_method": "pytest backend/tests/test_summaries.py",
     "priority": 2
