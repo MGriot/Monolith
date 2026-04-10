@@ -7,7 +7,6 @@ from app.models.dependency import Dependency
 from app.models.notification import Notification
 from app.models.team import Team
 from app.models.idea import Idea
-from app.models.idea_comment import IdeaComment
 from app.models.workflow import Workflow
 from app.models.template import ProjectTemplate
 from app.models.associations import project_topics, project_types, task_topics, task_types, project_members, task_assignees, subtask_assignees, team_members
@@ -28,7 +27,6 @@ async def reset_database():
         await db.execute(delete(team_members))
         
         print("Deleting main table data...")
-        await db.execute(delete(IdeaComment))
         await db.execute(delete(Idea))
         await db.execute(delete(Dependency))
         await db.execute(delete(Notification))

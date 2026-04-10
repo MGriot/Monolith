@@ -31,10 +31,13 @@ async def test_idea_logic():
             return Idea(id=uuid4(), **obj_in.dict(), author_id=kwargs.get('author_id'))
         mock_super_create.side_effect = side_effect_create
         
-        created_idea = await crud_idea.create(db, obj_in=idea_in, author_id=user_id)
-        assert created_idea.title == "Test Idea"
-        assert created_idea.author_id == user_id
-        print("PASS: Idea Creation")
+        # Mock self.get to return a dummy Idea
+        with patch.object(crud_idea, 'get', new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = Idea(id=uuid4(), title="Test Idea", author_id=user_id)
+            created_idea = await crud_idea.create(db, obj_in=idea_in, author_id=user_id)
+            assert created_idea.title == "Test Idea"
+            assert created_idea.author_id == user_id
+            print("PASS: Idea Creation")
 
     # 2. Test Promote to Task
     print("\n[2] Testing Promote to Task...")

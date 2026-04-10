@@ -75,7 +75,7 @@
     "id": "REAL-02",
     "title": "Deprecate legacy Idea Comments backend",
     "description": "Remove redundant IdeaComment model, schema, CRUD, and API endpoints.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/app/models/idea_comment.py", "backend/app/api/api_v1/endpoints/idea_comments.py"],
     "verification_method": "pytest backend/tests/test_ideas_standalone.py",
     "priority": 3

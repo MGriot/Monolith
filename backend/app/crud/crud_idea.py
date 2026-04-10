@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.crud.base import CRUDBase
 from app.models.idea import Idea
-from app.models.idea_comment import IdeaComment
+from app.models.comment import Comment
 from app.models.task import Task
 from app.schemas.idea import IdeaCreate, IdeaUpdate
 from app.schemas.task import TaskCreate
@@ -20,7 +20,7 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
             .filter(self.model.id == id)
             .options(
                 selectinload(Idea.author),
-                selectinload(Idea.comments).options(selectinload(IdeaComment.author))
+                selectinload(Idea.threaded_comments).options(selectinload(Comment.author))
             )
         )
         return result.scalars().first()
@@ -34,7 +34,7 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
             .order_by(self.model.created_at.desc())
             .options(
                 selectinload(Idea.author),
-                selectinload(Idea.comments).options(selectinload(IdeaComment.author))
+                selectinload(Idea.threaded_comments).options(selectinload(Comment.author))
             )
             .offset(skip)
             .limit(limit)
