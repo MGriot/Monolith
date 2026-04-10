@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { useEffect, useRef } from "react";
 import {
   Popover,
   PopoverContent,
@@ -17,6 +18,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 interface Notification {
   id: string;
@@ -30,6 +32,7 @@ interface Notification {
 
 export default function NotificationPopover() {
   const queryClient = useQueryClient();
+  const socketRef = useRef<WebSocket | null>(null);
 
   const { data: notifications, isLoading } = useQuery({
     queryKey: ['notifications'],
@@ -37,9 +40,61 @@ export default function NotificationPopover() {
       const response = await api.get('/notifications/');
       return response.data as Notification[];
     },
-    // Poll every minute for new notifications
-    refetchInterval: 60000,
   });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // Create WebSocket connection
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    // Note: In development inside Docker, host might need to point to the backend container or proxy
+    // But since Vite proxies /api, and usually WebSockets are separate, 
+    // we try to reach the backend directly or via the same host if Nginx handles it.
+    // Given vite.config.ts proxies /api, we'll try to reach the backend at /api/v1/notifications/ws/
+    
+    const wsUrl = `${protocol}//${host}/api/v1/notifications/ws/${token}`;
+    const socket = new WebSocket(wsUrl);
+    socketRef.current = socket;
+
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === 'new_notification') {
+          // Play a sound or show a toast
+          toast.info(message.data.title, {
+            description: message.data.message,
+          });
+          
+          // Invalidate and refetch
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (e) {
+        // Handle ping/pong or other messages
+        if (event.data === 'pong') return;
+      }
+    };
+
+    socket.onopen = () => {
+      console.log('Notification WebSocket connected');
+      // Start ping loop
+      const pingInterval = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send('ping');
+        }
+      }, 30000);
+      return () => clearInterval(pingInterval);
+    };
+
+    socket.onclose = () => {
+      console.log('Notification WebSocket disconnected');
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [queryClient]);
 
   const markReadMutation = useMutation({
     mutationFn: async (id: string) => {

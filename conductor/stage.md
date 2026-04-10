@@ -1,14 +1,15 @@
 # Stage: Executing Milestone 5
 
 ## Active Focus
-- [ ] Universal Cleanup and Polish
+- [ ] REAL-06: Optimize Mobile Layout & Navigation
 
 ## Quality Gate
 - **Status**: IDLE
-- **Last Task**: REAL-04
+- **Last Task**: REAL-05
 - **Verification**: PASSED
 
 ## Recent History
+- [x] REAL-05: Implement Frontend WebSocket client
 - [x] REAL-04: Broadcast Notifications via WebSockets
 - [x] REAL-03: Setup WebSocket Connection Manager
 - [x] REAL-02: Deprecate legacy Idea Comments backend

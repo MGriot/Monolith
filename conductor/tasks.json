@@ -97,5 +97,32 @@
     "target_files": ["backend/app/crud/crud_notification.py"],
     "verification_method": "Manual check: Real-time bell update without refresh.",
     "priority": 2
+  },
+  {
+    "id": "REAL-05",
+    "title": "Implement Frontend WebSocket client",
+    "description": "Connect NotificationPopover to the backend WebSocket endpoint and remove polling logic.",
+    "status": "done",
+    "target_files": ["frontend/src/components/notification-popover.tsx"],
+    "verification_method": "Manual UI check: New notifications appear instantly without page refresh or polling.",
+    "priority": 1
+  },
+  {
+    "id": "REAL-06",
+    "title": "Optimize Mobile Layout & Navigation",
+    "description": "Improve sidebar responsiveness and table scrolling for mobile devices.",
+    "status": "todo",
+    "target_files": ["frontend/src/components/layout.tsx", "frontend/src/index.css"],
+    "verification_method": "Visual check using browser mobile emulation.",
+    "priority": 3
+  },
+  {
+    "id": "REAL-07",
+    "title": "Universal Search Refinement",
+    "description": "Add a global search input in the header to find Projects, Tasks, and Ideas.",
+    "status": "todo",
+    "target_files": ["frontend/src/components/layout.tsx", "backend/app/api/api_v1/endpoints/mcp.py"],
+    "verification_method": "Manual UI check: Searching returns relevant items from all three categories.",
+    "priority": 2
   }
 ]
