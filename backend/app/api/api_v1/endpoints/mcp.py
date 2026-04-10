@@ -120,6 +120,47 @@ async def update_project(
             return f"Error updating project: {str(e)}"
 
 @mcp.tool()
+async def search_projects(query: str) -> str:
+    """Search for projects by name or description."""
+    async with AsyncSessionLocal() as db:
+        projects = await crud_project.project.get_multi(db, limit=1000)
+        matches = [p for p in projects if query.lower() in p.name.lower() or (p.description and query.lower() in p.description.lower())]
+        if not matches:
+            return f"No projects found matching '{query}'"
+        return "\n".join([f"- {p.name} (ID: {p.id}, Status: {p.status})" for p in matches])
+
+@mcp.tool()
+async def unified_search(query: str) -> str:
+    """Search across projects, tasks, and ideas in one go."""
+    async with AsyncSessionLocal() as db:
+        # Projects
+        projects = await crud_project.project.get_multi(db, limit=500)
+        p_matches = [p for p in projects if query.lower() in p.name.lower()]
+        
+        # Tasks
+        tasks = await crud_task.task.get_multi(db, limit=500)
+        t_matches = [t for t in tasks if query.lower() in t.title.lower()]
+        
+        # Ideas
+        from app.models.idea import Idea
+        from sqlalchemy import select
+        idea_res = await db.execute(select(Idea).filter(Idea.title.ilike(f"%{query}%")))
+        i_matches = idea_res.scalars().all()
+        
+        output = []
+        if p_matches:
+            output.append("PROJECTS:")
+            output.extend([f"  - {p.name} (ID: {p.id})" for p in p_matches])
+        if t_matches:
+            output.append("TASKS:")
+            output.extend([f"  - [{t.wbs_code}] {t.title} (ID: {t.id})" for t in t_matches])
+        if i_matches:
+            output.append("IDEAS:")
+            output.extend([f"  - {i.title} (ID: {i.id})" for i in i_matches])
+            
+        return "\n".join(output) if output else f"No results for '{query}'"
+
+@mcp.tool()
 async def get_project_details(project_id: str) -> str:
     """Get full details of a project including its WBS structure."""
     async with AsyncSessionLocal() as db:

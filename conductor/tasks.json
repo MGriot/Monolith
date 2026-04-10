@@ -120,7 +120,7 @@
     "id": "REAL-07",
     "title": "Universal Search Refinement",
     "description": "Add a global search input in the header to find Projects, Tasks, and Ideas.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["frontend/src/components/layout.tsx", "backend/app/api/api_v1/endpoints/mcp.py"],
     "verification_method": "Manual UI check: Searching returns relevant items from all three categories.",
     "priority": 2
