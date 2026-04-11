@@ -1,24 +1,24 @@
 # Project Roadmap: Monolith Planner
 
-## Milestone 1: Foundation (Current)
+## Milestone 1: Foundation
 **Goal:** A running dockerized stack with Database connectivity and basic Authentication.
 - [x] Infrastructure Setup (Docker, Nginx, DB).
 - [x] Backend Base (FastAPI, SQL Models).
-- [ ] Frontend Base (React, Shadcn/UI).
+- [x] Frontend Base (React, Shadcn/UI).
 - [x] Authentication (JWT, Login UI).
 
 ## Milestone 2: Core Hierarchy & CRUD
 **Goal:** Users can create Projects, Tasks, and Subtasks.
-- [ ] Project CRUD.
-- [ ] Task/Subtask CRUD.
-- [ ] Basic Status Propagation Logic.
+- [x] Project CRUD.
+- [x] Task/Subtask CRUD.
+- [x] Basic Status Propagation Logic.
 
 ## Milestone 3: Visualization & Metadata
 **Goal:** The application becomes visual.
-- [ ] Gantt Chart Integration (`d3-gantt` / Custom).
-- [ ] Calendar View.
-- [ ] Contribution Graph (Heatmap).
-- [ ] Full Metadata support (Tags, Topics, Dates, Attachments).
+- [x] Gantt Chart Integration (Custom SVG/React).
+- [x] Calendar View.
+- [x] Contribution Graph (Heatmap).
+- [x] Full Metadata support (Tags, Topics, Dates, Attachments).
 
 ## Milestone 4: Advanced Logic & AI
 **Goal:** Smart features and external connectivity.
@@ -28,6 +28,12 @@
 
 ## Milestone 5: Real-time & High Signal UX
 **Goal:** Improve collaboration and data integrity.
-- [ ] Real-time Notifications (WebSockets).
-- [ ] Universal Threaded Activity (Idea migration).
-- [ ] Mobile Layout Optimizations.
+- [x] Real-time Notifications (WebSockets).
+- [x] Universal Threaded Activity (Idea migration).
+- [x] Mobile Layout Optimizations.
+
+## Milestone 6: Intelligence & Integration
+**Goal:** Proactive task management and external ecosystem.
+- [ ] LLM Task Auto-Decomposition.
+- [ ] Slack/Discord Webhook Integration.
+- [ ] Resource Workload Leveling.
