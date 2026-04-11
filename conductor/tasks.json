@@ -124,5 +124,14 @@
     "target_files": ["frontend/src/components/layout.tsx", "backend/app/api/api_v1/endpoints/mcp.py"],
     "verification_method": "Manual UI check: Searching returns relevant items from all three categories.",
     "priority": 2
+  },
+  {
+    "id": "REAL-08",
+    "title": "Fix MCP assign_task tool",
+    "description": "Implement missing update_assignees method in CRUDTask to support MCP assignment operations.",
+    "status": "done",
+    "target_files": ["backend/app/crud/crud_task.py"],
+    "verification_method": "pytest backend/test_mcp_standalone.py",
+    "priority": 1
   }
 ]

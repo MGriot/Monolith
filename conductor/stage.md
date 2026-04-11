@@ -1,14 +1,15 @@
-# Stage: Milestone 5 Complete
+# Stage: Cleanup Complete
 
 ## Active Focus
-- [ ] Planning Next Milestone
+- [ ] Next Milestone Planning
 
 ## Quality Gate
 - **Status**: IDLE
-- **Last Task**: REAL-07
+- **Last Task**: REAL-08
 - **Verification**: PASSED
 
 ## Recent History
+- [x] REAL-08: Fix MCP assign_task tool
 - [x] REAL-07: Universal Search Refinement
 - [x] REAL-06: Optimize Mobile Layout & Navigation
 - [x] REAL-05: Implement Frontend WebSocket client
