@@ -133,5 +133,41 @@
     "target_files": ["backend/app/crud/crud_task.py"],
     "verification_method": "pytest backend/test_mcp_standalone.py",
     "priority": 1
+  },
+  {
+    "id": "INT-01",
+    "title": "LLM Service Integration (Anthropic/OpenAI)",
+    "description": "Implement a core service to proxy requests to LLM providers for task decomposition.",
+    "status": "done",
+    "target_files": ["backend/app/core/llm.py"],
+    "verification_method": "python -c \"from app.core.llm import LLMService; assert LLMService\"",
+    "priority": 1
+  },
+  {
+    "id": "INT-02",
+    "title": "Task Auto-Decomposition API",
+    "description": "Create an endpoint that takes a task description and returns a list of suggested subtasks using LLM.",
+    "status": "todo",
+    "target_files": ["backend/app/api/api_v1/endpoints/ai.py"],
+    "verification_method": "Manual verification via Swagger docs.",
+    "priority": 2
+  },
+  {
+    "id": "INT-03",
+    "title": "Magic Breakdown UI Button",
+    "description": "Add an AI-powered 'Decompose' button to the Task Edit Dialog that suggests and creates subtasks.",
+    "status": "todo",
+    "target_files": ["frontend/src/components/task-form.tsx"],
+    "verification_method": "Manual UI check: Verify AI suggestions are rendered and can be accepted.",
+    "priority": 2
+  },
+  {
+    "id": "INT-04",
+    "title": "Webhook Integration Service",
+    "description": "Implement a generic webhook dispatcher for Slack and Discord notifications.",
+    "status": "todo",
+    "target_files": ["backend/app/core/webhooks.py"],
+    "verification_method": "python -c \"from app.core.webhooks import WebhookService; assert WebhookService\"",
+    "priority": 1
   }
 ]

@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     EMAILS_FROM_EMAIL: str = "noreply@monolith.local"
 
+    # LLM Configuration
+    OPENAI_API_KEY: str = ""
+    ANTHROPIC_API_KEY: str = ""
+    LLM_PROVIDER: str = "openai" # or "anthropic"
+    LLM_MODEL: str = "gpt-4o" # default model
+
     class Config:
         env_file = ".env"
         extra = "ignore"
