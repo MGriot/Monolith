@@ -535,6 +535,26 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         
         return await self.get(db, db_obj.id)
 
+    async def update_assignees(self, db: AsyncSession, *, task_id: UUID, user_ids: List[UUID]) -> Task:
+        db_obj = await self.get(db, id=task_id)
+        if not db_obj:
+            return None
+        
+        current_ids = [u.id for u in db_obj.assignees]
+        added_ids = [uid for uid in user_ids if uid not in current_ids]
+        
+        from app.models.user import User
+        res = await db.execute(select(User).filter(User.id.in_(user_ids)))
+        db_obj.assignees = res.scalars().all()
+        
+        if added_ids:
+            await self.notify_assignees(db, db_obj.id, added_ids, db_obj.title)
+            
+        db.add(db_obj)
+        await db.commit()
+        await db.refresh(db_obj)
+        return db_obj
+
     async def remove(self, db: AsyncSession, *, id: UUID) -> Task:
         # Load object first to get parent/project info
         db_obj = await self.get(db, id=id)
