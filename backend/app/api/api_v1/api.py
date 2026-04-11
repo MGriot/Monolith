@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from app.api.api_v1.endpoints import (
     login, users, projects, tasks, subtasks, notifications, calendar, 
     dashboard, metadata, templates, teams, ideas, workflows, 
-    comments, whiteboards, search
+    comments, whiteboards, search, ai
 )
 
 api_router = APIRouter()
@@ -18,6 +18,7 @@ api_router.include_router(whiteboards.router, prefix="/whiteboards", tags=["whit
 api_router.include_router(ideas.router, prefix="/ideas", tags=["ideas"])
 api_router.include_router(comments.router, prefix="/comments", tags=["comments"])
 api_router.include_router(search.router, prefix="/search", tags=["search"])
+api_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 api_router.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 api_router.include_router(subtasks.router, prefix="/subtasks", tags=["subtasks"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])

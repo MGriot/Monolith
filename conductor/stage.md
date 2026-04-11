@@ -1,14 +1,15 @@
 # Stage: Executing Milestone 6
 
 ## Active Focus
-- [ ] INT-02: Task Auto-Decomposition API
+- [ ] INT-03: Magic Breakdown UI Button
 
 ## Quality Gate
 - **Status**: IDLE
-- **Last Task**: INT-01
+- **Last Task**: INT-02
 - **Verification**: PASSED
 
 ## Recent History
+- [x] INT-02: Task Auto-Decomposition API
 - [x] INT-01: LLM Service Integration (Anthropic/OpenAI)
 - [x] REAL-08: Fix MCP assign_task tool
 - [x] REAL-07: Universal Search Refinement
