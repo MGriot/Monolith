@@ -147,7 +147,7 @@
     "id": "INT-02",
     "title": "Task Auto-Decomposition API",
     "description": "Create an endpoint that takes a task description and returns a list of suggested subtasks using LLM.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/app/api/api_v1/endpoints/ai.py"],
     "verification_method": "Manual verification via Swagger docs.",
     "priority": 2
