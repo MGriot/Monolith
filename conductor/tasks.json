@@ -169,5 +169,32 @@
     "target_files": ["backend/app/core/webhooks.py"],
     "verification_method": "python -c \"from app.core.webhooks import WebhookService; assert WebhookService\"",
     "priority": 1
+  },
+  {
+    "id": "INT-05",
+    "title": "Webhook Configuration API & UI",
+    "description": "Create endpoints and a settings UI to manage personal/project webhook URLs for Slack and Discord.",
+    "status": "done",
+    "target_files": ["backend/app/models/webhook.py", "frontend/src/pages/settings.tsx"],
+    "verification_method": "Manual UI check: Save a webhook URL and send a test notification.",
+    "priority": 2
+  },
+  {
+    "id": "INT-06",
+    "title": "Resource Workload Leveling Logic",
+    "description": "Implement backend logic to calculate daily effort per user and detect overallocation based on task durations.",
+    "status": "todo",
+    "target_files": ["backend/app/api/api_v1/endpoints/dashboard.py"],
+    "verification_method": "pytest backend/tests/test_workload_logic.py",
+    "priority": 1
+  },
+  {
+    "id": "INT-07",
+    "title": "Workload Heatmap Widget",
+    "description": "Add a visualization to the Dashboard showing team member capacity and bottlenecks over the next 30 days.",
+    "status": "todo",
+    "target_files": ["frontend/src/pages/dashboard.tsx"],
+    "verification_method": "Visual check: Heatmap correctly highlights users with > 8h/day allocated.",
+    "priority": 2
   }
 ]

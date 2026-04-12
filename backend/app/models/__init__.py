@@ -10,3 +10,4 @@ from .idea import Idea
 from .workflow import Workflow
 from .comment import Comment
 from .whiteboard import Whiteboard
+from .webhook import Webhook

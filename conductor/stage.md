@@ -1,14 +1,15 @@
-# Stage: Milestone 6 Progressing
+# Stage: Executing Milestone 6
 
 ## Active Focus
-- [ ] Task Workload & Resource Leveling
+- [ ] INT-06: Resource Workload Leveling Logic
 
 ## Quality Gate
 - **Status**: IDLE
-- **Last Task**: INT-04
+- **Last Task**: INT-05
 - **Verification**: PASSED
 
 ## Recent History
+- [x] INT-05: Webhook Configuration API & UI
 - [x] INT-04: Webhook Integration Service
 - [x] INT-03: Magic Breakdown UI Button
 - [x] INT-02: Task Auto-Decomposition API
