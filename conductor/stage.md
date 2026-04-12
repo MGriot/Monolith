@@ -1,14 +1,15 @@
-# Stage: Executing Milestone 6
+# Stage: Milestone 6 Progressing
 
 ## Active Focus
-- [ ] INT-04: Webhook Integration Service
+- [ ] Task Workload & Resource Leveling
 
 ## Quality Gate
 - **Status**: IDLE
-- **Last Task**: INT-03
+- **Last Task**: INT-04
 - **Verification**: PASSED
 
 ## Recent History
+- [x] INT-04: Webhook Integration Service
 - [x] INT-03: Magic Breakdown UI Button
 - [x] INT-02: Task Auto-Decomposition API
 - [x] INT-01: LLM Service Integration (Anthropic/OpenAI)
