@@ -183,7 +183,7 @@
     "id": "INT-06",
     "title": "Resource Workload Leveling Logic",
     "description": "Implement backend logic to calculate daily effort per user and detect overallocation based on task durations.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/app/api/api_v1/endpoints/dashboard.py"],
     "verification_method": "pytest backend/tests/test_workload_logic.py",
     "priority": 1
