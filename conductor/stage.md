@@ -1,14 +1,15 @@
 # Stage: Executing Milestone 6
 
 ## Active Focus
-- [ ] INT-03: Magic Breakdown UI Button
+- [ ] INT-04: Webhook Integration Service
 
 ## Quality Gate
 - **Status**: IDLE
-- **Last Task**: INT-02
+- **Last Task**: INT-03
 - **Verification**: PASSED
 
 ## Recent History
+- [x] INT-03: Magic Breakdown UI Button
 - [x] INT-02: Task Auto-Decomposition API
 - [x] INT-01: LLM Service Integration (Anthropic/OpenAI)
 - [x] REAL-08: Fix MCP assign_task tool

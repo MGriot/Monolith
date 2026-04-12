@@ -156,7 +156,7 @@
     "id": "INT-03",
     "title": "Magic Breakdown UI Button",
     "description": "Add an AI-powered 'Decompose' button to the Task Edit Dialog that suggests and creates subtasks.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["frontend/src/components/task-form.tsx"],
     "verification_method": "Manual UI check: Verify AI suggestions are rendered and can be accepted.",
     "priority": 2

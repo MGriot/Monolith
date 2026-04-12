@@ -54,6 +54,7 @@ class TaskBase(BaseModel):
 
 class TaskShortCreate(BaseModel):
     title: str
+    description: Optional[str] = None
     status: Optional[Status] = Status.TODO
     priority: Optional[Priority] = Priority.MEDIUM
     is_milestone: Optional[bool] = False
@@ -77,6 +78,7 @@ class TaskUpdate(TaskBase):
     topic_ids: Optional[List[UUID]] = None
     type_ids: Optional[List[UUID]] = None
     assignee_ids: Optional[List[UUID]] = None
+    subtasks: Optional[List[TaskShortCreate]] = []
 
 class TaskInDBBase(TaskBase):
     id: UUID
