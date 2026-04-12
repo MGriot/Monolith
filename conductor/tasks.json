@@ -165,7 +165,7 @@
     "id": "INT-04",
     "title": "Webhook Integration Service",
     "description": "Implement a generic webhook dispatcher for Slack and Discord notifications.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/app/core/webhooks.py"],
     "verification_method": "python -c \"from app.core.webhooks import WebhookService; assert WebhookService\"",
     "priority": 1
