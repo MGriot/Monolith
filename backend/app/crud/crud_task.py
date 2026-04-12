@@ -436,6 +436,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         new_topic_ids = obj_data.pop("topic_ids", None)
         new_type_ids = obj_data.pop("type_ids", None)
         new_blocker_ids = obj_data.pop("blocked_by_ids", None)
+        subtasks_data = obj_data.pop("subtasks", [])
 
         # 1. Clean data and naivify dates
         obj_data = clean_dict_datetimes(obj_data)
@@ -531,6 +532,17 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         if db_obj.parent_id and db_obj.parent_id != old_parent_id:
             await self.update_parent_status_recursive(db, db_obj.parent_id)
         
+        # 10. Handle recursive subtasks
+        if subtasks_data:
+            for st_data in subtasks_data:
+                st_create = TaskCreate(
+                    project_id=db_obj.project_id,
+                    parent_id=db_obj.id,
+                    owner_id=db_obj.owner_id,
+                    **st_data
+                )
+                await self.create(db, obj_in=st_create)
+
         await self.sync_project_from_tasks(db, project_id)
         
         return await self.get(db, db_obj.id)

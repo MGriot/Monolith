@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Milestone, Calculator, CalendarDays, Clock, Link as LinkIcon } from "lucide-react";
+import { 
+    Milestone, 
+    Calculator, 
+    CalendarDays, 
+    Clock, 
+    Link as LinkIcon, 
+    Sparkles, 
+    Wand2, 
+    Plus, 
+    X,
+    Loader2,
+    CheckCircle2
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
 import { AssigneeSelector } from "@/components/assignee-selector";
@@ -16,6 +28,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { addDays, differenceInDays, format, parseISO } from "date-fns";
 import DependencyManager from "./dependency-manager";
 import type { Task, Topic, WorkType, Project } from "@/types";
+import { toast } from "sonner";
+
+const subtaskSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional().nullable(),
+});
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -37,6 +55,7 @@ const taskSchema = z.object({
   normal_days: z.number().optional(),
   pessimistic_days: z.number().optional(),
   duration_days: z.number().min(0).optional(),
+  subtasks: z.array(subtaskSchema).optional(),
 });
 
 export type TaskFormValues = z.infer<typeof taskSchema>;
@@ -64,6 +83,7 @@ export default function TaskForm({
 }: TaskFormProps) {
   const queryClient = useQueryClient();
   const [planningMode, setPlanningMode] = useState<"dates" | "duration">("dates");
+  const [isAILoading, setIsAILoading] = useState(false);
 
   // Fetch Project to check for whitelist
   const { data: project } = useQuery({
@@ -126,6 +146,7 @@ export default function TaskForm({
       normal_days: 0,
       pessimistic_days: 0,
       duration_days: 0,
+      subtasks: [],
       ...initialValues,
     };
 
@@ -144,10 +165,16 @@ export default function TaskForm({
     handleSubmit,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: processedInitialValues as any,
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "subtasks",
   });
 
   const selectedAssignees = watch("assignee_ids") || [];
@@ -155,6 +182,8 @@ export default function TaskForm({
   const selectedTypeIds = watch("type_ids") || [];
   const selectedParentId = watch("parent_id");
   const selectedColor = watch("color");
+  const taskTitle = watch("title");
+  const taskDescription = watch("description");
 
   const startDate = watch("start_date");
   const dueDate = watch("due_date");
@@ -187,6 +216,35 @@ export default function TaskForm({
       const start = parseISO(startDate);
       const newEnd = addDays(start, val - 1);
       setValue("due_date", format(newEnd, "yyyy-MM-dd"));
+    }
+  };
+
+  const handleDecompose = async () => {
+    if (!taskTitle) {
+        toast.error("Please enter a task title first.");
+        return;
+    }
+
+    setIsAILoading(true);
+    try {
+        const response = await api.post("/ai/decompose", {
+            title: taskTitle,
+            description: taskDescription
+        });
+        
+        const suggestions = response.data.subtasks;
+        if (suggestions && suggestions.length > 0) {
+            suggestions.forEach((s: any) => {
+                append({ title: s.title, description: s.description || "" });
+            });
+            toast.success(`AI suggested ${suggestions.length} subtasks!`);
+        } else {
+            toast.error("AI couldn't generate any subtasks for this title.");
+        }
+    } catch (e) {
+        toast.error("Failed to connect to AI service.");
+    } finally {
+        setIsAILoading(false);
     }
   };
 
@@ -297,11 +355,14 @@ export default function TaskForm({
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 pt-4">
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full mb-6">
-          <TabsTrigger value="general" className="text-xs font-bold uppercase tracking-tight">General</TabsTrigger>
-          <TabsTrigger value="scheduling" className="text-xs font-bold uppercase tracking-tight">Timeline</TabsTrigger>
-          <TabsTrigger value="dependencies" disabled={!editingTaskId} className="text-xs font-bold uppercase tracking-tight gap-1.5">
-            <LinkIcon className="w-3 h-3" /> Dependencies
+        <TabsList className="grid grid-cols-4 w-full mb-6">
+          <TabsTrigger value="general" className="text-[10px] font-black uppercase tracking-tight">General</TabsTrigger>
+          <TabsTrigger value="scheduling" className="text-[10px] font-black uppercase tracking-tight">Timeline</TabsTrigger>
+          <TabsTrigger value="breakdown" className="text-[10px] font-black uppercase tracking-tight gap-1.5">
+            <Wand2 className="w-3 h-3 text-amber-500" /> Breakdown
+          </TabsTrigger>
+          <TabsTrigger value="dependencies" disabled={!editingTaskId} className="text-[10px] font-black uppercase tracking-tight gap-1.5">
+            <LinkIcon className="w-3 h-3" /> Deps
           </TabsTrigger>
         </TabsList>
 
@@ -551,6 +612,97 @@ export default function TaskForm({
           </div>
         </TabsContent>
 
+        <TabsContent value="breakdown" className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        AI Task Decomposition
+                    </h4>
+                    <p className="text-[10px] text-slate-500">Let AI suggest a logical breakdown into smaller subtasks.</p>
+                </div>
+                <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 gap-2 bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-[10px] uppercase"
+                    onClick={handleDecompose}
+                    disabled={isAILoading || !taskTitle}
+                >
+                    {isAILoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                    Magic Breakdown
+                </Button>
+            </div>
+
+            <div className="space-y-3 mt-4">
+                {fields.length > 0 ? (
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Planned Subtasks</Label>
+                        {fields.map((field, index) => (
+                            <div key={field.id} className="flex gap-2 group animate-in slide-in-from-left-2 duration-200">
+                                <div className="flex-1 space-y-1">
+                                    <Input 
+                                        {...register(`subtasks.${index}.title` as const)}
+                                        placeholder="Subtask title"
+                                        className="h-8 text-xs bg-white"
+                                    />
+                                    <Input 
+                                        {...register(`subtasks.${index}.description` as const)}
+                                        placeholder="Optional description"
+                                        className="h-7 text-[10px] bg-slate-50 border-none"
+                                    />
+                                </div>
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-slate-300 hover:text-rose-500 group-hover:opacity-100 opacity-0 transition-all"
+                                    onClick={() => remove(index)}
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </Button>
+                            </div>
+                        ))}
+                        <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-full h-8 border-dashed border-2 hover:bg-slate-50 text-slate-400 hover:text-slate-600 gap-2 text-[10px] font-bold uppercase mt-2"
+                            onClick={() => append({ title: "", description: "" })}
+                        >
+                            <Plus className="w-3 h-3" /> Add Item
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="py-12 flex flex-col items-center justify-center text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                        <div className="w-10 h-10 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center mb-3">
+                            <Sparkles className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <h5 className="text-xs font-bold text-slate-900">No subtasks yet</h5>
+                        <p className="text-[10px] text-slate-500 mt-1 max-w-[200px]">Click "Magic Breakdown" above to auto-generate or add manually.</p>
+                    </div>
+                )}
+            </div>
+
+            {fields.length > 0 && !editingTaskId && (
+                <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex gap-3">
+                    <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />
+                    <p className="text-[10px] text-blue-700 leading-normal">
+                        These subtasks will be created automatically when you save this task.
+                    </p>
+                </div>
+            )}
+            
+            {fields.length > 0 && editingTaskId && (
+                <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex gap-3">
+                    <CheckCircle2 className="w-4 h-4 text-amber-500 shrink-0" />
+                    <p className="text-[10px] text-amber-700 leading-normal">
+                        <strong>Note:</strong> Adding subtasks here to an existing task will create them upon saving.
+                    </p>
+                </div>
+            )}
+        </TabsContent>
+
         <TabsContent value="dependencies" className="pt-2">
           {editingTaskId && taskObject && (
             <DependencyManager
@@ -582,7 +734,7 @@ export default function TaskForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading || isAILoading}>
           {isLoading ? "Saving..." : "Save Task"}
         </Button>
       </div>
