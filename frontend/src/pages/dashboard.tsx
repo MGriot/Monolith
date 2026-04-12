@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
@@ -12,12 +13,13 @@ import {
   TrendingUp,
   Activity,
   Users,
-  LayoutDashboard
+  LayoutDashboard,
+  Zap
 } from 'lucide-react';
 import { cn, formatPercent } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfDay, addDays } from 'date-fns';
 import ProjectHeatmap from '@/components/project-heatmap';
 import ResourceTimeline from '@/components/resource-timeline';
 
@@ -43,6 +45,23 @@ interface DashboardSummary {
     project_id: string;
   }[];
   global_activity: { date: string; count: number }[];
+}
+
+interface WorkloadDay {
+    date: string;
+    hours: number;
+    task_count: number;
+}
+
+interface UserWorkload {
+    user_id: string;
+    user_name: string;
+    workload: WorkloadDay[];
+    is_overallocated: boolean;
+}
+
+interface TeamWorkloadResponse {
+    users: UserWorkload[];
 }
 
 interface TeammateActivity {
@@ -75,6 +94,14 @@ export default function DashboardPage() {
     },
   });
 
+  const { data: workloadData, isLoading: isLoadingWorkload } = useQuery({
+    queryKey: ['team-workload'],
+    queryFn: async () => {
+        const res = await api.get('/dashboard/team-workload?days=14');
+        return res.data as TeamWorkloadResponse;
+    }
+  });
+
   const { data: calendarData } = useQuery({
     queryKey: ['calendar-events', 'global'],
     queryFn: async () => {
@@ -101,6 +128,23 @@ export default function DashboardPage() {
   }
 
   const completionRate = data?.total_tasks ? (data.tasks_done / data.total_tasks) * 100 : 0;
+
+  const workloadDates = useMemo(() => {
+    const dates = [];
+    const start = startOfDay(new Date());
+    for (let i = 0; i < 14; i++) {
+        dates.push(format(addDays(start, i), 'yyyy-MM-dd'));
+    }
+    return dates;
+  }, []);
+
+  const getWorkloadColor = (hours: number) => {
+    if (hours === 0) return 'bg-slate-50';
+    if (hours <= 4) return 'bg-emerald-100 text-emerald-700';
+    if (hours <= 7) return 'bg-blue-100 text-blue-700';
+    if (hours <= 8) return 'bg-amber-100 text-amber-700';
+    return 'bg-rose-500 text-white animate-pulse';
+  };
 
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
@@ -205,6 +249,76 @@ export default function DashboardPage() {
               </div>
             </div>
           </CardContent>
+        </Card>
+
+        {/* Workload Heatmap */}
+        <Card className="border-slate-200 shadow-sm overflow-hidden">
+            <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-amber-500" />
+                            Team Capacity Heatmap (14 Days)
+                        </CardTitle>
+                        <CardDescription className="text-[10px]">Real-time daily effort distribution based on active task durations.</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-tighter text-slate-400">
+                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-emerald-100"></div> Low</div>
+                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-blue-100"></div> Med</div>
+                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-amber-100"></div> Full</div>
+                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-rose-500"></div> Over</div>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="p-0 border-t bg-slate-50/30">
+                <div className="table-container">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr className="bg-slate-50/80">
+                                <th className="p-3 text-[10px] font-black uppercase text-slate-500 border-b border-r w-40 sticky left-0 bg-slate-50 z-10">Team Member</th>
+                                {workloadDates.map(date => (
+                                    <th key={date} className="p-2 text-[9px] font-black uppercase text-slate-400 border-b text-center min-w-[45px]">
+                                        {format(parseISO(date), 'EEE')}<br/>
+                                        <span className="text-slate-600">{format(parseISO(date), 'd')}</span>
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {isLoadingWorkload ? (
+                                <tr><td colSpan={15} className="p-8 text-center text-xs text-slate-400">Loading workload data...</td></tr>
+                            ) : workloadData?.users.map(user_workload => (
+                                <tr key={user_workload.user_id} className="hover:bg-white transition-colors">
+                                    <td className="p-3 border-b border-r sticky left-0 bg-white z-10 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-500 border">
+                                                {user_workload.user_name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <span className="text-xs font-bold text-slate-700 truncate max-w-[100px]">{user_workload.user_name}</span>
+                                            {user_workload.is_overallocated && <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />}
+                                        </div>
+                                    </td>
+                                    {workloadDates.map(date => {
+                                        const day = user_workload.workload.find(d => d.date === date);
+                                        const hours = day?.hours || 0;
+                                        return (
+                                            <td key={date} className="p-1 border-b">
+                                                <div className={cn(
+                                                    "h-10 rounded-md flex flex-col items-center justify-center transition-all",
+                                                    getWorkloadColor(hours)
+                                                )}>
+                                                    <span className="text-[10px] font-black">{hours > 0 ? `${hours}h` : '-'}</span>
+                                                    {day && day.task_count > 0 && <span className="text-[8px] opacity-60 font-medium">{day.task_count}t</span>}
+                                                </div>
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </CardContent>
         </Card>
 
         <div className="grid gap-6 md:grid-cols-7">

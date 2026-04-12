@@ -192,7 +192,7 @@
     "id": "INT-07",
     "title": "Workload Heatmap Widget",
     "description": "Add a visualization to the Dashboard showing team member capacity and bottlenecks over the next 30 days.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["frontend/src/pages/dashboard.tsx"],
     "verification_method": "Visual check: Heatmap correctly highlights users with > 8h/day allocated.",
     "priority": 2
