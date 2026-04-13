@@ -185,7 +185,7 @@
     "description": "Implement backend logic to calculate daily effort per user and detect overallocation based on task durations.",
     "status": "done",
     "target_files": ["backend/app/api/api_v1/endpoints/dashboard.py"],
-    "verification_method": "pytest backend/tests/test_workload_logic.py",
+    "verification_method": "pytest backend/test_workload_logic.py",
     "priority": 1
   },
   {
@@ -196,5 +196,32 @@
     "target_files": ["frontend/src/pages/dashboard.tsx"],
     "verification_method": "Visual check: Heatmap correctly highlights users with > 8h/day allocated.",
     "priority": 2
+  },
+  {
+    "id": "REP-01",
+    "title": "PDF Generation Service (xhtml2pdf)",
+    "description": "Implement a service to render HTML templates into professional PDF documents for reports.",
+    "status": "done",
+    "target_files": ["backend/app/core/pdf.py"],
+    "verification_method": "python -c \"from app.core.pdf import PDFService; assert PDFService\"",
+    "priority": 1
+  },
+  {
+    "id": "REP-02",
+    "title": "Project Status Report Template",
+    "description": "Create a rich HTML/CSS template for project status reports including Gantt snippets and task lists.",
+    "status": "todo",
+    "target_files": ["backend/app/templates/reports/project_status.html"],
+    "verification_method": "Manual check of generated PDF layout.",
+    "priority": 2
+  },
+  {
+    "id": "REP-03",
+    "title": "Portfolio Health Aggregation API",
+    "description": "Implement an endpoint to calculate health scores (ROI, Variance, Risks) across all active projects.",
+    "status": "todo",
+    "target_files": ["backend/app/api/api_v1/endpoints/projects.py"],
+    "verification_method": "pytest backend/tests/test_portfolio_logic.py",
+    "priority": 1
   }
 ]

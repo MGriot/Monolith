@@ -34,6 +34,12 @@
 
 ## Milestone 6: Intelligence & Integration
 **Goal:** Proactive task management and external ecosystem.
-- [ ] LLM Task Auto-Decomposition.
-- [ ] Slack/Discord Webhook Integration.
-- [ ] Resource Workload Leveling.
+- [x] LLM Task Auto-Decomposition (Magic Breakdown).
+- [x] Slack/Discord Webhook Integration.
+- [x] Resource Workload Leveling (Capacity Heatmap).
+
+## Milestone 7: Professional Reporting & Insights
+**Goal:** Advanced data visualization and stakeholder reporting.
+- [ ] Customizable Project Status Reports (PDF).
+- [ ] Portfolio Health Dashboard.
+- [ ] ROI & Effort Forecasting.
