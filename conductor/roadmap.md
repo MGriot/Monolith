@@ -32,14 +32,20 @@
 - [x] Universal Threaded Activity (Idea migration).
 - [x] Mobile Layout Optimizations.
 
-## Milestone 6: Intelligence & Integration
+## Milestone 6: Integration & Control
 **Goal:** Proactive task management and external ecosystem.
-- [x] LLM Task Auto-Decomposition (Magic Breakdown).
+- [x] Enhanced MCP Tools (Analytics, CRUD Parity).
 - [x] Slack/Discord Webhook Integration.
-- [x] Resource Workload Leveling (Capacity Heatmap).
+- [x] Resource Workload Leveling (Backend Logic).
 
 ## Milestone 7: Professional Reporting & Insights
 **Goal:** Advanced data visualization and stakeholder reporting.
-- [ ] Customizable Project Status Reports (PDF).
-- [ ] Portfolio Health Dashboard.
+- [x] Customizable Project Status Reports (PDF).
+- [x] Portfolio Health Dashboard (Scores & Risks).
+- [x] Capacity Heatmap Widget.
+
+## Milestone 8: Prediction & Scalability
+**Goal:** Future-proofing and predictive analytics.
 - [ ] ROI & Effort Forecasting.
+- [ ] Global Search Full-Text Indexing.
+- [ ] Advanced RBAC (Role-Based Access Control).
