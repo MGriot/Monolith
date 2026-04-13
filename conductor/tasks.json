@@ -135,30 +135,30 @@
     "priority": 1
   },
   {
-    "id": "INT-01",
-    "title": "LLM Service Integration (Anthropic/OpenAI)",
-    "description": "Implement a core service to proxy requests to LLM providers for task decomposition.",
+    "id": "REAL-09",
+    "title": "Remove AI Decomposer features",
+    "description": "Delete AI endpoints, schemas, and core services. Remove 'Breakdown' tab from frontend TaskForm.",
     "status": "done",
-    "target_files": ["backend/app/core/llm.py"],
-    "verification_method": "python -c \"from app.core.llm import LLMService; assert LLMService\"",
+    "target_files": ["backend/app/core/llm.py", "frontend/src/components/task-form.tsx"],
+    "verification_method": "Manual UI check: Breakdown tab removed.",
     "priority": 1
   },
   {
-    "id": "INT-02",
-    "title": "Task Auto-Decomposition API",
-    "description": "Create an endpoint that takes a task description and returns a list of suggested subtasks using LLM.",
-    "status": "done",
-    "target_files": ["backend/app/api/api_v1/endpoints/ai.py"],
-    "verification_method": "Manual verification via Swagger docs.",
+    "id": "REAL-10",
+    "title": "Expose Portfolio Health to MCP",
+    "description": "Add a tool to the MCP server to retrieve portfolio health metrics for AI agents.",
+    "status": "todo",
+    "target_files": ["backend/app/api/api_v1/endpoints/mcp.py"],
+    "verification_method": "mcp-inspect tools list",
     "priority": 2
   },
   {
-    "id": "INT-03",
-    "title": "Magic Breakdown UI Button",
-    "description": "Add an AI-powered 'Decompose' button to the Task Edit Dialog that suggests and creates subtasks.",
-    "status": "done",
-    "target_files": ["frontend/src/components/task-form.tsx"],
-    "verification_method": "Manual UI check: Verify AI suggestions are rendered and can be accepted.",
+    "id": "REAL-11",
+    "title": "Expose Team Workload to MCP",
+    "description": "Add a tool to the MCP server to retrieve team workload data for AI agents.",
+    "status": "todo",
+    "target_files": ["backend/app/api/api_v1/endpoints/mcp.py"],
+    "verification_method": "mcp-inspect tools list",
     "priority": 2
   },
   {
@@ -185,7 +185,7 @@
     "description": "Implement backend logic to calculate daily effort per user and detect overallocation based on task durations.",
     "status": "done",
     "target_files": ["backend/app/api/api_v1/endpoints/dashboard.py"],
-    "verification_method": "pytest backend/test_workload_logic.py",
+    "verification_method": "pytest backend/tests/test_workload_logic.py",
     "priority": 1
   },
   {

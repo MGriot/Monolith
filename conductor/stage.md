@@ -1,14 +1,15 @@
-# Stage: Milestone 7 Complete
+# Stage: Executing Milestone 7 (Recovery)
 
 ## Active Focus
-- [ ] Finishing Up
+- [ ] REAL-10: Expose Portfolio Health to MCP
 
 ## Quality Gate
 - **Status**: IDLE
-- **Last Task**: REP-03
+- **Last Task**: REAL-09
 - **Verification**: PASSED
 
 ## Recent History
+- [x] REAL-09: Remove AI Decomposer features
 - [x] REP-03: Portfolio Health Aggregation API
 - [x] REP-02: Project Status Report Template
 - [x] REP-01: PDF Generation Service (xhtml2pdf)
@@ -16,9 +17,6 @@
 - [x] INT-06: Resource Workload Leveling Logic
 - [x] INT-05: Webhook Configuration API & UI
 - [x] INT-04: Webhook Integration Service
-- [x] INT-03: Magic Breakdown UI Button
-- [x] INT-02: Task Auto-Decomposition API
-- [x] INT-01: LLM Service Integration (Anthropic/OpenAI)
 - [x] REAL-08: Fix MCP assign_task tool
 - [x] REAL-07: Universal Search Refinement
 - [x] REAL-06: Optimize Mobile Layout & Navigation
