@@ -1,14 +1,15 @@
 # Stage: Executing Milestone 7
 
 ## Active Focus
-- [ ] REP-02: Project Status Report Template
+- [ ] REP-03: Portfolio Health Aggregation API
 
 ## Quality Gate
 - **Status**: IDLE
-- **Last Task**: REP-01
+- **Last Task**: REP-02
 - **Verification**: PASSED
 
 ## Recent History
+- [x] REP-02: Project Status Report Template
 - [x] REP-01: PDF Generation Service (xhtml2pdf)
 - [x] INT-07: Workload Heatmap Widget
 - [x] INT-06: Resource Workload Leveling Logic
