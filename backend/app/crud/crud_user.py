@@ -61,3 +61,10 @@ async def get_multi(
 ) -> list[User]:
     result = await db.execute(select(User).offset(skip).limit(limit))
     return result.scalars().all()
+
+async def remove(db: AsyncSession, *, id: Any) -> Optional[User]:
+    obj = await get(db, id)
+    if obj:
+        await db.delete(obj)
+        await db.commit()
+    return obj

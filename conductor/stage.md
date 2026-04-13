@@ -1,14 +1,16 @@
-# Stage: Executing Milestone 7 (Recovery)
+# Stage: Milestone 7 (Recovery) Complete
 
 ## Active Focus
-- [ ] REAL-10: Expose Portfolio Health to MCP
+- [ ] Concluding Integration Phase
 
 ## Quality Gate
 - **Status**: IDLE
-- **Last Task**: REAL-09
+- **Last Task**: REAL-11
 - **Verification**: PASSED
 
 ## Recent History
+- [x] REAL-11: Expose Team Workload to MCP
+- [x] REAL-10: Expose Portfolio Health to MCP
 - [x] REAL-09: Remove AI Decomposer features
 - [x] REP-03: Portfolio Health Aggregation API
 - [x] REP-02: Project Status Report Template

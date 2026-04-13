@@ -10,7 +10,122 @@ from datetime import datetime
 from typing import List, Optional
 import json
 
+from app.models.task import Task
+from sqlalchemy import select, and_, func
+from sqlalchemy.orm import selectinload
+
 mcp = FastMCP("Monolith Planner", dependencies=["sqlalchemy", "asyncpg", "pydantic"])
+
+# --- ANALYTICS TOOLS ---
+
+@mcp.tool()
+async def get_portfolio_health() -> str:
+    """Get health metrics for all active projects, identifying overdue tasks and risks."""
+    async with AsyncSessionLocal() as db:
+        try:
+            # Fetch active projects
+            projects = await crud_project.project.get_multi(db, limit=1000)
+            projects = [p for p in projects if not p.is_archived]
+            
+            if not projects:
+                return "No active projects found in the portfolio."
+            
+            output = [f"PORTFOLIO HEALTH REPORT ({datetime.utcnow().strftime('%Y-%m-%d')})", "=" * 40]
+            now = datetime.utcnow()
+            
+            total_tasks = 0
+            total_overdue = 0
+            
+            for p in projects:
+                # Fetch tasks for this project
+                tasks_stmt = select(Task).filter(Task.project_id == p.id, Task.is_archived == False)
+                tasks_res = await db.execute(tasks_stmt)
+                tasks = tasks_res.scalars().all()
+                
+                overdue = sum(1 for t in tasks if t.due_date and t.due_date < now and t.status != Status.DONE)
+                score = 100.0 - (overdue * 5.0)
+                if p.status == "On hold": score -= 20
+                score = max(0.0, min(100.0, score))
+                
+                risk = "Low"
+                if score < 50 or overdue > 5: risk = "High"
+                elif score < 80 or overdue > 2: risk = "Medium"
+                
+                output.append(f"- {p.name}: {score:.0f}/100 Health | Risk: {risk} | Overdue: {overdue} | Progress: {p.progress_percent:.1f}%")
+                total_tasks += len(tasks)
+                total_overdue += overdue
+                
+            output.append("-" * 40)
+            avg_progress = sum(p.progress_percent for p in projects) / len(projects)
+            output.append(f"SUMMARY: {len(projects)} Projects | {total_tasks} Tasks | {total_overdue} Overdue | {avg_progress:.1f}% Avg Progress")
+            
+            return "\n".join(output)
+        except Exception as e:
+            return f"Error calculating portfolio health: {str(e)}"
+
+@mcp.tool()
+async def get_team_workload(days: int = 14) -> str:
+    """Calculate daily workload per user for the next N days to detect bottlenecks."""
+    async with AsyncSessionLocal() as db:
+        try:
+            from app.models.user import User
+            from sqlalchemy.orm import selectinload
+            
+            start_date = datetime.utcnow().date()
+            
+            # 1. Fetch all active users
+            users_res = await db.execute(select(User).filter(User.is_active == True))
+            users = users_res.scalars().all()
+            
+            # 2. Fetch all active tasks with assignees
+            tasks_stmt = (
+                select(Task)
+                .filter(
+                    and_(
+                        Task.status != Status.DONE,
+                        Task.start_date != None,
+                        Task.due_date != None,
+                        Task.is_archived == False
+                    )
+                )
+                .options(selectinload(Task.assignees))
+            )
+            tasks_res = await db.execute(tasks_stmt)
+            tasks = tasks_res.scalars().all()
+            
+            output = [f"TEAM WORKLOAD REPORT (Next {days} Days)", "=" * 40]
+            
+            for user in users:
+                user_tasks = [t for t in tasks if any(u.id == user.id for u in t.assignees)]
+                if not user_tasks:
+                    output.append(f"- {user.full_name or user.email}: No active tasks.")
+                    continue
+                
+                day_hours = {}
+                is_over = False
+                for task in user_tasks:
+                    t_start = task.start_date.date()
+                    t_due = task.due_date.date()
+                    t_dur = (t_due - t_start).days + 1
+                    if t_dur <= 0: continue
+                    
+                    daily_effort = 8.0 / t_dur
+                    curr = t_start
+                    while curr <= t_due:
+                        d_diff = (curr - start_date).days
+                        if 0 <= d_diff < days:
+                            d_str = curr.isoformat()
+                            day_hours[d_str] = day_hours.get(d_str, 0.0) + daily_effort
+                            if day_hours[d_str] > 8.0: is_over = True
+                        curr += timedelta(days=1)
+                
+                max_load = max(day_hours.values()) if day_hours else 0.0
+                status = "🚨 OVERALLOCATED" if is_over else "✅ OK"
+                output.append(f"- {user.full_name or user.email}: {status} | Max Load: {max_load:.1f}h/day | Tasks: {len(user_tasks)}")
+                
+            return "\n".join(output)
+        except Exception as e:
+            return f"Error calculating team workload: {str(e)}"
 
 # --- USER TOOLS ---
 
@@ -34,6 +149,19 @@ async def create_user(email: str, password: str, full_name: str = None, is_super
             return f"Successfully created user '{email}' with ID: {user_obj.id}"
         except Exception as e:
             return f"Error creating user: {str(e)}"
+
+@mcp.tool()
+async def delete_user(user_id: str) -> str:
+    """Delete a user from the system."""
+    async with AsyncSessionLocal() as db:
+        try:
+            user = await crud_user.get(db, id=UUID(user_id))
+            if not user:
+                return f"User with ID {user_id} not found."
+            await crud_user.remove(db, id=UUID(user_id))
+            return f"Successfully deleted user '{user.email}'"
+        except Exception as e:
+            return f"Error deleting user: {str(e)}"
 
 @mcp.resource("users://list")
 async def list_users() -> str:
@@ -84,6 +212,19 @@ async def create_project(
             return f"Error creating project: {str(e)}"
 
 @mcp.tool()
+async def delete_project(project_id: str) -> str:
+    """Delete a project and all its tasks."""
+    async with AsyncSessionLocal() as db:
+        try:
+            project = await crud_project.project.get(db, id=UUID(project_id))
+            if not project:
+                return f"Project with ID {project_id} not found."
+            await crud_project.project.remove(db, id=UUID(project_id))
+            return f"Successfully deleted project '{project.name}'"
+        except Exception as e:
+            return f"Error deleting project: {str(e)}"
+
+@mcp.tool()
 async def update_project(
     project_id: str,
     name: str = None,
@@ -118,6 +259,28 @@ async def update_project(
             return f"Successfully updated project '{project_obj.name}'"
         except Exception as e:
             return f"Error updating project: {str(e)}"
+
+@mcp.tool()
+async def assign_project_member(project_id: str, user_ids: List[str]) -> str:
+    """Assign members to a project."""
+    async with AsyncSessionLocal() as db:
+        try:
+            project_obj = await crud_project.project.get(db, id=UUID(project_id))
+            if not project_obj:
+                return f"Project with ID {project_id} not found."
+            
+            uids = [UUID(uid) for uid in user_ids]
+            # Fetch users
+            from app.models.user import User
+            res = await db.execute(select(User).filter(User.id.in_(uids)))
+            users = res.scalars().all()
+            
+            project_obj.members = users
+            db.add(project_obj)
+            await db.commit()
+            return f"Successfully updated members for project '{project_obj.name}'"
+        except Exception as e:
+            return f"Error assigning members: {str(e)}"
 
 @mcp.tool()
 async def search_projects(query: str) -> str:
@@ -241,6 +404,28 @@ async def create_task(
             return f"Error creating task: {str(e)}"
 
 @mcp.tool()
+async def create_subtask(parent_id: str, title: str, description: str = None) -> str:
+    """Create a subtask under an existing task."""
+    async with AsyncSessionLocal() as db:
+        try:
+            parent = await crud_task.task.get(db, id=UUID(parent_id))
+            if not parent:
+                return f"Parent task {parent_id} not found."
+            
+            task_in = TaskCreate(
+                title=title,
+                description=description,
+                project_id=parent.project_id,
+                parent_id=parent.id,
+                status=Status.TODO,
+                priority=Priority.MEDIUM
+            )
+            task_obj = await crud_task.task.create(db, obj_in=task_in)
+            return f"Successfully created subtask '{title}' under '{parent.title}' with ID: {task_obj.id}"
+        except Exception as e:
+            return f"Error creating subtask: {str(e)}"
+
+@mcp.tool()
 async def update_task(
     task_id: str,
     title: str = None,
@@ -282,6 +467,19 @@ async def update_task(
             return f"Successfully updated task '{task_obj.title}'"
         except Exception as e:
             return f"Error updating task: {str(e)}"
+
+@mcp.tool()
+async def delete_task(task_id: str) -> str:
+    """Delete a task or subtask."""
+    async with AsyncSessionLocal() as db:
+        try:
+            task_obj = await crud_task.task.get(db, id=UUID(task_id))
+            if not task_obj:
+                return f"Task with ID {task_id} not found."
+            await crud_task.task.remove(db, id=UUID(task_id))
+            return f"Successfully deleted task '{task_obj.title}'"
+        except Exception as e:
+            return f"Error deleting task: {str(e)}"
 
 @mcp.tool()
 async def assign_task(task_id: str, user_ids: List[str]) -> str:
