@@ -1,0 +1,21 @@
+services:
+  backend:
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_MODEL=${LLM_MODEL:-gpt-4o}
+    volumes:
+      - ./backend/app/templates:/app/app/templates
+    # Ensure dependencies are re-installed if needed
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+  frontend:
+    # Ensure hot-reload and proxy settings are active
+    environment:
+      - VITE_WS_URL=${VITE_WS_URL:-ws://localhost:8000/api/v1/notifications/ws/}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
