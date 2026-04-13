@@ -147,7 +147,7 @@
     "id": "REAL-10",
     "title": "Expose Portfolio Health to MCP",
     "description": "Add a tool to the MCP server to retrieve portfolio health metrics for AI agents.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/app/api/api_v1/endpoints/mcp.py"],
     "verification_method": "mcp-inspect tools list",
     "priority": 2
@@ -156,7 +156,7 @@
     "id": "REAL-11",
     "title": "Expose Team Workload to MCP",
     "description": "Add a tool to the MCP server to retrieve team workload data for AI agents.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/app/api/api_v1/endpoints/mcp.py"],
     "verification_method": "mcp-inspect tools list",
     "priority": 2
