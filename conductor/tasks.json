@@ -219,7 +219,7 @@
     "id": "REP-03",
     "title": "Portfolio Health Aggregation API",
     "description": "Implement an endpoint to calculate health scores (ROI, Variance, Risks) across all active projects.",
-    "status": "todo",
+    "status": "done",
     "target_files": ["backend/app/api/api_v1/endpoints/projects.py"],
     "verification_method": "pytest backend/tests/test_portfolio_logic.py",
     "priority": 1

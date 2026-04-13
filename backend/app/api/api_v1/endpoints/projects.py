@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 import io
 import pandas as pd
 from datetime import datetime
@@ -11,6 +12,7 @@ from app.api import deps
 from app.crud import crud_project, crud_task
 from app.schemas.project import Project, ProjectCreate, ProjectUpdate
 from app.models.user import User
+from app.models.task import Task
 
 router = APIRouter()
 
@@ -216,6 +218,71 @@ async def export_project(
         filename = f"export_{project.name}_{datetime.now().strftime('%Y%m%d')}.xlsx"
         response.headers["Content-Disposition"] = f"attachment; filename={filename}"
         return response
+
+from app.schemas.portfolio import PortfolioHealthResponse, ProjectHealth
+from app.core.enums import Status as TaskStatus
+
+@router.get("/portfolio/health", response_model=PortfolioHealthResponse)
+async def get_portfolio_health(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Calculate health metrics for all active projects.
+    """
+    # Fetch active projects
+    if current_user.is_superuser:
+        projects = await crud_project.project.get_multi(db, limit=1000)
+        projects = [p for p in projects if not p.is_archived]
+    else:
+        # Simplified: owner only for now
+        projects = await crud_project.project.get_multi_by_owner(db, owner_id=current_user.id)
+        projects = [p for p in projects if not p.is_archived]
+
+    project_healths = []
+    total_progress = 0.0
+    critical_projects = 0
+    now = datetime.utcnow()
+
+    for p in projects:
+        # Load tasks for analysis
+        tasks_stmt = select(Task).filter(Task.project_id == p.id, Task.is_archived == False)
+        tasks_res = await db.execute(tasks_stmt)
+        tasks = tasks_res.scalars().all()
+
+        overdue = sum(1 for t in tasks if t.due_date and t.due_date < now and t.status != TaskStatus.DONE)
+        critical_path = sum(1 for t in tasks if getattr(t, 'is_critical', False))
+        
+        # Simple health score formula: 100 - (overdue * 5)
+        score = 100.0 - (overdue * 5.0)
+        if p.status == "On hold": score -= 20
+        score = max(0.0, min(100.0, score))
+
+        risk = "Low"
+        if score < 50 or overdue > 5: risk = "High"
+        elif score < 80 or overdue > 2: risk = "Medium"
+
+        if risk == "High": critical_projects += 1
+        total_progress += (p.progress_percent or 0.0)
+
+        project_healths.append(ProjectHealth(
+            id=p.id,
+            name=p.name,
+            progress=p.progress_percent or 0.0,
+            status=p.status.value if hasattr(p.status, 'value') else str(p.status),
+            health_score=score,
+            overdue_tasks=overdue,
+            critical_path_tasks=critical_path,
+            risk_level=risk,
+            variance_days=overdue # Simplified variance
+        ))
+
+    return PortfolioHealthResponse(
+        projects=project_healths,
+        total_active=len(projects),
+        average_progress=total_progress / len(projects) if projects else 0.0,
+        critical_projects=critical_projects
+    )
 
 @router.get("/", response_model=List[Project])
 async def read_projects(
