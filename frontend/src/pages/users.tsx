@@ -14,19 +14,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
 import { 
-  User as UserIcon, 
   Mail, 
   ShieldCheck, 
   Shield, 
   Key, 
   ShieldAlert,
   Loader2,
-  Archive,
-  Users
+  Archive
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ResourceTimeline from '@/components/resource-timeline';
 import { useTitle } from '@/components/layout';
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 interface User {
   id: string;
@@ -135,9 +134,7 @@ export default function UsersPage() {
                 <TableRow key={user.id} className="hover:bg-slate-50/50 transition-colors">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200 shrink-0">
-                        <UserIcon className="w-4 h-4 text-slate-500" />
-                      </div>
+                      <UserAvatar user={user} className="w-9 h-9" />
                       <div className="flex flex-col min-w-0">
                         <span className="font-medium text-slate-900 truncate">{user.full_name || 'No Name'}</span>
                         <div className="flex items-center gap-1.5 text-xs text-slate-500">

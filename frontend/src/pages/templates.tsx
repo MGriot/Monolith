@@ -98,7 +98,7 @@ export default function TemplatesPage() {
 
   useEffect(() => {
     setActions(
-      <Button size="sm" onClick={() => { resetForm(); setEditingTeam(null); setIsCreateDialogOpen(true); }} className="gap-2 shadow-lg shadow-primary/20 h-9">
+      <Button size="sm" onClick={() => { resetForm(); setIsCreateDialogOpen(true); }} className="gap-2 shadow-lg shadow-primary/20 h-9">
         <Plus className="w-4 h-4" /> Create Template
       </Button>
     );

@@ -8,6 +8,11 @@ ENV PYTHONUNBUFFERED 1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
+    pkg-config \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg-dev \
+    libz-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

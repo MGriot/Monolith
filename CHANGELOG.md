@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] - 2026-04-14
+
+### Added
+- **Universal Ideas Hub**: A centralized command center for brainstorming and collaborative innovation across all projects.
+- **Enhanced SOPs (Workflows)**: Support for LaTeX mathematical formulas and interactive "Tipsy" tooltips for professional technical documentation.
+- **Idea Lifecycle Management**: New voting system (Up/Down), task-to-idea linking, and one-click promotion to Tasks or new Projects.
+- **Single Tasks Progression**: New Gantt-style timeline in the Master Schedule for tracking individual tasks in projects you don't own.
+
+### Changed
+- **Visual Standardization**: Unified user identity with a standardized `UserAvatar` component across all pages and activity feeds.
+- **Navigation Simplified**: Simplified "My Tasks" to "Tasks" and elevated "Ideas" to a primary navigation item.
+- **Improved Task Discussions**: Comments and Activity logs are now available directly from the Task edit dialog in the main Tasks list.
+
+### Fixed
+- **Stability Core**: Resolved critical React re-render loops and Hook violations that caused blank page crashes on Dashboard and Project pages.
+- **Data Integrity**: Fixed backend 500 errors in Idea retrieval and ambiguous foreign key constraints during startup.
+- **Gantt Precision**: Fixed row color synchronization and plot rendering to respect user-defined task colors.
+
 ## [2.9.0] - 2026-03-10
 
 ### Added

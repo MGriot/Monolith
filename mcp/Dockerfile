@@ -2,8 +2,16 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies (for psycopg2)
-RUN apt-get update && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
+# Install system dependencies (for psycopg2 and cairo for PDF)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    pkg-config \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg-dev \
+    libz-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
 COPY backend/requirements.txt .

@@ -13,7 +13,6 @@ import {
   TrendingUp,
   Activity,
   Users,
-  LayoutDashboard,
   Zap
 } from 'lucide-react';
 import { cn, formatPercent } from '@/lib/utils';
@@ -22,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { format, parseISO, startOfDay, addDays } from 'date-fns';
 import ProjectHeatmap from '@/components/project-heatmap';
 import ResourceTimeline from '@/components/resource-timeline';
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 interface DashboardSummary {
   total_projects: number;
@@ -110,6 +110,15 @@ export default function DashboardPage() {
     },
   });
 
+  const workloadDates = useMemo(() => {
+    const dates = [];
+    const start = startOfDay(new Date());
+    for (let i = 0; i < 14; i++) {
+        dates.push(format(addDays(start, i), 'yyyy-MM-dd'));
+    }
+    return dates;
+  }, []);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -128,15 +137,6 @@ export default function DashboardPage() {
   }
 
   const completionRate = data?.total_tasks ? (data.tasks_done / data.total_tasks) * 100 : 0;
-
-  const workloadDates = useMemo(() => {
-    const dates = [];
-    const start = startOfDay(new Date());
-    for (let i = 0; i < 14; i++) {
-        dates.push(format(addDays(start, i), 'yyyy-MM-dd'));
-    }
-    return dates;
-  }, []);
 
   const getWorkloadColor = (hours: number) => {
     if (hours === 0) return 'bg-slate-50';
@@ -291,9 +291,7 @@ export default function DashboardPage() {
                                 <tr key={user_workload.user_id} className="hover:bg-white transition-colors">
                                     <td className="p-3 border-b border-r sticky left-0 bg-white z-10 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-500 border">
-                                                {user_workload.user_name.charAt(0).toUpperCase()}
-                                            </div>
+                                            <UserAvatar user={{ full_name: user_workload.user_name }} className="w-6 h-6" />
                                             <span className="text-xs font-bold text-slate-700 truncate max-w-[100px]">{user_workload.user_name}</span>
                                             {user_workload.is_overallocated && <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />}
                                         </div>
@@ -407,9 +405,7 @@ export default function DashboardPage() {
                 <Card key={activity.id} className="border-slate-200 shadow-sm hover:border-primary/20 transition-all group">
                   <CardHeader className="p-4 pb-2">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
-                        {activity.user.full_name ? activity.user.full_name.charAt(0) : activity.user.email.charAt(0).toUpperCase()}
-                      </div>
+                      <UserAvatar user={activity.user} className="w-8 h-8" />
                       <Badge variant="outline" className="text-[8px] font-black uppercase text-emerald-600 bg-emerald-50 border-emerald-100">Done</Badge>
                     </div>
                     <CardTitle className="text-xs font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">

@@ -13,11 +13,7 @@ import {
     Calculator, 
     CalendarDays, 
     Clock, 
-    Link as LinkIcon, 
-    Plus, 
-    X,
-    Loader2,
-    CheckCircle2
+    Link as LinkIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
@@ -168,7 +164,7 @@ export default function TaskForm({
     defaultValues: processedInitialValues as any,
   });
 
-  const { fields, append, remove } = useFieldArray({
+  useFieldArray({
     control,
     name: "subtasks",
   });

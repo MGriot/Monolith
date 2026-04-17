@@ -12,11 +12,11 @@ import {
     Loader2, 
     Search,
     ChevronLeft,
-    Clock,
     User as UserIcon,
     Globe,
     Lock,
-    Share2
+    Share2,
+    Lightbulb
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,13 +33,13 @@ import {
 } from "@/components/ui/dialog";
 import MarkdownRenderer from '@/components/markdown-renderer';
 import { toast } from 'sonner';
-import { format, parseISO } from 'date-fns';
 import type { Workflow } from '@/types';
 import { Switch } from '@/components/ui/switch';
 import { AssigneeSelector } from '@/components/assignee-selector';
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
 import { useTitle } from '@/components/layout';
+import { cn } from '@/lib/utils';
 
 export default function WorkflowsPage() {
     const { user } = useAuth();
@@ -144,6 +144,13 @@ export default function WorkflowsPage() {
             "preview", "side-by-side", "fullscreen", "|", 
             "guide"
           ],
+          // Custom preview rendering to support LaTeX and Tipsy
+          previewRender: () => {
+            // We can't easily render React components into a string for SimpleMDE's preview
+            // but we can use a simpler marked-based approach or just rely on the main view mode.
+            // For now, let's just use the default but keep the option for future static rendering.
+            return null; // returning null uses default
+          }
         } as any;
     }, [handleImageUpload]);
 
@@ -236,30 +243,66 @@ export default function WorkflowsPage() {
     if (selectedWorkflow) {
         return (
             <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
-                <div className="flex-1 overflow-auto p-8">
-                    <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="p-8 lg:p-12">
-                            {selectedWorkflow.description && (
-                                <p className="text-slate-500 text-lg leading-relaxed mb-8 italic border-l-4 border-primary/20 pl-6">
-                                    {selectedWorkflow.description}
-                                </p>
-                            )}
-                            <MarkdownRenderer content={selectedWorkflow.content} className="max-w-none" />
-                        </div>
-                        <div className="px-8 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-xs text-slate-400">
-                                <div className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 shadow-sm uppercase">
-                                    {selectedWorkflow.owner?.full_name?.charAt(0) || selectedWorkflow.owner?.email.charAt(0) || '?'}
-                                </div>
-                                <span>Authored by {selectedWorkflow.owner?.full_name || selectedWorkflow.owner?.email}</span>
-                            </div>
-                            <div className="flex -space-x-2 overflow-hidden">
-                                {selectedWorkflow.shared_with?.map(u => (
-                                    <div key={u.id} className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-500 shadow-sm" title={`Shared with ${u.full_name}`}>
-                                        {u.full_name?.charAt(0)}
+                <div className="flex-1 overflow-auto p-4 md:p-8">
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        {/* Hero Header */}
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div className="p-8 md:p-12 space-y-6">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className={cn("text-[10px] font-black uppercase tracking-tighter", selectedWorkflow.is_public ? "text-blue-600 bg-blue-50 border-blue-100" : "text-slate-500 bg-slate-50 border-slate-200")}>
+                                            {selectedWorkflow.is_public ? 'Public Document' : 'Internal SOP'}
+                                        </Badge>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Modified {new Date(selectedWorkflow.updated_at).toLocaleDateString()}</span>
                                     </div>
-                                ))}
+                                    <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-none">{selectedWorkflow.title}</h1>
+                                    {selectedWorkflow.description && (
+                                        <p className="text-slate-500 text-lg leading-relaxed italic border-l-4 border-primary/20 pl-6 py-1">
+                                            {selectedWorkflow.description}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="border-t border-slate-100 pt-8">
+                                    <MarkdownRenderer content={selectedWorkflow.content} className="max-w-none" />
+                                </div>
                             </div>
+
+                            {/* Footer / Meta */}
+                            <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex flex-wrap gap-6 items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                        <UserIcon className="w-5 h-5 text-slate-400" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Author</span>
+                                        <span className="text-sm font-bold text-slate-700">{selectedWorkflow.owner?.full_name || selectedWorkflow.owner?.email}</span>
+                                    </div>
+                                </div>
+
+                                {selectedWorkflow.shared_with && selectedWorkflow.shared_with.length > 0 && (
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex -space-x-3 overflow-hidden">
+                                            {selectedWorkflow.shared_with.map(u => (
+                                                <div key={u.id} className="w-10 h-10 rounded-full bg-white border-2 border-slate-50 flex items-center justify-center text-[10px] font-black text-slate-500 shadow-sm" title={`Shared with ${u.full_name}`}>
+                                                    {u.full_name?.charAt(0) || u.email.charAt(0)}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contributors</span>
+                                            <span className="text-xs font-bold text-slate-500">{selectedWorkflow.shared_with.length} user{selectedWorkflow.shared_with.length > 1 ? 's' : ''}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Back navigation helper */}
+                        <div className="flex justify-center pb-12">
+                            <Button variant="ghost" onClick={() => setSelectedWorkflow(null)} className="text-slate-400 hover:text-primary gap-2 font-bold uppercase text-[10px] tracking-widest">
+                                <ChevronLeft className="w-3 h-3" /> Back to Procedure Library
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -393,9 +436,28 @@ export default function WorkflowsPage() {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="wf-content" className="text-xs font-bold uppercase text-slate-500">Content (Markdown)</Label>
-                                <Badge variant="secondary" className="text-[10px]">GFM Supported</Badge>
+                                <div className="flex gap-2">
+                                    <Badge variant="secondary" className="text-[10px] bg-amber-50 text-amber-700 border-amber-100">$ LaTeX $$</Badge>
+                                    <Badge variant="secondary" className="text-[10px] bg-blue-50 text-blue-700 border-blue-100">[Tipsy](#! "Tooltip")</Badge>
+                                    <Badge variant="secondary" className="text-[10px]">GFM Supported</Badge>
+                                </div>
                             </div>
-                            <div className="border rounded-md overflow-hidden bg-white">
+                            
+                            <div className="bg-slate-100/50 p-3 rounded-lg border border-slate-200 mb-2">
+                                <h5 className="text-[10px] font-black uppercase text-slate-500 mb-1 flex items-center gap-1">
+                                    <Lightbulb className="w-3 h-3" /> Quick Guide
+                                </h5>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="text-[9px] text-slate-500 italic">
+                                        <span className="font-bold text-slate-700">Math:</span> Use <code className="bg-white px-1 rounded">$E=mc^2$</code> or <code className="bg-white px-1 rounded">$$\sum x_i$$</code> for LaTeX.
+                                    </div>
+                                    <div className="text-[9px] text-slate-500 italic">
+                                        <span className="font-bold text-slate-700">Tipsy:</span> Use <code className="bg-white px-1 rounded">[Hover Me](#! "This is a tooltip")</code> for interactive tips.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border rounded-md overflow-hidden bg-white shadow-inner">
                                 <SimpleMDE
                                     value={content}
                                     onChange={setContent}

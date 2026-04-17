@@ -10,14 +10,11 @@ import {
     Lock, 
     Save, 
     Shield, 
-    Settings, 
     Webhook as WebhookIcon, 
     Plus, 
     Trash2, 
     Send, 
-    Loader2,
-    CheckCircle2,
-    AlertCircle
+    Loader2
 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
@@ -31,7 +28,7 @@ import {
     DialogDescription,
     DialogFooter 
 } from "@/components/ui/dialog";
-import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface ProfileFormValues {
   full_name: string;
@@ -54,7 +51,7 @@ interface Webhook {
 }
 
 export default function SettingsPage() {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);

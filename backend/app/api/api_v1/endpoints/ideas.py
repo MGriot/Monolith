@@ -1,6 +1,6 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud, models, schemas
@@ -11,21 +11,84 @@ router = APIRouter()
 
 @router.get("/", response_model=List[schemas.idea.Idea])
 async def read_ideas(
-    project_id: UUID,
+    project_id: Optional[UUID] = Query(None),
+    task_id: Optional[UUID] = Query(None),
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
     current_user: models.User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Retrieve ideas for a project.
+    Retrieve ideas. If project_id is provided, filters by project.
+    Otherwise, returns all ideas relevant to the current user.
     """
-    # Check project access (implied by dependency but let's be safe)
-    project = await crud.project.get(db, id=project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    if project_id:
+        # Check project access (implied by dependency but let's be safe)
+        project = await crud.project.get(db, id=project_id)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+            
+        return await crud_idea.get_multi_by_project(db, project_id=project_id, task_id=task_id, skip=skip, limit=limit, current_user_id=current_user.id)
+    
+    return await crud_idea.get_multi_by_user(db, user_id=current_user.id, skip=skip, limit=limit, current_user_id=current_user.id)
+
+@router.post("/{idea_id}/vote")
+async def vote_idea(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    idea_id: UUID,
+    current_user: models.User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Toggle vote for an idea.
+    """
+    idea = await crud_idea.get(db, id=idea_id)
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    
+    voted = await crud_idea.toggle_vote(db, idea_id=idea_id, user_id=current_user.id)
+    return {"voted": voted}
+
+@router.post("/{idea_id}/downvote")
+async def downvote_idea(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    idea_id: UUID,
+    current_user: models.User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Toggle downvote for an idea.
+    """
+    idea = await crud_idea.get(db, id=idea_id)
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    
+    voted = await crud_idea.toggle_downvote(db, idea_id=idea_id, user_id=current_user.id)
+    return {"voted": voted}
+
+@router.post("/{idea_id}/promote-project", response_model=schemas.project.Project)
+async def promote_idea_to_project(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    idea_id: UUID,
+    current_user: models.User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Promote an idea to a project.
+    """
+    idea = await crud_idea.get(db, id=idea_id)
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    
+    # Only project owner/admin can promote
+    project = await crud.project.get(db, id=idea.project_id)
+    if project.owner_id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Only project owners can promote ideas")
         
-    return await crud_idea.get_multi_by_project(db, project_id=project_id, skip=skip, limit=limit)
+    try:
+        return await crud_idea.promote_to_project(db, idea_id=idea_id, owner_id=current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/", response_model=schemas.idea.Idea)
 async def create_idea(

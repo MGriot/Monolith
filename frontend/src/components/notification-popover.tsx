@@ -57,41 +57,39 @@ export default function NotificationPopover() {
     const wsUrl = `${protocol}//${host}/api/v1/notifications/ws/${token}`;
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
+    let pingInterval: any;
 
     socket.onmessage = (event) => {
       try {
+        if (event.data === 'pong') return;
         const message = JSON.parse(event.data);
         if (message.type === 'new_notification') {
-          // Play a sound or show a toast
           toast.info(message.data.title, {
             description: message.data.message,
           });
-          
-          // Invalidate and refetch
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
         }
       } catch (e) {
-        // Handle ping/pong or other messages
-        if (event.data === 'pong') return;
+        // Silently ignore non-JSON
       }
     };
 
     socket.onopen = () => {
       console.log('Notification WebSocket connected');
-      // Start ping loop
-      const pingInterval = setInterval(() => {
+      pingInterval = setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) {
           socket.send('ping');
         }
       }, 30000);
-      return () => clearInterval(pingInterval);
     };
 
     socket.onclose = () => {
       console.log('Notification WebSocket disconnected');
+      if (pingInterval) clearInterval(pingInterval);
     };
 
     return () => {
+      if (pingInterval) clearInterval(pingInterval);
       socket.close();
     };
   }, [queryClient]);

@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
+import React, { useState, createContext, useContext, useEffect, useRef, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './auth-provider';
 import { useQuery } from '@tanstack/react-query';
@@ -9,7 +9,6 @@ import {
   Calendar as CalendarIcon,
   LogOut,
   Settings,
-  User as UserIcon,
   Users,
   Plus,
   Database,
@@ -28,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { UserAvatar } from './ui/user-avatar';
 import NotificationPopover from './notification-popover';
 import TaskCreateDialog from './task-create-dialog';
 import {
@@ -113,7 +113,8 @@ export default function Layout({ children }: LayoutProps) {
   const filteredNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
     { icon: FolderKanban, label: 'Projects', href: '/projects' },
-    { icon: CheckSquare, label: 'My Tasks', href: '/tasks' },
+    { icon: CheckSquare, label: 'Tasks', href: '/tasks' },
+    { icon: Lightbulb, label: 'Ideas', href: '/ideas' },
     { icon: CalendarIcon, label: 'Schedule', href: '/schedule' },
     { icon: Archive, label: 'Archive', href: '/archive' },
     { icon: Copy, label: 'Templates', href: '/templates' },
@@ -145,8 +146,21 @@ export default function Layout({ children }: LayoutProps) {
   const displayTitle = title || pageInfo.label;
   const DisplayIcon = icon || pageInfo.icon;
 
+  const stableSetTitle = React.useCallback((t: string | null) => setTitle(t), []);
+  const stableSetIcon = React.useCallback((i: React.ElementType | null) => setIcon(i), []);
+  const stableSetActions = React.useCallback((a: React.ReactNode | null) => setActions(a), []);
+
+  const contextValue = useMemo(() => ({
+    title, 
+    setTitle: stableSetTitle, 
+    icon, 
+    setIcon: stableSetIcon, 
+    actions, 
+    setActions: stableSetActions
+  }), [title, icon, actions, stableSetTitle, stableSetIcon, stableSetActions]);
+
   return (
-    <TitleContext.Provider value={{ title, setTitle, icon, setIcon, actions, setActions }}>
+    <TitleContext.Provider value={contextValue}>
     <div className="flex h-screen bg-slate-50 overflow-hidden relative">
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
@@ -349,9 +363,7 @@ export default function Layout({ children }: LayoutProps) {
                 <p className="text-[11px] font-bold text-slate-900 leading-none">{user?.full_name || 'User'}</p>
                 <p className="text-[9px] text-slate-500 leading-none mt-1">{user?.email}</p>
               </div>
-              <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200 shrink-0">
-                <UserIcon className="w-3.5 h-3.5 text-slate-500" />
-              </div>
+              <UserAvatar user={user} className="w-8 h-8" />
             </div>
           </div>
         </header>

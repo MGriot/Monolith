@@ -138,14 +138,21 @@ export interface Team {
 export interface Idea {
   id: string;
   project_id: string;
+  task_id?: string | null;
   author_id?: string | null;
   title: string;
   description?: string | null;
   status: 'Proposed' | 'Approved' | 'Rejected' | 'Converted';
   converted_task_id?: string | null;
+  promoted_project_id?: string | null;
   created_at: string;
   updated_at: string;
   author?: User | null;
+  comment_count: number;
+  vote_count: number;
+  has_voted: boolean;
+  downvote_count: number;
+  has_downvoted: boolean;
   comments?: IdeaComment[];
 }
 

@@ -49,7 +49,7 @@ class Project(Base):
     owner = relationship("User", backref="owned_projects", foreign_keys=[owner_id])
     members = relationship("User", secondary=project_members, backref="member_projects")
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
-    ideas = relationship("Idea", back_populates="project", cascade="all, delete-orphan")
+    ideas = relationship("Idea", back_populates="project", foreign_keys="[Idea.project_id]", cascade="all, delete-orphan")
     
     topic_ref = relationship("Topic", foreign_keys=[topic_id])
     type_ref = relationship("WorkType", foreign_keys=[type_id])
