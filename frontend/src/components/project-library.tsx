@@ -8,8 +8,7 @@ import {
     Loader2,
     Search,
     Image as ImageIcon,
-    Layout,
-    Settings
+    Layout
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,7 @@ interface ProjectLibraryProps {
     onOpenSettings?: () => void;
 }
 
-export default function ProjectLibrary({ projectId, onOpenSettings }: ProjectLibraryProps) {
+export default function ProjectLibrary({ projectId }: ProjectLibraryProps) {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();

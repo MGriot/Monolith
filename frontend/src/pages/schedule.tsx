@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/components/auth-provider';
 import {
   format,
   addMonths,
@@ -42,7 +43,145 @@ interface CalendarItem {
   due_date: string;
   deadline_at?: string;
   project_id?: string;
+  project_name?: string;
+  project_owner_id?: string;
   task_id?: string;
+}
+
+// --- Task Roadmap View Component ---
+
+function TaskRoadmapView() {
+  const { user } = useAuth();
+  const [viewWindow] = useState({
+    start: startOfYear(new Date()),
+    end: endOfYear(new Date()),
+  });
+
+  const { data: calendarItems, isLoading } = useQuery({
+    queryKey: ['calendar-tasks-gantt'],
+    queryFn: async () => {
+      const start = format(viewWindow.start, 'yyyy-MM-dd');
+      const end = format(viewWindow.end, 'yyyy-MM-dd');
+      const response = await api.get(`/calendar/?start_date=${start}&end_date=${end}`);
+      return response.data.items as CalendarItem[];
+    },
+  });
+
+  const months = useMemo(() => {
+    return eachMonthOfInterval({
+      start: viewWindow.start,
+      end: viewWindow.end,
+    });
+  }, [viewWindow]);
+
+  const totalDays = differenceInDays(viewWindow.end, viewWindow.start) + 1;
+
+  const getPosition = (dateStr: string) => {
+    const date = parseISO(dateStr);
+    const daysFromStart = differenceInDays(date, viewWindow.start);
+    return Math.max(0, Math.min(100, (daysFromStart / totalDays) * 100));
+  };
+
+  const getWidth = (startStr: string, endStr: string) => {
+    const start = parseISO(startStr);
+    const end = parseISO(endStr);
+    const duration = differenceInDays(end, start) + 1;
+    return Math.max(0.5, (duration / totalDays) * 100);
+  };
+
+  const relevantTasks = useMemo(() => {
+    if (!calendarItems || !user) return [];
+    return calendarItems.filter(item => 
+      (item.item_type === 'task' || item.item_type === 'subtask') && 
+      item.start_date && 
+      item.project_owner_id !== user.id
+    );
+  }, [calendarItems, user]);
+
+  return (
+    <div className="mt-4">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-slate-900">{format(viewWindow.start, 'yyyy')} Task Progression</h2>
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+            <div className="w-2 h-2 rounded-full bg-purple-500" /> Assigned Tasks
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        {/* Timeline Header */}
+        <div className="flex border-b border-slate-200 bg-slate-50/50">
+          <div className="w-64 border-r border-slate-200 p-4 flex-shrink-0 font-semibold text-sm text-slate-600">
+            Task / Project
+          </div>
+          <div className="flex-1 relative h-14 flex items-end">
+            {months.map((month) => {
+              const left = (differenceInDays(month, viewWindow.start) / totalDays) * 100;
+              const width = (differenceInDays(endOfMonth(month), month) + 1) / totalDays * 100;
+              return (
+                <div 
+                  key={month.toISOString()} 
+                  className="absolute border-l border-slate-200 h-full flex items-center justify-center text-[10px] font-bold text-slate-400 uppercase tracking-tighter"
+                  style={{ left: `${left}%`, width: `${width}%` }}
+                >
+                  {format(month, 'MMM')}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Timeline Content */}
+        <div className="flex-1 overflow-y-auto max-h-[600px]">
+          {isLoading ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : relevantTasks.length === 0 ? (
+            <div className="h-64 flex flex-col items-center justify-center text-slate-500">
+              <p>No tasks with progression found in other projects.</p>
+            </div>
+          ) : (
+            relevantTasks.map((task) => (
+              <div key={task.id} className="flex border-b border-slate-100 hover:bg-slate-50/50 transition-colors group">
+                <div className="w-64 border-r border-slate-200 p-4 flex-shrink-0 flex flex-col justify-center">
+                  <span className="text-sm font-semibold text-slate-900 truncate">{task.title}</span>
+                  <span className="text-[10px] text-slate-400 truncate">{task.project_name || 'Individual Task'}</span>
+                </div>
+                <div className="flex-1 relative h-16 py-4 px-0">
+                  {/* Grid lines */}
+                  {months.map((month) => {
+                    const left = (differenceInDays(month, viewWindow.start) / totalDays) * 100;
+                    return (
+                      <div 
+                        key={month.toISOString()} 
+                        className="absolute top-0 bottom-0 border-l border-slate-100 h-full"
+                        style={{ left: `${left}%` }}
+                      />
+                    );
+                  })}
+                  
+                  {/* Task Bar */}
+                  <div 
+                    className={cn(
+                      "absolute h-8 rounded-md border flex items-center px-3 shadow-sm transition-transform group-hover:scale-[1.01] bg-purple-50 border-purple-200"
+                    )}
+                    style={{ 
+                      left: `${getPosition(task.start_date!)}%`, 
+                      width: `${getWidth(task.start_date!, task.due_date)}%` 
+                    }}
+                  >
+                    <span className="text-[10px] font-bold truncate text-purple-700">
+                      {task.title}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function CalendarView() {
@@ -399,6 +538,14 @@ export default function SchedulePage() {
                         <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Project Roadmaps</h2>
                     </div>
                     <RoadmapView />
+                </section>
+
+                <section>
+                    <div className="flex items-center gap-2 mb-4 border-t pt-12">
+                        <GanttChart className="w-5 h-5 text-purple-600" />
+                        <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Single Tasks Progression</h2>
+                    </div>
+                    <TaskRoadmapView />
                 </section>
 
                 <section>

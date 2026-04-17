@@ -4,6 +4,7 @@ import { CommentInput } from './comment-input';
 import { formatDistanceToNow } from 'date-fns';
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { 
@@ -61,11 +62,18 @@ export function CommentItem({
 
   const isAuthor = currentUserId === comment.author_id;
   const hasReplies = comment.replies && comment.replies.length > 0;
+  
+  // Cap indentation at depth 3 to avoid extreme narrowing
+  const indentClass = depth > 0 && depth <= 3 ? 'ml-8' : depth > 3 ? 'ml-2' : '';
 
   return (
-    <div className={`flex gap-3 ${depth > 0 ? 'ml-8 mt-4 relative' : 'mt-6'}`}>
-      {depth > 0 && (
-          <div className="absolute -left-6 top-0 bottom-0 w-px bg-border" />
+    <div className={cn(
+        "flex gap-3",
+        depth === 0 ? "mt-6" : "mt-4 relative",
+        indentClass
+    )}>
+      {depth > 0 && depth <= 3 && (
+          <div className="absolute -left-4 top-0 bottom-0 w-px bg-slate-100" />
       )}
       <UserAvatar user={comment.author} className="h-8 w-8" />
       

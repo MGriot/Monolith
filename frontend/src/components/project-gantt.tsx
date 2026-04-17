@@ -1200,7 +1200,7 @@ export default function ProjectGantt({
             {ganttItems.map((item: any) => {
               const isSub = 'isSubtask' in item;
               const isWbsRoot = !isSub && !item.parent_id;
-              const hasColor = isWbsRoot && item.color;
+              const hasColor = showTaskColors && item.color;
 
               return (
                 <div
@@ -1212,7 +1212,7 @@ export default function ProjectGantt({
                   style={{
                     height: `${ROW_HEIGHT}px`,
                     width: `${containerWidth + sidebarWidth}px`,
-                    backgroundColor: hasColor ? `${item.color}15` : undefined
+                    backgroundColor: hasColor ? `${item.color}10` : undefined
                   }}
                 >
                   {/* Sidebar Cells */}
@@ -1353,8 +1353,8 @@ export default function ProjectGantt({
                           style={{
                             left: `${getPositionPx(item.start_date!)}px`,
                             width: `${getWidthPx(item.start_date!, (item.due_date || item.start_date))}px`,
-                            backgroundColor: `${getStatusHex(item.status)}22`,
-                            borderColor: getStatusHex(item.status)
+                            backgroundColor: hasColor ? `${item.color}25` : `${getStatusHex(item.status)}22`,
+                            borderColor: hasColor ? item.color : getStatusHex(item.status)
                           }}
                         >
                           <span className="px-2 text-[10px] font-bold truncate text-slate-800 pointer-events-none">
@@ -1366,7 +1366,7 @@ export default function ProjectGantt({
                             className="h-1 absolute bottom-0 left-0 transition-all duration-500 ease-in-out"
                             style={{
                               width: getProgressWidth(item),
-                              backgroundColor: getStatusHex(item.status),
+                              backgroundColor: hasColor ? item.color : getStatusHex(item.status),
                             }}
                           />
 

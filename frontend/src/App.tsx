@@ -14,10 +14,12 @@ import MyTasksPage from "./pages/my-tasks";
 import TeamsPage from "./pages/teams";
 import WorkflowsPage from "./pages/workflows";
 import WhiteboardPage from "./pages/whiteboard";
+import IdeasPage from "./pages/ideas";
 
 import DashboardPage from "./pages/dashboard";
 import ProjectsListPage from "./pages/projects-list";
 import ArchivePage from "./pages/archive";
+import { Toaster } from 'sonner';
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
+          <Toaster position="top-right" richColors closeButton />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -64,6 +67,7 @@ function App() {
             <Route path="/archive" element={<PrivateRoute><ArchivePage /></PrivateRoute>} />
             <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
             <Route path="/tasks" element={<PrivateRoute><MyTasksPage /></PrivateRoute>} />
+            <Route path="/ideas" element={<PrivateRoute><IdeasPage /></PrivateRoute>} />
             <Route path="/schedule" element={<PrivateRoute><SchedulePage /></PrivateRoute>} />
             <Route path="/calendar" element={<Navigate to="/schedule" replace />} />
             <Route path="/roadmap" element={<Navigate to="/schedule" replace />} />

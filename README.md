@@ -18,7 +18,8 @@
     - **Smart Kanban:** Full status parity (Backlog to Done) with precise drag-and-drop reordering and a 5-task column limit.
     - **Activity Heatmap:** GitHub-style contribution tracking (Last 12 months rolling).
 - **🤝 Decentralized Management:** Every user can create and manage their own teams, fostering organic collaboration.
-- **📖 Workflow Library:** A user-managed repository for Standard Operating Procedures (SOPs) with full Markdown support.
+- **💡 Universal Ideas Hub:** Centralized brainstorming engine with up/down voting, task-linking, and multi-path promotion (Task or Project).
+- **📜 Professional Workflows:** Enhanced SOP library with full LaTeX math support and interactive "Tipsy" tooltips.
 - **📥 Data Portability:** High-DPI Gantt PNGs, Project CSV, and Excel (.xlsx) exports for comprehensive reporting.
 - **🤖 AI-Ready (MCP):** Integrated **Model Context Protocol** server allows AI agents to autonomously manage your projects, tasks, and subtasks.
 - **⚡ Technical Excellence:**

@@ -28,13 +28,9 @@ import { toast } from 'sonner';
 import {
   Trello,
   GanttChart,
-  Calendar as CalendarIcon,
   Plus,
   List as ListIcon,
   Users as UsersIcon,
-  User as UserIcon,
-  FolderKanban,
-  LayoutDashboard,
   Trash2,
   Loader2,
   AlertCircle,
@@ -43,13 +39,14 @@ import {
   Download,
   MessageSquare,
   BookOpen,
-  Settings
+  Settings,
+  LayoutDashboard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { cn, formatPercent } from '@/lib/utils';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 import DataExportDialog from '@/components/data-export-dialog';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import type { Project, Task } from '@/types';
 import { useTitle } from '@/components/layout';
 
@@ -505,9 +502,7 @@ export default function ProjectDetailPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {project.members?.map((member) => (
                   <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-100">
-                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-slate-200 shadow-sm">
-                      <UserIcon className="w-5 h-5 text-slate-400" />
-                    </div>
+                    <UserAvatar user={member} className="w-10 h-10 border-white shadow-sm" />
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-bold text-slate-900 truncate">{member.full_name || 'No Name'}</span>
                       <span className="text-xs text-slate-500 truncate">{member.email}</span>
@@ -524,7 +519,7 @@ export default function ProjectDetailPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="ideas" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
+        <TabsContent value="ideas" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30 space-y-6">
           <ProjectIdeas projectId={id!} onPromoteSuccess={handlePromoteSuccess} />
         </TabsContent>
 
@@ -673,6 +668,17 @@ export default function ProjectDetailPage() {
                   Task Activity
                 </h3>
                 <CommentSection taskId={editingTask.id} />
+              </div>
+
+              <div className="pt-6 border-t mt-6">
+                <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-amber-500" />
+                  Linked Project Ideas
+                </h3>
+                <ProjectIdeas 
+                  projectId={id!} 
+                  taskId={editingTask.id} 
+                />
               </div>
             </>
           )}

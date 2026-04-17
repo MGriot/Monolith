@@ -15,6 +15,7 @@ class CalendarItem(BaseModel):
     due_date: datetime
     project_id: Optional[UUID] = None
     project_name: Optional[str] = None
+    project_owner_id: Optional[UUID] = None
     task_id: Optional[UUID] = None
     assignees: List[UserSchema] = []
 

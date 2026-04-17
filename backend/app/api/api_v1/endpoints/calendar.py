@@ -58,7 +58,8 @@ async def get_calendar_events(
             item_type="project",
             status=p.status,
             start_date=p.start_date,
-            due_date=p.due_date
+            due_date=p.due_date,
+            project_owner_id=p.owner_id
         ))
 
     # Fetch Tasks (All levels)
@@ -95,6 +96,7 @@ async def get_calendar_events(
             due_date=t.due_date,
             project_id=t.project_id,
             project_name=t.project.name if t.project else None,
+            project_owner_id=t.project.owner_id if t.project else None,
             task_id=t.parent_id,
             assignees=t.assignees
         ))

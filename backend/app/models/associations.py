@@ -78,3 +78,17 @@ workflow_shares = Table(
     Column("workflow_id", UUID(as_uuid=True), ForeignKey("workflows.id"), primary_key=True),
     Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
 )
+
+idea_votes = Table(
+    "idea_votes",
+    Base.metadata,
+    Column("idea_id", UUID(as_uuid=True), ForeignKey("ideas.id", ondelete="CASCADE"), primary_key=True),
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+)
+
+idea_downvotes = Table(
+    "idea_downvotes",
+    Base.metadata,
+    Column("idea_id", UUID(as_uuid=True), ForeignKey("ideas.id", ondelete="CASCADE"), primary_key=True),
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+)

@@ -10,7 +10,13 @@ import {
   AlertCircle,
   Loader2,
   Folder,
-  Download
+  Download,
+  Trash2,
+  Archive,
+  MoreHorizontal,
+  Pencil,
+  MessageSquare,
+  Lightbulb
 } from 'lucide-react';
 import KanbanBoard from '@/components/kanban-board';
 import ProjectGantt from '@/components/project-gantt';
@@ -29,20 +35,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import TaskForm, { type TaskFormValues } from '@/components/task-form';
-import { useNavigate } from 'react-router-dom';
+import CommentSection from '@/components/comments/comment-section';
+import ProjectIdeas from '@/components/project-ideas';
 import type { Task } from '@/types';
 import { useTitle } from '@/components/layout';
+import { toast } from 'sonner';
 
 export default function MyTasksPage() {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
-  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
-  const { setActions } = useTitle();
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const { setTitle, setActions } = useTitle();
 
   useEffect(() => {
+    setTitle('Tasks');
     setActions(
       <div className="flex items-center gap-4">
         <Button variant="outline" size="sm" onClick={() => setIsExportDialogOpen(true)} className="gap-2 h-9">
@@ -69,8 +84,11 @@ export default function MyTasksPage() {
         </div>
       </div>
     );
-    return () => setActions(null);
-  }, [setActions, view]);
+    return () => {
+      setActions(null);
+      setTitle(null);
+    };
+  }, [setActions, setTitle, view]);
 
   const { data: tasks, isLoading, isError } = useQuery({
     queryKey: ['tasks', 'assigned'],
@@ -84,17 +102,53 @@ export default function MyTasksPage() {
     return (tasks || []).filter(t => !t.is_archived && (!t.project || !t.project.is_archived));
   }, [tasks]);
 
-  const createTaskMutation = useMutation({
-    mutationFn: async (data: TaskFormValues) => {
-      return api.post('/tasks/', { ...data, project_id: null });
+  const findTaskRecursive = (taskList: Task[], taskId: string): Task | null => {
+    for (const task of taskList) {
+      if (task.id === taskId) return task;
+      if (task.subtasks && task.subtasks.length > 0) {
+        const found = findTaskRecursive(task.subtasks, taskId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const editingTask = tasks && editingTaskId ? findTaskRecursive(tasks, editingTaskId) : null;
+
+  const updateTaskMutation = useMutation({
+    mutationFn: async ({ taskId, data }: { taskId: string; data: Partial<TaskFormValues> }) => {
+      const response = await api.put(`/tasks/${taskId}`, data);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', 'assigned'] });
-      setIsCreateTaskOpen(false);
+      setIsTaskDialogOpen(false);
+      setEditingTaskId(null);
+      toast.success("Task updated successfully");
     },
-    onError: (err: any) => {
-      const msg = err.response?.data?.detail || err.message;
-      alert(`Failed to create task: ${msg}`);
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      return api.delete(`/tasks/${taskId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'assigned'] });
+      setIsTaskDialogOpen(false);
+      setEditingTaskId(null);
+      toast.success("Task deleted successfully");
+    },
+  });
+
+  const archiveTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      return api.post(`/tasks/${taskId}/archive`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'assigned'] });
+      setIsTaskDialogOpen(false);
+      setEditingTaskId(null);
+      toast.success("Task archived successfully");
     },
   });
 
@@ -124,12 +178,28 @@ export default function MyTasksPage() {
     onError: (err: any, __, context) => {
       queryClient.setQueryData(['tasks', 'assigned'], context?.previousTasks);
       const msg = err.response?.data?.detail || err.message;
-      alert(`Move failed: ${msg}`);
+      toast.error(`Move failed: ${msg}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', 'assigned'] });
     },
   });
+
+  const handleTaskSubmit = (data: TaskFormValues) => {
+    const formatDate = (d?: string | null) => (d && d.trim()) ? new Date(d).toISOString() : null;
+
+    const formattedData = {
+      ...data,
+      start_date: formatDate(data.start_date),
+      due_date: formatDate(data.due_date),
+      deadline_at: formatDate(data.deadline_at),
+      completed_at: formatDate(data.completed_at),
+    };
+
+    if (editingTaskId) {
+      updateTaskMutation.mutate({ taskId: editingTaskId, data: formattedData });
+    }
+  };
 
   const calculateSortIndex = (container: string, index: number) => {
     const columnTasks = (tasks || [])
@@ -160,6 +230,11 @@ export default function MyTasksPage() {
     moveTaskMutation.mutate({ taskId, newStatus: container, sortIndex });
   };
 
+  const handleTaskClick = (task: Task) => {
+    setEditingTaskId(task.id);
+    setIsTaskDialogOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -187,8 +262,8 @@ export default function MyTasksPage() {
               onTaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx) : undefined })}
               onSubtaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx) : undefined })}
               onReorder={handleKanbanReorder}
-              onTaskClick={(task) => task.project_id ? navigate(`/projects/${task.project_id}`) : navigate(`/tasks?task_id=${task.id}`)}
-              onSubtaskClick={(st) => st.project_id ? navigate(`/projects/${st.project_id}`) : navigate(`/tasks?task_id=${st.id}`)}
+              onTaskClick={handleTaskClick}
+              onSubtaskClick={handleTaskClick}
             />
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -200,12 +275,13 @@ export default function MyTasksPage() {
                     <TableHead className="text-[10px] font-black uppercase text-slate-500">Status</TableHead>
                     <TableHead className="text-[10px] font-black uppercase text-slate-500">Priority</TableHead>
                     <TableHead className="text-[10px] font-black uppercase text-slate-500 text-right">Due Date</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-slate-500 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {activeTasks.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-32 text-center text-slate-500 italic">
+                      <TableCell colSpan={6} className="h-32 text-center text-slate-500 italic">
                         You have no tasks assigned to you.
                       </TableCell>
                     </TableRow>
@@ -214,7 +290,7 @@ export default function MyTasksPage() {
                       <TableRow 
                         key={task.id} 
                         className="hover:bg-slate-50/50 cursor-pointer"
-                        onClick={() => task.project_id ? navigate(`/projects/${task.project_id}`) : null}
+                        onClick={() => handleTaskClick(task)}
                       >
                         <TableCell className="font-semibold text-slate-900">{task.title}</TableCell>
                         <TableCell>
@@ -235,6 +311,30 @@ export default function MyTasksPage() {
                         </TableCell>
                         <TableCell className="text-right text-xs font-bold text-slate-500">
                           {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleTaskClick(task)}>
+                                <Pencil className="w-3.5 h-3.5 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => {
+                                  if (confirm("Delete this task?")) {
+                                    deleteTaskMutation.mutate(task.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))
@@ -258,16 +358,104 @@ export default function MyTasksPage() {
         </div>
       </div>
 
-      <Dialog open={isCreateTaskOpen} onOpenChange={setIsCreateTaskOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      {/* Task Dialog */}
+      <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Independent Task</DialogTitle>
+            <DialogTitle>{editingTask ? 'Edit Task' : 'Task Details'}</DialogTitle>
           </DialogHeader>
-          <TaskForm 
-            onSubmit={(data) => createTaskMutation.mutate(data)}
-            onCancel={() => setIsCreateTaskOpen(false)}
-            isLoading={createTaskMutation.isPending}
-          />
+
+          {editingTask && (
+            <TaskForm
+              projectId={editingTask.project_id || undefined}
+              taskObject={editingTask}
+              initialValues={{
+                title: editingTask.title,
+                description: editingTask.description,
+                status: editingTask.status,
+                priority: editingTask.priority,
+                topic_ids: editingTask.topic_ids || editingTask.topics?.map(t => t.id) || [],
+                type_ids: editingTask.type_ids || editingTask.types?.map(t => t.id) || [],
+                is_milestone: editingTask.is_milestone,
+                start_date: editingTask.start_date || '',
+                due_date: editingTask.due_date || '',
+                deadline_at: editingTask.deadline_at || '',
+                completed_at: editingTask.completed_at || '',
+                assignee_ids: editingTask.assignees?.map(u => u.id) || [],
+                parent_id: editingTask.parent_id,
+                color: editingTask.color,
+                optimistic_days: editingTask.optimistic_days,
+                normal_days: editingTask.normal_days,
+                pessimistic_days: editingTask.pessimistic_days
+              }}
+              onSubmit={handleTaskSubmit}
+              onCancel={() => setIsTaskDialogOpen(false)}
+              isLoading={updateTaskMutation.isPending}
+              allTasks={tasks || []}
+              editingTaskId={editingTaskId}
+            />
+          )}
+
+          {editingTask && (
+            <div className="pt-6 border-t mt-6 flex justify-between items-center">
+              <div className="text-xs text-slate-400">
+                Created at {new Date(editingTask.created_at).toLocaleDateString()}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-slate-400 hover:text-amber-600 hover:bg-amber-50 gap-2 h-8"
+                    onClick={() => {
+                    if (window.confirm(`Archive the task "${editingTask.title}"?`)) {
+                        archiveTaskMutation.mutate(editingTask.id);
+                    }
+                    }}
+                    disabled={archiveTaskMutation.isPending}
+                >
+                    {archiveTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
+                    Archive Task
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 h-8"
+                    onClick={() => {
+                    if (window.confirm(`Are you sure you want to delete the task "${editingTask.title}"?`)) {
+                        deleteTaskMutation.mutate(editingTask.id);
+                    }
+                    }}
+                    disabled={deleteTaskMutation.isPending}
+                >
+                    {deleteTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    Delete Task
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {editingTask && (
+            <div className="pt-6 border-t mt-6">
+              <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-primary" />
+                Task Activity
+              </h3>
+              <CommentSection taskId={editingTask.id} />
+            </div>
+          )}
+
+          {editingTask && editingTask.project_id && (
+            <div className="pt-6 border-t mt-6">
+              <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-amber-500" />
+                Linked Project Ideas
+              </h3>
+              <ProjectIdeas 
+                projectId={editingTask.project_id} 
+                taskId={editingTask.id} 
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -275,8 +463,8 @@ export default function MyTasksPage() {
         open={isExportDialogOpen} 
         onOpenChange={setIsExportDialogOpen} 
         endpoint="/tasks/export"
-        title="Export My Tasks"
-        filenamePrefix="my_tasks"
+        title="Export Tasks"
+        filenamePrefix="tasks"
       />
     </div>
   );
