@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
   LayoutDashboard,
+  Bell,
   FolderKanban,
   Calendar as CalendarIcon,
   LogOut,
@@ -112,6 +113,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const filteredNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
+    { icon: Bell, label: 'Updates', href: '/updates' },
     { icon: FolderKanban, label: 'Projects', href: '/projects' },
     { icon: CheckSquare, label: 'Tasks', href: '/tasks' },
     { icon: Lightbulb, label: 'Ideas', href: '/ideas' },

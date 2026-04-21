@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { useAuth } from '@/components/auth-provider';
 import { 
@@ -13,11 +13,13 @@ import {
   TrendingUp,
   Activity,
   Users,
-  Zap
+  Zap,
+  Bell
 } from 'lucide-react';
 import { cn, formatPercent } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format, parseISO, startOfDay, addDays } from 'date-fns';
 import ProjectHeatmap from '@/components/project-heatmap';
 import ResourceTimeline from '@/components/resource-timeline';
@@ -78,6 +80,7 @@ interface TeammateActivity {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: async () => {
@@ -150,7 +153,7 @@ export default function DashboardPage() {
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-slate-500">Active Projects</CardTitle>
@@ -179,6 +182,22 @@ export default function DashboardPage() {
             <CardContent>
               <div className="text-2xl font-bold">{data?.tasks_on_hold}</div>
               <p className="text-xs text-slate-500 mt-1">Currently on hold</p>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-500">System Activity</CardTitle>
+              <Bell className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-1 text-[10px] font-bold uppercase h-8"
+                onClick={() => navigate('/updates')}
+              >
+                View Activity Recap
+              </Button>
             </CardContent>
           </Card>
           <Card className="border-slate-200 shadow-sm">

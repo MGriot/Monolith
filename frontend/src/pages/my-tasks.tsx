@@ -50,7 +50,7 @@ import { toast } from 'sonner';
 
 export default function MyTasksPage() {
   const queryClient = useQueryClient();
-  const [view, setView] = useState<'kanban' | 'list'>('kanban');
+  const [view, setView] = useState<'kanban' | 'list'>('list');
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
