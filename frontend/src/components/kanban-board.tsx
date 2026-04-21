@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { 
   DndContext, 
   DragOverlay, 
-  closestCorners, 
+  rectIntersection, 
   KeyboardSensor, 
   PointerSensor, 
   useSensor, 
@@ -241,13 +241,13 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorde
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={rectIntersection}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="h-full overflow-x-auto pb-4">
-        <div className="flex gap-6 min-w-max mx-auto px-6">
+        <div className="flex gap-6 min-w-max mx-auto px-6 h-full min-h-[calc(100vh-280px)]">
           {COLUMNS.map((col) => (
             <KanbanColumn 
               key={col.id} 
@@ -317,11 +317,18 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, activeId, onAddTask, on
   const remainingCount = Math.max(0, itemIds.length - visibleItemIds.length);
 
   return (
-    <div className="flex flex-col w-80 shrink-0">
-      <div className="flex items-center justify-between mb-4 px-2">
-        <h3 className="font-semibold text-slate-700 flex items-center gap-2">
+    <div className="flex flex-col w-80 shrink-0 h-full max-h-screen">
+      <div className="flex items-center justify-between mb-4 px-2 shrink-0">
+        <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+          <div className={cn(
+              "w-2 h-2 rounded-full",
+              id === 'Todo' ? "bg-blue-400" :
+              id === 'In Progress' ? "bg-amber-400" :
+              id === 'Done' ? "bg-emerald-400" :
+              "bg-slate-300"
+          )} />
           {title}
-          <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-black">
             {itemIds.length}
           </span>
         </h3>
@@ -329,27 +336,22 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, activeId, onAddTask, on
           {onAddTask && (
             <button 
               onClick={() => onAddTask(id)}
-              className="p-1 hover:bg-slate-100 rounded-md text-slate-500 transition-colors"
+              className="p-1 hover:bg-white rounded-md text-slate-400 hover:text-primary transition-all"
               title="Add Task"
             >
               <Plus className="w-4 h-4" />
             </button>
           )}
-          <MoreVertical className="w-4 h-4 text-slate-400 cursor-pointer" />
+          <MoreVertical className="w-4 h-4 text-slate-300 cursor-pointer" />
         </div>
       </div>
       
-      {/* 
-        Pass visibleItemIds to SortableContext. 
-        dnd-kit requires the items in SortableContext to match the rendered Sortable items 1:1.
-        If we pass hidden items, dnd-kit will calculate wrong indices for drops.
-      */}
       <SortableContext id={id} items={visibleItemIds} strategy={verticalListSortingStrategy}>
         <div 
           ref={setNodeRef}
           className={cn(
-            "flex-1 bg-slate-50/50 rounded-xl p-3 border border-slate-100 min-h-[400px] transition-colors",
-            isOver && "bg-slate-100/80 border-primary/30"
+            "flex-1 bg-slate-100/40 rounded-2xl p-2 border-2 border-dashed border-transparent transition-all duration-300 min-h-[500px] flex flex-col gap-1 overflow-y-auto scrollbar-hide",
+            isOver && "bg-primary/5 border-primary/20 ring-4 ring-primary/5 shadow-inner scale-[1.01]"
           )}
         >
           {visibleItemIds.map((itemId) => {
@@ -365,8 +367,8 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, activeId, onAddTask, on
           })}
           
           {remainingCount > 0 && (
-            <div className="mt-2 text-center p-2 rounded-lg border border-dashed border-slate-200 text-xs text-slate-500 bg-white/50 italic">
-                + {remainingCount} more tasks ...
+            <div className="mt-auto text-center p-3 rounded-xl border border-dashed border-slate-200 text-[10px] font-bold text-slate-400 bg-white/50 italic uppercase tracking-widest">
+                + {remainingCount} more in backlog
             </div>
           )}
         </div>

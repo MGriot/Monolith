@@ -594,9 +594,18 @@ export default function ProjectGantt({
   const svgHeight = ganttItems.length * ROW_HEIGHT;
 
   const scrollToToday = () => {
-    const ganttContainer = ganttRef.current?.querySelector('.overflow-x-auto');
-    if (ganttContainer) {
-      ganttContainer.scrollLeft = Math.max(0, todayPx - 400);
+    if (ganttRef.current) {
+      // The container with overflow-x-auto is the one we need to scroll
+      const scrollableContainer = ganttRef.current;
+      
+      // Calculate target: Today position + Sidebar width - center offset (approx 400px)
+      // Note: todayPx is relative to the timeline start (after sidebar)
+      const targetScroll = Math.max(0, todayPx - 400);
+      
+      scrollableContainer.scrollTo({
+        left: targetScroll,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -1314,20 +1323,47 @@ export default function ProjectGantt({
                       />
                     )}
 
-                    {/* Bar or Milestone */}
-                    {(item.is_milestone || (item.start_date && item.start_date === getEffectiveEndDate(item))) ? (
+                    {/* Bar or Milestone or Summary */}
+                    {item.is_milestone ? (
                       <div
                         className={cn(
-                          "absolute w-4 h-4 rotate-45 border-2 border-white shadow-md z-10",
+                          "absolute w-3 h-3 rotate-45 border-2 border-white shadow-md z-10 transition-transform hover:scale-125",
                           getBarColor(item)
                         )}
                         style={{
-                          left: `calc(${getPositionPx(item.start_date!)}px - 8px)`,
-                          top: '20px'
+                          left: `calc(${getPositionPx(item.start_date || item.due_date!)}px - 6px)`,
+                          top: '22px'
                         }}
                         title={`${item.title} (Milestone)`}
                       />
+                    ) : item.subtasks && item.subtasks.length > 0 ? (
+                      /* Summary / Umbrella Task */
+                      <div className="relative h-full flex flex-col justify-center">
+                        <div
+                          className="absolute h-1.5 flex items-end z-10"
+                          style={{
+                            left: `${getPositionPx(item.start_date!)}px`,
+                            width: `${getWidthPx(item.start_date!, (item.due_date || item.start_date))}px`,
+                            top: '24px'
+                          }}
+                        >
+                          {/* Main thin bar */}
+                          <div className="w-full h-1 bg-slate-800 rounded-full relative">
+                            {/* Left tick */}
+                            <div className="absolute left-0 top-0 w-0.5 h-3 bg-slate-800" style={{ transform: 'translateY(-2px)' }} />
+                            {/* Right tick */}
+                            <div className="absolute right-0 top-0 w-0.5 h-3 bg-slate-800" style={{ transform: 'translateY(-2px)' }} />
+                          </div>
+                        </div>
+                        <span className="absolute px-2 text-[9px] font-black uppercase text-slate-500 truncate pointer-events-none" style={{
+                            left: `${getPositionPx(item.start_date!)}px`,
+                            top: '8px'
+                        }}>
+                          {item.title}
+                        </span>
+                      </div>
                     ) : (
+                      /* Standard Activity Bar */
                       <div className="relative h-full flex flex-col justify-center">
                         {/* Buffer Zone (Grace Period) */}
                         {item.deadline_at && item.due_date && isAfter(parseISO(item.deadline_at), parseISO(item.due_date)) && (
@@ -1357,18 +1393,18 @@ export default function ProjectGantt({
                             borderColor: hasColor ? item.color : getStatusHex(item.status)
                           }}
                         >
-                          <span className="px-2 text-[10px] font-bold truncate text-slate-800 pointer-events-none">
-                            {item.title}
-                          </span>
-
-                          {/* Progress Indicator Underline */}
-                          <div
-                            className="h-1 absolute bottom-0 left-0 transition-all duration-500 ease-in-out"
-                            style={{
+                          {/* Internal Progress Shading (Subtle) */}
+                          <div 
+                            className="absolute inset-y-0 left-0 transition-all duration-700 ease-out opacity-20 pointer-events-none"
+                            style={{ 
                               width: getProgressWidth(item),
-                              backgroundColor: hasColor ? item.color : getStatusHex(item.status),
+                              backgroundColor: hasColor ? item.color : getStatusHex(item.status)
                             }}
                           />
+
+                          <span className="px-2 text-[10px] font-bold truncate text-slate-800 pointer-events-none z-10">
+                            {item.title}
+                          </span>
 
                           {(item.deadline_at && isAfter(new Date(), parseISO(item.deadline_at)) && item.status.toLowerCase() !== 'done') && (
                             <div className="absolute right-1 top-1 text-[8px] animate-pulse">⚠️</div>

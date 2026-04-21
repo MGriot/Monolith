@@ -15,11 +15,11 @@ import TeamsPage from "./pages/teams";
 import WorkflowsPage from "./pages/workflows";
 import WhiteboardPage from "./pages/whiteboard";
 import IdeasPage from "./pages/ideas";
+import UpdatesPage from "./pages/updates";
 
 import DashboardPage from "./pages/dashboard";
 import ProjectsListPage from "./pages/projects-list";
 import ArchivePage from "./pages/archive";
-import { Toaster } from 'sonner';
 
 const queryClient = new QueryClient();
 
@@ -50,7 +50,6 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
-          <Toaster position="top-right" richColors closeButton />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -62,6 +61,7 @@ function App() {
                 </PrivateRoute>
               }
             />
+            <Route path="/updates" element={<PrivateRoute><UpdatesPage /></PrivateRoute>} />
             {/* Placeholder routes for navigation */}
             <Route path="/projects" element={<PrivateRoute><ProjectsListPage /></PrivateRoute>} />
             <Route path="/archive" element={<PrivateRoute><ArchivePage /></PrivateRoute>} />

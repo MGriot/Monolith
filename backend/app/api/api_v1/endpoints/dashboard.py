@@ -117,6 +117,76 @@ async def trigger_deadline_notifications(
     await notify_near_deadlines(db)
     return {"message": "Deadline notifications triggered"}
 
+@router.get("/activity-recap", response_model=Any)
+async def get_activity_recap(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Get a detailed recap of all activity across projects.
+    """
+    # Last 30 days
+    limit_date = datetime.utcnow() - timedelta(days=30)
+
+    # 1. New Tasks
+    new_tasks_query = select(Task).where(
+        Task.created_at >= limit_date,
+        Task.is_archived == False
+    ).order_by(Task.created_at.desc()).limit(20)
+
+    # 2. Completed Tasks
+    completed_tasks_query = select(Task).where(
+        Task.completed_at >= limit_date,
+        Task.is_archived == False
+    ).order_by(Task.completed_at.desc()).limit(20)
+
+    # 3. Upcoming Deadlines (expanded)
+    upcoming_deadlines_query = select(Task).where(
+        Task.due_date >= datetime.utcnow(),
+        Task.status != Status.DONE,
+        Task.is_archived == False
+    ).order_by(Task.due_date.asc()).limit(20)
+
+    if not current_user.is_superuser:
+        new_tasks_query = new_tasks_query.join(Project).where(Project.owner_id == current_user.id)
+        completed_tasks_query = completed_tasks_query.join(Project).where(Project.owner_id == current_user.id)
+        upcoming_deadlines_query = upcoming_deadlines_query.join(Project).where(Project.owner_id == current_user.id)
+
+    res_new = await db.execute(new_tasks_query)
+    res_completed = await db.execute(completed_tasks_query)
+    res_upcoming = await db.execute(upcoming_deadlines_query)
+
+    new_tasks = res_new.scalars().all()
+    completed_tasks = res_completed.scalars().all()
+    upcoming_deadlines = res_upcoming.scalars().all()
+
+    return {
+        "new_tasks": [
+            {
+                "id": str(t.id),
+                "title": t.title,
+                "created_at": t.created_at.isoformat(),
+                "project_id": str(t.project_id)
+            } for t in new_tasks
+        ],
+        "completed_tasks": [
+            {
+                "id": str(t.id),
+                "title": t.title,
+                "completed_at": t.completed_at.isoformat(),
+                "project_id": str(t.project_id)
+            } for t in completed_tasks
+        ],
+        "upcoming_deadlines": [
+            {
+                "id": str(t.id),
+                "title": t.title,
+                "due_date": t.due_date.isoformat(),
+                "project_id": str(t.project_id)
+            } for t in upcoming_deadlines
+        ]
+    }
+
 @router.get("/summary", response_model=Any)
 async def get_dashboard_summary(
     db: AsyncSession = Depends(deps.get_db),
