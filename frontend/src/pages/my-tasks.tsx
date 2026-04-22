@@ -16,8 +16,10 @@ import {
   MoreHorizontal,
   Pencil,
   MessageSquare,
-  Lightbulb
+  Lightbulb,
+  Clock
 } from 'lucide-react';
+import { format } from 'date-fns';
 import KanbanBoard from '@/components/kanban-board';
 import ProjectGantt from '@/components/project-gantt';
 import DataExportDialog from '@/components/data-export-dialog';
@@ -42,6 +44,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import TaskForm, { type TaskFormValues } from '@/components/task-form';
+import AttachmentManager from '@/components/attachment-manager';
 import CommentSection from '@/components/comments/comment-section';
 import ProjectIdeas from '@/components/project-ideas';
 import type { Task } from '@/types';
@@ -252,8 +255,20 @@ export default function MyTasksPage() {
     );
   }
 
+  const formatDateSafe = (dateStr?: string | null) => {
+    if (!dateStr) return "N/A";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "Invalid Date";
+      return format(d, "PPP p");
+    } catch (e) {
+      return "N/A";
+    }
+  };
+
   return (
-    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50 pb-12">
+
       <div className="flex-1 overflow-auto p-6 space-y-6">
         <div className="min-h-[500px]">
           {view === 'kanban' ? (
@@ -386,7 +401,8 @@ export default function MyTasksPage() {
                 color: editingTask.color,
                 optimistic_days: editingTask.optimistic_days,
                 normal_days: editingTask.normal_days,
-                pessimistic_days: editingTask.pessimistic_days
+                pessimistic_days: editingTask.pessimistic_days,
+                duration_days: editingTask.duration_days
               }}
               onSubmit={handleTaskSubmit}
               onCancel={() => setIsTaskDialogOpen(false)}
@@ -397,63 +413,84 @@ export default function MyTasksPage() {
           )}
 
           {editingTask && (
-            <div className="pt-6 border-t mt-6 flex justify-between items-center">
-              <div className="text-xs text-slate-400">
-                Created at {new Date(editingTask.created_at).toLocaleDateString()}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-slate-400 hover:text-amber-600 hover:bg-amber-50 gap-2 h-8"
-                    onClick={() => {
-                    if (window.confirm(`Archive the task "${editingTask.title}"?`)) {
-                        archiveTaskMutation.mutate(editingTask.id);
-                    }
-                    }}
-                    disabled={archiveTaskMutation.isPending}
-                >
-                    {archiveTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
-                    Archive Task
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 h-8"
-                    onClick={() => {
-                    if (window.confirm(`Are you sure you want to delete the task "${editingTask.title}"?`)) {
-                        deleteTaskMutation.mutate(editingTask.id);
-                    }
-                    }}
-                    disabled={deleteTaskMutation.isPending}
-                >
-                    {deleteTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                    Delete Task
-                </Button>
-              </div>
-            </div>
-          )}
+            <div className="space-y-8 mt-6 border-t pt-6">
+               <>
+                  {editingTask.id && (
+                    <AttachmentManager
+                        taskId={editingTask.id}
+                        projectId={editingTask.project_id || undefined}
+                        attachments={editingTask.attachments || []}
+                    />
+                  )}
 
-          {editingTask && (
-            <div className="pt-6 border-t mt-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-primary" />
-                Task Activity
-              </h3>
-              <CommentSection taskId={editingTask.id} />
-            </div>
-          )}
+                  {editingTask.id && (
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <MessageSquare className="w-4 h-4 text-primary" />
+                            Task Activity
+                        </h3>
+                        <CommentSection taskId={editingTask.id} />
+                    </div>
+                  )}
 
-          {editingTask && editingTask.project_id && (
-            <div className="pt-6 border-t mt-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-amber-500" />
-                Linked Project Ideas
-              </h3>
-              <ProjectIdeas 
-                projectId={editingTask.project_id} 
-                taskId={editingTask.id} 
-              />
+                  {editingTask.id && (
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4 text-amber-500" />
+                            Linked Project Ideas
+                        </h3>
+                        <ProjectIdeas 
+                            projectId={editingTask.project_id || undefined} 
+                            taskId={editingTask.id} 
+                        />
+                    </div>
+                  )}
+               </>
+
+              {/* Metadata & Footer Actions */}
+              <div className="pt-6 border-t mt-6 flex flex-col gap-6 bg-slate-50/50 -mx-6 px-6 pb-6 rounded-b-xl">
+                <div className="flex flex-wrap justify-between items-end gap-4">
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight flex items-center gap-2">
+                       <Clock className="w-3 h-3" /> Created: {formatDateSafe(editingTask.created_at)}
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight flex items-center gap-2">
+                       <Clock className="w-3 h-3 text-primary/40" /> Modified: {formatDateSafe(editingTask.updated_at)}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-slate-500 hover:text-amber-600 hover:bg-amber-50 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
+                        onClick={() => {
+                        if (window.confirm(`Archive the task "${editingTask.title}"?`)) {
+                            archiveTaskMutation.mutate(editingTask.id);
+                        }
+                        }}
+                        disabled={archiveTaskMutation.isPending}
+                    >
+                        {archiveTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
+                        Archive
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-400 hover:text-red-600 hover:bg-red-50 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
+                        onClick={() => {
+                        if (window.confirm(`Are you sure you want to delete the task "${editingTask.title}"?`)) {
+                            deleteTaskMutation.mutate(editingTask.id);
+                        }
+                        }}
+                        disabled={deleteTaskMutation.isPending}
+                    >
+                        {deleteTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>

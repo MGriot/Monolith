@@ -23,7 +23,7 @@ class ProjectTemplateUpdate(ProjectTemplateBase):
 
 class ProjectTemplate(ProjectTemplateBase):
     id: UUID
-    owner_id: UUID
+    owner_id: Optional[UUID] = None
     shared_with: List[UserSchema] = []
     
     model_config = ConfigDict(from_attributes=True)

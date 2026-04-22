@@ -13,9 +13,11 @@ import {
     Calculator, 
     CalendarDays, 
     Clock, 
-    Link as LinkIcon
+    Link as LinkIcon,
+    Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
 import { AssigneeSelector } from "@/components/assignee-selector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -125,6 +127,16 @@ export default function TaskForm({
   });
 
   const processedInitialValues = useMemo(() => {
+    const formatDate = (dateStr?: string | null) => {
+      if (!dateStr) return "";
+      try {
+        // Only return the date part YYYY-MM-DD
+        return format(parseISO(dateStr), "yyyy-MM-dd");
+      } catch (e) {
+        return "";
+      }
+    };
+
     const vals = {
       status: "Todo",
       priority: "Medium",
@@ -140,6 +152,10 @@ export default function TaskForm({
       duration_days: 0,
       subtasks: [],
       ...initialValues,
+      start_date: formatDate(initialValues?.start_date),
+      due_date: formatDate(initialValues?.due_date),
+      deadline_at: formatDate(initialValues?.deadline_at),
+      completed_at: formatDate(initialValues?.completed_at),
     };
 
     if (initialValues?.topics && vals.topic_ids?.length === 0) {
@@ -157,12 +173,18 @@ export default function TaskForm({
     handleSubmit,
     setValue,
     watch,
+    reset,
     control,
     formState: { errors },
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: processedInitialValues as any,
   });
+
+  // Sync form state when initialValues change (essential for Dialog reuse)
+  useEffect(() => {
+    reset(processedInitialValues);
+  }, [processedInitialValues, reset]);
 
   useFieldArray({
     control,
@@ -191,11 +213,17 @@ export default function TaskForm({
   // Sync logic for the UI
   useEffect(() => {
     if (planningMode === "dates" && startDate && dueDate) {
-      const start = parseISO(startDate);
-      const end = parseISO(dueDate);
-      const diff = differenceInDays(end, start) + 1;
-      if (diff >= 0 && diff !== durationDays) {
-        setValue("duration_days", diff);
+      try {
+        const start = parseISO(startDate);
+        const end = parseISO(dueDate);
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) return;
+        
+        const diff = differenceInDays(end, start) + 1;
+        if (diff >= 0 && diff !== durationDays) {
+          setValue("duration_days", diff);
+        }
+      } catch (e) {
+        // Ignore parsing errors
       }
     }
   }, [startDate, dueDate, planningMode, setValue, durationDays]);
@@ -203,9 +231,15 @@ export default function TaskForm({
   const handleDurationChange = (val: number) => {
     setValue("duration_days", val);
     if (planningMode === "duration" && startDate && val > 0) {
-      const start = parseISO(startDate);
-      const newEnd = addDays(start, val - 1);
-      setValue("due_date", format(newEnd, "yyyy-MM-dd"));
+      try {
+        const start = parseISO(startDate);
+        if (isNaN(start.getTime())) return;
+        
+        const newEnd = addDays(start, val - 1);
+        setValue("due_date", format(newEnd, "yyyy-MM-dd"));
+      } catch (e) {
+        // Ignore calculation errors
+      }
     }
   };
 
@@ -308,10 +342,76 @@ export default function TaskForm({
       color: data.color === "" ? null : data.color,
       description: data.description === "" ? null : data.description,
     };
+
+    // Auto-calculations
+    if (cleanedData.start_date && cleanedData.due_date) {
+        const start = parseISO(cleanedData.start_date);
+        const end = parseISO(cleanedData.due_date);
+        cleanedData.duration_days = differenceInDays(end, start) + 1;
+    } else if (cleanedData.start_date && cleanedData.duration_days && !cleanedData.due_date) {
+        const start = parseISO(cleanedData.start_date);
+        const end = addDays(start, cleanedData.duration_days - 1);
+        cleanedData.due_date = format(end, "yyyy-MM-dd");
+    }
+
+    // PERT logic
+    if (cleanedData.optimistic_days && cleanedData.normal_days && cleanedData.pessimistic_days) {
+        const pert = (cleanedData.optimistic_days + (4 * cleanedData.normal_days) + cleanedData.pessimistic_days) / 6;
+        if (!cleanedData.duration_days) {
+            cleanedData.duration_days = Math.round(pert);
+        }
+    }
+
     onSubmit(cleanedData);
   };
 
+  const handleSyncFromChildren = () => {
+    if (!taskObject?.subtasks || taskObject.subtasks.length === 0) return;
+    
+    let minStart: Date | null = null;
+    let maxDue: Date | null = null;
+
+    taskObject.subtasks.forEach(st => {
+        if (st.start_date) {
+            try {
+                const d = parseISO(st.start_date);
+                if (!isNaN(d.getTime())) {
+                    if (!minStart || d < minStart) minStart = d;
+                }
+            } catch (e) {}
+        }
+        if (st.due_date) {
+            try {
+                const d = parseISO(st.due_date);
+                if (!isNaN(d.getTime())) {
+                    if (!maxDue || d > maxDue) maxDue = d;
+                }
+            } catch (e) {}
+        }
+    });
+
+    if (minStart && !isNaN(minStart.getTime())) {
+        setValue("start_date", format(minStart, "yyyy-MM-dd"));
+    }
+    if (maxDue && !isNaN(maxDue.getTime())) {
+        setValue("due_date", format(maxDue, "yyyy-MM-dd"));
+    }
+    
+    toast.success("Dates synced from children");
+  };
+
   const availableParents = getAvailableParents();
+
+  const colorPresets = [
+    { name: "Blue", value: "#3b82f6" },
+    { name: "Indigo", value: "#6366f1" },
+    { name: "Purple", value: "#a855f7" },
+    { name: "Rose", value: "#f43f5e" },
+    { name: "Orange", value: "#f97316" },
+    { name: "Amber", value: "#f59e0b" },
+    { name: "Emerald", value: "#10b981" },
+    { name: "Slate", value: "#64748b" },
+  ];
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 pt-4">
@@ -325,42 +425,6 @@ export default function TaskForm({
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="parent_id">Parent Task (WBS)</Label>
-              <select
-                id="parent_id"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={selectedParentId || ""}
-                onChange={(e) => setValue("parent_id", e.target.value || null)}
-              >
-                <option value="">None (Root Task)</option>
-                {availableParents.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="color">Row Color (Gantt)</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="color"
-                  id="color-picker"
-                  className="w-12 h-10 p-1 cursor-pointer"
-                  value={selectedColor || "#ffffff"}
-                  onChange={(e) => setValue("color", e.target.value)}
-                />
-                <Input
-                  id="color"
-                  placeholder="#ffffff"
-                  {...register("color")}
-                />
-              </div>
-            </div>
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -381,6 +445,80 @@ export default function TaskForm({
               placeholder="Describe the task..."
               {...register("description")}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100 mt-2">
+            <div className="space-y-3">
+              <Label htmlFor="parent_id" className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Parent Task (WBS)</Label>
+              <select
+                id="parent_id"
+                className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={selectedParentId || ""}
+                onChange={(e) => setValue("parent_id", e.target.value || null)}
+              >
+                <option value="">None (Root Task)</option>
+                {availableParents.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="color" className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Row Style (Gantt)</Label>
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {colorPresets.map((cp) => (
+                    <button
+                      key={cp.value}
+                      type="button"
+                      className={cn(
+                        "w-5 h-5 rounded-full border-2 transition-all hover:scale-110",
+                        selectedColor === cp.value ? "border-slate-900 scale-110 shadow-sm" : "border-transparent"
+                      )}
+                      style={{ backgroundColor: cp.value }}
+                      onClick={() => setValue("color", cp.value)}
+                      title={cp.name}
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    className={cn(
+                      "w-5 h-5 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center transition-all hover:border-slate-500",
+                      !colorPresets.find(cp => cp.value === selectedColor) && selectedColor ? "border-slate-900 bg-white" : ""
+                    )}
+                    onClick={() => document.getElementById('custom-color-picker')?.click()}
+                  >
+                    <Plus className="w-2.5 h-2.5 text-slate-400" />
+                  </button>
+                  <input
+                    type="color"
+                    id="custom-color-picker"
+                    className="sr-only"
+                    value={selectedColor || "#ffffff"}
+                    onChange={(e) => setValue("color", e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                   <Input 
+                      className="h-7 text-[10px] font-mono px-2 w-20"
+                      value={selectedColor || ""}
+                      onChange={(e) => setValue("color", e.target.value)}
+                      placeholder="#HEX"
+                   />
+                   {selectedColor && (
+                     <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-[9px] font-bold text-slate-400 hover:text-red-500 uppercase"
+                        onClick={() => setValue("color", null)}
+                      >
+                        Clear
+                      </Button>
+                   )}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -517,12 +655,25 @@ export default function TaskForm({
                 <CalendarDays className="w-3.5 h-3.5" />
                 Scheduling & Timeline
               </Label>
-              <Tabs value={planningMode} onValueChange={(v: any) => setPlanningMode(v)}>
-                <TabsList className="h-7 p-0.5 bg-slate-200/50">
-                  <TabsTrigger value="dates" className="text-[10px] h-6 px-2">Fixed Dates</TabsTrigger>
-                  <TabsTrigger value="duration" className="text-[10px] h-6 px-2">Duration Based</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <div className="flex items-center gap-2">
+                {taskObject?.subtasks && taskObject.subtasks.length > 0 && (
+                    <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 text-[10px] font-black uppercase text-primary hover:bg-primary/5 gap-1"
+                        onClick={handleSyncFromChildren}
+                    >
+                        <Plus className="w-3 h-3" /> Sync Children
+                    </Button>
+                )}
+                <Tabs value={planningMode} onValueChange={(v: any) => setPlanningMode(v)}>
+                    <TabsList className="h-7 p-0.5 bg-slate-200/50">
+                    <TabsTrigger value="dates" className="text-[10px] h-6 px-2">Fixed Dates</TabsTrigger>
+                    <TabsTrigger value="duration" className="text-[10px] h-6 px-2">Duration Based</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
