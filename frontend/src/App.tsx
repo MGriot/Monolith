@@ -20,6 +20,7 @@ import UpdatesPage from "./pages/updates";
 import DashboardPage from "./pages/dashboard";
 import ProjectsListPage from "./pages/projects-list";
 import ArchivePage from "./pages/archive";
+import { Toaster } from 'sonner';
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
+          <Toaster position="top-right" richColors closeButton />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
