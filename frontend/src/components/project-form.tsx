@@ -25,10 +25,15 @@ const projectSchema = z.object({
   topic_ids: z.array(z.string()).optional(),
   type_ids: z.array(z.string()).optional(),
   status: z.string().min(1, "Status is required"),
+  priority: z.string().min(1, "Priority is required"),
   start_date: z.string().optional().nullable(),
   due_date: z.string().optional().nullable(),
   tags: z.string().optional(),
   member_ids: z.array(z.string()).optional(),
+  budget: z.number().optional(),
+  real_cost: z.number().optional(),
+  risk_probability: z.number().min(1).max(5).optional(),
+  risk_impact: z.number().min(1).max(5).optional(),
 });
 
 export type ProjectFormValues = z.infer<typeof projectSchema>;
@@ -63,11 +68,23 @@ export default function ProjectForm({
   });
 
   const processedInitialValues = useMemo(() => {
-    if (!initialValues) return { status: "Todo", name: "", topic_ids: [], type_ids: [], member_ids: [] };
+    if (!initialValues) return { 
+        status: "Todo", 
+        priority: "Medium",
+        name: "", 
+        topic_ids: [], 
+        type_ids: [], 
+        member_ids: [],
+        budget: 0,
+        real_cost: 0,
+        risk_probability: 1,
+        risk_impact: 1
+    };
     
     return {
         ...initialValues,
         status: initialValues.status || "Todo",
+        priority: initialValues.priority || "Medium",
         name: initialValues.name || "",
         topic_ids: initialValues.topic_ids || initialValues.topics?.map(t => t.id) || [],
         type_ids: initialValues.type_ids || initialValues.types?.map(t => t.id) || [],
@@ -75,6 +92,10 @@ export default function ProjectForm({
         start_date: initialValues.start_date ? new Date(initialValues.start_date).toISOString().split('T')[0] : "",
         due_date: initialValues.due_date ? new Date(initialValues.due_date).toISOString().split('T')[0] : "",
         tags: Array.isArray(initialValues.tags) ? initialValues.tags.join(', ') : initialValues.tags || "",
+        budget: initialValues.budget || 0,
+        real_cost: initialValues.real_cost || 0,
+        risk_probability: initialValues.risk_probability || 1,
+        risk_impact: initialValues.risk_impact || 1,
     };
   }, [initialValues]);
 
@@ -166,24 +187,101 @@ export default function ProjectForm({
         <p className="text-[10px] text-slate-500">Members selected here will have full visibility and access to this project.</p>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="status">Status</Label>
-        <Select
-          onValueChange={(value: string) => setValue("status", value)}
-          defaultValue={statusValue}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Backlog">Backlog</SelectItem>
-            <SelectItem value="Todo">Todo</SelectItem>
-            <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="On hold">On Hold</SelectItem>
-            <SelectItem value="Review">Review</SelectItem>
-            <SelectItem value="Done">Done</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Select
+            onValueChange={(value: string) => setValue("status", value)}
+            defaultValue={statusValue}
+          >
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Backlog">Backlog</SelectItem>
+              <SelectItem value="Todo">Todo</SelectItem>
+              <SelectItem value="In Progress">In Progress</SelectItem>
+              <SelectItem value="On hold">On Hold</SelectItem>
+              <SelectItem value="Review">Review</SelectItem>
+              <SelectItem value="Done">Done</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority</Label>
+          <Select
+            onValueChange={(value: string) => setValue("priority", value)}
+            defaultValue={watch("priority")}
+          >
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Select priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Low">Low</SelectItem>
+              <SelectItem value="Medium">Medium</SelectItem>
+              <SelectItem value="High">High</SelectItem>
+              <SelectItem value="Critical">Critical</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="p-4 rounded-xl border border-amber-100 bg-amber-50/30 space-y-4">
+          <h4 className="text-[10px] font-black uppercase text-amber-600 flex items-center gap-1.5 tracking-widest">
+              Risk Management
+          </h4>
+          <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                      <Label className="text-[10px] text-slate-500 uppercase font-bold">Probability (1-5)</Label>
+                      <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded border">{watch("risk_probability")}</span>
+                  </div>
+                  <input 
+                      type="range" 
+                      min="1" max="5" 
+                      className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                      {...register("risk_probability", { valueAsNumber: true })}
+                  />
+              </div>
+              <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                      <Label className="text-[10px] text-slate-500 uppercase font-bold">Impact (1-5)</Label>
+                      <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded border">{watch("risk_impact")}</span>
+                  </div>
+                  <input 
+                      type="range" 
+                      min="1" max="5" 
+                      className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                      {...register("risk_impact", { valueAsNumber: true })}
+                  />
+              </div>
+          </div>
+      </div>
+
+      <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/30 space-y-4">
+          <h4 className="text-[10px] font-black uppercase text-blue-600 flex items-center gap-1.5 tracking-widest">
+              Financial Strategy
+          </h4>
+          <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                  <Label className="text-[10px] text-slate-500 uppercase font-bold">Total Budget ($)</Label>
+                  <Input 
+                      type="number" 
+                      step="0.01"
+                      {...register("budget", { valueAsNumber: true })}
+                      className="h-9 bg-white"
+                  />
+              </div>
+              <div className="space-y-1.5">
+                  <Label className="text-[10px] text-slate-500 uppercase font-bold">Actual Expenditure ($)</Label>
+                  <Input 
+                      type="number" 
+                      step="0.01"
+                      {...register("real_cost", { valueAsNumber: true })}
+                      className="h-9 bg-white"
+                  />
+              </div>
+          </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

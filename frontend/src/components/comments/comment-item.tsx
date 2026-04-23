@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Comment } from '@/types';
 import { CommentInput } from './comment-input';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -12,8 +12,10 @@ import {
   Trash2, 
   Edit2, 
   Reply,
-  ChevronDown,
-  ChevronUp
+  Globe,
+  FileText,
+  Layout,
+  ExternalLink
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -47,145 +49,134 @@ export function CommentItem({
 }: CommentItemProps) {
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(true);
 
-  const handleReplySubmit = async (content: string) => {
-    await onReply(comment.id, content);
-    setIsReplying(false);
-    setIsExpanded(true);
-  };
+  const isMe = currentUserId === comment.author_id;
 
   const handleEditSubmit = async (content: string) => {
     await onEdit(comment.id, content);
     setIsEditing(false);
   };
 
-  const isAuthor = currentUserId === comment.author_id;
-  const hasReplies = comment.replies && comment.replies.length > 0;
-  
-  // Cap indentation at depth 3 to avoid extreme narrowing
-  const indentClass = depth > 0 && depth <= 3 ? 'ml-8' : depth > 3 ? 'ml-2' : '';
+  const isImage = (url: string) => {
+    const ext = url.split('.').pop()?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
+  };
 
   return (
     <div className={cn(
-        "flex gap-3",
-        depth === 0 ? "mt-6" : "mt-4 relative",
-        indentClass
+        "flex gap-3 w-full",
+        isMe ? "flex-row-reverse" : "flex-row"
     )}>
-      {depth > 0 && depth <= 3 && (
-          <div className="absolute -left-4 top-0 bottom-0 w-px bg-slate-100" />
-      )}
-      <UserAvatar user={comment.author} className="h-8 w-8" />
+      <UserAvatar user={comment.author} className="h-8 w-8 shrink-0 mt-1" />
       
-      <div className="flex-1 space-y-2 overflow-hidden">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-sm">{comment.author?.full_name || 'Unknown User'}</span>
-            <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-            </span>
-          </div>
-          
-          {(isAuthor) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive" onClick={() => onDelete(comment.id)}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+      <div className={cn(
+        "flex flex-col max-w-[85%] sm:max-w-[70%] gap-1",
+        isMe ? "items-end" : "items-start"
+      )}>
+        {/* Header: Author & Time */}
+        <div className="flex items-center gap-2 px-1">
+          <span className="text-[10px] font-black uppercase text-slate-400 tracking-tight">
+            {isMe ? 'You' : (comment.author?.full_name || 'Guest')}
+          </span>
+          <span className="text-[9px] text-slate-300 font-bold">
+            {format(new Date(comment.created_at), 'HH:mm')}
+          </span>
         </div>
 
-        {isEditing ? (
-          <CommentInput
-            initialValue={comment.content}
-            onSubmit={handleEditSubmit}
-            onCancel={() => setIsEditing(false)}
-            submitLabel="Save"
-            projectId={projectId || comment.project_id || undefined}
-            taskId={taskId || comment.task_id || undefined}
-            ideaId={ideaId || comment.idea_id || undefined}
-          />
-        ) : (
-          <div className="text-sm prose prose-sm max-w-none text-foreground prose-slate dark:prose-invert">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {comment.content}
-            </ReactMarkdown>
-          </div>
-        )}
+        {/* Content Bubble */}
+        <div className={cn(
+            "relative p-3 rounded-2xl group shadow-sm border transition-all",
+            isMe 
+                ? "bg-primary text-primary-foreground rounded-tr-none border-primary shadow-primary/10" 
+                : "bg-white text-slate-800 rounded-tl-none border-slate-100 shadow-slate-200/50"
+        )}>
+          {isEditing ? (
+            <div className="min-w-[300px]">
+                <CommentInput
+                    initialValue={comment.content}
+                    onSubmit={handleEditSubmit}
+                    onCancel={() => setIsEditing(false)}
+                    submitLabel="Save"
+                    projectId={projectId || comment.project_id || undefined}
+                    taskId={taskId || comment.task_id || undefined}
+                    ideaId={ideaId || comment.idea_id || undefined}
+                />
+            </div>
+          ) : (
+            <div className={cn(
+                "text-xs prose prose-sm max-w-none leading-relaxed",
+                isMe ? "prose-invert" : "prose-slate"
+            )}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {comment.content}
+              </ReactMarkdown>
+            </div>
+          )}
 
-        {!isEditing && (
-           <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-auto p-0 text-muted-foreground hover:text-foreground text-[11px]"
-              onClick={() => setIsReplying(!isReplying)}
-            >
-              <Reply className="h-3.5 w-3.5 mr-1" />
-              Reply
+          {/* Attachments & Previews inside bubble or below */}
+          {(comment.attachments && comment.attachments.length > 0) && (
+              <div className="mt-3 space-y-2">
+                  {comment.attachments.map((url, idx) => (
+                      <div key={idx} className={cn(
+                          "rounded-lg overflow-hidden border shadow-sm max-w-sm",
+                          isMe ? "bg-white/10 border-white/20" : "bg-slate-50 border-slate-100"
+                      )}>
+                          {isImage(url) ? (
+                              <div className="group/img relative">
+                                <img src={url} alt="attachment" className="w-full h-auto max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(url, '_blank')} />
+                                <div className="absolute top-1 right-1 opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                    <Button variant="secondary" size="icon" className="h-6 w-6 rounded-md bg-white/90 backdrop-blur" onClick={() => window.open(url, '_blank')}>
+                                        <ExternalLink className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                              </div>
+                          ) : (
+                              <a href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 hover:bg-black/5 transition-colors">
+                                  <div className="h-8 w-8 rounded bg-slate-200 flex items-center justify-center shrink-0">
+                                      <FileText className="h-4 w-4 text-slate-500" />
+                                  </div>
+                                  <div className="min-w-0">
+                                      <p className="text-[10px] font-bold truncate tracking-tight">{url.split('/').pop()}</p>
+                                      <p className="text-[8px] uppercase font-black opacity-60">File Attachment</p>
+                                  </div>
+                              </a>
+                          )}
+                      </div>
+                  ))}
+              </div>
+          )}
+
+          {/* Actions Popover (Hover only on non-mobile) */}
+          <div className={cn(
+              "absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white border border-slate-100 p-0.5 rounded-lg shadow-lg z-10",
+              isMe ? "-left-12" : "-right-12"
+          )}>
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-primary" onClick={() => setIsEditing(true)}>
+                <Edit2 className="h-3 w-3" />
             </Button>
-            
-            {hasReplies && (
-               <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-auto p-0 text-muted-foreground hover:text-foreground text-[11px]"
-                onClick={() => setIsExpanded(!isExpanded)}
-              >
-                {isExpanded ? (
-                  <><ChevronUp className="h-3.5 w-3.5 mr-1" /> Hide Replies ({comment.replies?.length})</>
-                ) : (
-                  <><ChevronDown className="h-3.5 w-3.5 mr-1" /> Show Replies ({comment.replies?.length})</>
-                )}
-              </Button>
-            )}
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-destructive" onClick={() => onDelete(comment.id)}>
+                <Trash2 className="h-3 w-3" />
+            </Button>
           </div>
-        )}
+        </div>
 
-        {isReplying && (
-          <div className="mt-2">
-             <CommentInput
-              onSubmit={handleReplySubmit}
-              onCancel={() => setIsReplying(false)}
-              submitLabel="Reply"
-              placeholder="Write a reply..."
-              projectId={projectId || comment.project_id || undefined}
-              taskId={taskId || comment.task_id || undefined}
-              ideaId={ideaId || comment.idea_id || undefined}
-            />
-          </div>
-        )}
-
-        {/* Recursive Replies */}
-        {hasReplies && isExpanded && (
-          <div className="pt-2">
-             {comment.replies!.map(reply => (
-               <CommentItem
-                 key={reply.id}
-                 comment={reply}
-                 currentUserId={currentUserId}
-                 onReply={onReply}
-                 onEdit={onEdit}
-                 onDelete={onDelete}
-                 depth={depth + 1}
-                 projectId={projectId}
-                 taskId={taskId}
-                 ideaId={ideaId}
-               />
-             ))}
-          </div>
+        {/* Links Preview */}
+        {(comment.links && comment.links.length > 0) && (
+            <div className="flex flex-col gap-1 w-full mt-1">
+                {comment.links.map((link, idx) => (
+                    <a 
+                      key={idx} 
+                      href={link} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-100 bg-white text-slate-600 hover:border-primary/30 transition-all group/link shadow-sm"
+                    >
+                        <Globe className="h-3 w-3 text-slate-300 group-hover/link:text-primary" />
+                        <span className="text-[10px] font-bold truncate max-w-[150px]">{link.replace(/^https?:\/\//, '')}</span>
+                        <ExternalLink className="h-2.5 w-2.5 text-slate-200 ml-auto" />
+                    </a>
+                ))}
+            </div>
         )}
       </div>
     </div>

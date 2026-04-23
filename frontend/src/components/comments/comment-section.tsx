@@ -3,8 +3,9 @@ import api from '@/lib/api';
 import type { Comment } from '@/types';
 import { CommentInput } from './comment-input';
 import { CommentItem } from './comment-item';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MessageSquare, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
+import { useEffect, useRef } from 'react';
 
 interface CommentSectionProps {
   projectId?: string;
@@ -15,6 +16,7 @@ interface CommentSectionProps {
 export default function CommentSection({ projectId, taskId, ideaId }: CommentSectionProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const queryKey = ['comments', { projectId, taskId, ideaId }];
 
@@ -27,27 +29,22 @@ export default function CommentSection({ projectId, taskId, ideaId }: CommentSec
       if (ideaId) params.append('idea_id', ideaId);
       
       const response = await api.get(`/comments/?${params.toString()}`);
-      return response.data as Comment[];
+      // Reverse comments for chat view (oldest at top, newest at bottom)
+      return (response.data as Comment[]).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     }
   });
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [comments]);
 
   const createMutation = useMutation({
     mutationFn: async (content: string) => {
       await api.post('/comments/', {
         content,
-        project_id: projectId,
-        task_id: taskId,
-        idea_id: ideaId
-      });
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey })
-  });
-
-  const replyMutation = useMutation({
-    mutationFn: async ({ parentId, content }: { parentId: string, content: string }) => {
-      await api.post('/comments/', {
-        content,
-        parent_id: parentId,
         project_id: projectId,
         task_id: taskId,
         idea_id: ideaId
@@ -75,37 +72,55 @@ export default function CommentSection({ projectId, taskId, ideaId }: CommentSec
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex-1 overflow-y-auto space-y-6 pr-2 -mr-2 mb-6 min-h-[200px] max-h-[600px] scrollbar-thin scrollbar-thumb-slate-200">
+    <div className="flex flex-col h-[600px] border rounded-2xl bg-slate-50/30 overflow-hidden shadow-inner">
+      <div className="px-4 py-3 border-b bg-white flex items-center justify-between">
+          <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-primary" />
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">Project Communication</h3>
+          </div>
+          <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Live Chat</span>
+          </div>
+      </div>
+
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide bg-transparent"
+      >
         {comments?.map((comment) => (
           <CommentItem
             key={comment.id}
             comment={comment}
             currentUserId={user?.id}
-            onReply={async (parentId, content) => await replyMutation.mutateAsync({ parentId, content })}
+            onReply={async (parentId, content) => {}} // Replies disabled for flat chat for now
             onEdit={async (commentId, content) => await updateMutation.mutateAsync({ id: commentId, content })}
             onDelete={async (commentId) => await deleteMutation.mutateAsync(commentId)}
+            projectId={projectId}
+            taskId={taskId}
+            ideaId={ideaId}
           />
         ))}
         {comments?.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center space-y-2 opacity-50">
-                <p className="text-sm font-medium text-slate-500">No comments yet.</p>
-                <p className="text-xs text-slate-400">Be the first to start the discussion.</p>
+            <div className="flex flex-col items-center justify-center h-full text-center space-y-2 opacity-30 grayscale">
+                <MessageSquare className="w-12 h-12 text-slate-300" />
+                <div>
+                    <p className="text-sm font-black uppercase tracking-tighter">No Messages</p>
+                    <p className="text-[10px] font-bold">Start the communication flow below.</p>
+                </div>
             </div>
         )}
       </div>
       
-      <div className="border-t pt-6 mt-auto bg-white/50 backdrop-blur-sm sticky bottom-0">
-        <div className="flex items-center justify-between mb-4">
-            <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">Add a comment</h4>
-            <span className="text-[10px] text-slate-400 font-medium italic">Markdown supported</span>
-        </div>
+      <div className="p-4 bg-white border-t">
         <CommentInput 
           onSubmit={async (content) => await createMutation.mutateAsync(content)}
           isSubmitting={createMutation.isPending}
           projectId={projectId}
           taskId={taskId}
           ideaId={ideaId}
+          placeholder="Type a message..."
+          submitLabel="Send"
         />
       </div>
     </div>
