@@ -24,6 +24,7 @@ import { format, parseISO, startOfDay, addDays } from 'date-fns';
 import ProjectHeatmap from '@/components/project-heatmap';
 import ResourceTimeline from '@/components/resource-timeline';
 import { UserAvatar } from '@/components/ui/user-avatar';
+import RiskHeatmap from '@/components/risk-heatmap';
 
 interface DashboardSummary {
   total_projects: number;
@@ -104,14 +105,23 @@ export default function DashboardPage() {
         return res.data as TeamWorkloadResponse;
     }
   });
+const { data: calendarData } = useQuery({
+  queryKey: ['calendar-events', 'global'],
+  queryFn: async () => {
+    const response = await api.get('/calendar/');
+    return response.data;
+  },
+});
 
-  const { data: calendarData } = useQuery({
-    queryKey: ['calendar-events', 'global'],
-    queryFn: async () => {
-      const response = await api.get('/calendar/');
-      return response.data;
-    },
-  });
+const { data: riskData } = useQuery({
+  queryKey: ['risk-data'],
+  queryFn: async () => {
+    const response = await api.get('/dashboard/risk-data');
+    return response.data;
+  },
+});
+
+if (isLoading) {
 
   const workloadDates = useMemo(() => {
     const dates = [];
@@ -533,20 +543,43 @@ export default function DashboardPage() {
             </Card>
           )}
 
-          <Card className={cn("border-slate-200 shadow-sm", !user?.is_superuser && "max-w-4xl mx-auto w-full")}>
-            <CardHeader>
+        {/* Analytics Section */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Risk Heatmap */}
+          <Card className="border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <CardHeader className="bg-slate-50/50 border-b">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base font-semibold">System-wide Activity</CardTitle>
-                  <CardDescription>Consolidated completions over the last year.</CardDescription>
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                    Risk Exposure Matrix
+                  </CardTitle>
+                  <CardDescription className="text-[10px]">Probability vs Impact for active items.</CardDescription>
                 </div>
-                <Activity className="h-4 w-4 text-slate-400" />
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6 flex-1">
+              <RiskHeatmap items={riskData || []} />
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="bg-slate-50/50 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-emerald-500" />
+                    System-wide Activity
+                  </CardTitle>
+                  <CardDescription className="text-[10px]">Consolidated completions over the last year.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
               <ProjectHeatmap stats={data?.global_activity || []} />
             </CardContent>
           </Card>
+        </div>
         </div>
       </div>
     </div>

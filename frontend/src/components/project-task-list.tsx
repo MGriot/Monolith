@@ -219,7 +219,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             {task.priority}
           </Badge>
         </TableCell>
-        <TableCell className="py-2">
+        <TableCell className="py-2 text-center">
           <div className="flex -space-x-1.5 overflow-hidden justify-center">
             {task.assignees && task.assignees.length > 0 ? task.assignees.map((u) => (
               <div
@@ -233,6 +233,21 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
               <span className="text-[10px] text-slate-400 italic">Unassigned</span>
             )}
           </div>
+        </TableCell>
+        <TableCell className="py-2 text-center">
+            {task.checklist && task.checklist.length > 0 ? (
+                <Badge variant="secondary" className="text-[9px] font-black bg-blue-50 text-blue-700 border-blue-100">
+                    {task.checklist.filter(i => i.is_done).length}/{task.checklist.length}
+                </Badge>
+            ) : <span className="text-slate-300">-</span>}
+        </TableCell>
+        <TableCell className="py-2 text-center">
+            <span className={cn(
+                "text-[10px] font-bold",
+                (task.real_cost || 0) > (task.budget || 0) ? "text-red-500" : "text-slate-700"
+            )}>
+                {task.real_cost ? `$${task.real_cost.toLocaleString()}` : '-'}
+            </span>
         </TableCell>
         <TableCell className="py-2 text-center">
           <span className="text-[10px] font-black text-slate-500">{duration > 0 ? `${duration}d` : '-'}</span>
@@ -293,6 +308,8 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Status</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Priority</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Assignees</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">List</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Cost ($)</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Days</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Start</TableHead>
             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Concluded</TableHead>

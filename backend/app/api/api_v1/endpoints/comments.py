@@ -97,83 +97,72 @@ async def get_available_images(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Get all images uploaded in the current context (Project, Task, or Idea).
+    Get all images and whiteboards available in the current context.
     """
     from sqlalchemy import select
     from app.models.task import Task
     from app.models.project import Project
     from app.models.idea import Idea
+    from app.models.whiteboard import Whiteboard
 
-    image_urls = []
+    assets = []
     
     def is_image(url: str) -> bool:
         ext = os.path.splitext(url.lower())[1]
         return ext in IMAGE_EXTENSIONS
 
-    # 1. Handle Task context
+    # 1. Contextualize Project ID
+    effective_project_id = project_id
+    if task_id:
+        task = await crud_task.task.get(db, id=task_id)
+        if task: effective_project_id = task.project_id
+    elif idea_id:
+        idea = await crud_idea.idea.get(db, id=idea_id)
+        if idea: effective_project_id = idea.project_id
+
+    # 2. Fetch Project Whiteboards
+    if effective_project_id:
+        wb_res = await db.execute(select(Whiteboard).filter(Whiteboard.project_id == effective_project_id))
+        whiteboards = wb_res.scalars().all()
+        for wb in whiteboards:
+            if wb.preview_image:
+                assets.append({
+                    "url": wb.preview_image,
+                    "name": wb.title,
+                    "source": "Whiteboard",
+                    "is_whiteboard": True,
+                    "whiteboard_id": str(wb.id)
+                })
+
+    # 3. Fetch Task Attachments
     if task_id:
         task = await crud_task.task.get(db, id=task_id)
         if task:
-            # Check permission
-            is_member = False
-            if task.project_id:
-                p = await crud_project.project.get(db, id=task.project_id)
-                if p:
-                    is_member = current_user.id in [m.id for m in p.members] or p.owner_id == current_user.id
-            
-            is_assignee = current_user.id in [u.id for u in task.assignees]
-            if not current_user.is_superuser and task.owner_id != current_user.id and not is_assignee and not is_member:
-                raise HTTPException(status_code=403, detail="Not enough permissions for this task")
-            
             for attr in (task.attachments or []):
                 if is_image(attr):
-                    image_urls.append({"url": attr, "name": os.path.basename(attr), "source": "Task"})
-            
-            # If task has a project, also include project images
-            if not project_id:
-                project_id = task.project_id
+                    assets.append({"url": attr, "name": os.path.basename(attr), "source": "Task"})
 
-    # 2. Handle Idea context
-    if idea_id:
-        idea = await crud_idea.idea.get(db, id=idea_id)
-        if idea:
-            if not current_user.is_superuser and idea.author_id != current_user.id:
-                # Check if user is project owner
-                p = await crud_project.project.get(db, id=idea.project_id)
-                if p and p.owner_id != current_user.id:
-                    raise HTTPException(status_code=403, detail="Not enough permissions for this idea")
-
-            if not project_id:
-                project_id = idea.project_id
-
-    # 3. Handle Project context (or parent project from task/idea)
-    if project_id:
-        project = await crud_project.project.get(db, id=project_id)
+    # 4. Fetch Project Attachments
+    if effective_project_id:
+        project = await crud_project.project.get(db, id=effective_project_id)
         if project:
-            # Check permission
-            is_member = current_user.id in [m.id for m in project.members]
-            if not current_user.is_superuser and project.owner_id != current_user.id and not is_member:
-                # If we came from a task/idea where we HAD permission, we might still want project images
-                # But for safety, we'll restrict to members/owners
-                pass 
-            else:
-                # Project level images
-                for attr in (project.attachments or []):
-                    if is_image(attr):
-                        image_urls.append({"url": attr, "name": os.path.basename(attr), "source": "Project"})
-                
-                # ALL task images in this project
-                result = await db.execute(select(Task.attachments).filter(Task.project_id == project_id))
-                all_task_attachments = result.scalars().all()
-                for task_attrs in all_task_attachments:
-                    if task_attrs:
-                        for attr in task_attrs:
-                            if is_image(attr):
-                                # Deduplicate by URL
-                                if not any(img["url"] == attr for img in image_urls):
-                                    image_urls.append({"url": attr, "name": os.path.basename(attr), "source": "Tasks"})
+            for attr in (project.attachments or []):
+                if is_image(attr):
+                    # Deduplicate
+                    if not any(a["url"] == attr for a in assets):
+                        assets.append({"url": attr, "name": os.path.basename(attr), "source": "Project"})
+            
+            # ALL task images in this project
+            result = await db.execute(select(Task.attachments).filter(Task.project_id == effective_project_id))
+            all_task_attachments = result.scalars().all()
+            for task_attrs in all_task_attachments:
+                if task_attrs:
+                    for attr in task_attrs:
+                        if is_image(attr):
+                            if not any(a["url"] == attr for a in assets):
+                                assets.append({"url": attr, "name": os.path.basename(attr), "source": "Tasks"})
 
-    return image_urls
+    return assets
 
 @router.put("/{id}", response_model=CommentResponse)
 async def update_comment(

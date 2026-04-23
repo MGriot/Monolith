@@ -147,6 +147,28 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             sort_recursive(t)
         return tasks
 
+    def calculate_task_progress(self, task: Task) -> float:
+        """
+        Calculate task progress. 
+        If checklist exists, progress = (done_items / total_items).
+        Otherwise, progress is status-based.
+        """
+        if task.checklist and len(task.checklist) > 0:
+            total = len(task.checklist)
+            done = sum(1 for item in task.checklist if item.get("is_done", False))
+            return round((done / total) * 100.0, 2)
+        
+        # Fallback to status-based progress
+        if task.status == Status.DONE:
+            return 100.0
+        elif task.status == Status.REVIEW:
+            return 80.0
+        elif task.status == Status.IN_PROGRESS:
+            return 50.0
+        elif task.status == Status.ON_HOLD:
+            return 25.0
+        return 0.0
+
     async def sync_project_from_tasks(self, db: AsyncSession, project_id: UUID):
         if not project_id:
             return
@@ -171,14 +193,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         total = len(top_tasks)
         score_sum = 0
         for t in top_tasks:
-            if t.status == Status.DONE:
-                score_sum += 100
-            elif t.status == Status.REVIEW:
-                score_sum += 80
-            elif t.status == Status.IN_PROGRESS:
-                score_sum += 50
-            elif t.status == Status.ON_HOLD:
-                score_sum += 25
+            score_sum += self.calculate_task_progress(t)
+        
         progress = round(float(score_sum) / total, 2) if total > 0 else 0.0
 
         # 2. Date aggregation

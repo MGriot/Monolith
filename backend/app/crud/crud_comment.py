@@ -72,7 +72,9 @@ class CRUDComment:
             project_id=obj_in.project_id,
             task_id=obj_in.task_id,
             idea_id=obj_in.idea_id,
-            parent_id=obj_in.parent_id
+            parent_id=obj_in.parent_id,
+            attachments=obj_in.attachments,
+            links=obj_in.links
         )
         db.add(db_obj)
         await db.commit()

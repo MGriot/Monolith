@@ -117,6 +117,54 @@ async def trigger_deadline_notifications(
     await notify_near_deadlines(db)
     return {"message": "Deadline notifications triggered"}
 
+@router.get("/risk-data", response_model=Any)
+async def get_risk_data(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Get probability/impact data for all active projects and tasks.
+    """
+    # Projects
+    projects_stmt = select(Project).filter(
+        Project.owner_id == current_user.id,
+        Project.is_archived == False
+    )
+    res_p = await db.execute(projects_stmt)
+    projects = res_p.scalars().all()
+
+    # Tasks
+    tasks_stmt = select(Task).filter(
+        Task.owner_id == current_user.id,
+        Task.is_archived == False,
+        Task.status != Status.DONE
+    )
+    res_t = await db.execute(tasks_stmt)
+    tasks = res_t.scalars().all()
+
+    items = []
+    for p in projects:
+        items.append({
+            "id": str(p.id),
+            "name": p.name,
+            "type": "project",
+            "probability": p.risk_probability or 1,
+            "impact": p.risk_impact or 1,
+            "priority": p.priority
+        })
+    
+    for t in tasks:
+        items.append({
+            "id": str(t.id),
+            "name": t.title,
+            "type": "task",
+            "probability": t.risk_probability or 1,
+            "impact": t.risk_impact or 1,
+            "priority": t.priority
+        })
+
+    return items
+
 @router.get("/activity-recap", response_model=Any)
 async def get_activity_recap(
     db: AsyncSession = Depends(deps.get_db),

@@ -20,6 +20,7 @@ import ResourceTimeline from '@/components/resource-timeline';
 import ProjectIdeas from '@/components/project-ideas';
 import ProjectLibrary from '@/components/project-library';
 import CommentSection from '@/components/comments/comment-section';
+import FolderTree from '@/components/folder-tree';
 import TaskForm from '@/components/task-form';
 import type { TaskFormValues } from '@/components/task-form';
 import AttachmentManager from '@/components/attachment-manager';
@@ -29,6 +30,7 @@ import {
   Trello,
   GanttChart,
   Plus,
+  Folder as FolderIcon,
   List as ListIcon,
   Users as UsersIcon,
   Trash2,
@@ -390,7 +392,7 @@ export default function ProjectDetailPage() {
               <Lightbulb className="w-3.5 h-3.5" /> Ideas
             </TabsTrigger>
             <TabsTrigger value="library" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
-              <BookOpen className="w-3.5 h-3.5" /> Library
+              <FolderIcon className="w-3.5 h-3.5" /> File Hub
             </TabsTrigger>
           </TabsList>
         </div>
@@ -439,14 +441,20 @@ export default function ProjectDetailPage() {
             </Card>
             <Card className="shadow-sm border-slate-200">
                 <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase text-slate-400">Progress</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase text-slate-400">Financials</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="space-y-1.5">
-                        <div className="flex justify-between text-[10px] font-bold text-primary">
-                            <span>{formatPercent(project.progress_percent)}%</span>
+                        <div className="flex justify-between text-[10px] font-black uppercase">
+                            <span className="text-slate-400">Actual / Budget</span>
+                            <span className={cn(
+                                "font-bold",
+                                (project.real_cost || 0) > (project.budget || 0) ? "text-red-500" : "text-emerald-600"
+                            )}>
+                                ${project.real_cost?.toLocaleString()} / ${project.budget?.toLocaleString()}
+                            </span>
                         </div>
-                        <Progress value={project.progress_percent} className="h-1.5" />
+                        <Progress value={Math.min(100, ((project.real_cost || 0) / (project.budget || 1)) * 100)} className="h-1.5" />
                     </div>
                 </CardContent>
             </Card>
@@ -537,7 +545,20 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="library" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
-          <ProjectLibrary projectId={id!} onOpenSettings={() => setActiveTab("settings")} />
+          <div className="max-w-4xl mx-auto space-y-6">
+            <Card className="border-slate-200 shadow-sm">
+                <CardHeader>
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                        <FolderIcon className="w-4 h-4 text-primary" />
+                        Project File Hub
+                    </CardTitle>
+                    <CardDescription className="text-[10px]">Manage project documents, media, and technical notes.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <FolderTree projectId={id} />
+                </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="activity" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">

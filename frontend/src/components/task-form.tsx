@@ -51,6 +51,15 @@ const taskSchema = z.object({
   normal_days: z.number().optional(),
   pessimistic_days: z.number().optional(),
   duration_days: z.number().min(0).optional(),
+  budget: z.number().optional(),
+  real_cost: z.number().optional(),
+  risk_probability: z.number().min(1).max(5).optional(),
+  risk_impact: z.number().min(1).max(5).optional(),
+  checklist: z.array(z.object({
+    id: z.string(),
+    text: z.string(),
+    is_done: z.boolean()
+  })).optional(),
   subtasks: z.array(subtaskSchema).optional(),
 });
 
@@ -151,6 +160,11 @@ export default function TaskForm({
       normal_days: 0,
       pessimistic_days: 0,
       duration_days: 0,
+      budget: 0,
+      real_cost: 0,
+      risk_probability: 1,
+      risk_impact: 1,
+      checklist: [],
       subtasks: [],
       ...initialValues,
       start_date: formatDate(initialValues?.start_date),
@@ -485,10 +499,16 @@ export default function TaskForm({
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 pt-4">
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full mb-6">
-          <TabsTrigger value="general" className="text-[10px] font-black uppercase tracking-tight">General</TabsTrigger>
-          <TabsTrigger value="scheduling" className="text-[10px] font-black uppercase tracking-tight">Timeline</TabsTrigger>
-          <TabsTrigger value="dependencies" disabled={!editingTaskId} className="text-[10px] font-black uppercase tracking-tight gap-1.5">
+        <TabsList className="grid grid-cols-5 w-full mb-6">
+          <TabsTrigger value="general" className="text-[10px] font-black uppercase tracking-tight text-slate-500 data-[state=active]:text-slate-900">Info</TabsTrigger>
+          <TabsTrigger value="scheduling" className="text-[10px] font-black uppercase tracking-tight text-slate-500 data-[state=active]:text-slate-900">Timeline</TabsTrigger>
+          <TabsTrigger value="checklist" className="text-[10px] font-black uppercase tracking-tight text-slate-500 data-[state=active]:text-slate-900 flex gap-1.5">
+            <CheckSquare className="w-3 h-3" /> List
+          </TabsTrigger>
+          <TabsTrigger value="risk" className="text-[10px] font-black uppercase tracking-tight text-slate-500 data-[state=active]:text-slate-900 flex gap-1.5">
+            <AlertCircle className="w-3 h-3" /> Risk
+          </TabsTrigger>
+          <TabsTrigger value="dependencies" disabled={!editingTaskId} className="text-[10px] font-black uppercase tracking-tight gap-1.5 text-slate-500 data-[state=active]:text-slate-900">
             <LinkIcon className="w-3 h-3" /> Deps
           </TabsTrigger>
         </TabsList>
@@ -799,6 +819,131 @@ export default function TaskForm({
               <Input id="completed_at" type="date" {...register("completed_at")} />
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="checklist" className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
+                    <CheckSquare className="w-3.5 h-3.5" />
+                    Task Checklist
+                </Label>
+                <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-[10px] uppercase font-bold"
+                    onClick={() => {
+                        const current = watch("checklist") || [];
+                        setValue("checklist", [...current, { id: crypto.randomUUID(), text: "", is_done: false }]);
+                    }}
+                >
+                    <Plus className="w-3 h-3 mr-1" /> Add Point
+                </Button>
+            </div>
+            
+            <div className="space-y-2 max-h-[300px] overflow-auto pr-2 scrollbar-hide">
+                {(watch("checklist") || []).map((item, index) => (
+                    <div key={item.id} className="flex items-center gap-2 group bg-slate-50 p-2 rounded-lg border border-slate-100 transition-all hover:border-slate-200">
+                        <input 
+                            type="checkbox"
+                            checked={item.is_done}
+                            onChange={(e) => {
+                                const current = [...(watch("checklist") || [])];
+                                current[index].is_done = e.target.checked;
+                                setValue("checklist", current);
+                            }}
+                            className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
+                        />
+                        <Input 
+                            className="flex-1 h-8 text-xs border-none bg-transparent focus-visible:ring-0 px-0"
+                            placeholder="Checklist item..."
+                            value={item.text}
+                            onChange={(e) => {
+                                const current = [...(watch("checklist") || [])];
+                                current[index].text = e.target.value;
+                                setValue("checklist", current);
+                            }}
+                        />
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                const current = [...(watch("checklist") || [])];
+                                setValue("checklist", current.filter((_, i) => i !== index));
+                            }}
+                            className="p-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                ))}
+                {(watch("checklist") || []).length === 0 && (
+                    <div className="py-8 text-center border-2 border-dashed rounded-xl border-slate-100 text-slate-300 font-bold uppercase text-[10px]">
+                        No checklist items.
+                    </div>
+                )}
+            </div>
+        </TabsContent>
+
+        <TabsContent value="risk" className="space-y-6 pt-2">
+            <div className="p-4 rounded-xl border border-amber-100 bg-amber-50/30 space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-amber-600 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Risk Assessment (1-5)
+                </h4>
+                <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <Label className="text-[10px] text-slate-500 uppercase font-bold">Probability</Label>
+                            <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded border">{watch("risk_probability")}</span>
+                        </div>
+                        <input 
+                            type="range" 
+                            min="1" max="5" 
+                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                            {...register("risk_probability", { valueAsNumber: true })}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <Label className="text-[10px] text-slate-500 uppercase font-bold">Impact</Label>
+                            <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded border">{watch("risk_impact")}</span>
+                        </div>
+                        <input 
+                            type="range" 
+                            min="1" max="5" 
+                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                            {...register("risk_impact", { valueAsNumber: true })}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/30 space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-blue-600 flex items-center gap-1.5">
+                    <Database className="w-3.5 h-3.5" />
+                    Financial Tracking
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <Label className="text-[10px] text-slate-500 uppercase font-bold">Planned Budget ($)</Label>
+                        <Input 
+                            type="number" 
+                            step="0.01"
+                            {...register("budget", { valueAsNumber: true })}
+                            className="h-9 bg-white"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label className="text-[10px] text-slate-500 uppercase font-bold">Real Cost ($)</Label>
+                        <Input 
+                            type="number" 
+                            step="0.01"
+                            {...register("real_cost", { valueAsNumber: true })}
+                            className="h-9 bg-white"
+                        />
+                    </div>
+                </div>
+            </div>
         </TabsContent>
 
         <TabsContent value="dependencies" className="pt-2">
