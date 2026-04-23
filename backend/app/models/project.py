@@ -1,10 +1,10 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Table, Boolean, Enum as SAEnum
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Table, Boolean, Integer, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID, ARRAY, JSONB
 from sqlalchemy.orm import relationship
 from app.db.session import Base
-from app.core.enums import Status
+from app.core.enums import Status, Priority
 from app.models.associations import project_topics, project_types, project_members
 
 class Project(Base):
@@ -40,6 +40,16 @@ class Project(Base):
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     
     gantt_regions = Column(JSONB, nullable=True, default=[])
+    
+    # Financials
+    budget = Column(Float, default=0.0)
+    real_cost = Column(Float, default=0.0)
+    
+    # Risk Management
+    risk_probability = Column(Integer, default=1) # 1-5 scale
+    risk_impact = Column(Integer, default=1)      # 1-5 scale
+    
+    priority = Column(SAEnum(Priority), default=Priority.MEDIUM)
     
     # Whitelisting
     allowed_global_topics = Column(JSONB, nullable=False, default=[])

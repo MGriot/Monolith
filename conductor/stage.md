@@ -1,29 +1,10 @@
-# Stage: Milestone 7 Complete
+# Ralph State · Monolith PM Overhaul
 
 ## Active Focus
-- [ ] Planning Milestone 8
+[MIG-01] · Database Migration: Financials and Risks
 
 ## Quality Gate
-- **Status**: IDLE
-- **Last Task**: REAL-11
-- **Verification**: PASSED
+IDLE
 
 ## Recent History
-- [x] REAL-11: Expose Team Workload to MCP
-- [x] REAL-10: Expose Portfolio Health to MCP
-- [x] REAL-09: Remove AI Decomposer features
-- [x] REP-03: Portfolio Health Aggregation API
-- [x] REP-02: Project Status Report Template
-- [x] REP-01: PDF Generation Service (xhtml2pdf)
-- [x] INT-07: Workload Heatmap Widget
-- [x] INT-06: Resource Workload Leveling Logic
-- [x] INT-05: Webhook Configuration API & UI
-- [x] INT-04: Webhook Integration Service
-- [x] REAL-08: Fix MCP assign_task tool
-- [x] REAL-07: Universal Search Refinement
-- [x] REAL-06: Optimize Mobile Layout & Navigation
-- [x] REAL-05: Implement Frontend WebSocket client
-- [x] REAL-04: Broadcast Notifications via WebSockets
-- [x] REAL-03: Setup WebSocket Connection Manager
-- [x] REAL-02: Deprecate legacy Idea Comments backend
-- [x] REAL-01: Migrate Idea Comments to Universal Threaded System
+- [INIT] · Project Management Overhaul Phase 2 · 2026-04-20

@@ -34,8 +34,6 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-monolith_user}:${POSTGRES_PASSWORD:-monolith_password}@db:5432/${POSTGRES_DB:-monolith_db}
       SECRET_KEY: ${SECRET_KEY:-changeme_in_prod}
-      SMTP_HOST: mail
-      SMTP_PORT: 1025
     ports:
 
       - "8000:8000" # Expose backend directly for API docs / debugging
@@ -69,18 +67,6 @@ services:
     command: npm run dev -- --host 0.0.0.0
     depends_on:
       - backend
-    networks:
-      - monolith_net
-
-  # ---------------------------------------------------------------------------
-  # Mailhog: Local SMTP testing
-  # ---------------------------------------------------------------------------
-  mail:
-    image: mailhog/mailhog
-    container_name: monolith_mail
-    ports:
-      - "1025:1025" # SMTP port
-      - "8025:8025" # Web UI
     networks:
       - monolith_net
 

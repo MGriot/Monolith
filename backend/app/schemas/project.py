@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, computed_field
-from app.core.enums import Status
+from app.core.enums import Status, Priority
 
 from .metadata import Topic, WorkType
 from .user import User as UserSchema
@@ -15,6 +15,7 @@ class ProjectBase(BaseModel):
     topic_id: Optional[UUID] = None
     type_id: Optional[UUID] = None
     status: Optional[Status] = Status.TODO
+    priority: Optional[Priority] = Priority.MEDIUM
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     tags: Optional[List[str]] = []
@@ -23,6 +24,14 @@ class ProjectBase(BaseModel):
     gantt_regions: Optional[List[dict]] = []
     allowed_global_topics: Optional[List[UUID]] = []
     allowed_global_work_types: Optional[List[UUID]] = []
+    
+    # Financials
+    budget: float = 0.0
+    real_cost: float = 0.0
+    
+    # Risk Management
+    risk_probability: int = 1
+    risk_impact: int = 1
 
 class ProjectCreate(ProjectBase):
     name: str
