@@ -1,227 +1,88 @@
-[
-  {
-    "id": "NOTIF-01",
-    "title": "Define EmailService with SMTP configuration",
-    "description": "Create EmailService class in backend/app/core/notifications.py with SMTP configuration based on environment variables.",
-    "status": "done",
-    "target_files": ["backend/app/core/notifications.py"],
-    "verification_method": "python -c \"from app.core.notifications import EmailService; assert hasattr(EmailService, 'smtp_host')\"",
-    "priority": 1
-  },
-  {
-    "id": "NOTIF-02",
-    "title": "Implement send_email method in EmailService",
-    "description": "Replace print stub with functional send_email method using smtplib.",
-    "status": "done",
-    "target_files": ["backend/app/core/notifications.py"],
-    "verification_method": "pytest backend/tests/test_notifications.py",
-    "priority": 1
-  },
-  {
-    "id": "NOTIF-03",
-    "title": "Add unit tests for EmailService with mock SMTP",
-    "description": "Create backend/tests/test_notifications.py and add unit tests using mock SMTP server.",
-    "status": "done",
-    "target_files": ["backend/tests/test_notifications.py"],
-    "verification_method": "pytest backend/tests/test_notifications.py",
-    "priority": 1
-  },
-  {
-    "id": "NOTIF-04",
-    "title": "Create SummaryGenerator utility",
-    "description": "Implement SummaryGenerator in backend/app/core/summaries.py to aggregate data for weekly summaries.",
-    "status": "done",
-    "target_files": ["backend/app/core/summaries.py"],
-    "verification_method": "python -c \"from app.core.summaries import SummaryGenerator; assert SummaryGenerator\"",
-    "priority": 2
-  },
-  {
-    "id": "NOTIF-05",
-    "title": "Implement generate_weekly_summary for Standard Users",
-    "description": "Add logic to aggregate tasks due/overdue for individual users.",
-    "status": "done",
-    "target_files": ["backend/app/core/summaries.py"],
-    "verification_method": "pytest backend/tests/test_summaries.py",
-    "priority": 2
-  },
-  {
-    "id": "NOTIF-06",
-    "title": "Implement generate_weekly_summary for Team/Project Owners",
-    "description": "Add logic for team activity and project health summaries for owners.",
-    "status": "done",
-    "target_files": ["backend/app/core/summaries.py"],
-    "verification_method": "pytest backend/tests/test_summaries.py",
-    "priority": 2
-  },
-  {
-    "id": "NOTIF-07",
-    "title": "Integrate weekly summary scheduler",
-    "description": "Setup a simple loop or APScheduler task to dispatch summaries on Mondays.",
-    "status": "done",
-    "target_files": ["backend/app/main.py"],
-    "verification_method": "Check logs for scheduled task registration",
-    "priority": 2
-  },
-  {
-    "id": "REAL-01",
-    "title": "Migrate Idea Comments to Universal Threaded System",
-    "description": "Update ProjectIdeas component to use CommentSection instead of custom legacy comment logic.",
-    "status": "done",
-    "target_files": ["frontend/src/components/project-ideas.tsx"],
-    "verification_method": "Manual UI check: Verify threaded replies and Markdown support in Idea details.",
-    "priority": 2
-  },
-  {
-    "id": "REAL-02",
-    "title": "Deprecate legacy Idea Comments backend",
-    "description": "Remove redundant IdeaComment model, schema, CRUD, and API endpoints.",
-    "status": "done",
-    "target_files": ["backend/app/models/idea_comment.py", "backend/app/api/api_v1/endpoints/idea_comments.py"],
-    "verification_method": "pytest backend/tests/test_ideas_standalone.py",
-    "priority": 3
-  },
-  {
-    "id": "REAL-03",
-    "title": "Setup WebSocket Connection Manager",
-    "description": "Implement a manager class in backend to handle active WebSocket connections by user ID.",
-    "status": "done",
-    "target_files": ["backend/app/core/websockets.py"],
-    "verification_method": "python -c \"from app.core.websockets import ConnectionManager; m = ConnectionManager(); assert m\"",
-    "priority": 1
-  },
-  {
-    "id": "REAL-04",
-    "title": "Broadcast Notifications via WebSockets",
-    "description": "Update notification CRUD to broadcast new notifications to active WebSocket connections.",
-    "status": "done",
-    "target_files": ["backend/app/crud/crud_notification.py"],
-    "verification_method": "Manual check: Real-time bell update without refresh.",
-    "priority": 2
-  },
-  {
-    "id": "REAL-05",
-    "title": "Implement Frontend WebSocket client",
-    "description": "Connect NotificationPopover to the backend WebSocket endpoint and remove polling logic.",
-    "status": "done",
-    "target_files": ["frontend/src/components/notification-popover.tsx"],
-    "verification_method": "Manual UI check: New notifications appear instantly without page refresh or polling.",
-    "priority": 1
-  },
-  {
-    "id": "REAL-06",
-    "title": "Optimize Mobile Layout & Navigation",
-    "description": "Improve sidebar responsiveness and table scrolling for mobile devices.",
-    "status": "done",
-    "target_files": ["frontend/src/components/layout.tsx", "frontend/src/index.css"],
-    "verification_method": "Visual check using browser mobile emulation.",
-    "priority": 3
-  },
-  {
-    "id": "REAL-07",
-    "title": "Universal Search Refinement",
-    "description": "Add a global search input in the header to find Projects, Tasks, and Ideas.",
-    "status": "done",
-    "target_files": ["frontend/src/components/layout.tsx", "backend/app/api/api_v1/endpoints/mcp.py"],
-    "verification_method": "Manual UI check: Searching returns relevant items from all three categories.",
-    "priority": 2
-  },
-  {
-    "id": "REAL-08",
-    "title": "Fix MCP assign_task tool",
-    "description": "Implement missing update_assignees method in CRUDTask to support MCP assignment operations.",
-    "status": "done",
-    "target_files": ["backend/app/crud/crud_task.py"],
-    "verification_method": "pytest backend/test_mcp_standalone.py",
-    "priority": 1
-  },
-  {
-    "id": "REAL-09",
-    "title": "Remove AI Decomposer features",
-    "description": "Delete AI endpoints, schemas, and core services. Remove 'Breakdown' tab from frontend TaskForm.",
-    "status": "done",
-    "target_files": ["backend/app/core/llm.py", "frontend/src/components/task-form.tsx"],
-    "verification_method": "Manual UI check: Breakdown tab removed.",
-    "priority": 1
-  },
-  {
-    "id": "REAL-10",
-    "title": "Expose Portfolio Health to MCP",
-    "description": "Add a tool to the MCP server to retrieve portfolio health metrics for AI agents.",
-    "status": "done",
-    "target_files": ["backend/app/api/api_v1/endpoints/mcp.py"],
-    "verification_method": "mcp-inspect tools list",
-    "priority": 2
-  },
-  {
-    "id": "REAL-11",
-    "title": "Expose Team Workload to MCP",
-    "description": "Add a tool to the MCP server to retrieve team workload data for AI agents.",
-    "status": "done",
-    "target_files": ["backend/app/api/api_v1/endpoints/mcp.py"],
-    "verification_method": "mcp-inspect tools list",
-    "priority": 2
-  },
-  {
-    "id": "INT-04",
-    "title": "Webhook Integration Service",
-    "description": "Implement a generic webhook dispatcher for Slack and Discord notifications.",
-    "status": "done",
-    "target_files": ["backend/app/core/webhooks.py"],
-    "verification_method": "python -c \"from app.core.webhooks import WebhookService; assert WebhookService\"",
-    "priority": 1
-  },
-  {
-    "id": "INT-05",
-    "title": "Webhook Configuration API & UI",
-    "description": "Create endpoints and a settings UI to manage personal/project webhook URLs for Slack and Discord.",
-    "status": "done",
-    "target_files": ["backend/app/models/webhook.py", "frontend/src/pages/settings.tsx"],
-    "verification_method": "Manual UI check: Save a webhook URL and send a test notification.",
-    "priority": 2
-  },
-  {
-    "id": "INT-06",
-    "title": "Resource Workload Leveling Logic",
-    "description": "Implement backend logic to calculate daily effort per user and detect overallocation based on task durations.",
-    "status": "done",
-    "target_files": ["backend/app/api/api_v1/endpoints/dashboard.py"],
-    "verification_method": "pytest backend/tests/test_workload_logic.py",
-    "priority": 1
-  },
-  {
-    "id": "INT-07",
-    "title": "Workload Heatmap Widget",
-    "description": "Add a visualization to the Dashboard showing team member capacity and bottlenecks over the next 30 days.",
-    "status": "done",
-    "target_files": ["frontend/src/pages/dashboard.tsx"],
-    "verification_method": "Visual check: Heatmap correctly highlights users with > 8h/day allocated.",
-    "priority": 2
-  },
-  {
-    "id": "REP-01",
-    "title": "PDF Generation Service (xhtml2pdf)",
-    "description": "Implement a service to render HTML templates into professional PDF documents for reports.",
-    "status": "done",
-    "target_files": ["backend/app/core/pdf.py"],
-    "verification_method": "python -c \"from app.core.pdf import PDFService; assert PDFService\"",
-    "priority": 1
-  },
-  {
-    "id": "REP-02",
-    "title": "Project Status Report Template",
-    "description": "Create a rich HTML/CSS template for project status reports including Gantt snippets and task lists.",
-    "status": "done",
-    "target_files": ["backend/app/templates/reports/project_status.html"],
-    "verification_method": "Manual check of generated PDF layout.",
-    "priority": 2
-  },
-  {
-    "id": "REP-03",
-    "title": "Portfolio Health Aggregation API",
-    "description": "Implement an endpoint to calculate health scores (ROI, Variance, Risks) across all active projects.",
-    "status": "done",
-    "target_files": ["backend/app/api/api_v1/endpoints/projects.py"],
-    "verification_method": "pytest backend/tests/test_portfolio_logic.py",
-    "priority": 1
-  }
-]
+{
+  "tasks": [
+    {
+      "id": "MIG-01",
+      "title": "Database Migration: Financials and Risks",
+      "description": "Add budget, real_cost, risk_probability, risk_impact to Project and Task models. Add priority to Projects. Add checklist JSONB to Tasks. Add attachments/links to Comments.",
+      "status": "todo",
+      "target_files": [
+        "backend/app/models/project.py",
+        "backend/app/models/task.py",
+        "backend/app/models/comment.py"
+      ],
+      "verification_method": "Run DB check script to verify new columns exist."
+    },
+    {
+      "id": "MOD-01",
+      "title": "Implement Folder and File models",
+      "description": "Create new models for hierarchical folder management (media, notes, generic).",
+      "status": "todo",
+      "target_files": [
+        "backend/app/models/folder.py",
+        "backend/app/models/file.py"
+      ],
+      "verification_method": "Verify models load in SQLAlchemy."
+    },
+    {
+      "id": "CRUD-01",
+      "title": "Task Checklist Logic",
+      "description": "Implement auto-calculation of progress_percent based on checklist items in crud_task.py.",
+      "status": "todo",
+      "target_files": [
+        "backend/app/crud/crud_task.py"
+      ],
+      "verification_method": "Unit test for progress calculation."
+    },
+    {
+      "id": "UI-01",
+      "title": "Task Form: Cost and Risk Inputs",
+      "description": "Update TaskForm with budget, real_cost, risk probability, and impact sliders/inputs.",
+      "status": "todo",
+      "target_files": [
+        "frontend/src/components/task-form.tsx"
+      ],
+      "verification_method": "Visual check in browser."
+    },
+    {
+      "id": "UI-02",
+      "title": "Task Form: Adaptive Checklist",
+      "description": "Add interactive checklist component to TaskForm that drives progress.",
+      "status": "todo",
+      "target_files": [
+        "frontend/src/components/task-form.tsx"
+      ],
+      "verification_method": "Toggle items and verify progress bar updates."
+    },
+    {
+      "id": "UI-03",
+      "title": "Chat Section Upgrade",
+      "description": "Transform CommentSection into a modern ChatSection with rich media support.",
+      "status": "todo",
+      "target_files": [
+        "frontend/src/components/comments/comment-section.tsx"
+      ],
+      "verification_method": "Verify attachments and links render in chat bubbles."
+    },
+    {
+      "id": "HUB-01",
+      "title": "Hierarchical Folder Tree",
+      "description": "Implement the Project File Hub with folder tree, media/ and notes/ specialized views.",
+      "status": "todo",
+      "target_files": [
+        "frontend/src/components/folder-tree.tsx"
+      ],
+      "verification_method": "Create folder and verify navigation."
+    },
+    {
+      "id": "ANALYTICS-01",
+      "title": "Dashboard Risk Heatmap",
+      "description": "Implement the 5x5 Risk Exposure Heatmap on the main Dashboard.",
+      "status": "todo",
+      "target_files": [
+        "frontend/src/pages/dashboard.tsx",
+        "frontend/src/components/risk-heatmap.tsx"
+      ],
+      "verification_method": "Verify project risk dots appear in correct cells."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, ForeignKey, Table, Enum as SAEnum, Integer, Boolean
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy import Column, String, DateTime, ForeignKey, Table, Enum as SAEnum, Integer, Boolean, Float
+from sqlalchemy.dialects.postgresql import UUID, ARRAY, JSONB
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 from app.core.enums import Status, Priority
@@ -54,6 +54,18 @@ class Task(Base):
     pessimistic_days = Column(Integer, default=0)
     
     duration_days = Column(Integer, default=0)
+
+    # Financials
+    budget = Column(Float, default=0.0)
+    real_cost = Column(Float, default=0.0)
+    
+    # Risk Management
+    risk_probability = Column(Integer, default=1) # 1-5 scale
+    risk_impact = Column(Integer, default=1)      # 1-5 scale
+    
+    # Dynamic Checklist
+    # Structure: List of { id, text, is_done }
+    checklist = Column(JSONB, nullable=False, default=[])
 
     @property
     def expected_duration_days(self) -> float:

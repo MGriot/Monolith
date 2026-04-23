@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Text, DateTime, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 
@@ -24,6 +24,10 @@ class Comment(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Chat Features
+    attachments = Column(ARRAY(String), default=[])
+    links = Column(ARRAY(String), default=[])
 
     # Relationships
     author = relationship("User", backref="threaded_comments", lazy="selectin")

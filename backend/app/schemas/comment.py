@@ -7,6 +7,8 @@ from app.schemas.user import User
 class CommentBase(BaseModel):
     content: str
     parent_id: Optional[UUID] = None
+    attachments: Optional[List[str]] = []
+    links: Optional[List[str]] = []
 
 class CommentCreate(CommentBase):
     project_id: Optional[UUID] = None

@@ -35,7 +35,9 @@ async def on_startup():
         await conn.run_sync(Base.metadata.create_all)
     
     await seed_users()
-    start_scheduler()
+    # Scheduler disabled as email service was removed
+    # from app.core.scheduler import start_scheduler
+    # start_scheduler()
 
 @app.get("/api/health")
 async def health_check():

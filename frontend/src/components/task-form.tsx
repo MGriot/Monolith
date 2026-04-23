@@ -14,7 +14,8 @@ import {
     CalendarDays, 
     Clock, 
     Link as LinkIcon,
-    Plus
+    Plus,
+    Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -199,6 +200,8 @@ export default function TaskForm({
 
   const startDate = watch("start_date");
   const dueDate = watch("due_date");
+  const deadlineAt = watch("deadline_at");
+  const completedAt = watch("completed_at");
   const durationDays = watch("duration_days") || 0;
 
   const optDays = watch("optimistic_days") || 0;
@@ -365,30 +368,96 @@ export default function TaskForm({
     onSubmit(cleanedData);
   };
 
+  const handleSuggestPERT = () => {
+    if (!startDate) {
+        toast.error("Set Start Date first");
+        return;
+    }
+
+    try {
+        const start = parseISO(startDate);
+        if (isNaN(start.getTime())) return;
+
+        // 1. Most Likely (Normal)
+        let normal = durationDays || 0;
+        if (dueDate) {
+            const end = parseISO(dueDate);
+            if (!isNaN(end.getTime())) {
+                normal = Math.max(1, differenceInDays(end, start) + 1);
+            }
+        }
+
+        if (normal === 0) {
+            toast.error("Set Due Date or Duration first");
+            return;
+        }
+
+        // 2. Pessimistic
+        let pessimistic = Math.round(normal * 1.5);
+        if (deadlineAt) {
+            const dl = parseISO(deadlineAt);
+            if (!isNaN(dl.getTime())) {
+                pessimistic = Math.max(normal, differenceInDays(dl, start) + 1);
+            }
+        }
+        if (completedAt) {
+            const comp = parseISO(completedAt);
+            if (!isNaN(comp.getTime())) {
+                const actual = differenceInDays(comp, start) + 1;
+                if (actual > normal) pessimistic = Math.max(pessimistic, actual);
+            }
+        }
+
+        // 3. Optimistic
+        let optimistic = Math.round(normal * 0.8);
+        if (completedAt) {
+            const comp = parseISO(completedAt);
+            if (!isNaN(comp.getTime())) {
+                const actual = differenceInDays(comp, start) + 1;
+                if (actual < normal && actual > 0) optimistic = actual;
+            }
+        }
+
+        setValue("normal_days", normal);
+        setValue("pessimistic_days", pessimistic);
+        setValue("optimistic_days", optimistic);
+        toast.success("PERT values suggested from timeline");
+    } catch (e) {
+        toast.error("Could not calculate suggestions");
+    }
+  };
+
   const handleSyncFromChildren = () => {
     if (!taskObject?.subtasks || taskObject.subtasks.length === 0) return;
     
     let minStart: Date | null = null;
     let maxDue: Date | null = null;
 
-    taskObject.subtasks.forEach(st => {
-        if (st.start_date) {
-            try {
-                const d = parseISO(st.start_date);
-                if (!isNaN(d.getTime())) {
-                    if (!minStart || d < minStart) minStart = d;
-                }
-            } catch (e) {}
-        }
-        if (st.due_date) {
-            try {
-                const d = parseISO(st.due_date);
-                if (!isNaN(d.getTime())) {
-                    if (!maxDue || d > maxDue) maxDue = d;
-                }
-            } catch (e) {}
-        }
-    });
+    const traverse = (subtasks: Task[]) => {
+        subtasks.forEach(st => {
+            if (st.start_date) {
+                try {
+                    const d = parseISO(st.start_date);
+                    if (!isNaN(d.getTime())) {
+                        if (!minStart || d < minStart) minStart = d;
+                    }
+                } catch (e) {}
+            }
+            if (st.due_date) {
+                try {
+                    const d = parseISO(st.due_date);
+                    if (!isNaN(d.getTime())) {
+                        if (!maxDue || d > maxDue) maxDue = d;
+                    }
+                } catch (e) {}
+            }
+            if (st.subtasks && st.subtasks.length > 0) {
+                traverse(st.subtasks);
+            }
+        });
+    };
+
+    traverse(taskObject.subtasks);
 
     if (minStart && !isNaN(minStart.getTime())) {
         setValue("start_date", format(minStart, "yyyy-MM-dd"));
@@ -397,7 +466,7 @@ export default function TaskForm({
         setValue("due_date", format(maxDue, "yyyy-MM-dd"));
     }
     
-    toast.success("Dates synced from children");
+    toast.success("Dates synced from all descendants");
   };
 
   const availableParents = getAvailableParents();
@@ -614,8 +683,19 @@ export default function TaskForm({
                 <Calculator className="w-3.5 h-3.5" />
                 PERT Estimation (Days)
               </Label>
-              <div className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
-                Expected: {expectedDuration}d
+              <div className="flex items-center gap-2">
+                <Button 
+                    type="button"
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 text-[10px] font-black uppercase text-indigo-600 hover:bg-indigo-50 gap-1.5"
+                    onClick={handleSuggestPERT}
+                >
+                    <Sparkles className="w-3 h-3" /> Suggest from Timeline
+                </Button>
+                <div className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
+                    Expected: {expectedDuration}d
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">

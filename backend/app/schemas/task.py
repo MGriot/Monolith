@@ -51,6 +51,14 @@ class TaskBase(BaseModel):
     pessimistic_days: Optional[int] = 0
     expected_duration_days: Optional[float] = 0.0
     duration_days: Optional[int] = 0
+    # Financials
+    budget: float = 0.0
+    real_cost: float = 0.0
+    # Risk Management
+    risk_probability: int = 1
+    risk_impact: int = 1
+    # Dynamic Checklist
+    checklist: List[dict] = []
 
 class TaskShortCreate(BaseModel):
     title: str
