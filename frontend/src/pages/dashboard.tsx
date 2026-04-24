@@ -82,6 +82,7 @@ interface TeammateActivity {
 export default function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: async () => {
@@ -105,23 +106,22 @@ export default function DashboardPage() {
         return res.data as TeamWorkloadResponse;
     }
   });
-const { data: calendarData } = useQuery({
-  queryKey: ['calendar-events', 'global'],
-  queryFn: async () => {
-    const response = await api.get('/calendar/');
-    return response.data;
-  },
-});
 
-const { data: riskData } = useQuery({
-  queryKey: ['risk-data'],
-  queryFn: async () => {
-    const response = await api.get('/dashboard/risk-data');
-    return response.data;
-  },
-});
+  const { data: calendarData } = useQuery({
+    queryKey: ['calendar-events', 'global'],
+    queryFn: async () => {
+      const response = await api.get('/calendar/');
+      return response.data;
+    },
+  });
 
-if (isLoading) {
+  const { data: riskData } = useQuery({
+    queryKey: ['risk-data'],
+    queryFn: async () => {
+      const response = await api.get('/dashboard/risk-data');
+      return response.data;
+    },
+  });
 
   const workloadDates = useMemo(() => {
     const dates = [];
@@ -377,7 +377,7 @@ if (isLoading) {
                         <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                         <div>
                           <p className="text-sm font-semibold text-slate-900 group-hover:text-primary transition-colors">{task.title}</p>
-                          <p className="text-[10px] text-slate-500 font-medium">Due {format(parseISO(task.due_date), 'MMM d, h:mm a')}</p>
+                          <p className="text-[10px] text-slate-500 font-medium">Due {task.due_date ? format(parseISO(task.due_date), 'MMM d, h:mm a') : 'N/A'}</p>
                         </div>
                       </div>
                       <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
@@ -413,7 +413,7 @@ if (isLoading) {
                         <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                       </div>
                       <p className="text-sm font-medium text-slate-900 leading-tight">{activity.title}</p>
-                      <p className="text-[10px] text-slate-500">Completed {format(parseISO(activity.completed_at), 'MMM d, p')}</p>
+                      <p className="text-[10px] text-slate-500">Completed {activity.completed_at ? format(parseISO(activity.completed_at), 'MMM d, p') : 'N/A'}</p>
                     </div>
                   ))
                 )}
@@ -449,7 +449,7 @@ if (isLoading) {
                       </div>
                       <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
                         <Clock className="w-3 h-3" />
-                        <span>{format(parseISO(activity.completed_at), 'MMM d, h:mm a')}</span>
+                        <span>{activity.completed_at ? format(parseISO(activity.completed_at), 'MMM d, h:mm a') : 'N/A'}</span>
                       </div>
                     </div>
                     <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between">
@@ -465,7 +465,6 @@ if (isLoading) {
           </div>
         )}
 
-        {/* Quick Links */}
         <div className={cn("grid gap-4", user?.is_superuser ? "md:grid-cols-3" : "md:grid-cols-2")}>
           <Link 
             to="/projects" 
@@ -518,7 +517,6 @@ if (isLoading) {
           )}
         </div>
 
-        {/* Global Activity Heatmap */}
         <div className={cn("grid gap-6", user?.is_superuser ? "md:grid-cols-2" : "grid-cols-1")}>
           {user?.is_superuser && (
             <Card className="border-slate-200 shadow-sm overflow-hidden flex flex-col">
@@ -543,43 +541,42 @@ if (isLoading) {
             </Card>
           )}
 
-        {/* Analytics Section */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Risk Heatmap */}
-          <Card className="border-slate-200 shadow-sm overflow-hidden flex flex-col">
-            <CardHeader className="bg-slate-50/50 border-b">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-bold flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-amber-500" />
-                    Risk Exposure Matrix
-                  </CardTitle>
-                  <CardDescription className="text-[10px]">Probability vs Impact for active items.</CardDescription>
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Risk Heatmap */}
+            <Card className="border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <CardHeader className="bg-slate-50/50 border-b">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-500" />
+                      Risk Exposure Matrix
+                    </CardTitle>
+                    <CardDescription className="text-[10px]">Probability vs Impact for active items.</CardDescription>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 flex-1">
-              <RiskHeatmap items={riskData || []} />
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent className="pt-6 flex-1">
+                <RiskHeatmap items={riskData || []} />
+              </CardContent>
+            </Card>
 
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="bg-slate-50/50 border-b">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-bold flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-emerald-500" />
-                    System-wide Activity
-                  </CardTitle>
-                  <CardDescription className="text-[10px]">Consolidated completions over the last year.</CardDescription>
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="bg-slate-50/50 border-b">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-emerald-500" />
+                      System-wide Activity
+                    </CardTitle>
+                    <CardDescription className="text-[10px]">Consolidated completions over the last year.</CardDescription>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <ProjectHeatmap stats={data?.global_activity || []} />
-            </CardContent>
-          </Card>
-        </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <ProjectHeatmap stats={data?.global_activity || []} />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

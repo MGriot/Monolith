@@ -15,7 +15,11 @@ import {
     Clock, 
     Link as LinkIcon,
     Plus,
-    Sparkles
+    Sparkles,
+    Database,
+    X,
+    CheckSquare,
+    AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -834,7 +838,8 @@ export default function TaskForm({
                     className="h-7 text-[10px] uppercase font-bold"
                     onClick={() => {
                         const current = watch("checklist") || [];
-                        setValue("checklist", [...current, { id: crypto.randomUUID(), text: "", is_done: false }]);
+                        const newId = Math.random().toString(36).substring(2, 9);
+                        setValue("checklist", [...current, { id: newId, text: "", is_done: false }]);
                     }}
                 >
                     <Plus className="w-3 h-3 mr-1" /> Add Point

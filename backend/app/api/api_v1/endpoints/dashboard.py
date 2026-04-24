@@ -120,7 +120,7 @@ async def trigger_deadline_notifications(
 @router.get("/risk-data", response_model=Any)
 async def get_risk_data(
     db: AsyncSession = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
     Get probability/impact data for all active projects and tasks.
