@@ -232,6 +232,7 @@ export default function ProjectsListPage() {
                   <TableHead className="w-[300px]">Project Name</TableHead>
                   <TableHead>Topic & Type</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Priority</TableHead>
                   <TableHead className="w-[200px]">Progress</TableHead>
                   <TableHead>Due Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -277,6 +278,11 @@ export default function ProjectsListPage() {
                       <TableCell>
                         <Badge variant="outline" className="capitalize bg-slate-50">
                           {project.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={project.priority === 'High' || project.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[10px] font-black uppercase">
+                          {project.priority || 'Medium'}
                         </Badge>
                       </TableCell>
                       <TableCell>

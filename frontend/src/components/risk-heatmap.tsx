@@ -1,12 +1,6 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { 
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { AlertCircle } from 'lucide-react';
 
 interface RiskItem {
@@ -44,72 +38,64 @@ export default function RiskHeatmap({ items }: RiskHeatmapProps) {
   };
 
   return (
-    <TooltipProvider>
-      <div className="flex flex-col h-full gap-4">
-        <div className="flex-1 grid grid-cols-[30px_1fr] grid-rows-[1fr_30px] gap-2">
-          {/* Y-Axis Label */}
-          <div className="flex flex-col justify-between text-[8px] font-black uppercase text-slate-400 py-2">
-            <span>High</span>
-            <div className="-rotate-90 origin-center whitespace-nowrap">Probability</div>
-            <span>Low</span>
-          </div>
+    <div className="flex flex-col h-full gap-4">
+      <div className="flex-1 grid grid-cols-[30px_1fr] grid-rows-[1fr_30px] gap-2">
+        {/* Y-Axis Label */}
+        <div className="flex flex-col justify-between text-[8px] font-black uppercase text-slate-400 py-2">
+          <span>High</span>
+          <div className="-rotate-90 origin-center whitespace-nowrap">Probability</div>
+          <span>Low</span>
+        </div>
 
-          {/* Matrix */}
-          <div className="grid grid-cols-5 grid-rows-5 gap-1.5 h-full min-h-[300px]">
-            {grid.map((row, pIdx) => (
-              row.map((cellItems, iIdx) => {
-                const prob = 5 - pIdx;
-                const impact = iIdx + 1;
-                return (
-                  <div 
-                    key={`${prob}-${impact}`}
-                    className={cn(
-                        "rounded-md border-2 flex items-center justify-center relative group overflow-hidden transition-all hover:scale-[1.02] hover:z-10",
-                        getCellColor(prob, impact)
-                    )}
-                  >
-                    <div className="text-[10px] font-black text-white/40 select-none">
-                        {prob}x{impact}
-                    </div>
-                    
-                    <div className="absolute inset-0 flex flex-wrap gap-1 p-1 items-center justify-center">
-                        {cellItems.slice(0, 4).map(item => (
-                            <Tooltip key={item.id}>
-                                <TooltipTrigger asChild>
-                                    <div 
-                                        className={cn(
-                                            "w-2.5 h-2.5 rounded-full border border-white/50 shadow-sm cursor-pointer hover:scale-150 transition-transform",
-                                            item.type === 'project' ? "bg-white" : "bg-white/40"
-                                        )}
-                                    />
-                                </TooltipTrigger>
-                                <TooltipContent className="p-2 text-[10px] max-w-[200px]">
-                                    <p className="font-bold uppercase tracking-tight">{item.name}</p>
-                                    <p className="text-slate-500">{item.type} • Priority: {item.priority}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        ))}
-                        {cellItems.length > 4 && (
-                            <span className="text-[8px] font-black text-white">+{cellItems.length - 4}</span>
-                        )}
-                    </div>
+        {/* Matrix */}
+        <div className="grid grid-cols-5 grid-rows-5 gap-1.5 h-full min-h-[300px]">
+          {grid.map((row, pIdx) => (
+            row.map((cellItems, iIdx) => {
+              const prob = 5 - pIdx;
+              const impact = iIdx + 1;
+              return (
+                <div 
+                  key={`${prob}-${impact}`}
+                  className={cn(
+                      "rounded-md border-2 flex items-center justify-center relative group overflow-hidden transition-all hover:scale-[1.02] hover:z-10",
+                      getCellColor(prob, impact)
+                  )}
+                >
+                  <div className="text-[10px] font-black text-white/40 select-none">
+                      {prob}x{impact}
                   </div>
-                );
-              })
-            ))}
-          </div>
+                  
+                  <div className="absolute inset-0 flex flex-wrap gap-1 p-1 items-center justify-center">
+                      {cellItems.slice(0, 4).map(item => (
+                          <div 
+                              key={item.id}
+                              className={cn(
+                                  "w-2.5 h-2.5 rounded-full border border-white/50 shadow-sm cursor-pointer hover:scale-150 transition-transform",
+                                  item.type === 'project' ? "bg-white" : "bg-white/40"
+                              )}
+                              title={`${item.name} (${item.type}) - Priority: ${item.priority}`}
+                          />
+                      ))}
+                      {cellItems.length > 4 && (
+                          <span className="text-[8px] font-black text-white">+{cellItems.length - 4}</span>
+                      )}
+                  </div>
+                </div>
+              );
+            })
+          ))}
+        </div>
 
-          {/* Spacer */}
-          <div></div>
+        {/* Spacer */}
+        <div></div>
 
-          {/* X-Axis Label */}
-          <div className="flex justify-between text-[8px] font-black uppercase text-slate-400 px-2">
-            <span>Low</span>
-            <div className="text-center">Impact / Severity</div>
-            <span>Critical</span>
-          </div>
+        {/* X-Axis Label */}
+        <div className="flex justify-between text-[8px] font-black uppercase text-slate-400 px-2">
+          <span>Low</span>
+          <div className="text-center">Impact / Severity</div>
+          <span>Critical</span>
         </div>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }
