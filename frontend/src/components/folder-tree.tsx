@@ -18,7 +18,8 @@ import {
   Loader2,
   Check,
   Type,
-  Upload
+  Upload,
+  Pencil
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,7 @@ export default function FolderTree({ projectId, taskId, onFileClick }: FolderTre
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [newFolderName, setNewFolderName] = useState('');
   const [creatingIn, setCreatingIn] = useState<string | null>(null);
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   
   // File/Note State
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
@@ -85,6 +87,16 @@ export default function FolderTree({ projectId, taskId, onFileClick }: FolderTre
     }
   });
 
+  const renameFolderMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string, name: string }) => api.put(`/folders/${id}`, { name }),
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['folders'] });
+        setEditingFolderId(null);
+        setNewFolderName('');
+        toast.success("Folder renamed");
+    }
+  });
+
   const deleteFolderMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/folders/${id}`),
     onSuccess: () => {
@@ -106,7 +118,7 @@ export default function FolderTree({ projectId, taskId, onFileClick }: FolderTre
   });
 
   const createNoteMutation = useMutation({
-    mutationFn: (folderId: string) => api.post(`/folders/${folderId}/upload-note`, { name: "Untitled Note.md" }), // Need endpoint
+    mutationFn: (folderId: string) => api.post(`/folders/${folderId}/upload-note`, { name: "Untitled Note.md" }),
     onSuccess: (res) => {
         queryClient.invalidateQueries({ queryKey: ['folders'] });
         setSelectedFile(res.data);
@@ -132,6 +144,22 @@ export default function FolderTree({ projectId, taskId, onFileClick }: FolderTre
     });
   };
 
+  const handleRenameFolder = (id: string) => {
+    if (!newFolderName.trim()) return;
+    renameFolderMutation.mutate({ id, name: newFolderName });
+  };
+
+  const onCreateSub = (id: string) => {
+    setCreatingIn(id);
+    setNewFolderName('');
+    if (!expandedFolders.has(id)) toggleFolder(id);
+  };
+
+  const onStartRename = (id: string, name: string) => {
+    setEditingFolderId(id);
+    setNewFolderName(name);
+  };
+
   if (isLoading) return <div className="flex justify-center p-4"><Loader2 className="h-4 w-4 animate-spin text-slate-300" /></div>;
 
   const rootFolders = folders?.filter(f => !f.parent_id) || [];
@@ -144,7 +172,10 @@ export default function FolderTree({ projectId, taskId, onFileClick }: FolderTre
             variant="ghost" 
             size="icon" 
             className="h-6 w-6" 
-            onClick={() => setCreatingIn('root')}
+            onClick={() => {
+                setCreatingIn('root');
+                setNewFolderName('');
+            }}
         >
             <Plus className="w-3.5 h-3.5" />
         </Button>
@@ -175,16 +206,23 @@ export default function FolderTree({ projectId, taskId, onFileClick }: FolderTre
                 folder={folder} 
                 expandedFolders={expandedFolders}
                 toggleFolder={toggleFolder}
-                onDelete={(id) => deleteFolderMutation.mutate(id)}
-                onCreateSub={(id) => {
-                    setCreatingIn(id);
-                    if (!expandedFolders.has(id)) toggleFolder(id);
+                onDelete={(id: string, name: string) => {
+                    if (window.confirm(`Delete folder "${name}" and all its content?`)) {
+                        deleteFolderMutation.mutate(id);
+                    }
                 }}
+                onCreateSub={onCreateSub}
+                onStartRename={onStartRename}
+                creatingIn={creatingIn}
+                editingFolderId={editingFolderId}
                 isCreatingSub={creatingIn === folder.id}
+                isEditing={editingFolderId === folder.id}
                 newFolderName={newFolderName}
                 setNewFolderName={setNewFolderName}
                 onConfirmCreate={handleCreateFolder}
+                onConfirmRename={handleRenameFolder}
                 onCancelCreate={() => setCreatingIn(null)}
+                onCancelRename={() => setEditingFolderId(null)}
                 onFileClick={(file: any) => {
                     if (file.name.endsWith('.md')) {
                         setSelectedFile(file);
@@ -194,6 +232,7 @@ export default function FolderTree({ projectId, taskId, onFileClick }: FolderTre
                     }
                 }}
                 onUpload={(file: File) => uploadFileMutation.mutate({ folderId: folder.id, file })}
+                onNewNote={(id: string) => createNoteMutation.mutate(id)}
             />
         ))}
 
@@ -221,9 +260,10 @@ export default function FolderTree({ projectId, taskId, onFileClick }: FolderTre
 }
 
 function FolderItem({ 
-    folder, expandedFolders, toggleFolder, onDelete, onCreateSub, 
-    isCreatingSub, newFolderName, setNewFolderName, onConfirmCreate, onCancelCreate,
-    onFileClick, onUpload
+    folder, expandedFolders, toggleFolder, onDelete, onCreateSub, onStartRename,
+    isCreatingSub, isEditing, newFolderName, setNewFolderName, onConfirmCreate, onConfirmRename, onCancelCreate, onCancelRename,
+    onFileClick, onUpload, onNewNote,
+    creatingIn, editingFolderId
 }: any) {
   const isExpanded = expandedFolders.has(folder.id);
   const hasContent = folder.subfolders?.length > 0 || folder.files?.length > 0;
@@ -232,57 +272,86 @@ function FolderItem({
     <div className="select-none">
       <div className={cn(
           "group flex items-center gap-2 p-1.5 rounded-lg transition-all cursor-pointer",
-          isExpanded ? "bg-slate-100/50" : "hover:bg-slate-50"
-      )} onClick={() => toggleFolder(folder.id)}>
+          isExpanded ? "bg-slate-100/50" : "hover:bg-slate-50",
+          isEditing && "bg-primary/5 ring-1 ring-primary/20"
+      )} onClick={() => !isEditing && toggleFolder(folder.id)}>
         {hasContent ? (
             isExpanded ? <ChevronDown className="w-3 h-3 text-slate-400" /> : <ChevronRight className="w-3 h-3 text-slate-400" />
         ) : <div className="w-3" />}
         
         {isExpanded ? <FolderOpen className="w-3.5 h-3.5 text-primary" /> : <FolderIcon className="w-3.5 h-3.5 text-slate-400" />}
         
-        <span className="flex-1 text-xs font-bold text-slate-700 truncate">{folder.name}</span>
+        {isEditing ? (
+            <Input 
+                autoFocus
+                className="h-6 text-xs border-none bg-transparent focus-visible:ring-0 px-0 flex-1"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') onConfirmRename(folder.id);
+                    if (e.key === 'Escape') onCancelRename();
+                }}
+                onClick={(e) => e.stopPropagation()}
+            />
+        ) : (
+            <span className="flex-1 text-xs font-bold text-slate-700 truncate">{folder.name}</span>
+        )}
         
         <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <button className="p-1 hover:bg-white rounded text-slate-300 hover:text-slate-600" onClick={(e) => e.stopPropagation()}>
-                        <Plus className="w-3 h-3" />
-                    </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="text-xs">
-                    <DropdownMenuItem onClick={() => onCreateSub(folder.id)}>
-                        <FolderIcon className="w-3 h-3 mr-2" /> New Subfolder
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => createNoteMutation.mutate(folder.id)}>
-                        <FileText className="w-3 h-3 mr-2" /> New Markdown Note
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => {
-                        const input = document.createElement('input');
-                        input.type = 'file';
-                        input.onchange = (e: any) => {
-                            const file = e.target.files[0];
-                            if (file) onUpload(file);
-                        };
-                        input.click();
-                    }}>
-                        <Upload className="w-3 h-3 mr-2" /> Upload File
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+            {isEditing ? (
+                <>
+                    <button onClick={(e) => { e.stopPropagation(); onConfirmRename(folder.id); }}><Check className="w-3 h-3 text-emerald-500" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); onCancelRename(); }}><X className="w-3 h-3 text-slate-400" /></button>
+                </>
+            ) : (
+                <>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="p-1 hover:bg-white rounded text-slate-300 hover:text-slate-600" onClick={(e) => e.stopPropagation()}>
+                                <Plus className="w-3 h-3" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="text-xs">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCreateSub(folder.id); }}>
+                                <FolderIcon className="w-3 h-3 mr-2" /> New Subfolder
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onNewNote(folder.id); }}>
+                                <FileText className="w-3 h-3 mr-2" /> New Markdown Note
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.onchange = (ev: any) => {
+                                    const file = ev.target.files[0];
+                                    if (file) onUpload(file);
+                                };
+                                input.click();
+                            }}>
+                                <Upload className="w-3 h-3 mr-2" /> Upload File
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
 
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <button className="p-1 hover:bg-white rounded text-slate-300 hover:text-slate-600" onClick={(e) => e.stopPropagation()}>
-                        <MoreVertical className="w-3 h-3" />
-                    </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="text-xs">
-                    <DropdownMenuItem className="text-red-600" onClick={() => onDelete(folder.id)}>
-                        <Trash2 className="w-3 h-3 mr-2" /> Delete Folder
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="p-1 hover:bg-white rounded text-slate-300 hover:text-slate-600" onClick={(e) => e.stopPropagation()}>
+                                <MoreVertical className="w-3 h-3" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="text-xs">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStartRename(folder.id, folder.name); }}>
+                                <Pencil className="w-3 h-3 mr-2" /> Rename Folder
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-600" onClick={(e) => { e.stopPropagation(); onDelete(folder.id, folder.name); }}>
+                                <Trash2 className="w-3 h-3 mr-2" /> Delete Folder
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </>
+            )}
         </div>
       </div>
 
@@ -293,12 +362,12 @@ function FolderItem({
               <div 
                 key={file.id} 
                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 transition-colors group cursor-pointer"
-                onClick={() => onFileClick?.(file)}
+                onClick={(e) => { e.stopPropagation(); onFileClick?.(file); }}
               >
                   {file.name.endsWith('.md') ? <FileText className="w-3 h-3 text-primary/60" /> : <FileIcon className="w-3 h-3 text-slate-300" />}
                   <span className="flex-1 text-[11px] font-medium text-slate-600 truncate">{file.name}</span>
                   <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
-                      <a href={file.url} target="_blank" className="p-1 hover:bg-white rounded text-slate-400"><ExternalLink className="w-2.5 h-2.5" /></a>
+                      <a href={file.url} target="_blank" className="p-1 hover:bg-white rounded text-slate-400" onClick={(e) => e.stopPropagation()}><ExternalLink className="w-2.5 h-2.5" /></a>
                   </div>
               </div>
           ))}
@@ -312,8 +381,20 @@ function FolderItem({
                 toggleFolder={toggleFolder}
                 onDelete={onDelete}
                 onCreateSub={onCreateSub}
+                onStartRename={onStartRename}
+                creatingIn={creatingIn}
+                editingFolderId={editingFolderId}
+                isCreatingSub={creatingIn === sub.id}
+                isEditing={editingFolderId === sub.id}
+                newFolderName={newFolderName}
+                setNewFolderName={setNewFolderName}
+                onConfirmCreate={onConfirmCreate}
+                onConfirmRename={onConfirmRename}
+                onCancelCreate={onCancelCreate}
+                onCancelRename={onCancelRename}
                 onFileClick={onFileClick}
                 onUpload={onUpload}
+                onNewNote={onNewNote}
               />
           ))}
 
@@ -322,7 +403,7 @@ function FolderItem({
                 <FolderIcon className="w-3 h-3 text-primary/30" />
                 <Input 
                     autoFocus
-                    className="h-6 text-[10px] border-none bg-transparent focus-visible:ring-0 px-0"
+                    className="h-6 text-[10px] border-none bg-transparent focus-visible:ring-0 px-0 flex-1"
                     placeholder="Subfolder..."
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
