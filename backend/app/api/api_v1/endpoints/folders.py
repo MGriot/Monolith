@@ -150,6 +150,32 @@ async def update_file(
     await db.refresh(file)
     return file
 
+@router.put("/{folder_id}", response_model=FolderSchema)
+async def update_folder(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    folder_id: UUID,
+    folder_in: FolderUpdate,
+    current_user: models.User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Update a folder (rename).
+    """
+    folder = await db.get(Folder, folder_id)
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    if folder.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    update_data = folder_in.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(folder, field, value)
+    
+    db.add(folder)
+    await db.commit()
+    await db.refresh(folder)
+    return folder
+
 @router.delete("/{folder_id}", response_model=FolderSchema)
 async def delete_folder(
     *,

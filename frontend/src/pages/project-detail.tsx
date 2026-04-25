@@ -21,6 +21,7 @@ import ProjectIdeas from '@/components/project-ideas';
 import ProjectLibrary from '@/components/project-library';
 import CommentSection from '@/components/comments/comment-section';
 import FolderTree from '@/components/folder-tree';
+import FilePreviewDialog from '@/components/file-preview-dialog';
 import TaskForm from '@/components/task-form';
 import type { TaskFormValues } from '@/components/task-form';
 import AttachmentManager from '@/components/attachment-manager';
@@ -64,6 +65,7 @@ export default function ProjectDetailPage() {
   const [parentTaskId, setParentTaskId] = useState<string | null>(null);
   const [initialStatus, setInitialStatus] = useState<string>("Todo");
   const [activeTab, setActiveTab] = useState<string>("overview");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { setTitle, setActions } = useTitle();
 
   const { data: project, isLoading: isProjectLoading, error: projectError } = useQuery({
@@ -555,7 +557,7 @@ export default function ProjectDetailPage() {
                     <CardDescription className="text-[10px]">Manage project documents, media, and technical notes.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <FolderTree projectId={id} />
+                    <FolderTree projectId={id} onFileClick={(file) => setPreviewUrl(file.url)} />
                 </CardContent>
             </Card>
           </div>
@@ -735,6 +737,11 @@ export default function ProjectDetailPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <FilePreviewDialog 
+        url={previewUrl}
+        onClose={() => setPreviewUrl(null)}
+      />
 
       <DataExportDialog 
         open={isExportDialogOpen} 
