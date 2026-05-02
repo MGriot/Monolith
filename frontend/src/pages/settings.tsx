@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     Dialog, 

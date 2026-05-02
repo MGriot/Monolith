@@ -48,7 +48,7 @@ import AttachmentManager from '@/components/attachment-manager';
 import CommentSection from '@/components/comments/comment-section';
 import ProjectIdeas from '@/components/project-ideas';
 import type { Task } from '@/types';
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 import { toast } from 'sonner';
 
 export default function MyTasksPage() {

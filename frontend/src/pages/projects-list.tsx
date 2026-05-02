@@ -49,7 +49,7 @@ import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 import DataExportDialog from '@/components/data-export-dialog';
 import ProjectKanban from '@/components/project-kanban';
 import type { Project as ProjectType, ProjectTemplate } from '@/types';
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 
 export default function ProjectsListPage() {
   const navigate = useNavigate();

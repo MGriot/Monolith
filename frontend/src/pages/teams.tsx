@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import type { User } from '@/types';
 import { Switch } from '@/components/ui/switch';
 import { AssigneeSelector } from '@/components/assignee-selector';
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 
 interface Team {
   id: string;

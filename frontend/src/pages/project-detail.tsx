@@ -53,7 +53,7 @@ import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 import DataExportDialog from '@/components/data-export-dialog';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import type { Project, Task } from '@/types';
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
