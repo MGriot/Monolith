@@ -477,6 +477,7 @@ export default function ProjectDetailPage() {
                 initialShowSubtasks={true}
                 initialRegions={project.gantt_regions || []}
                 onRegionsChange={(regions) => updateProjectRegionsMutation.mutate(regions)}
+                onTaskClick={handleTaskClick}
               />
             </div>
           </div>

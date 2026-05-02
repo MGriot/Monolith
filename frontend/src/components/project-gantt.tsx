@@ -60,15 +60,16 @@ import {
 } from '@/constants/colors';
 import type { Task, Subtask } from '@/types';
 
-interface ProjectGanttProps {
+export interface ProjectGanttProps {
   tasks: Task[];
-  projectStartDate?: string;
-  projectDueDate?: string;
+  projectStartDate?: string | null;
+  projectDueDate?: string | null;
   initialShowSubtasks?: boolean;
   projectId?: string;
   initialRegions?: TimeRegion[];
   onRegionsChange?: (regions: TimeRegion[]) => void;
   showProjectNames?: boolean;
+  onTaskClick?: (task: Task) => void;
 }
 
 type GanttItem = (Task | (Subtask & { isSubtask: boolean, parentTitle: string, parentId: string })) & { rowIndex: number, projectName?: string };
@@ -258,7 +259,8 @@ export default function ProjectGantt({
   initialShowSubtasks = false,
   initialRegions = [],
   onRegionsChange,
-  showProjectNames = true
+  showProjectNames = true,
+  onTaskClick
 }: ProjectGanttProps) {
   const [showSubtasks, setShowSubtasks] = useState(initialShowSubtasks);
   const [showCriticalPath, setShowCriticalPath] = useState(false);
@@ -402,14 +404,14 @@ export default function ProjectGantt({
     let start = min(dates);
     let end = max(dates);
 
-    // Apply only the leading buffer (3 days)
-    start = subDays(start, 3);
-    
-    // Minimal trailing alignment: just snap to end of day
-    end = endOfDay(end);
+    // Apply buffers based on zoom level (dynamic expansion)
+    const bufferDays = zoomLevel === 'year' ? 60 : zoomLevel === 'quarter' ? 30 : zoomLevel === 'month' ? 14 : 7;
+    start = subDays(start, bufferDays);
+    end = addDays(end, bufferDays);
 
-    // Ensure start is at day boundary
+    // Ensure boundaries are snapped correctly
     start = startOfDay(start);
+    end = endOfDay(end);
     return { start, end };
   }, [ganttItems, projectStartDate, projectDueDate, zoomLevel, timeRegions]);
 
@@ -1327,13 +1329,14 @@ export default function ProjectGantt({
                     {item.is_milestone ? (
                       <div
                         className={cn(
-                          "absolute w-3 h-3 rotate-45 border-2 border-white shadow-md z-10 transition-transform hover:scale-125",
+                          "absolute w-3 h-3 rotate-45 border-2 border-white shadow-md z-10 transition-transform hover:scale-125 cursor-pointer",
                           getBarColor(item)
                         )}
                         style={{
                           left: `calc(${getPositionPx(item.start_date || item.due_date!)}px - 6px)`,
                           top: '22px'
                         }}
+                        onClick={() => onTaskClick?.(item as any)}
                         title={`${item.title} (Milestone)`}
                       />
                     ) : item.subtasks && item.subtasks.length > 0 ? (
@@ -1381,7 +1384,7 @@ export default function ProjectGantt({
                         {/* Main Bar (Planned Time) */}
                         <div
                           className={cn(
-                            "absolute h-6 rounded shadow-sm flex items-center transition-all group-hover:z-10 border-[1.5px] overflow-hidden z-10",
+                            "absolute h-6 rounded shadow-sm flex items-center transition-all group-hover:z-10 border-[1.5px] overflow-hidden z-10 cursor-pointer",
                             getPriorityBorder(item.priority),
                             (item.deadline_at && isAfter(new Date(), parseISO(item.deadline_at)) && item.status.toLowerCase() !== 'done') && "ring-2 ring-red-500 ring-offset-1",
                             showCriticalPath && item.is_critical && "ring-2 ring-red-400 ring-offset-2 animate-pulse"
@@ -1392,6 +1395,7 @@ export default function ProjectGantt({
                             backgroundColor: hasColor ? `${item.color}25` : `${getStatusHex(item.status)}22`,
                             borderColor: hasColor ? item.color : getStatusHex(item.status)
                           }}
+                          onClick={() => onTaskClick?.(item as any)}
                         >
                           {/* Internal Progress Shading (Subtle) */}
                           <div 
