@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ResourceTimeline from '@/components/resource-timeline';
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 import { UserAvatar } from '@/components/ui/user-avatar';
 
 interface User {

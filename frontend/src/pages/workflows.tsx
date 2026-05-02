@@ -38,7 +38,7 @@ import { Switch } from '@/components/ui/switch';
 import { AssigneeSelector } from '@/components/assignee-selector';
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 import { cn } from '@/lib/utils';
 
 export default function WorkflowsPage() {

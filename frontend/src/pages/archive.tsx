@@ -30,7 +30,7 @@ import { format, parseISO } from 'date-fns';
 import type { Project as ProjectType, Task as TaskType } from '@/types';
 import { toast } from 'sonner';
 import DataExportDialog from '@/components/data-export-dialog';
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 
 export default function ArchivePage() {
   const navigate = useNavigate();

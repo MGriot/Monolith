@@ -14,7 +14,7 @@ import { Plus, Trash2, Edit2, Tag, Briefcase, Loader2, Globe, Lock } from 'lucid
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Topic, WorkType } from '@/types';
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 
 export default function AdminMetadataPage() {
   const queryClient = useQueryClient();

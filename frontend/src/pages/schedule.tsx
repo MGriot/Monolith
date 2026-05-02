@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/popover";
 import { cn, formatPercent } from '@/lib/utils';
 import TaskCreateDialog from '@/components/task-create-dialog';
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 
 // --- Calendar View Component ---
 

@@ -1,5 +1,5 @@
 import ProjectIdeas from '@/components/project-ideas';
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 import { useEffect } from 'react';
 import { Lightbulb } from 'lucide-react';
 

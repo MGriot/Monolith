@@ -501,489 +501,633 @@ export default function TaskForm({
   ];
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 pt-4">
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-5 w-full mb-6">
-          <TabsTrigger value="general" className="text-[10px] font-black uppercase tracking-tight text-slate-500 data-[state=active]:text-slate-900">Info</TabsTrigger>
-          <TabsTrigger value="scheduling" className="text-[10px] font-black uppercase tracking-tight text-slate-500 data-[state=active]:text-slate-900">Timeline</TabsTrigger>
-          <TabsTrigger value="checklist" className="text-[10px] font-black uppercase tracking-tight text-slate-500 data-[state=active]:text-slate-900 flex gap-1.5">
-            <CheckSquare className="w-3 h-3" /> List
-          </TabsTrigger>
-          <TabsTrigger value="risk" className="text-[10px] font-black uppercase tracking-tight text-slate-500 data-[state=active]:text-slate-900 flex gap-1.5">
-            <AlertCircle className="w-3 h-3" /> Risk
-          </TabsTrigger>
-          <TabsTrigger value="dependencies" disabled={!editingTaskId} className="text-[10px] font-black uppercase tracking-tight gap-1.5 text-slate-500 data-[state=active]:text-slate-900">
-            <LinkIcon className="w-3 h-3" /> Deps
-          </TabsTrigger>
-        </TabsList>
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-0 h-full flex flex-col">
+      <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-6 scrollbar-hide">
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid grid-cols-5 w-full bg-slate-100/80 p-1 rounded-xl mb-8 border border-slate-200 shadow-sm sticky top-0 z-50 backdrop-blur-sm">
+            <TabsTrigger value="general" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2">Essentials</TabsTrigger>
+            <TabsTrigger value="scheduling" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2">Timeline</TabsTrigger>
+            <TabsTrigger value="checklist" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
+              <CheckSquare className="w-3 h-3" /> List
+            </TabsTrigger>
+            <TabsTrigger value="risk" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
+              <AlertCircle className="w-3 h-3" /> Risk & $
+            </TabsTrigger>
+            <TabsTrigger value="dependencies" disabled={!editingTaskId} className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
+              <LinkIcon className="w-3 h-3" /> Deps
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="general" className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              placeholder="Task title"
-              {...register("title")}
-            />
-            {errors.title && (
-              <p className="text-sm text-destructive">{errors.title.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <textarea
-              id="description"
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Describe the task..."
-              {...register("description")}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100 mt-2">
-            <div className="space-y-3">
-              <Label htmlFor="parent_id" className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Parent Task (WBS)</Label>
-              <select
-                id="parent_id"
-                className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={selectedParentId || ""}
-                onChange={(e) => setValue("parent_id", e.target.value || null)}
-              >
-                <option value="">None (Root Task)</option>
-                {availableParents.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-3">
-              <Label htmlFor="color" className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Row Style (Gantt)</Label>
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-wrap gap-1.5">
-                  {colorPresets.map((cp) => (
-                    <button
-                      key={cp.value}
-                      type="button"
-                      className={cn(
-                        "w-5 h-5 rounded-full border-2 transition-all hover:scale-110",
-                        selectedColor === cp.value ? "border-slate-900 scale-110 shadow-sm" : "border-transparent"
-                      )}
-                      style={{ backgroundColor: cp.value }}
-                      onClick={() => setValue("color", cp.value)}
-                      title={cp.name}
+          <TabsContent value="general" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
+            {/* Row 1: Title & Essentials */}
+            <div className="space-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="title" className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Primary Objective</Label>
+                    <Input
+                        id="title"
+                        placeholder="Define the task objective..."
+                        className="h-12 text-lg font-bold border-slate-200 focus:border-primary shadow-sm rounded-xl px-4 transition-all"
+                        {...register("title")}
                     />
-                  ))}
-                  <button
-                    type="button"
-                    className={cn(
-                      "w-5 h-5 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center transition-all hover:border-slate-500",
-                      !colorPresets.find(cp => cp.value === selectedColor) && selectedColor ? "border-slate-900 bg-white" : ""
+                    {errors.title && (
+                        <p className="text-xs font-bold text-red-500 mt-1 px-1">{errors.title.message}</p>
                     )}
-                    onClick={() => document.getElementById('custom-color-picker')?.click()}
-                  >
-                    <Plus className="w-2.5 h-2.5 text-slate-400" />
-                  </button>
-                  <input
-                    type="color"
-                    id="custom-color-picker"
-                    className="sr-only"
-                    value={selectedColor || "#ffffff"}
-                    onChange={(e) => setValue("color", e.target.value)}
-                  />
                 </div>
-                <div className="flex items-center gap-2">
-                   <Input 
-                      className="h-7 text-[10px] font-mono px-2 w-20"
-                      value={selectedColor || ""}
-                      onChange={(e) => setValue("color", e.target.value)}
-                      placeholder="#HEX"
-                   />
-                   {selectedColor && (
-                     <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-7 px-2 text-[9px] font-bold text-slate-400 hover:text-red-500 uppercase"
-                        onClick={() => setValue("color", null)}
-                      >
-                        Clear
-                      </Button>
-                   )}
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <select
-                id="status"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                {...register("status")}
-              >
-                <option value="Backlog">Backlog</option>
-                <option value="Todo">Todo</option>
-                <option value="In Progress">In Progress</option>
-                <option value="On hold">On Hold</option>
-                <option value="Review">Review</option>
-                <option value="Done">Done</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <select
-                id="priority"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                {...register("priority")}
-              >
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-                <option value="Critical">Critical</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <AssigneeSelector 
-              label="Assignees"
-              selectedValues={selectedAssignees}
-              onSelect={(id) => toggleItem("assignee_ids", id)}
-              onRemove={(id) => removeItem("assignee_ids", id)}
-              placeholder="Assign users or teams..."
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Topics</Label>
-              <RichDropdown 
-                items={topicItems}
-                selectedValues={selectedTopicIds}
-                onSelect={(id) => toggleItem("topic_ids", id)}
-                onRemove={(id) => removeItem("topic_ids", id)}
-                onCreate={projectId ? (name) => createTopicMutation.mutate(name) : undefined}
-                multi={true}
-                isLoading={isLoadingTopics}
-                placeholder="Select topics..."
-                searchPlaceholder="Search categories..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Types</Label>
-              <RichDropdown 
-                items={typeItems}
-                selectedValues={selectedTypeIds}
-                onSelect={(id) => toggleItem("type_ids", id)}
-                onRemove={(id) => removeItem("type_ids", id)}
-                onCreate={projectId ? (name) => createWorkTypeMutation.mutate(name) : undefined}
-                multi={true}
-                isLoading={isLoadingTypes}
-                placeholder="Select work types..."
-                searchPlaceholder="Search types..."
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 pt-2">
-            <Switch
-              id="is_milestone"
-              checked={watch("is_milestone")}
-              onCheckedChange={(checked) => setValue("is_milestone", checked)}
-            />
-            <Label htmlFor="is_milestone" className="flex items-center gap-1.5 cursor-pointer">
-              <Milestone className="w-3.5 h-3.5 text-blue-500" />
-              Mark as Milestone
-            </Label>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="scheduling" className="space-y-4">
-          <div className="p-3 border rounded-lg bg-slate-50/50 space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
-                <Calculator className="w-3.5 h-3.5" />
-                PERT Estimation (Days)
-              </Label>
-              <div className="flex items-center gap-2">
-                <Button 
-                    type="button"
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-7 text-[10px] font-black uppercase text-indigo-600 hover:bg-indigo-50 gap-1.5"
-                    onClick={handleSuggestPERT}
-                >
-                    <Sparkles className="w-3 h-3" /> Suggest from Timeline
-                </Button>
-                <div className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
-                    Expected: {expectedDuration}d
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="optimistic_days" className="text-[10px] text-slate-500 uppercase">Optimistic</Label>
-                <Input 
-                  id="optimistic_days" 
-                  type="number" 
-                  {...register("optimistic_days", { valueAsNumber: true })} 
-                  className="h-8 text-xs bg-white"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="normal_days" className="text-[10px] text-slate-500 uppercase">Most Likely</Label>
-                <Input 
-                  id="normal_days" 
-                  type="number" 
-                  {...register("normal_days", { valueAsNumber: true })} 
-                  className="h-8 text-xs bg-white"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pessimistic_days" className="text-[10px] text-slate-500 uppercase">Pessimistic</Label>
-                <Input 
-                  id="pessimistic_days" 
-                  type="number" 
-                  {...register("pessimistic_days", { valueAsNumber: true })} 
-                  className="h-8 text-xs bg-white"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3 p-3 border rounded-lg bg-slate-50/50">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
-                <CalendarDays className="w-3.5 h-3.5" />
-                Scheduling & Timeline
-              </Label>
-              <div className="flex items-center gap-2">
-                {taskObject?.subtasks && taskObject.subtasks.length > 0 && (
-                    <Button 
-                        type="button"
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-7 text-[10px] font-black uppercase text-primary hover:bg-primary/5 gap-1"
-                        onClick={handleSyncFromChildren}
-                    >
-                        <Plus className="w-3 h-3" /> Sync Children
-                    </Button>
-                )}
-                <Tabs value={planningMode} onValueChange={(v: any) => setPlanningMode(v)}>
-                    <TabsList className="h-7 p-0.5 bg-slate-200/50">
-                    <TabsTrigger value="dates" className="text-[10px] h-6 px-2">Fixed Dates</TabsTrigger>
-                    <TabsTrigger value="duration" className="text-[10px] h-6 px-2">Duration Based</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="start_date" className="text-[10px] text-slate-500 uppercase">Start Date</Label>
-                <Input id="start_date" type="date" {...register("start_date")} className="h-8 text-xs bg-white" />
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label htmlFor="duration_days" className="text-[10px] text-slate-500 uppercase flex items-center gap-1">
-                  <Clock className="w-2.5 h-2.5" /> Duration
-                </Label>
-                <Input 
-                  id="duration_days" 
-                  type="number" 
-                  value={durationDays}
-                  onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
-                  className={cn("h-8 text-xs bg-white", planningMode === "dates" && "bg-slate-100 italic text-slate-400")}
-                  disabled={planningMode === "dates"}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="due_date" className="text-[10px] text-slate-500 uppercase">Due Date</Label>
-                <Input 
-                  id="due_date" 
-                  type="date" 
-                  {...register("due_date")} 
-                  className={cn("h-8 text-xs bg-white", planningMode === "duration" && "bg-slate-100 italic text-slate-400")}
-                  disabled={planningMode === "duration"}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="deadline_at">Hard Deadline</Label>
-              <Input id="deadline_at" type="date" {...register("deadline_at")} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="completed_at">Conclusion Date</Label>
-              <Input id="completed_at" type="date" {...register("completed_at")} />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="checklist" className="space-y-4 pt-2">
-            <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
-                    <CheckSquare className="w-3.5 h-3.5" />
-                    Task Checklist
-                </Label>
-                <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-7 text-[10px] uppercase font-bold"
-                    onClick={() => {
-                        const current = watch("checklist") || [];
-                        const newId = Math.random().toString(36).substring(2, 9);
-                        setValue("checklist", [...current, { id: newId, text: "", is_done: false }]);
-                    }}
-                >
-                    <Plus className="w-3 h-3 mr-1" /> Add Point
-                </Button>
-            </div>
-            
-            <div className="space-y-2 max-h-[300px] overflow-auto pr-2 scrollbar-hide">
-                {(watch("checklist") || []).map((item, index) => (
-                    <div key={item.id} className="flex items-center gap-2 group bg-slate-50 p-2 rounded-lg border border-slate-100 transition-all hover:border-slate-200">
-                        <input 
-                            type="checkbox"
-                            checked={item.is_done}
-                            onChange={(e) => {
-                                const current = [...(watch("checklist") || [])];
-                                current[index].is_done = e.target.checked;
-                                setValue("checklist", current);
-                            }}
-                            className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
-                        />
-                        <Input 
-                            className="flex-1 h-8 text-xs border-none bg-transparent focus-visible:ring-0 px-0"
-                            placeholder="Checklist item..."
-                            value={item.text}
-                            onChange={(e) => {
-                                const current = [...(watch("checklist") || [])];
-                                current[index].text = e.target.value;
-                                setValue("checklist", current);
-                            }}
-                        />
-                        <button 
-                            type="button"
-                            onClick={() => {
-                                const current = [...(watch("checklist") || [])];
-                                setValue("checklist", current.filter((_, i) => i !== index));
-                            }}
-                            className="p-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                <div className="grid grid-cols-3 gap-6 p-5 bg-slate-50 border border-slate-100 rounded-[2rem] shadow-inner relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
+                    <div className="space-y-2">
+                        <Label htmlFor="status" className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Status</Label>
+                        <select
+                            id="status"
+                            className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all"
+                            {...register("status")}
                         >
-                            <X className="w-3.5 h-3.5" />
-                        </button>
+                            <option value="Backlog">Backlog</option>
+                            <option value="Todo">Todo</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="On hold">On Hold</option>
+                            <option value="Review">Review</option>
+                            <option value="Done">Done</option>
+                        </select>
                     </div>
-                ))}
-                {(watch("checklist") || []).length === 0 && (
-                    <div className="py-8 text-center border-2 border-dashed rounded-xl border-slate-100 text-slate-300 font-bold uppercase text-[10px]">
-                        No checklist items.
+
+                    <div className="space-y-2">
+                        <Label htmlFor="priority" className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Priority</Label>
+                        <select
+                            id="priority"
+                            className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all"
+                            {...register("priority")}
+                        >
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+
+                    <div className="flex flex-col justify-end pb-1 pl-4">
+                        <div className="flex items-center space-x-3">
+                            <Switch
+                                id="is_milestone"
+                                checked={watch("is_milestone")}
+                                onCheckedChange={(checked) => setValue("is_milestone", checked)}
+                                className="data-[state=checked]:bg-blue-500"
+                            />
+                            <Label htmlFor="is_milestone" className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase text-slate-500 tracking-tighter">
+                                <Milestone className="w-3.5 h-3.5 text-blue-500" />
+                                Milestone
+                            </Label>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="description" className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Context & Documentation</Label>
+                    <textarea
+                        id="description"
+                        className="flex min-h-[120px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed ring-offset-background placeholder:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all focus:border-primary shadow-sm resize-none"
+                        placeholder="Detailed scope, technical requirements, or context..."
+                        {...register("description")}
+                    />
+                </div>
+
+                {/* People Section */}
+                <div className="pt-2">
+                    <AssigneeSelector 
+                        label="Project Workforce (Assignees)"
+                        selectedValues={selectedAssignees}
+                        onSelect={(id) => toggleItem("assignee_ids", id)}
+                        onRemove={(id) => removeItem("assignee_ids", id)}
+                        placeholder="Who is accountable?"
+                    />
+                </div>
+
+                {/* Organization Row */}
+                <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Taxonomy (Topics)</Label>
+                        <RichDropdown 
+                            items={topicItems}
+                            selectedValues={selectedTopicIds}
+                            onSelect={(id) => toggleItem("topic_ids", id)}
+                            onRemove={(id) => removeItem("topic_ids", id)}
+                            onCreate={projectId ? (name) => createTopicMutation.mutate(name) : undefined}
+                            multi={true}
+                            isLoading={isLoadingTopics}
+                            placeholder="Categorize..."
+                            searchPlaceholder="Search categories..."
+                        />
+                    </div>
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Functional Type</Label>
+                        <RichDropdown 
+                            items={typeItems}
+                            selectedValues={selectedTypeIds}
+                            onSelect={(id) => toggleItem("type_ids", id)}
+                            onRemove={(id) => removeItem("type_ids", id)}
+                            onCreate={projectId ? (name) => createWorkTypeMutation.mutate(name) : undefined}
+                            multi={true}
+                            isLoading={isLoadingTypes}
+                            placeholder="Activity types..."
+                            searchPlaceholder="Search types..."
+                        />
+                    </div>
+                </div>
+
+                {/* Structure Section */}
+                <div className="grid grid-cols-2 gap-8 p-6 bg-slate-50 border border-slate-100 rounded-[2rem] shadow-sm">
+                    <div className="space-y-3">
+                        <Label htmlFor="parent_id" className="text-[10px] font-black uppercase text-slate-400 tracking-widest">WBS Hierarchy (Parent)</Label>
+                        <select
+                            id="parent_id"
+                            className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-medium ring-offset-background focus-visible:outline-none transition-all focus:ring-2 focus:ring-primary/10"
+                            value={selectedParentId || ""}
+                            onChange={(e) => setValue("parent_id", e.target.value || null)}
+                        >
+                            <option value="">None (Root Level Task)</option>
+                            {availableParents.map(p => (
+                                <option key={p.id} value={p.id}>
+                                    {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="space-y-3">
+                        <Label htmlFor="color" className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Visual Label (Gantt Color)</Label>
+                        <div className="flex flex-col gap-3">
+                            <div className="flex flex-wrap gap-2">
+                                {colorPresets.map((cp) => (
+                                    <button
+                                        key={cp.value}
+                                        type="button"
+                                        className={cn(
+                                            "w-7 h-7 rounded-full border-2 transition-all hover:scale-125 shadow-sm",
+                                            selectedColor === cp.value ? "border-slate-900 scale-110" : "border-white"
+                                        )}
+                                        style={{ backgroundColor: cp.value }}
+                                        onClick={() => setValue("color", cp.value)}
+                                        title={cp.name}
+                                    />
+                                ))}
+                                <button
+                                    type="button"
+                                    className={cn(
+                                        "w-7 h-7 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center transition-all hover:border-slate-500",
+                                        !colorPresets.find(cp => cp.value === selectedColor) && selectedColor ? "border-slate-900 bg-white" : ""
+                                    )}
+                                    onClick={() => document.getElementById('custom-color-picker')?.click()}
+                                >
+                                    <Plus className="w-4 h-4 text-slate-400" />
+                                </button>
+                                <input
+                                    type="color"
+                                    id="custom-color-picker"
+                                    className="sr-only"
+                                    value={selectedColor || "#ffffff"}
+                                    onChange={(e) => setValue("color", e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="scheduling" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
+            <div className="space-y-8">
+                {/* Main Scheduling Section */}
+                <div className="space-y-6 p-6 rounded-[2rem] border border-slate-200 bg-white shadow-md relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                        <CalendarDays className="w-24 h-24 text-slate-900" />
+                    </div>
+
+                    <div className="flex items-center justify-between border-b border-slate-50 pb-4 mb-2">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                                <CalendarDays className="w-5 h-5 text-primary" />
+                            </div>
+                            <div>
+                                <Label className="text-sm font-black uppercase text-slate-800 tracking-widest leading-none">Task Chronology</Label>
+                                <p className="text-[10px] text-slate-400 mt-1">Define project start and target deadlines.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {taskObject?.subtasks && taskObject.subtasks.length > 0 && (
+                                <Button 
+                                    type="button"
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-9 text-[10px] font-black uppercase text-primary hover:bg-primary/5 gap-2 px-4 border border-primary/20 rounded-xl bg-white shadow-sm"
+                                    onClick={handleSyncFromChildren}
+                                >
+                                    <Plus className="w-4 h-4" /> Roll-up Dates
+                                </Button>
+                            )}
+                            <Tabs value={planningMode} onValueChange={(v: any) => setPlanningMode(v)}>
+                                <TabsList className="h-9 p-1 bg-slate-100 border border-slate-200 rounded-xl">
+                                    <TabsTrigger value="dates" className="text-[10px] font-black uppercase h-7 px-4 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Dates</TabsTrigger>
+                                    <TabsTrigger value="duration" className="text-[10px] font-black uppercase h-7 px-4 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Duration</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-8">
+                        <div className="space-y-2.5">
+                            <Label htmlFor="start_date" className="text-[10px] font-black uppercase text-slate-400 tracking-tighter px-1 flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                Start Date
+                            </Label>
+                            <Input id="start_date" type="date" {...register("start_date")} className="h-11 text-sm font-bold border-slate-200 focus:border-primary rounded-xl px-4 shadow-sm bg-slate-50/30" />
+                        </div>
+                        
+                        <div className="space-y-2.5">
+                            <Label htmlFor="duration_days" className="text-[10px] font-black uppercase text-slate-400 tracking-tighter px-1 flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                Span (Days)
+                            </Label>
+                            <div className="relative">
+                                <Input 
+                                    id="duration_days" 
+                                    type="number" 
+                                    value={durationDays}
+                                    onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
+                                    className={cn(
+                                        "h-11 text-sm font-bold border-slate-200 focus:border-primary rounded-xl px-4 shadow-sm transition-all", 
+                                        planningMode === "dates" ? "bg-slate-100 italic text-slate-400 border-dashed" : "bg-white"
+                                    )}
+                                    disabled={planningMode === "dates"}
+                                />
+                                <div className="absolute right-3 top-3 text-[10px] font-black text-slate-300">DAYS</div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2.5">
+                            <Label htmlFor="due_date" className="text-[10px] font-black uppercase text-slate-400 tracking-tighter px-1 flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                Due Date
+                            </Label>
+                            <Input 
+                                id="due_date" 
+                                type="date" 
+                                {...register("due_date")} 
+                                className={cn(
+                                    "h-11 text-sm font-bold border-slate-200 focus:border-primary rounded-xl px-4 shadow-sm transition-all", 
+                                    planningMode === "duration" ? "bg-slate-100 italic text-slate-400 border-dashed" : "bg-white"
+                                )}
+                                disabled={planningMode === "duration"}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Constraints Grid */}
+                <div className="grid grid-cols-2 gap-8">
+                    <div className="p-6 rounded-[2rem] border border-rose-100 bg-rose-50/10 space-y-4 shadow-sm group hover:border-rose-200 transition-all">
+                        <div className="flex items-center gap-3 border-b border-rose-50 pb-3">
+                            <div className="p-2 bg-rose-100 rounded-lg">
+                                <AlertCircle className="w-4 h-4 text-rose-500" />
+                            </div>
+                            <Label htmlFor="deadline_at" className="text-[10px] font-black uppercase text-rose-500 tracking-[0.15em]">Hard Deadline</Label>
+                        </div>
+                        <Input id="deadline_at" type="date" {...register("deadline_at")} className="h-11 text-sm font-bold border-rose-200 bg-white focus:border-rose-400 rounded-xl px-4 shadow-sm" />
+                    </div>
+
+                    <div className="p-6 rounded-[2rem] border border-emerald-100 bg-emerald-50/10 space-y-4 shadow-sm group hover:border-emerald-200 transition-all">
+                        <div className="flex items-center gap-3 border-b border-emerald-50 pb-3">
+                            <div className="p-2 bg-emerald-100 rounded-lg">
+                                <CheckSquare className="w-4 h-4 text-emerald-500" />
+                            </div>
+                            <Label htmlFor="completed_at" className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.15em]">Actual Conclusion</Label>
+                        </div>
+                        <Input id="completed_at" type="date" {...register("completed_at")} className="h-11 text-sm font-bold border-emerald-200 bg-white focus:border-emerald-400 rounded-xl px-4 shadow-sm" />
+                    </div>
+                </div>
+
+                {/* PERT Scientific Section */}
+                <div className="p-6 rounded-[2rem] border border-indigo-100 bg-indigo-50/10 space-y-6 shadow-md border-t-4 border-t-indigo-400 transition-all">
+                    <div className="flex items-center justify-between border-b border-indigo-50 pb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-indigo-600 text-white rounded-lg shadow-lg shadow-indigo-200">
+                                <Calculator className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <Label className="text-sm font-black uppercase text-indigo-900 tracking-widest leading-none">PERT Estimations</Label>
+                                <p className="text-[10px] text-indigo-400 mt-1 uppercase font-black">Probabilistic weighted analysis</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Button 
+                                type="button"
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-9 text-[10px] font-black uppercase text-indigo-600 hover:bg-white hover:shadow-sm gap-2 px-4 border border-indigo-200/50 rounded-xl bg-indigo-50 transition-all"
+                                onClick={handleSuggestPERT}
+                            >
+                                <Sparkles className="w-4 h-4 text-indigo-500 animate-pulse" /> Suggest Values
+                            </Button>
+                            <div className="flex flex-col items-end">
+                                <span className="text-[9px] font-black text-indigo-300 uppercase leading-none mb-1">Calculated Te</span>
+                                <div className="text-lg font-black text-indigo-700 leading-none">
+                                    {expectedDuration}<span className="text-[10px] ml-0.5">DAYS</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-8 px-2">
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center px-1">
+                                <Label htmlFor="optimistic_days" className="text-[10px] font-black uppercase text-indigo-400 tracking-tighter">Optimistic (O)</Label>
+                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 text-indigo-400 bg-white">Best Case</Badge>
+                            </div>
+                            <Input 
+                                id="optimistic_days" 
+                                type="number" 
+                                {...register("optimistic_days", { valueAsNumber: true })} 
+                                className="h-11 text-base font-black text-indigo-700 border-indigo-200 bg-white focus:border-indigo-500 rounded-xl px-4 shadow-sm"
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center px-1">
+                                <Label htmlFor="normal_days" className="text-[10px] font-black uppercase text-indigo-400 tracking-tighter">Most Likely (M)</Label>
+                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 text-indigo-400 bg-white">Average</Badge>
+                            </div>
+                            <Input 
+                                id="normal_days" 
+                                type="number" 
+                                {...register("normal_days", { valueAsNumber: true })} 
+                                className="h-11 text-base font-black text-indigo-700 border-indigo-200 bg-white focus:border-indigo-500 rounded-xl px-4 shadow-sm"
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center px-1">
+                                <Label htmlFor="pessimistic_days" className="text-[10px] font-black uppercase text-indigo-400 tracking-tighter">Pessimistic (P)</Label>
+                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 text-indigo-400 bg-white">Worst Case</Badge>
+                            </div>
+                            <Input 
+                                id="pessimistic_days" 
+                                type="number" 
+                                {...register("pessimistic_days", { valueAsNumber: true })} 
+                                className="h-11 text-base font-black text-indigo-700 border-indigo-200 bg-white focus:border-indigo-500 rounded-xl px-4 shadow-sm"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="checklist" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
+                <div className="p-6 rounded-[2rem] border border-slate-200 bg-white shadow-md relative overflow-hidden">
+                    <div className="flex items-center justify-between border-b pb-4 mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-600 text-white rounded-lg shadow-lg shadow-blue-100">
+                                <CheckSquare className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <Label className="text-sm font-black uppercase text-slate-800 tracking-widest leading-none">Execution Steps</Label>
+                                <p className="text-[10px] text-slate-400 mt-1 uppercase font-black">Micro-task tracking system</p>
+                            </div>
+                        </div>
+                        <Button 
+                            type="button" 
+                            size="sm" 
+                            className="h-9 px-4 rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-100 gap-2 font-bold text-[11px] uppercase tracking-wider"
+                            onClick={() => {
+                                const current = watch("checklist") || [];
+                                const newId = Math.random().toString(36).substring(2, 9);
+                                setValue("checklist", [...current, { id: newId, text: "", is_done: false }]);
+                            }}
+                        >
+                            <Plus className="w-4 h-4" /> Add Action Item
+                        </Button>
+                    </div>
+                    
+                    <div className="space-y-3 max-h-[400px] overflow-auto pr-2 scrollbar-hide">
+                        {(watch("checklist") || []).map((item, index) => (
+                            <div key={item.id} className="flex items-center gap-4 group bg-slate-50/50 p-3 rounded-2xl border border-slate-100 transition-all hover:bg-white hover:border-primary/20 hover:shadow-sm">
+                                <div className="relative flex items-center justify-center">
+                                    <input 
+                                        type="checkbox"
+                                        checked={item.is_done}
+                                        onChange={(e) => {
+                                            const current = [...(watch("checklist") || [])];
+                                            current[index].is_done = e.target.checked;
+                                            setValue("checklist", current);
+                                        }}
+                                        className="w-5 h-5 rounded-lg border-slate-300 text-primary focus:ring-primary/20 cursor-pointer appearance-none checked:bg-primary checked:border-primary transition-all border-2"
+                                    />
+                                    {item.is_done && <CheckSquare className="absolute w-3.5 h-3.5 text-white pointer-events-none" />}
+                                </div>
+                                <Input 
+                                    className={cn(
+                                        "flex-1 h-9 text-sm border-none bg-transparent focus-visible:ring-0 px-0 font-medium transition-all",
+                                        item.is_done ? "text-slate-400 line-through decoration-2" : "text-slate-700"
+                                    )}
+                                    placeholder="Define sub-step activity..."
+                                    value={item.text}
+                                    onChange={(e) => {
+                                        const current = [...(watch("checklist") || [])];
+                                        current[index].text = e.target.value;
+                                        setValue("checklist", current);
+                                    }}
+                                />
+                                <button 
+                                    type="button"
+                                    onClick={() => {
+                                        const current = [...(watch("checklist") || [])];
+                                        setValue("checklist", current.filter((_, i) => i !== index));
+                                    }}
+                                    className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+                        {(watch("checklist") || []).length === 0 && (
+                            <div className="py-16 text-center border-2 border-dashed rounded-[2rem] border-slate-100 flex flex-col items-center gap-4 grayscale opacity-40">
+                                <div className="p-4 bg-slate-50 rounded-full">
+                                    <CheckSquare className="w-10 h-10 text-slate-300" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-black uppercase text-slate-400 tracking-widest">No Action Items</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">Break down this task into smaller chunks for better progress.</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+          </TabsContent>
+
+          <TabsContent value="risk" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
+            <div className="grid grid-cols-2 gap-8">
+                {/* Risk Section */}
+                <div className="p-8 rounded-[2.5rem] border border-amber-200 bg-amber-50/10 space-y-8 shadow-md relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                        <AlertCircle className="w-24 h-24 text-amber-900" />
+                    </div>
+                    
+                    <div className="flex items-center gap-4 border-b border-amber-100 pb-4">
+                        <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-lg shadow-amber-200">
+                            <AlertCircle className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-black uppercase text-amber-900 tracking-widest leading-none">Risk Profile</h4>
+                            <p className="text-[10px] text-amber-600 mt-1 font-black uppercase">Probability x Impact</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-8">
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                                <Label className="text-[11px] text-amber-900 uppercase font-black tracking-widest">Probability</Label>
+                                <span className="text-sm font-black bg-white px-3 py-1 rounded-xl border-2 border-amber-200 text-amber-700 shadow-sm">{watch("risk_probability")} / 5</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                min="1" max="5" 
+                                className="w-full h-2 bg-amber-200 rounded-full appearance-none cursor-pointer accent-amber-600 shadow-inner"
+                                {...register("risk_probability", { valueAsNumber: true })}
+                            />
+                        </div>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                                <Label className="text-[11px] text-amber-900 uppercase font-black tracking-widest">Severity / Impact</Label>
+                                <span className="text-sm font-black bg-white px-3 py-1 rounded-xl border-2 border-amber-200 text-amber-700 shadow-sm">{watch("risk_impact")} / 5</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                min="1" max="5" 
+                                className="w-full h-2 bg-amber-200 rounded-full appearance-none cursor-pointer accent-amber-600 shadow-inner"
+                                {...register("risk_impact", { valueAsNumber: true })}
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="p-4 bg-amber-900 text-white rounded-2xl flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-widest">Exposure Score</span>
+                        <span className="text-xl font-black">{(watch("risk_probability") || 0) * (watch("risk_impact") || 0)}</span>
+                    </div>
+                </div>
+
+                {/* Financials Section */}
+                <div className="p-8 rounded-[2.5rem] border border-blue-200 bg-blue-50/10 space-y-8 shadow-md relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                        <Database className="w-24 h-24 text-blue-900" />
+                    </div>
+
+                    <div className="flex items-center gap-4 border-b border-blue-100 pb-4">
+                        <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200">
+                            <Database className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-black uppercase text-blue-900 tracking-widest leading-none">Resource Cost</h4>
+                            <p className="text-[10px] text-blue-600 mt-1 font-black uppercase">Financial auditing</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="space-y-2.5">
+                            <Label className="text-[11px] text-blue-900 uppercase font-black tracking-widest px-1">Planned Budget</Label>
+                            <div className="relative">
+                                <Input 
+                                    type="number" 
+                                    step="0.01"
+                                    {...register("budget", { valueAsNumber: true })}
+                                    className="h-12 text-lg font-black border-blue-200 bg-white focus:border-blue-500 rounded-2xl px-10 shadow-sm transition-all"
+                                />
+                                <div className="absolute left-4 top-3.5 text-blue-400 font-bold">$</div>
+                            </div>
+                        </div>
+                        <div className="space-y-2.5">
+                            <Label className="text-[11px] text-blue-900 uppercase font-black tracking-widest px-1">Actual Expenditure</Label>
+                            <div className="relative">
+                                <Input 
+                                    type="number" 
+                                    step="0.01"
+                                    {...register("real_cost", { valueAsNumber: true })}
+                                    className="h-12 text-lg font-black border-blue-200 bg-white focus:border-blue-500 rounded-2xl px-10 shadow-sm transition-all"
+                                />
+                                <div className="absolute left-4 top-3.5 text-blue-400 font-bold">$</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={cn(
+                        "p-4 rounded-2xl flex items-center justify-between border-2 transition-all",
+                        (watch("real_cost") || 0) > (watch("budget") || 0) 
+                            ? "bg-rose-500 border-rose-600 text-white shadow-lg shadow-rose-200" 
+                            : "bg-emerald-500 border-emerald-600 text-white shadow-lg shadow-emerald-200"
+                    )}>
+                        <span className="text-[10px] font-black uppercase tracking-widest">Variance</span>
+                        <span className="text-xl font-black">
+                            {(watch("budget") || 0) - (watch("real_cost") || 0) >= 0 ? "+" : "-"}$
+                            {Math.abs((watch("budget") || 0) - (watch("real_cost") || 0)).toLocaleString()}
+                        </span>
+                    </div>
+                </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="dependencies" className="animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
+            <div className="p-6 rounded-[2rem] border border-slate-200 bg-white shadow-md">
+                <div className="flex items-center gap-3 border-b pb-4 mb-2">
+                    <div className="p-2 bg-slate-900 text-white rounded-lg">
+                        <LinkIcon className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <Label className="text-sm font-black uppercase text-slate-800 tracking-widest leading-none">Chain of Command</Label>
+                        <p className="text-[10px] text-slate-400 mt-1 uppercase font-black">Successor & Predecessor logic</p>
+                    </div>
+                </div>
+
+                {editingTaskId && taskObject && (
+                    <DependencyManager
+                    item={taskObject}
+                    allPossibleBlockers={(() => {
+                        const flat: any[] = [];
+                        const recurse = (list: Task[], prefix = "") => {
+                        list.forEach(t => {
+                            const title = prefix ? `${prefix} > ${t.title}` : t.title;
+                            flat.push({ ...t, title });
+                            if (t.subtasks) recurse(t.subtasks, title);
+                        });
+                        };
+                        recurse(allTasks || []);
+                        return flat;
+                    })()}
+                    />
+                )}
+                {!editingTaskId && (
+                    <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-4 border border-dashed rounded-[2rem] bg-slate-50 grayscale">
+                    <LinkIcon className="w-12 h-12 opacity-10" />
+                    <div className="text-center">
+                        <p className="text-sm font-black uppercase tracking-widest">Network Locked</p>
+                        <p className="text-[10px] mt-1 font-medium">Dependencies can be defined once the task object is initialized.</p>
+                    </div>
                     </div>
                 )}
             </div>
-        </TabsContent>
+          </TabsContent>
+        </Tabs>
+      </div>
 
-        <TabsContent value="risk" className="space-y-6 pt-2">
-            <div className="p-4 rounded-xl border border-amber-100 bg-amber-50/30 space-y-4">
-                <h4 className="text-[10px] font-black uppercase text-amber-600 flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    Risk Assessment (1-5)
-                </h4>
-                <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <Label className="text-[10px] text-slate-500 uppercase font-bold">Probability</Label>
-                            <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded border">{watch("risk_probability")}</span>
-                        </div>
-                        <input 
-                            type="range" 
-                            min="1" max="5" 
-                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary"
-                            {...register("risk_probability", { valueAsNumber: true })}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <Label className="text-[10px] text-slate-500 uppercase font-bold">Impact</Label>
-                            <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded border">{watch("risk_impact")}</span>
-                        </div>
-                        <input 
-                            type="range" 
-                            min="1" max="5" 
-                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary"
-                            {...register("risk_impact", { valueAsNumber: true })}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/30 space-y-4">
-                <h4 className="text-[10px] font-black uppercase text-blue-600 flex items-center gap-1.5">
-                    <Database className="w-3.5 h-3.5" />
-                    Financial Tracking
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <Label className="text-[10px] text-slate-500 uppercase font-bold">Planned Budget ($)</Label>
-                        <Input 
-                            type="number" 
-                            step="0.01"
-                            {...register("budget", { valueAsNumber: true })}
-                            className="h-9 bg-white"
-                        />
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label className="text-[10px] text-slate-500 uppercase font-bold">Real Cost ($)</Label>
-                        <Input 
-                            type="number" 
-                            step="0.01"
-                            {...register("real_cost", { valueAsNumber: true })}
-                            className="h-9 bg-white"
-                        />
-                    </div>
-                </div>
-            </div>
-        </TabsContent>
-
-        <TabsContent value="dependencies" className="pt-2">
-          {editingTaskId && taskObject && (
-            <DependencyManager
-              item={taskObject}
-              allPossibleBlockers={(() => {
-                const flat: any[] = [];
-                const recurse = (list: Task[], prefix = "") => {
-                  list.forEach(t => {
-                    const title = prefix ? `${prefix} > ${t.title}` : t.title;
-                    flat.push({ ...t, title });
-                    if (t.subtasks) recurse(t.subtasks, title);
-                  });
-                };
-                recurse(allTasks || []);
-                return flat;
-              })()}
-            />
-          )}
-          {!editingTaskId && (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-2 border border-dashed rounded-lg">
-              <LinkIcon className="w-8 h-8 opacity-20" />
-              <p className="text-xs font-medium">Dependencies can be added after the task is created.</p>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onCancel}>
+      <div className="flex justify-end gap-3 pt-6 mt-4 border-t sticky bottom-0 bg-white/90 backdrop-blur-md z-50 -mx-1">
+        <Button 
+            type="button" 
+            variant="ghost" 
+            className="px-8 h-12 rounded-xl text-slate-500 font-bold uppercase text-xs tracking-widest hover:bg-slate-50"
+            onClick={onCancel}
+        >
           Cancel
         </Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : "Save Task"}
+        <Button 
+            type="submit" 
+            disabled={isLoading}
+            className="px-10 h-12 rounded-xl bg-primary text-primary-foreground font-black uppercase text-xs tracking-[0.2em] shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+        >
+          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Authorize & Save"}
         </Button>
       </div>
     </form>

@@ -21,7 +21,7 @@ import { RichDropdown } from '@/components/ui/rich-dropdown';
 import { Switch } from '@/components/ui/switch';
 import { AssigneeSelector } from '@/components/assignee-selector';
 import { useAuth } from '@/components/auth-provider';
-import { useTitle } from '@/components/layout';
+import { useTitle } from '@/context/title-context';
 
 // Helper to parse indented text into hierarchical tasks
 const parseTasks = (text: string) => {

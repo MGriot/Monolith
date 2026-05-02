@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./components/auth-provider";
+import { TitleProvider } from "./context/title-context";
 import Layout from "./components/layout";
 import LoginPage from "./pages/login";
 import RegisterPage from "./pages/register";
@@ -20,19 +21,19 @@ import UpdatesPage from "./pages/updates";
 import DashboardPage from "./pages/dashboard";
 import ProjectsListPage from "./pages/projects-list";
 import ArchivePage from "./pages/archive";
-import { Toaster } from 'sonner';
 
 const queryClient = new QueryClient();
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { token, isLoading } = useAuth();
+  console.log('PrivateRoute: token:', !!token, 'isLoading:', isLoading);
   if (isLoading) return (
     <div className="flex flex-col items-center justify-center min-h-screen text-slate-500">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3"></div>
       <p>Authentication is loading...</p>
     </div>
   );
-  return token ? <Layout>{children}</Layout> : <Navigate to="/login" />;
+  return token ? (<TitleProvider><Layout>{children}</Layout></TitleProvider>) : <Navigate to="/login" />;
 };
 
 const LayoutFreePrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -43,15 +44,17 @@ const LayoutFreePrivateRoute = ({ children }: { children: React.ReactNode }) => 
       <p>Authentication is loading...</p>
     </div>
   );
-  return token ? <>{children}</> : <Navigate to="/login" />;
+  return token ? (
+    <TitleProvider>{children}</TitleProvider>
+  ) : (
+    <Navigate to="/login" />
+  );
 };
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
-          <Toaster position="top-right" richColors closeButton />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -64,7 +67,6 @@ function App() {
               }
             />
             <Route path="/updates" element={<PrivateRoute><UpdatesPage /></PrivateRoute>} />
-            {/* Placeholder routes for navigation */}
             <Route path="/projects" element={<PrivateRoute><ProjectsListPage /></PrivateRoute>} />
             <Route path="/archive" element={<PrivateRoute><ArchivePage /></PrivateRoute>} />
             <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
@@ -80,6 +82,7 @@ function App() {
             <Route path="/admin/metadata" element={<PrivateRoute><AdminMetadataPage /></PrivateRoute>} />
             <Route path="/workflows" element={<PrivateRoute><WorkflowsPage /></PrivateRoute>} />
             <Route path="/projects/:projectId/whiteboards/:whiteboardId" element={<LayoutFreePrivateRoute><WhiteboardPage /></LayoutFreePrivateRoute>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
       </AuthProvider>
