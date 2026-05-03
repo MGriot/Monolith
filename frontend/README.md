@@ -1,73 +1,65 @@
-# React + TypeScript + Vite
+# Monolith — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + TypeScript + Vite frontend for the **Monolith** project management platform.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+| Layer | Technology |
+|---|---|
+| Framework | React 19 + TypeScript |
+| Build tool | Vite 6 |
+| Styling | Tailwind CSS v3 + Shadcn/UI |
+| Icons | Lucide React |
+| State/Data | TanStack Query v5 |
+| Routing | React Router v7 |
+| Forms | React Hook Form + Zod |
+| Markdown | react-markdown + remark-gfm + remark-math + rehype-katex |
+| Whiteboard | Excalidraw |
+| Drag & Drop | dnd-kit |
 
-## React Compiler
+## Branding
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The app uses a custom `M` monogram as its favicon (`public/monolith.svg`) — a black rounded square with a white bold "M", matching the sidebar logo badge. This replaces the default Vite icon.
 
-## Expanding the ESLint configuration
+## Running in Development (Docker)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+The frontend runs as part of the full Docker stack. From the repo root:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+docker-compose up -d
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The Vite dev server will be available at **http://localhost:5173**.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+> If you add new npm packages to `package.json`, run `npm install` inside the container to update `node_modules` without rebuilding the image:
+> ```bash
+> docker exec monolith_frontend npm install
+> docker restart monolith_frontend
+> ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Running Locally (without Docker)
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
+
+## Building for Production
+
+```bash
+npm run build
+```
+
+Output is placed in `dist/` and served via the Nginx container in the full Docker stack.
+
+## Environment
+
+The Vite dev server proxies API requests to the backend. See `vite.config.ts` for the proxy configuration.
+
+## Default Credentials
+
+| Role | Email | Password |
+|---|---|---|
+| Superuser | `admin@admin.com` | `admin123` |
+| Tester | `tester@example.com` | `tester123` |
