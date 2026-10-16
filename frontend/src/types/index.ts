@@ -191,6 +191,8 @@ export interface Comment {
   updated_at: string;
   author?: User | null;
   replies?: Comment[];
+  attachments?: string[] | null;
+  links?: string[] | null;
 }
 
 

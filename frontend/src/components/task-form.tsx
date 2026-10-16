@@ -20,7 +20,8 @@ import {
     Database,
     X,
     CheckSquare,
-    AlertCircle
+    AlertCircle,
+    Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -478,11 +479,14 @@ export default function TaskForm({
 
     traverse(taskObject.subtasks);
 
-    if (minStart && !isNaN(minStart.getTime())) {
-        setValue("start_date", format(minStart, "yyyy-MM-dd"));
+    // minStart/maxDue are assigned inside the traverse() closure, so TS narrows them to `never` here.
+    const syncedStart = minStart as Date | null;
+    const syncedDue = maxDue as Date | null;
+    if (syncedStart && !isNaN(syncedStart.getTime())) {
+        setValue("start_date", format(syncedStart, "yyyy-MM-dd"));
     }
-    if (maxDue && !isNaN(maxDue.getTime())) {
-        setValue("due_date", format(maxDue, "yyyy-MM-dd"));
+    if (syncedDue && !isNaN(syncedDue.getTime())) {
+        setValue("due_date", format(syncedDue, "yyyy-MM-dd"));
     }
     
     toast.success("Dates synced from all descendants");
