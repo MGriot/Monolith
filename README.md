@@ -42,23 +42,23 @@
 ## 🏁 Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose installed.
+- Podman (rootless) with `podman-compose` >= 1.2, or Docker with Compose. See [Run with Podman](docs/how-to/run-with-podman.md) for details.
 
-### 1. Launch the Stack
+### 1. Configure and launch the stack
 ```bash
-docker-compose up -d --build
+cp .env.example .env            # fill in the secrets and the first admin (see comments in the file)
+scripts/mail-bootstrap.sh       # one-time: TLS cert + mailbox for the internal mail server
+podman-compose up -d --build    # or: docker compose up -d --build
 ```
 
 ### 2. Access the Application
 - **Frontend:** [http://localhost:8080](http://localhost:8080)
 - **API Docs:** [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
-- **MCP Server:** Listening for stdio/SSE in the `monolith_mcp` container.
+- **MCP Server:** `http://localhost:8080/mcp/sse` when `MCP_API_KEY` is set (send it as a Bearer token).
 
-### 3. Default Credentials
-- **Superuser:** `admin@admin.com`
-- **Password:** `admin123`
-- **Test User:** `tester@example.com`
-- **Password:** `tester123`
+### 3. First sign-in
+There are no default accounts. Sign in with `FIRST_SUPERUSER_EMAIL` / `FIRST_SUPERUSER_PASSWORD` from your `.env`, create further users from the admin
+screen, then remove the password from `.env`. Public sign-up is disabled unless `ALLOW_SIGNUP=true`.
 
 ---
 
