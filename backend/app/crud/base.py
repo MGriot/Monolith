@@ -1,6 +1,7 @@
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 from pydantic import BaseModel
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import Base
@@ -41,9 +42,20 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     ) -> ModelType:
         obj_data = obj_in.dict(exclude_unset=True) if isinstance(obj_in, BaseModel) else obj_in
         obj_data = clean_dict_datetimes(obj_data)
-        for field in obj_data:
-            if hasattr(db_obj, field):
-                setattr(db_obj, field, obj_data[field])
+        mapper = sa_inspect(type(db_obj))
+        columns = {c.key: c for c in mapper.columns}
+        for field, value in obj_data.items():
+            if not hasattr(db_obj, field):
+                continue
+            # Read-only @property (e.g. computed fields echoed back by clients) must not be assigned.
+            prop = getattr(type(db_obj), field, None)
+            if isinstance(prop, property) and prop.fset is None:
+                continue
+            # Ignore explicit nulls for NOT NULL columns instead of failing with a 500 at commit.
+            col = columns.get(field)
+            if value is None and col is not None and not col.nullable and not col.primary_key:
+                continue
+            setattr(db_obj, field, value)
         db.add(db_obj)
         await db.commit()
         await db.refresh(db_obj)

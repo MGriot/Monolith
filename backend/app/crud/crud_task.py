@@ -459,26 +459,27 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         
         # 2. Bidirectional Date/Duration logic
         from datetime import timedelta
-        start = obj_data.get("start_date", db_obj.start_date)
-        due = obj_data.get("due_date", db_obj.due_date)
-        dur = obj_data.get("duration_days", db_obj.duration_days)
+        # `.get(key, default)` would return None for an explicit null, so test for key presence.
+        start = obj_data["start_date"] if "start_date" in obj_data else db_obj.start_date
+        due = obj_data["due_date"] if "due_date" in obj_data else db_obj.due_date
+        dur = obj_data["duration_days"] if "duration_days" in obj_data else db_obj.duration_days
 
-        # Detect what changed to decide calculation priority
-        changed = obj_data.keys()
-        
+        # Detect what changed to decide calculation priority (explicit nulls just clear the field)
+        changed = list(obj_data.keys())
+
         if "duration_days" in changed:
             # If duration changed, update due date (dur=1 means same day)
             if start and dur and dur > 0:
                 obj_data["due_date"] = start + timedelta(days=dur - 1)
         elif "start_date" in changed:
             # If start changed, either update due (if dur exists) or dur (if due exists)
-            if dur and dur > 0:
+            if start and dur and dur > 0:
                 obj_data["due_date"] = start + timedelta(days=dur - 1)
-            elif due:
+            elif start and due:
                 obj_data["duration_days"] = (due - start).days + 1
         elif "due_date" in changed:
             # If due changed, update duration
-            if start:
+            if start and due:
                 obj_data["duration_days"] = (due - start).days + 1
 
         # 3. Status logic: check blockers ONLY if moving TO Done

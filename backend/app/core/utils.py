@@ -8,7 +8,8 @@ def make_naive(dt: Optional[datetime]) -> Optional[datetime]:
     Required for PostgreSQL TIMESTAMP WITHOUT TIME ZONE columns when using asyncpg.
     """
     if dt is not None and dt.tzinfo is not None:
-        return dt.replace(tzinfo=None)
+        # Convert to UTC first; dropping the offset silently shifts the instant.
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
     return dt
 
 def clean_dict_datetimes(data: Any) -> Any:

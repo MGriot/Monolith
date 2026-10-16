@@ -11,3 +11,6 @@ from .workflow import Workflow
 from .comment import Comment
 from .whiteboard import Whiteboard
 from .webhook import Webhook
+
+from .folder import Folder
+from .file import File
