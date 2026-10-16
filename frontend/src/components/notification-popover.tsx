@@ -54,7 +54,7 @@ export default function NotificationPopover() {
     // we try to reach the backend directly or via the same host if Nginx handles it.
     // Given vite.config.ts proxies /api, we'll try to reach the backend at /api/v1/notifications/ws/
     
-    const wsUrl = `${protocol}//${host}/api/v1/notifications/ws/${token}`;
+    const wsUrl = `${protocol}//${host}/api/v1/notifications/ws`;
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
     let pingInterval: any;
@@ -63,6 +63,7 @@ export default function NotificationPopover() {
       try {
         if (event.data === 'pong') return;
         const message = JSON.parse(event.data);
+        if (message.type === 'auth_ok') return;
         if (message.type === 'new_notification') {
           toast.info(message.data.title, {
             description: message.data.message,
@@ -75,7 +76,8 @@ export default function NotificationPopover() {
     };
 
     socket.onopen = () => {
-      console.log('Notification WebSocket connected');
+      // Authenticate with the first frame so the JWT never appears in a URL / access log.
+      socket.send(JSON.stringify({ type: 'auth', token }));
       pingInterval = setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) {
           socket.send('ping');
@@ -84,7 +86,6 @@ export default function NotificationPopover() {
     };
 
     socket.onclose = () => {
-      console.log('Notification WebSocket disconnected');
       if (pingInterval) clearInterval(pingInterval);
     };
 
