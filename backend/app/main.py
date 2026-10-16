@@ -70,8 +70,11 @@ async def on_startup():
     from app.db.init_db import seed_users
     from app.core.scheduler import start_scheduler
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    if settings.AUTO_MIGRATE:
+        from app.db.migrate import upgrade_database
+        await upgrade_database()
+    else:
+        logger.warning("AUTO_MIGRATE=false: schema is NOT managed at start-up (run `alembic upgrade head`).")
     
     await seed_users()
     # Scheduler disabled as email service was removed

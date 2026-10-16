@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     UPLOAD_DIR: str = "uploads"
+    AUTO_MIGRATE: bool = True   # run `alembic upgrade head` (and stamp legacy databases) at start-up
     MAX_UPLOAD_MB: int = 50
 
     # Bearer key for the /mcp endpoint. Empty = MCP is NOT mounted.
