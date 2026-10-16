@@ -34,7 +34,14 @@ class BearerKeyASGI:
                 return
         await self.app(scope, receive, send)
 
-app = FastAPI(title="Monolith Project Planner API", version="0.1.0")
+# Docs live under /api so the edge proxy (which only forwards /api, /uploads and /mcp to the backend) serves them.
+app = FastAPI(
+    title="Monolith Project Planner API",
+    version="0.1.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+)
 
 # Ensure upload directory exists
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
