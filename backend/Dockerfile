@@ -1,34 +1,57 @@
 # syntax=docker/dockerfile:1
-# Targets: dev (bind-mount + reload, runs as container-root = host user when rootless)
-#          prod (default; non-root, no reload)
-FROM docker.io/library/python:3.12-slim AS base
+# Targets: dev  (bind-mount + reload, runs as container-root = host user when rootless)
+#          prod (default; non-root, no reload, no compilers)
+#
+# Python packages are compiled in a throw-away `builder` stage; the runtime image only gets the
+# resulting virtualenv plus the shared libraries it links against.
 
-WORKDIR /app
+FROM docker.io/library/python:3.12-slim AS builder
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     pkg-config \
     libcairo2-dev \
-    libpango1.0-dev \
     libjpeg-dev \
     libz-dev \
     && rm -rf /var/lib/apt/lists/*
 
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
+
+
+FROM docker.io/library/python:3.12-slim AS runtime
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PATH="/opt/venv/bin:$PATH"
+
+# Runtime libraries only (libpq for asyncpg/psycopg, cairo + jpeg for PDF/image rendering)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    libcairo2 \
+    libjpeg62-turbo \
+    zlib1g \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/venv /opt/venv
 
 EXPOSE 8000
 
-FROM base AS dev
+
+FROM runtime AS dev
 COPY . .
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
-FROM base AS prod
+
+FROM runtime AS prod
 RUN useradd --system --uid 10001 --create-home app \
     && mkdir -p /app/uploads /app/media \
     && chown -R app:app /app
