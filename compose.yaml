@@ -39,6 +39,12 @@ services:
       SMTP_VERIFY_TLS: ${SMTP_VERIFY_TLS:-false}
       EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL:-noreply@monolith.local}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+      FIRST_SUPERUSER_EMAIL: ${FIRST_SUPERUSER_EMAIL:-}
+      FIRST_SUPERUSER_PASSWORD: ${FIRST_SUPERUSER_PASSWORD:-}
+      ALLOW_SIGNUP: ${ALLOW_SIGNUP:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      MCP_API_KEY: ${MCP_API_KEY:-}
+      WEBHOOK_ALLOW_PRIVATE: ${WEBHOOK_ALLOW_PRIVATE:-false}
     volumes:
       - uploads:/app/uploads
     depends_on:
