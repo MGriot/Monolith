@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime, ForeignKey, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from app.db.session import Base
 import enum
 
@@ -31,8 +31,9 @@ class Folder(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    parent = relationship("Folder", remote_side=[id], backref="subfolders")
+    # selectin: the response schema walks subfolders/files, and lazy loading is impossible in async code
+    parent = relationship("Folder", remote_side=[id], backref=backref("subfolders", lazy="selectin"))
     project = relationship("Project", backref="folders")
     task = relationship("Task", backref="folders")
     owner = relationship("User", backref="folders")
-    files = relationship("File", back_populates="folder", cascade="all, delete-orphan")
+    files = relationship("File", back_populates="folder", cascade="all, delete-orphan", lazy="selectin")

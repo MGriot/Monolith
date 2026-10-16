@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     # Bearer key for the /mcp endpoint. Empty = MCP is NOT mounted.
     MCP_API_KEY: str = ""
+    MCP_ALLOWED_HOSTS: str = ""   # extra Host header values accepted on /mcp (comma-separated)
 
     # Accounts / auth hardening
     FIRST_SUPERUSER_EMAIL: str = ""
