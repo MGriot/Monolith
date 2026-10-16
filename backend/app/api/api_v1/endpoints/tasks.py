@@ -10,6 +10,8 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
+from app.api.access import has_task_access, require_project_access, require_task_access
+from app.core.uploads import save_upload
 from app.crud import crud_task, crud_project, crud_dependency
 from app.schemas.task import Task, TaskCreate, TaskUpdate, Dependency, DependencyCreate
 from app.models.user import User
@@ -257,16 +259,14 @@ async def create_task(
     Create new task.
     """
     if task_in.project_id:
-        project = await crud_project.project.get(db, id=task_in.project_id)
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
-        
-        # Check permissions (Owner or Member)
-        if not current_user.is_superuser and project.owner_id != current_user.id:
-            member_ids = [m.id for m in project.members]
-            if current_user.id not in member_ids:
-                raise HTTPException(status_code=403, detail="Not enough permissions")
-    
+        await require_project_access(db, task_in.project_id, current_user)
+
+    if task_in.parent_id:
+        # A subtask may only hang off a task the caller can write, in the same project.
+        parent = await require_task_access(db, task_in.parent_id, current_user, write=True)
+        if parent.project_id != task_in.project_id:
+            raise HTTPException(status_code=400, detail="Parent task belongs to a different project")
+
     if not task_in.owner_id:
         task_in.owner_id = current_user.id
         
@@ -277,28 +277,8 @@ async def create_task(
         raise HTTPException(status_code=400, detail=str(e))
 
 async def check_task_permissions(db: AsyncSession, task_obj: Any, current_user: User, required_level: str = "read") -> None:
-    if current_user.is_superuser:
-        return
-
-    if task_obj.project_id:
-        project = await crud_project.project.get(db, id=task_obj.project_id)
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
-        
-        # Check permissions (Owner or Member)
-        is_member = current_user.id in [m.id for m in project.members]
-        if project.owner_id != current_user.id and not is_member:
-            # For read, we might allow if user is an assignee even if not a project member
-            if required_level == "read":
-                is_assignee = current_user.id in [u.id for u in task_obj.assignees]
-                if is_assignee or task_obj.owner_id == current_user.id:
-                    return
-            raise HTTPException(status_code=403, detail="Not enough permissions for this project")
-    else:
-        # Independent task: Owner or Assignee can access
-        is_assignee = current_user.id in [u.id for u in task_obj.assignees]
-        if task_obj.owner_id != current_user.id and not is_assignee:
-            raise HTTPException(status_code=403, detail="Not enough permissions for this task")
+    if not await has_task_access(db, task_obj, current_user, write=(required_level != "read")):
+        raise HTTPException(status_code=403, detail="Not enough permissions for this task")
 
 @router.get("/{task_id}", response_model=Task)
 async def read_task(
@@ -375,14 +355,7 @@ async def upload_task_attachment(
     
     await check_task_permissions(db, task_obj, current_user, "write")
     
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    
-    file_extension = os.path.splitext(file.filename)[1]
-    unique_filename = f"{uuid.uuid4()}{file_extension}"
-    file_path = os.path.join(settings.UPLOAD_DIR, unique_filename)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    unique_filename, _ext, _size = await save_upload(file)
     
     file_url = f"/uploads/{unique_filename}"
     attachments = list(task_obj.attachments) if task_obj.attachments else []
@@ -401,12 +374,14 @@ async def create_task_dependency(
     """
     Create a dependency for a task.
     """
-    task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
+    task_obj = await require_task_access(db, task_id, current_user, write=True)
+
     if dependency_in.successor_id != task_id:
          raise HTTPException(status_code=400, detail="Successor ID must match task ID")
+
+    predecessor = await require_task_access(db, dependency_in.predecessor_id, current_user, write=True)
+    if predecessor.project_id != task_obj.project_id:
+        raise HTTPException(status_code=400, detail="Dependencies must stay within one project")
          
     try:
         dep = await crud_dependency.dependency.create(db, obj_in=dependency_in)
@@ -424,6 +399,7 @@ async def delete_task_dependency(
     """
     Remove a dependency from a task.
     """
+    await require_task_access(db, task_id, current_user, write=True)
     result = await db.execute(
         select(DependencyModel).filter(
             and_(

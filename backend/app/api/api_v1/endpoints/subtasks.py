@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
+from app.api.access import require_task_access
 from app.crud import crud_task, crud_project
 from app.schemas.task import Task, TaskCreate, TaskUpdate
 from app.models.user import User
@@ -21,14 +22,9 @@ async def read_subtasks(
     """
     Retrieve subtasks for a task.
     """
-    parent_task = await crud_task.task.get(db, id=task_id)
-    if not parent_task:
-        raise HTTPException(status_code=404, detail="Parent task not found")
-    
-    project = await crud_project.project.get(db, id=parent_task.project_id)
-    if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
-    
+    parent_task = await require_task_access(db, task_id, current_user)
+    limit = max(1, min(limit, 500))
+
     subtasks = await crud_task.task.get_multi_by_project(
         db, project_id=parent_task.project_id, parent_id=task_id, skip=skip, limit=limit
     )
@@ -47,10 +43,10 @@ async def create_subtask(
     if not subtask_in.parent_id:
         raise HTTPException(status_code=400, detail="parent_id is required for subtasks")
         
-    parent_task = await crud_task.task.get(db, id=subtask_in.parent_id)
-    if not parent_task:
-        raise HTTPException(status_code=404, detail="Parent task not found")
-    
+    parent_task = await require_task_access(db, subtask_in.parent_id, current_user, write=True)
+
+    # A subtask always lives in its parent's project; never trust the client for this.
+    subtask_in.project_id = parent_task.project_id
     if not subtask_in.owner_id:
         subtask_in.owner_id = current_user.id
         
@@ -66,10 +62,8 @@ async def read_subtask(
     """
     Get subtask by ID.
     """
+    await require_task_access(db, subtask_id, current_user)
     subtask_obj = await crud_task.task.get(db, id=subtask_id)
-    if not subtask_obj:
-        raise HTTPException(status_code=404, detail="Subtask not found")
-    
     return subtask_obj
 
 @router.put("/{subtask_id}", response_model=Task)
@@ -83,10 +77,9 @@ async def update_subtask(
     """
     Update a subtask.
     """
+    await require_task_access(db, subtask_id, current_user, write=True)
     subtask_obj = await crud_task.task.get(db, id=subtask_id)
-    if not subtask_obj:
-        raise HTTPException(status_code=404, detail="Subtask not found")
-    
+
     subtask_obj = await crud_task.task.update(db=db, db_obj=subtask_obj, obj_in=subtask_in)
     return subtask_obj
 
@@ -100,9 +93,7 @@ async def delete_subtask(
     """
     Delete a subtask.
     """
-    subtask_obj = await crud_task.task.get(db, id=subtask_id)
-    if not subtask_obj:
-        raise HTTPException(status_code=404, detail="Subtask not found")
-    
+    await require_task_access(db, subtask_id, current_user, write=True)
+
     subtask_obj = await crud_task.task.remove(db=db, id=subtask_id)
     return subtask_obj

@@ -79,7 +79,14 @@ async def search_all(
             Idea.description.ilike(query_str)
         )
     )
-    # Ideas are usually tied to projects
+    # Only ideas from projects the user owns or belongs to
+    if not current_user.is_superuser:
+        from app.models.associations import project_members
+        from app.models.project import Project as _Project
+        idea_stmt = idea_stmt.filter(or_(
+            Idea.project_id.in_(select(_Project.id).where(_Project.owner_id == current_user.id)),
+            Idea.project_id.in_(select(project_members.c.project_id).where(project_members.c.user_id == current_user.id)),
+        ))
     idea_res = await db.execute(idea_stmt)
     for i in idea_res.scalars().all():
         results.append(SearchResult(

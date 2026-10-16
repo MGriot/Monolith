@@ -21,6 +21,13 @@ reusable_oauth2_optional = OAuth2PasswordBearer(
     auto_error=False
 )
 
+def _credentials_exc() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
 async def get_current_user(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(reusable_oauth2)
@@ -31,13 +38,13 @@ async def get_current_user(
         )
         token_data = TokenPayload(**payload)
     except (JWTError, ValidationError):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
-        )
+        raise _credentials_exc()
+    if token_data.sub is None:
+        raise _credentials_exc()
     user = await crud_user.get(db, id=token_data.sub)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    # Unknown or deactivated accounts must not keep working with a still-valid token.
+    if not user or not user.is_active:
+        raise _credentials_exc()
     return user
 
 async def get_current_user_optional(
@@ -54,13 +61,14 @@ async def get_current_user_optional(
     except (JWTError, ValidationError):
         return None
     
-    return await crud_user.get(db, id=token_data.sub)
+    user = await crud_user.get(db, id=token_data.sub) if token_data.sub else None
+    return user if user and user.is_active else None
 
 async def get_current_admin(
     current_user: User = Depends(get_current_user),
 ) -> User:
     if not current_user.is_superuser:
         raise HTTPException(
-            status_code=400, detail="The user doesn't have enough privileges"
+            status_code=403, detail="The user doesn't have enough privileges"
         )
     return current_user

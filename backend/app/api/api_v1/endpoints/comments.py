@@ -6,6 +6,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api import deps
+from app.api.access import require_context_access
+from app.core.uploads import save_upload
 from app.crud.crud_comment import crud_comment
 from app.crud import crud_project, crud_task, crud_idea
 from app.schemas.comment import CommentCreate, CommentUpdate, CommentResponse
@@ -35,6 +37,8 @@ async def read_comments(
             detail="Must provide exactly one of project_id, task_id, or idea_id"
         )
     
+    await require_context_access(db, current_user, project_id=project_id, task_id=task_id, idea_id=idea_id)
+
     if project_id:
         return await crud_comment.get_by_project(db, project_id=project_id)
     if task_id:
@@ -60,11 +64,20 @@ async def create_comment(
             detail="Comment must be linked to a project, task, or idea."
         )
     
-    # Check if parent comment exists if provided
+    await require_context_access(
+        db, current_user,
+        project_id=comment_in.project_id, task_id=comment_in.task_id, idea_id=comment_in.idea_id,
+    )
+
+    # Check if parent comment exists if provided, and that it belongs to the same thread
     if comment_in.parent_id:
         parent = await crud_comment.get(db, id=comment_in.parent_id)
         if not parent:
             raise HTTPException(status_code=404, detail="Parent comment not found")
+        if (parent.project_id, parent.task_id, parent.idea_id) != (
+            comment_in.project_id, comment_in.task_id, comment_in.idea_id
+        ):
+            raise HTTPException(status_code=400, detail="Parent comment belongs to a different thread")
         
     comment = await crud_comment.create(db=db, obj_in=comment_in, author_id=current_user.id)
     return comment
@@ -77,14 +90,7 @@ async def upload_comment_image(
     """
     Upload an image for a comment.
     """
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    
-    file_extension = os.path.splitext(file.filename)[1]
-    unique_filename = f"{uuid.uuid4()}{file_extension}"
-    file_path = os.path.join(settings.UPLOAD_DIR, unique_filename)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    unique_filename, _ext, _size = await save_upload(file)
     
     return {"url": f"/uploads/{unique_filename}"}
 
@@ -104,6 +110,8 @@ async def get_available_images(
     from app.models.project import Project
     from app.models.idea import Idea
     from app.models.whiteboard import Whiteboard
+
+    await require_context_access(db, current_user, project_id=project_id, task_id=task_id, idea_id=idea_id)
 
     assets = []
     

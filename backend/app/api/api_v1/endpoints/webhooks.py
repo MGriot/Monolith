@@ -89,7 +89,9 @@ async def test_webhook(
     webhook = await crud_webhook.webhook.get(db, id=id)
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
-    
+    if webhook.owner_id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
     success = False
     if webhook.provider == "slack":
         success = await webhook_service.send_slack_notification(
