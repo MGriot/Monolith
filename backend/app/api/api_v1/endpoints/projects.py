@@ -288,7 +288,7 @@ async def get_portfolio_health(
 async def read_projects(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     include_archived: bool = Query(False),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:

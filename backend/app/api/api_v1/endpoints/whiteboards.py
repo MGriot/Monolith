@@ -1,6 +1,6 @@
 from typing import Any, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud, models, schemas
 from sqlalchemy import or_, select
@@ -18,7 +18,7 @@ router = APIRouter()
 async def read_whiteboards(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     project_id: UUID = None,
     task_id: UUID = None,
     current_user: models.User = Depends(deps.get_current_user),

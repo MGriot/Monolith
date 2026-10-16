@@ -16,7 +16,7 @@ async def read_ideas(
     task_id: Optional[UUID] = Query(None),
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     current_user: models.User = Depends(deps.get_current_user),
 ) -> Any:
     """

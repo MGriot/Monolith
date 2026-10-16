@@ -15,7 +15,7 @@ router = APIRouter()
 async def read_topics(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     project_id: Optional[UUID] = None,
     task_id: Optional[UUID] = None,
     all_scopes: bool = Query(False, description="Fetch all topics regardless of scope (Admin only)"),
@@ -76,7 +76,7 @@ async def delete_topic(
 async def read_work_types(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     project_id: Optional[UUID] = None,
     task_id: Optional[UUID] = None,
     all_scopes: bool = Query(False, description="Fetch all work types regardless of scope (Admin only)"),

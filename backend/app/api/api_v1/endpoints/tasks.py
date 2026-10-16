@@ -131,7 +131,7 @@ async def export_tasks(
 async def read_assigned_tasks(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
@@ -207,7 +207,7 @@ async def read_tasks(
     include_archived: bool = Query(False),
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
@@ -467,7 +467,7 @@ async def restore_task(
 async def read_archived_tasks(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """

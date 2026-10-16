@@ -3,7 +3,7 @@ import json
 import time
 from typing import Any, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import jwt, JWTError
 
@@ -84,7 +84,7 @@ async def websocket_endpoint(websocket: WebSocket):
 async def read_notifications(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
@@ -123,11 +123,5 @@ async def mark_all_notifications_as_read(
     """
     Mark all notifications as read for the current user.
     """
-    # Simple implementation: fetch all unread and update
-    notifications = await crud_notification.get_multi_by_user(db, user_id=current_user.id, limit=1000)
-    for n in notifications:
-        if not n.is_read:
-            n.is_read = True
-            db.add(n)
-    await db.commit()
-    return {"status": "success"}
+    updated = await crud_notification.mark_all_as_read(db, user_id=current_user.id)
+    return {"status": "success", "updated": updated}

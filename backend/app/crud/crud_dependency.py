@@ -20,7 +20,17 @@ class CRUDDependency(CRUDBase[Dependency, DependencyCreate, DependencyCreate]):
         
         # Build dependency map (Predecessor -> List of Successors)
         # Actually, has_cycle expects Successor -> List of Predecessors (blockers)
-        all_deps_res = await db.execute(select(Dependency))
+        # Only the part of the graph that can matter: everything the new predecessor is (transitively) blocked by.
+        # (Adding successor -> predecessor closes a cycle iff successor is reachable from predecessor that way.)
+        reach = (
+            select(Dependency.id, Dependency.predecessor_id)
+            .where(Dependency.successor_id == obj_in.predecessor_id)
+            .cte("reachable_blockers", recursive=True)
+        )
+        reach = reach.union(
+            select(Dependency.id, Dependency.predecessor_id).where(Dependency.successor_id == reach.c.predecessor_id)
+        )
+        all_deps_res = await db.execute(select(Dependency).where(Dependency.id.in_(select(reach.c.id))))
         all_deps = all_deps_res.scalars().all()
         
         dep_map = {}
