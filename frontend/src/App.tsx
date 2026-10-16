@@ -26,7 +26,6 @@ const queryClient = new QueryClient();
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { token, isLoading } = useAuth();
-  console.log('PrivateRoute: token:', !!token, 'isLoading:', isLoading);
   if (isLoading) return (
     <div className="flex flex-col items-center justify-center min-h-screen text-slate-500">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3"></div>

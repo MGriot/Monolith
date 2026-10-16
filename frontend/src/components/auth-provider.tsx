@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api from '../lib/api';
+import api, { AUTH_EXPIRED_EVENT } from '../lib/api';
 
 interface User {
   id: string;
@@ -24,43 +24,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [isLoading, setIsLoading] = useState(true);
 
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+  }, []);
+
   const fetchUser = useCallback(async () => {
-    console.log('AuthProvider: fetchUser called');
     try {
       const response = await api.get('/users/me');
       setUser(response.data);
-      console.log('AuthProvider: User fetched successfully');
-    } catch (error) {
-      console.error('AuthProvider: Failed to fetch user', error);
-      logout();
+    } catch (error: any) {
+      // Only an authentication failure ends the session; a network blip or 5xx must not log the user out.
+      if (error?.response?.status === 401) {
+        logout();
+      }
     } finally {
       setIsLoading(false);
-      console.log('AuthProvider: setIsLoading(false) in fetchUser finally');
     }
-  }, []);
+  }, [logout]);
 
   useEffect(() => {
-    console.log('AuthProvider: useEffect triggered. token:', token, 'isLoading:', isLoading);
     if (token) {
       fetchUser();
     } else {
       setIsLoading(false);
-      console.log('AuthProvider: No token found, setIsLoading(false)');
     }
   }, [token, fetchUser]);
 
+  // The axios interceptor fires this when any request comes back 401.
+  useEffect(() => {
+    window.addEventListener(AUTH_EXPIRED_EVENT, logout);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, logout);
+  }, [logout]);
+
   const login = async (newToken: string) => {
-    console.log('AuthProvider: login called with new token');
     localStorage.setItem('token', newToken);
     setToken(newToken);
     // User will be fetched by the useEffect
-  };
-
-  const logout = () => {
-    console.log('AuthProvider: logout called');
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
   };
 
   return (
