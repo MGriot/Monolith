@@ -1,0 +1,119 @@
+# Production-like stack. Works with `podman-compose` (rootless) and `docker compose`.
+#   cp .env.example .env   # then fill in secrets
+#   podman-compose up -d --build
+# Dev overrides (bind mounts, reload, Vite): add `-f compose.dev.yaml`.
+name: monolith
+
+services:
+  db:
+    image: docker.io/library/postgres:16-alpine
+    container_name: monolith_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-monolith_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-monolith_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [backend_net]
+
+  backend:
+    build:
+      context: ./backend
+      target: prod
+    container_name: monolith_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-monolith_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-monolith_db}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env (openssl rand -hex 32)}
+      SMTP_HOST: mailserver
+      SMTP_PORT: "587"
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      SMTP_VERIFY_TLS: ${SMTP_VERIFY_TLS:-false}
+      EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL:-noreply@monolith.local}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks: [backend_net, mail_net]
+
+  frontend:
+    build:
+      context: ./frontend
+      target: prod
+    container_name: monolith_frontend
+    restart: unless-stopped
+    networks: [backend_net]
+
+  proxy:
+    image: docker.io/library/nginx:stable-alpine
+    container_name: monolith_proxy
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8080}:80"      # >1024: no sysctl needed rootless
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro,z
+    depends_on:
+      - backend
+      - frontend
+    networks: [backend_net]
+
+  # Internal SMTP for notifications / verification / digests.
+  # Not published to the host: only reachable from backend over mail_net.
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:latest   # TODO pin an exact tag
+    container_name: monolith_mail
+    hostname: mail
+    domainname: ${MAIL_DOMAIN:-monolith.local}
+    restart: unless-stopped
+    stop_grace_period: 1m
+    volumes:
+      - ./mailserver/data:/var/mail:z
+      - ./mailserver/state:/var/mail-state:z
+      - ./mailserver/logs:/var/log/mail:z
+      - ./mailserver/config:/tmp/docker-mailserver:z
+    environment:
+      OVERRIDE_HOSTNAME: mail.${MAIL_DOMAIN:-monolith.local}
+      PERMIT_DOCKER: none          # rootless Podman NATs source IPs; "connected-networks" could open a relay
+      SSL_TYPE: self-signed        # internal hop; mount real certs and use SSL_TYPE=manual for public delivery
+      ENABLE_SPAMASSASSIN: "0"
+      ENABLE_CLAMAV: "0"
+      ENABLE_FAIL2BAN: "0"         # needs NET_ADMIN; not available rootless
+      ENABLE_POSTGREY: "0"
+      ONE_DIR: "1"
+      POSTMASTER_ADDRESS: postmaster@${MAIL_DOMAIN:-monolith.local}
+      # On residential/ISP IPs relay through a provider instead of sending direct:
+      # RELAY_HOST: smtp.example.com
+      # RELAY_PORT: "587"
+      # RELAY_USER: user
+      # RELAY_PASSWORD: pass
+    healthcheck:
+      test: ["CMD-SHELL", "ss --listening --tcp | grep -q ':25 ' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks: [mail_net]
+
+networks:
+  backend_net:
+  mail_net:
+
+volumes:
+  pgdata:
+  uploads:

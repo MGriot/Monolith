@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import smtplib
+import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List, Optional
@@ -34,9 +36,14 @@ class EmailService:
         msg["To"] = recipient
 
         try:
-            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=settings.SMTP_TIMEOUT) as server:
+                if settings.SMTP_STARTTLS or (self.smtp_user and self.smtp_password):
+                    ctx = ssl.create_default_context()
+                    if not settings.SMTP_VERIFY_TLS:
+                        ctx.check_hostname = False
+                        ctx.verify_mode = ssl.CERT_NONE
+                    server.starttls(context=ctx)
                 if self.smtp_user and self.smtp_password:
-                    server.starttls()
                     server.login(self.smtp_user, self.smtp_password)
                 server.send_message(msg)
             logger.info(f"Email sent successfully to {recipient}")
@@ -54,10 +61,11 @@ async def send_email_notification(recipient: str, subject: str, body: str, html_
     # In a production environment, this should be offloaded to a background task (e.g., Celery or FastAPI BackgroundTasks)
     # For now, we call the synchronous service method.
     try:
-        email_service.send_email(recipient, subject, body, html_body=html_body)
+        # smtplib is blocking: run it in a worker thread so the event loop is not stalled.
+        await asyncio.to_thread(email_service.send_email, recipient, subject, body, html_body)
     except Exception:
-        # We don't want notification failures to crash the main request flow if called inline
-        pass
+        # Notification failures must not crash the request flow, but they must not be silent either.
+        logger.exception("Email notification to %s failed", recipient)
 
 async def notify_critical_update(user_email: str, title: str, message: str):
     """
