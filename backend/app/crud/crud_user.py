@@ -4,6 +4,9 @@ from sqlalchemy.future import select
 from sqlalchemy.exc import NoResultFound
 
 from app.core.security import get_password_hash, verify_password
+
+# A real bcrypt hash so unknown e-mails cost the same as wrong passwords (no user enumeration by timing).
+_DUMMY_HASH = get_password_hash("timing-equaliser")
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 
@@ -30,6 +33,7 @@ async def create(db: AsyncSession, obj_in: UserCreate) -> User:
 async def authenticate(db: AsyncSession, email: str, password: str) -> Optional[User]:
     user = await get_by_email(db, email)
     if not user:
+        verify_password(password, _DUMMY_HASH)
         return None
     if not verify_password(password, user.hashed_password):
         return None

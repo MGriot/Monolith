@@ -42,8 +42,8 @@ os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 # Set up CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the actual origins
-    allow_credentials=True,
+    allow_origins=settings.cors_origin_list,
+    allow_credentials=False,  # auth is a bearer header, never cookies
     allow_methods=["*"],
     allow_headers=["*"],
 )

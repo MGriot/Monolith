@@ -10,8 +10,9 @@ class ConnectionManager:
         # Maps user_id -> list of active WebSocket connections
         self.active_connections: Dict[UUID, List[WebSocket]] = {}
 
-    async def connect(self, websocket: WebSocket, user_id: UUID):
-        await websocket.accept()
+    async def connect(self, websocket: WebSocket, user_id: UUID, accept: bool = True):
+        if accept:
+            await websocket.accept()
         if user_id not in self.active_connections:
             self.active_connections[user_id] = []
         self.active_connections[user_id].append(websocket)

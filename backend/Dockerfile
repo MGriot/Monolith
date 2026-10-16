@@ -34,5 +34,6 @@ RUN useradd --system --uid 10001 --create-home app \
     && chown -R app:app /app
 COPY --chown=app:app . .
 USER app
+# Only the edge proxy can reach this port (not published), so trust its X-Forwarded-For.
 # One worker: the websocket manager is in-process (see audit, Tier 1 "WS").
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

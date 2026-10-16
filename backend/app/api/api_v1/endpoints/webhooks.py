@@ -8,6 +8,7 @@ from app.crud import crud_webhook
 from app.schemas.webhook import Webhook, WebhookCreate, WebhookUpdate
 from app.models.user import User
 from app.core.webhooks import webhook_service
+from app.core.netguard import UnsafeURLError, assert_safe_url
 
 router = APIRouter()
 
@@ -37,6 +38,10 @@ async def create_webhook(
     """
     Create a new webhook.
     """
+    try:
+        await assert_safe_url(obj_in.url)
+    except UnsafeURLError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return await crud_webhook.webhook.create_with_owner(
         db, obj_in=obj_in, owner_id=current_user.id
     )
@@ -57,6 +62,11 @@ async def update_webhook(
         raise HTTPException(status_code=404, detail="Webhook not found")
     if webhook.owner_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Not enough permissions")
+    if obj_in.url:
+        try:
+            await assert_safe_url(obj_in.url)
+        except UnsafeURLError as e:
+            raise HTTPException(status_code=400, detail=str(e))
     return await crud_webhook.webhook.update(db, db_obj=webhook, obj_in=obj_in)
 
 @router.delete("/{id}", response_model=Webhook)

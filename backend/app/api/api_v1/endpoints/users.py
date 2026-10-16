@@ -4,6 +4,8 @@ from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
+from app.core import security
+from app.core.config import settings
 from app.crud import crud_user
 from app.schemas.user import User, UserCreate, UserUpdate
 from app.models.user import User as UserModel
@@ -20,12 +22,17 @@ async def create_user(
     """
     Create new user.
     """
-    if user_in.is_superuser:
-        if not current_user or not current_user.is_superuser:
-            raise HTTPException(
-                status_code=400,
-                detail="The user doesn't have enough privileges",
-            )
+    is_admin = bool(current_user and current_user.is_superuser)
+    if not is_admin:
+        # Public sign-up is off by default; admins create accounts otherwise.
+        if not settings.ALLOW_SIGNUP:
+            raise HTTPException(status_code=403, detail="Registration is disabled. Ask an administrator for an account.")
+        if user_in.is_superuser:
+            raise HTTPException(status_code=403, detail="The user doesn't have enough privileges")
+    try:
+        security.validate_password_strength(user_in.password)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     user = await crud_user.get_by_email(db, email=user_in.email)
     if user:
         raise HTTPException(
@@ -64,17 +71,31 @@ async def update_user_me(
     password: str = Body(None),
     full_name: str = Body(None),
     email: EmailStr = Body(None),
+    current_password: str = Body(None),
     current_user: UserModel = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Update own user.
+    Update own user. Changing the password or the e-mail requires the current password.
     """
+    email_changed = email is not None and email != current_user.email
+    if password is not None or email_changed:
+        if not current_password or not security.verify_password(current_password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Current password is required and must be correct")
+    if password is not None:
+        try:
+            security.validate_password_strength(password)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+    if email_changed:
+        if await crud_user.get_by_email(db, email=email):
+            raise HTTPException(status_code=400, detail="This e-mail address is already in use")
+
     current_user_data = UserUpdate()
     if password is not None:
         current_user_data.password = password
     if full_name is not None:
         current_user_data.full_name = full_name
-    if email is not None:
+    if email_changed:
         current_user_data.email = email
     user = await crud_user.update(db, db_obj=current_user, obj_in=current_user_data)
     return user

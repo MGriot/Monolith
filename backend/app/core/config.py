@@ -12,6 +12,28 @@ class Settings(BaseSettings):
     # Bearer key for the /mcp endpoint. Empty = MCP is NOT mounted.
     MCP_API_KEY: str = ""
 
+    # Accounts / auth hardening
+    FIRST_SUPERUSER_EMAIL: str = ""
+    FIRST_SUPERUSER_PASSWORD: str = ""
+    FIRST_SUPERUSER_NAME: str = "Administrator"
+    ALLOW_SIGNUP: bool = False          # public self-registration (POST /users/ without an admin token)
+    MIN_PASSWORD_LENGTH: int = 8
+    LOGIN_MAX_FAILURES: int = 5
+    LOGIN_WINDOW_SECONDS: int = 900
+
+    # Browsers allowed to call the API cross-origin (the bundled proxy is same-origin and needs none)
+    CORS_ORIGINS: str = ""   # empty -> the local dev origins below
+
+    @property
+    def cors_origin_list(self) -> list:
+        raw = self.CORS_ORIGINS.strip() or (
+            "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173"
+        )
+        return [o.strip() for o in raw.split(",") if o.strip()]
+
+    # Webhooks may target private/internal addresses only when explicitly enabled
+    WEBHOOK_ALLOW_PRIVATE: bool = False
+
     # SMTP Configuration
     SMTP_HOST: str = "localhost"
     SMTP_PORT: int = 1025

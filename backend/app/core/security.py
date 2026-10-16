@@ -25,3 +25,13 @@ def get_password_hash(password: str) -> str:
         password.encode('utf-8'), 
         bcrypt.gensalt()
     ).decode('utf-8')
+
+
+def validate_password_strength(password: str) -> None:
+    """Raise ValueError with a user-facing message if the password is unacceptable."""
+    if len(password) < settings.MIN_PASSWORD_LENGTH:
+        raise ValueError(f"Password must be at least {settings.MIN_PASSWORD_LENGTH} characters long")
+    if len(password.encode("utf-8")) > 72:
+        raise ValueError("Password must be at most 72 bytes (bcrypt limit)")
+    if password.strip() != password or not password.strip():
+        raise ValueError("Password must not start or end with whitespace")
