@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,7 +13,6 @@ import {
     Milestone, 
     Calculator, 
     CalendarDays, 
-    Clock, 
     Link as LinkIcon,
     Plus,
     Sparkles,
@@ -202,10 +201,16 @@ export default function TaskForm({
     defaultValues: processedInitialValues as any,
   });
 
-  // Sync form state when initialValues change (essential for Dialog reuse)
+  // Sync form state when the initial values change (essential for Dialog reuse). Callers pass a fresh object literal
+  // on every render, so compare by content: resetting on identity wiped what the user was typing whenever a
+  // background refetch re-rendered the parent.
+  const initialValuesKey = JSON.stringify(processedInitialValues);
+  const lastInitialValuesKey = useRef(initialValuesKey);
   useEffect(() => {
+    if (lastInitialValuesKey.current === initialValuesKey) return;
+    lastInitialValuesKey.current = initialValuesKey;
     reset(processedInitialValues);
-  }, [processedInitialValues, reset]);
+  }, [initialValuesKey, processedInitialValues, reset]);
 
   useFieldArray({
     control,

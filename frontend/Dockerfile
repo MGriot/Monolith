@@ -12,9 +12,8 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 FROM deps AS build
 COPY . .
-# `npm run build` runs `tsc -b` first, which still has ~35 unused-import errors (TS6133) to clean up;
-# bundle with Vite directly and run `npm run typecheck` as a separate CI step instead.
-RUN npx vite build
+# `npm run build` = `tsc -b` (type check) + vite build.
+RUN npm run build
 
 FROM docker.io/nginxinc/nginx-unprivileged:stable-alpine AS prod
 COPY --from=build /app/dist /usr/share/nginx/html

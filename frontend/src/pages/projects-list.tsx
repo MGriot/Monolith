@@ -50,6 +50,7 @@ import DataExportDialog from '@/components/data-export-dialog';
 import ProjectKanban from '@/components/project-kanban';
 import type { Project as ProjectType, ProjectTemplate } from '@/types';
 import { useTitle } from '@/context/title-context';
+import { fromDateInput } from "@/lib/dates";
 
 export default function ProjectsListPage() {
   const navigate = useNavigate();
@@ -124,8 +125,8 @@ export default function ProjectsListPage() {
       const formattedValues = {
         ...values,
         tags: values.tags ? values.tags.split(',').map(t => t.trim()) : [],
-        start_date: values.start_date ? new Date(values.start_date).toISOString() : null,
-        due_date: values.due_date ? new Date(values.due_date).toISOString() : null,
+        start_date: fromDateInput(values.start_date),
+        due_date: fromDateInput(values.due_date),
       };
 
       const projectResponse = await api.post('/projects/', formattedValues);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { parseISO, isAfter, differenceInDays } from 'date-fns';
+import { parseISO, differenceInDays } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { getStatusColors, getPriorityColors } from '@/constants/colors';
 import type { Task } from '@/types';
+import { isAfterDueDay } from "@/lib/dates";
 
 export interface ProjectTaskListProps {
   tasks: Task[];
@@ -60,14 +61,14 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
   const checkDate = conclusionDate || today;
   
   // Is it past due?
-  const isPastDue = dueDate ? isAfter(checkDate, dueDate) : false;
+  const isPastDue = isAfterDueDay(checkDate, dueDate);
   // Is it past deadline?
-  const isPastDeadline = deadlineAt ? isAfter(checkDate, deadlineAt) : false;
+  const isPastDeadline = isAfterDueDay(checkDate, deadlineAt);
 
   // Apply "on-time" grace: if finished on or before EITHER date, it's NOT overdue.
   const finishedOnTime = conclusionDate && (
-    (dueDate && !isAfter(conclusionDate, dueDate)) || 
-    (deadlineAt && !isAfter(conclusionDate, deadlineAt))
+    (dueDate && !isAfterDueDay(conclusionDate, dueDate)) || 
+    (deadlineAt && !isAfterDueDay(conclusionDate, deadlineAt))
   );
 
   const overdue = !finishedOnTime && (isPastDue || isPastDeadline);

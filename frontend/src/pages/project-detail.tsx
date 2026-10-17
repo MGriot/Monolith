@@ -18,7 +18,6 @@ import ProjectHeatmap from '@/components/project-heatmap';
 import ProjectTaskList from '@/components/project-task-list';
 import ResourceTimeline from '@/components/resource-timeline';
 import ProjectIdeas from '@/components/project-ideas';
-import ProjectLibrary from '@/components/project-library';
 import CommentSection from '@/components/comments/comment-section';
 import FolderTree from '@/components/folder-tree';
 import FilePreviewDialog from '@/components/file-preview-dialog';
@@ -41,19 +40,20 @@ import {
   Archive,
   Download,
   MessageSquare,
-  BookOpen,
   Settings,
   LayoutDashboard,
   Clock
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { cn, formatPercent } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 import DataExportDialog from '@/components/data-export-dialog';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import type { Project, Task } from '@/types';
 import { useTitle } from '@/context/title-context';
+import { fromDateInput } from "@/lib/dates";
+import { calculateSortIndex, flattenTasks } from '@/lib/kanban';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -179,8 +179,8 @@ export default function ProjectDetailPage() {
       const formattedValues = {
         ...values,
         tags: values.tags ? values.tags.split(',').map(t => t.trim()) : [],
-        start_date: values.start_date ? new Date(values.start_date).toISOString() : null,
-        due_date: values.due_date ? new Date(values.due_date).toISOString() : null,
+        start_date: fromDateInput(values.start_date),
+        due_date: fromDateInput(values.due_date),
         topic_ids: values.topic_ids || [],
         type_ids: values.type_ids || [],
         member_ids: values.member_ids || [],
@@ -246,6 +246,8 @@ export default function ProjectDetailPage() {
     },
   });
 
+  const [kanbanSyncKey, setKanbanSyncKey] = useState(0);
+
   const moveTaskMutation = useMutation({
     mutationFn: async ({ taskId, newStatus, sortIndex }: { taskId: string; newStatus: string; sortIndex?: number }) => {
       const data: any = { status: newStatus };
@@ -256,6 +258,12 @@ export default function ProjectDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['tasks', id] });
       queryClient.invalidateQueries({ queryKey: ['project', id] });
       queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
+    },
+    onError: (error: any) => {
+      // The board already moved the card optimistically: tell the user why it was refused and put it back.
+      toast.error(error?.response?.data?.detail || 'Could not move the task');
+      setKanbanSyncKey((k) => k + 1);
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
     },
   });
 
@@ -272,17 +280,17 @@ export default function ProjectDetailPage() {
     },
   });
 
-  const handleTaskMove = (taskId: string, newStatus: string) => {
-    moveTaskMutation.mutate({ taskId, newStatus });
+  const moveCard = (taskId: string, newStatus: string, index?: number) => {
+    const sortIndex = index === undefined ? undefined : calculateSortIndex(flattenTasks(tasks || []), newStatus, index, taskId);
+    moveTaskMutation.mutate({ taskId, newStatus, sortIndex });
   };
 
-  const handleSubtaskMove = (subtaskId: string, newStatus: string) => {
-    moveTaskMutation.mutate({ taskId: subtaskId, newStatus });
-  };
+  const handleTaskMove = (taskId: string, newStatus: string, index?: number) => moveCard(taskId, newStatus, index);
 
-  const handleKanbanReorder = (taskId: string, _newIndex: number, container: string) => {
-    moveTaskMutation.mutate({ taskId, newStatus: container });
-  };
+  const handleSubtaskMove = (subtaskId: string, newStatus: string, index?: number) => moveCard(subtaskId, newStatus, index);
+
+  // Reordering inside a column is persisted too (it used to snap back on the next refetch)
+  const handleKanbanReorder = (taskId: string, newIndex: number, container: string) => moveCard(taskId, container, newIndex);
 
   const handleAddTask = (status?: string) => {
     setEditingTaskId(null);
@@ -311,7 +319,7 @@ export default function ProjectDetailPage() {
   };
 
   const handleTaskSubmit = (data: TaskFormValues) => {
-    const formatDate = (d?: string | null) => (d && d.trim()) ? new Date(d).toISOString() : null;
+    const formatDate = fromDateInput;
 
     const formattedData = {
       ...data,
@@ -513,6 +521,7 @@ export default function ProjectDetailPage() {
             onAddTask={handleAddTask}
             onTaskClick={handleTaskClick}
             onSubtaskClick={handleSubtaskClick}
+            syncKey={kanbanSyncKey}
           />
         </TabsContent>
 
