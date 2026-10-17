@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { useTitle } from '@/context/title-context';
 import { NotificationPrefsCard } from '@/components/notification-prefs';
 import { ThemeSegmented } from '@/components/theme-toggle';
+import { CalendarFeedCard } from '@/components/calendar-feed-card';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     Dialog, 
@@ -272,6 +273,7 @@ export default function SettingsPage() {
           </div>
           <div className="md:col-span-2 pt-4 border-t border-border mt-4 space-y-6">
             <NotificationPrefsCard />
+            <CalendarFeedCard />
             <Card className="border-border shadow-sm">
               <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
                 <CardHeader>

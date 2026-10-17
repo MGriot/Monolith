@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Literal, Optional, ForwardRef
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, computed_field, model_validator
+from pydantic import BaseModel, ConfigDict, computed_field, field_validator, model_validator
 from app.core.enums import Status, Priority, DependencyType
 from app.schemas.user import User as UserSchema
 from app.schemas.metadata import Topic, WorkType
@@ -38,6 +38,8 @@ class TaskBase(BaseModel):
     tags: Optional[List[str]] = []
     attachments: Optional[List[str]] = []
     owner_id: Optional[UUID] = None
+    # e.g. FREQ=WEEKLY;INTERVAL=2;BYDAY=MO  (null/empty = does not repeat)
+    recurrence_rule: Optional[str] = None
     blocked_by_ids: Optional[List[UUID]] = []
     sort_index: Optional[int] = 0
     wbs_code: Optional[str] = None
@@ -61,6 +63,17 @@ class TaskBase(BaseModel):
     checklist: List[dict] = []
     # Custom field values keyed by CustomFieldDef id (validated against the project's definitions)
     custom_values: Dict[str, Any] = {}
+
+    @field_validator("recurrence_rule", mode="before")
+    @classmethod
+    def _valid_recurrence(cls, v):
+        from app.core.recurrence import RecurrenceError, normalize
+
+        try:
+            return normalize(v)
+        except RecurrenceError as e:
+            raise ValueError(str(e))
+
 
 class TaskShortCreate(BaseModel):
     title: str

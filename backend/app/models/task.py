@@ -70,6 +70,9 @@ class Task(Base):
     # Values of the project's custom fields, keyed by CustomFieldDef.id (validated by app.core.custom_fields)
     custom_values = Column(JSONB, nullable=False, default=dict, server_default="{}")
 
+    # Recurrence (RFC 5545 subset, see app/core/recurrence.py): completing the task creates the next occurrence
+    recurrence_rule = Column(String, nullable=True)
+
     @property
     def expected_duration_days(self) -> float:
         """

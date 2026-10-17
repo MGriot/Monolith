@@ -66,6 +66,8 @@ export interface Task {
   checklist?: { id: string; content: string; is_done: boolean }[];
   // Custom field values keyed by CustomFieldDef id
   custom_values?: Record<string, string | number>;
+  // RRULE subset, e.g. FREQ=WEEKLY;BYDAY=MO. Completing the task creates the next one
+  recurrence_rule?: string | null;
 }
 
 // Deprecated: use Task

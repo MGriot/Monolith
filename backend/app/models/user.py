@@ -14,6 +14,8 @@ class User(Base):
     is_active = Column(Boolean(), default=True)
     is_superuser = Column(Boolean(), default=False)
     email_verified_at = Column(DateTime, nullable=True)
+    # Secret in the personal iCalendar feed URL (calendar apps cannot send an Authorization header). Rotatable/revocable.
+    calendar_token = Column(String, unique=True, index=True, nullable=True)
     # Opt-outs for e-mail (in-app notifications are unaffected)
     notify_email_assignments = Column(Boolean(), nullable=False, default=True, server_default=expression.true())
     notify_email_digest = Column(Boolean(), nullable=False, default=True, server_default=expression.true())
