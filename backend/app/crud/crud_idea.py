@@ -17,6 +17,7 @@ from sqlalchemy import func, exists
 from app.models.associations import idea_votes, idea_downvotes
 from app.models.project import Project as ProjectModel
 from app.schemas.project import ProjectCreate
+from app.db.transaction import atomic, commit
 
 class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
     async def get(self, db: AsyncSession, id: Any, current_user_id: Optional[UUID] = None) -> Optional[Idea]:
@@ -181,14 +182,14 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
             await db.execute(
                 idea_votes.delete().where(idea_votes.c.idea_id == idea_id).where(idea_votes.c.user_id == user_id)
             )
-            await db.commit()
+            await commit(db)
             return False
         else:
             # Add upvote
             await db.execute(
                 idea_votes.insert().values(idea_id=idea_id, user_id=user_id)
             )
-            await db.commit()
+            await commit(db)
             return True
 
     async def toggle_downvote(self, db: AsyncSession, *, idea_id: UUID, user_id: UUID) -> bool:
@@ -205,16 +206,17 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
             await db.execute(
                 idea_downvotes.delete().where(idea_downvotes.c.idea_id == idea_id).where(idea_downvotes.c.user_id == user_id)
             )
-            await db.commit()
+            await commit(db)
             return False
         else:
             # Add downvote
             await db.execute(
                 idea_downvotes.insert().values(idea_id=idea_id, user_id=user_id)
             )
-            await db.commit()
+            await commit(db)
             return True
 
+    @atomic
     async def promote_to_project(self, db: AsyncSession, *, idea_id: UUID, owner_id: UUID) -> ProjectModel:
         idea = await self.get(db, id=idea_id)
         if not idea:
@@ -240,11 +242,36 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
         
         return new_project
 
+    @atomic
+    async def promote_to_task(self, db: AsyncSession, *, idea_id: UUID, owner_id: UUID) -> Task:
+        """Turn an idea into a task (a subtask when the idea hangs off a task) and mark the idea as converted.
+
+        The endpoint `POST /ideas/{id}/promote` and the UI call this, but it did not exist: promoting an idea to a
+        task always failed with an AttributeError.
+        """
+        idea = await self.get(db, id=idea_id)
+        if not idea:
+            raise ValueError("Idea not found")
+        if idea.status == IdeaStatus.CONVERTED:
+            raise ValueError("Idea already converted")
+
+        task_in = TaskCreate(
+            title=idea.title,
+            description=idea.description,
+            project_id=idea.project_id,
+            parent_id=idea.task_id,
+            status=Status.TODO,
+        )
+        new_task = await crud_task.create(db, obj_in=task_in, owner_id=owner_id)
+
+        await self.update(db, db_obj=idea, obj_in={"status": IdeaStatus.CONVERTED, "converted_task_id": new_task.id})
+        return new_task
+
     async def create(self, db: AsyncSession, *, obj_in: IdeaCreate, author_id: UUID) -> Idea:
         obj_in_data = obj_in.dict()
         db_obj = self.model(**obj_in_data, author_id=author_id)
         db.add(db_obj)
-        await db.commit()
+        await commit(db)
         await db.refresh(db_obj)
         return await self.get(db, id=db_obj.id, current_user_id=author_id)
 

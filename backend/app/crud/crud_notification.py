@@ -7,6 +7,7 @@ from sqlalchemy.future import select
 from app.crud.base import CRUDBase
 from app.models.notification import Notification
 from app.schemas.notification import NotificationCreate, NotificationUpdate, Notification as NotificationSchema
+from app.db.transaction import atomic, commit
 
 class CRUDNotification(CRUDBase[Notification, NotificationCreate, NotificationUpdate]):
     async def create(self, db: AsyncSession, *, obj_in: NotificationCreate) -> Notification:
@@ -48,7 +49,7 @@ class CRUDNotification(CRUDBase[Notification, NotificationCreate, NotificationUp
         if db_obj:
             db_obj.is_read = True
             db.add(db_obj)
-            await db.commit()
+            await commit(db)
             await db.refresh(db_obj)
         return db_obj
 
@@ -59,7 +60,7 @@ class CRUDNotification(CRUDBase[Notification, NotificationCreate, NotificationUp
             .where(self.model.user_id == user_id, self.model.is_read == False)  # noqa: E712
             .values(is_read=True)
         )
-        await db.commit()
+        await commit(db)
         return result.rowcount or 0
 
 notification = CRUDNotification(Notification)

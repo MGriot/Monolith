@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.comment import Comment
 from app.schemas.comment import CommentCreate, CommentUpdate
+from app.db.transaction import atomic, commit
 
 class CRUDComment:
     def _get_deep_options(self):
@@ -77,7 +78,7 @@ class CRUDComment:
             links=obj_in.links
         )
         db.add(db_obj)
-        await db.commit()
+        await commit(db)
         await db.refresh(db_obj)
         
         # Refetch with deep options for the response
@@ -88,7 +89,7 @@ class CRUDComment:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
         db.add(db_obj)
-        await db.commit()
+        await commit(db)
         await db.refresh(db_obj)
         # Refetch with deep options
         return await self.get(db, db_obj.id)
@@ -97,7 +98,7 @@ class CRUDComment:
         db_obj = await self.get(db, id=id)
         if db_obj:
             await db.delete(db_obj)
-            await db.commit()
+            await commit(db)
         return db_obj
 
 crud_comment = CRUDComment()

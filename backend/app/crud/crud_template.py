@@ -9,6 +9,7 @@ from app.models.template import ProjectTemplate
 from app.models.user import User
 from app.schemas.template import ProjectTemplateCreate, ProjectTemplateUpdate
 from app.core.utils import clean_dict_for_json
+from app.db.transaction import atomic, commit
 
 class CRUDProjectTemplate(CRUDBase[ProjectTemplate, ProjectTemplateCreate, ProjectTemplateUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[ProjectTemplate]:
@@ -82,7 +83,7 @@ class CRUDProjectTemplate(CRUDBase[ProjectTemplate, ProjectTemplateCreate, Proje
             db_obj.shared_with = shares_result.scalars().all()
             
         db.add(db_obj)
-        await db.commit()
+        await commit(db)
         await db.refresh(db_obj)
         return await self.get(db, id=db_obj.id)
 

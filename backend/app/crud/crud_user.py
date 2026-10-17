@@ -9,6 +9,7 @@ from app.core.security import get_password_hash, verify_password
 _DUMMY_HASH = get_password_hash("timing-equaliser")
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
+from app.db.transaction import atomic, commit
 
 async def get(db: AsyncSession, id: Any) -> Optional[User]:
     result = await db.execute(select(User).filter(User.id == id))
@@ -26,7 +27,7 @@ async def create(db: AsyncSession, obj_in: UserCreate) -> User:
         is_superuser=obj_in.is_superuser,
     )
     db.add(db_obj)
-    await db.commit()
+    await commit(db)
     await db.refresh(db_obj)
     return db_obj
 
@@ -56,7 +57,7 @@ async def update(
             setattr(db_obj, field, update_data[field])
     
     db.add(db_obj)
-    await db.commit()
+    await commit(db)
     await db.refresh(db_obj)
     return db_obj
 
@@ -70,5 +71,5 @@ async def remove(db: AsyncSession, *, id: Any) -> Optional[User]:
     obj = await get(db, id)
     if obj:
         await db.delete(obj)
-        await db.commit()
+        await commit(db)
     return obj
