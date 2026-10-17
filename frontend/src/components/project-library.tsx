@@ -57,7 +57,7 @@ export default function ProjectLibrary({ projectId }: ProjectLibraryProps) {
         <div className="space-y-6">
             <div className="flex items-center justify-between gap-4">
                 <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-faint" />
                     <Input
                         placeholder="Search sketches..."
                         className="pl-9"
@@ -79,10 +79,10 @@ export default function ProjectLibrary({ projectId }: ProjectLibraryProps) {
             ) : (
                 <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     {filteredWhiteboards?.map((wb: any) => (
-                        <Card key={wb.id} className="group hover:shadow-md transition-all border-slate-200">
+                        <Card key={wb.id} className="group hover:shadow-md transition-all border-border">
                             <CardHeader className="p-4 pb-2">
                                 <div className="flex justify-between items-start">
-                                    <div className="w-8 h-8 bg-blue-50 rounded flex items-center justify-center text-blue-600">
+                                    <div className="w-8 h-8 bg-blue-50 dark:bg-blue-500/10 rounded flex items-center justify-center text-blue-600 dark:text-blue-400">
                                         <Layout className="w-4 h-4" />
                                     </div>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -100,7 +100,7 @@ export default function ProjectLibrary({ projectId }: ProjectLibraryProps) {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="p-4 pt-0">
-                                <div className="aspect-video bg-slate-50 rounded border border-slate-100 flex items-center justify-center text-slate-300">
+                                <div className="aspect-video bg-subtle rounded border border-hairline flex items-center justify-center text-fg-ghost">
                                     {wb.preview_image ? (
                                         <img src={wb.preview_image} alt={wb.title} className="w-full h-full object-contain" />
                                     ) : (
@@ -108,7 +108,7 @@ export default function ProjectLibrary({ projectId }: ProjectLibraryProps) {
                                     )}
                                 </div>
                             </CardContent>
-                            <CardFooter className="p-3 bg-slate-50/50 border-t border-slate-100">
+                            <CardFooter className="p-3 bg-subtle/50 border-t border-hairline">
                                 <Button variant="ghost" className="w-full h-7 text-[10px] font-bold" onClick={() => handleEdit(wb)}>
                                     Open Editor
                                 </Button>
@@ -118,10 +118,10 @@ export default function ProjectLibrary({ projectId }: ProjectLibraryProps) {
 
                     <Card
                         onClick={handleCreate}
-                        className="border-dashed border-2 border-slate-200 shadow-none bg-slate-50/50 flex flex-col items-center justify-center p-6 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer min-h-[180px]"
+                        className="border-dashed border-2 border-border shadow-none bg-subtle/50 flex flex-col items-center justify-center p-6 hover:bg-subtle hover:border-fg-ghost transition-colors cursor-pointer min-h-[180px]"
                     >
-                        <Plus className="w-6 h-6 text-slate-400 mb-2" />
-                        <h3 className="text-sm font-semibold text-slate-900">New Whiteboard</h3>
+                        <Plus className="w-6 h-6 text-fg-faint mb-2" />
+                        <h3 className="text-sm font-semibold text-foreground">New Whiteboard</h3>
                     </Card>
                 </div>
             )}

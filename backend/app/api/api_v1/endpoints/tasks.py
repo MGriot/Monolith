@@ -13,7 +13,11 @@ from app.api import deps
 from app.api.access import EDITOR, has_task_access, require_project_access, require_task_access
 from app.core.uploads import save_upload
 from app.crud import crud_task, crud_project, crud_dependency, crud_custom_field
-from app.schemas.task import Task, TaskCreate, TaskUpdate, Dependency, DependencyCreate
+from app.schemas.task import (
+    Task, TaskCreate, TaskUpdate, Dependency, DependencyCreate,
+    BulkTaskRequest, BulkTaskResponse, BulkTaskResult,
+)
+from app.db.transaction import transaction
 from app.models.user import User
 from app.models.dependency import Dependency as DependencyModel
 from app.core.config import settings
@@ -279,6 +283,60 @@ async def create_task(
 async def check_task_permissions(db: AsyncSession, task_obj: Any, current_user: User, required_level: str = "read") -> None:
     if not await has_task_access(db, task_obj, current_user, write=(required_level != "read")):
         raise HTTPException(status_code=403, detail="Not enough permissions for this task")
+
+@router.post("/bulk", response_model=BulkTaskResponse)
+async def bulk_update_tasks(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    body: BulkTaskRequest,
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Apply one patch (status / priority / assignees) or one action (archive / restore / delete) to many tasks.
+
+    Every id is authorized on its own with `require_task_access(write=True)` in a first pass; ids that fail (403/404)
+    are reported in `results` and left untouched. The permitted ones are applied in ONE transaction, each inside a
+    SAVEPOINT so a task that cannot take the change (e.g. 400 validation) is reported without undoing the others.
+    """
+    ids = list(dict.fromkeys(body.ids))  # de-duplicate, keep order
+    results: dict = {}
+    allowed: List[UUID] = []
+    for task_id in ids:
+        try:
+            await require_task_access(db, task_id, current_user, write=True)
+            allowed.append(task_id)
+        except HTTPException as e:
+            results[task_id] = BulkTaskResult(id=task_id, ok=False, status_code=e.status_code, detail=str(e.detail))
+
+    patch = body.patch.model_dump(exclude_unset=True) if body.patch is not None else {}
+    async with transaction(db):
+        for task_id in allowed:
+            try:
+                async with db.begin_nested():
+                    task_obj = await crud_task.task.get(db, id=task_id)
+                    if not task_obj:
+                        raise HTTPException(status_code=404, detail="Task not found")
+                    if body.action == "delete":
+                        await crud_task.task.remove(db=db, id=task_id)
+                    elif body.action == "archive":
+                        await crud_task.task.update(
+                            db=db, db_obj=task_obj, obj_in={"is_archived": True, "archived_at": datetime.utcnow()}
+                        )
+                    elif body.action == "restore":
+                        await crud_task.task.update(
+                            db=db, db_obj=task_obj, obj_in={"is_archived": False, "archived_at": None}
+                        )
+                    else:
+                        await crud_task.task.update(db=db, db_obj=task_obj, obj_in=dict(patch))
+                results[task_id] = BulkTaskResult(id=task_id, ok=True)
+            except HTTPException as e:
+                results[task_id] = BulkTaskResult(id=task_id, ok=False, status_code=e.status_code, detail=str(e.detail))
+            except ValueError as e:
+                results[task_id] = BulkTaskResult(id=task_id, ok=False, status_code=400, detail=str(e))
+    ordered = [results[i] for i in ids]
+    ok = sum(1 for r in ordered if r.ok)
+    return BulkTaskResponse(results=ordered, succeeded=ok, failed=len(ordered) - ok)
+
 
 @router.get("/{task_id}", response_model=Task)
 async def read_task(

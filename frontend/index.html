@@ -5,6 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/monolith.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monolith Planner</title>
+    <script id="theme-init">
+      // Set the theme class before first paint (no light flash). Keep in step with src/lib/theme.ts (tested there).
+      (function () {
+        var pref = 'system';
+        try { pref = localStorage.getItem('monolith-theme') || 'system'; } catch (e) {}
+        var dark = pref === 'dark' || (pref !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        var root = document.documentElement;
+        if (dark) root.classList.add('dark'); else root.classList.remove('dark');
+        root.style.colorScheme = dark ? 'dark' : 'light';
+      })();
+    </script>
     <script>
       // Required for @excalidraw/excalidraw
       // Point to the dedicated assets folder in public

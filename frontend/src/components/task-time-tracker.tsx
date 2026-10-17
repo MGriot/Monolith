@@ -100,17 +100,17 @@ export default function TaskTimeTracker({ taskId }: { taskId: string }) {
 
   return (
     <div className="space-y-6" data-testid="task-time-tracker">
-      <div className="p-6 rounded-[2rem] border border-slate-200 bg-white shadow-md space-y-4">
+      <div className="p-6 rounded-[2rem] border border-border bg-background shadow-md space-y-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-600 text-white rounded-lg">
               <Timer className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-3xl font-black tabular-nums text-slate-800 leading-none" aria-live="off">
+              <div className="text-3xl font-black tabular-nums text-foreground leading-none" aria-live="off">
                 {runningHere && running ? formatClock(elapsedSeconds(running.started_at, now)) : '0:00:00'}
               </div>
-              <p className="text-[10px] text-slate-400 mt-1 uppercase font-black">
+              <p className="text-[10px] text-fg-faint mt-1 uppercase font-black">
                 {running && !runningHere ? 'A timer is running on another task' : runningHere ? 'Timer running' : 'Timer stopped'}
               </p>
             </div>
@@ -130,31 +130,31 @@ export default function TaskTimeTracker({ taskId }: { taskId: string }) {
         )}
       </div>
 
-      <div className="p-6 rounded-[2rem] border border-slate-200 bg-white shadow-md space-y-3">
+      <div className="p-6 rounded-[2rem] border border-border bg-background shadow-md space-y-3">
         <div className="flex items-baseline justify-between">
-          <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500">Logged</Label>
-          <span className="text-lg font-black tabular-nums text-slate-800">{formatDuration(total)}</span>
+          <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Logged</Label>
+          <span className="text-lg font-black tabular-nums text-foreground">{formatDuration(total)}</span>
         </div>
         {summary && summary.estimate_hours > 0 ? (
           <div className="space-y-1.5">
-            <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
               <div
                 className={cn('h-full rounded-full transition-all', tone === 'over' ? 'bg-rose-500' : tone === 'warn' ? 'bg-amber-500' : 'bg-emerald-500')}
                 style={{ width: `${percent}%` }}
               />
             </div>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-muted-foreground">
               Estimate {summary.estimate_hours}h (from PERT / planned duration) &middot;{' '}
               {describeVariance({ estimate_hours: summary.estimate_hours, variance_hours: total / 3600 - summary.estimate_hours })}
             </p>
           </div>
         ) : (
-          <p className="text-[11px] text-slate-400">No estimate: set PERT days or a duration in the Timeline tab to compare.</p>
+          <p className="text-[11px] text-fg-faint">No estimate: set PERT days or a duration in the Timeline tab to compare.</p>
         )}
       </div>
 
-      <div className="p-6 rounded-[2rem] border border-slate-200 bg-white shadow-md space-y-3">
-        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500">Add time manually</Label>
+      <div className="p-6 rounded-[2rem] border border-border bg-background shadow-md space-y-3">
+        <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Add time manually</Label>
         <div className="flex gap-2">
           <Input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="1h 30m, 90m, 1:30" className="w-40" aria-label="Duration" />
           <Input value={manualNote} onChange={(e) => setManualNote(e.target.value)} placeholder="Note (optional)" maxLength={1000} />
@@ -166,24 +166,24 @@ export default function TaskTimeTracker({ taskId }: { taskId: string }) {
       </div>
 
       <div className="space-y-2">
-        {isLoading && <Loader2 className="w-5 h-5 animate-spin text-slate-400 mx-auto" />}
-        {data?.entries.length === 0 && <p className="text-center text-xs text-slate-400 py-6">No time logged yet.</p>}
+        {isLoading && <Loader2 className="w-5 h-5 animate-spin text-fg-faint mx-auto" />}
+        {data?.entries.length === 0 && <p className="text-center text-xs text-fg-faint py-6">No time logged yet.</p>}
         {data?.entries.map((entry) => {
           const mine = entry.user_id === user?.id || user?.is_superuser;
           const seconds = entry.ended_at ? entry.duration_seconds : elapsedSeconds(entry.started_at, now);
           return (
-            <div key={entry.id} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-2 text-sm group">
+            <div key={entry.id} className="flex items-center gap-3 rounded-xl border border-hairline bg-subtle/50 px-4 py-2 text-sm group">
               <span className="font-bold tabular-nums w-20">{entry.ended_at ? formatDuration(seconds) : formatClock(seconds)}</span>
-              <span className="text-slate-500 text-xs w-36 shrink-0">{parseServerDate(entry.started_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
-              <span className="flex-1 truncate text-slate-600">{entry.note || <span className="text-slate-300">—</span>}</span>
-              <span className="text-xs text-slate-400 truncate max-w-28">{entry.user?.full_name || entry.user?.email}</span>
-              {!entry.ended_at && <span className="text-[10px] font-black uppercase text-emerald-600">running</span>}
+              <span className="text-muted-foreground text-xs w-36 shrink-0">{parseServerDate(entry.started_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
+              <span className="flex-1 truncate text-fg-soft">{entry.note || <span className="text-fg-ghost">—</span>}</span>
+              <span className="text-xs text-fg-faint truncate max-w-28">{entry.user?.full_name || entry.user?.email}</span>
+              {!entry.ended_at && <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400">running</span>}
               {mine && entry.ended_at && (
                 <button
                   type="button"
                   aria-label="Delete time entry"
                   onClick={() => remove.mutate(entry.id)}
-                  className="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
+                  className="p-1.5 text-fg-ghost hover:text-rose-500 rounded-lg opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

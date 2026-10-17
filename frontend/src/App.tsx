@@ -15,6 +15,7 @@ const ResetPasswordPage = lazy(() => import("./pages/reset-password"));
 const VerifyEmailPage = lazy(() => import("./pages/verify-email"));
 const DashboardPage = lazy(() => import("./pages/dashboard"));
 const UpdatesPage = lazy(() => import("./pages/updates"));
+const NotificationsPage = lazy(() => import("./pages/notifications"));
 const ProjectsListPage = lazy(() => import("./pages/projects-list"));
 const ArchivePage = lazy(() => import("./pages/archive"));
 const ProjectDetailPage = lazy(() => import("./pages/project-detail"));
@@ -90,6 +91,7 @@ function App() {
                 <Route element={<PrivateLayout />}>
                   <Route path="/" element={<DashboardPage />} />
                   <Route path="/updates" element={<UpdatesPage />} />
+                  <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="/projects" element={<ProjectsListPage />} />
                   <Route path="/archive" element={<ArchivePage />} />
                   <Route path="/projects/:id" element={<ProjectDetailPage />} />

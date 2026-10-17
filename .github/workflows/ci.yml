@@ -41,6 +41,7 @@ jobs:
           tests/test_transactions.py
           tests/test_project_roles.py
           tests/test_time_and_custom_fields.py
+          tests/test_bulk_and_notifications.py
           tests/test_automations.py
           tests/test_recurrence_ics.py
       - name: Dependencies have no known vulnerabilities

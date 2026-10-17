@@ -48,7 +48,7 @@ function MultiSelect({ label, options, selected, onChange }: MultiProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
         <DropdownMenuLabel>{label}</DropdownMenuLabel>
-        {options.length === 0 && <div className="px-2 py-1.5 text-xs text-slate-400">Nothing to filter by</div>}
+        {options.length === 0 && <div className="px-2 py-1.5 text-xs text-fg-faint">Nothing to filter by</div>}
         {options.map((o) => (
           <DropdownMenuCheckboxItem
             key={o.value}
@@ -94,7 +94,7 @@ export default function TaskFilterBar({ filters, onChange, assignees, scope, sho
   return (
     <div role="search" aria-label="Filter tasks" className="flex flex-wrap items-center gap-2">
       <div className="relative w-full sm:w-56">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden />
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-faint" aria-hidden />
         <Input
           aria-label="Filter tasks by title"
           placeholder="Filter tasks..."
@@ -161,7 +161,7 @@ export default function TaskFilterBar({ filters, onChange, assignees, scope, sho
               <button
                 type="button"
                 aria-label={`Delete view ${v.name}`}
-                className="ml-2 rounded p-0.5 text-slate-400 hover:text-destructive focus-visible:ring-2"
+                className="ml-2 rounded p-0.5 text-fg-faint hover:text-destructive focus-visible:ring-2"
                 onClick={(e) => {
                   e.stopPropagation();
                   setViews(deleteView(getStore(), scope, v.id));
@@ -199,12 +199,12 @@ export default function TaskFilterBar({ filters, onChange, assignees, scope, sho
       )}
 
       {(hasActiveFilters(filters) || !isDefaultView(filters)) && (
-        <Button variant="ghost" size="sm" className="h-9 gap-1 text-xs text-slate-500" onClick={() => onChange(DEFAULT_FILTERS)}>
+        <Button variant="ghost" size="sm" className="h-9 gap-1 text-xs text-muted-foreground" onClick={() => onChange(DEFAULT_FILTERS)}>
           <X className="h-3.5 w-3.5" aria-hidden /> Reset
         </Button>
       )}
       {resultCount !== undefined && hasActiveFilters(filters) && (
-        <span className="text-xs text-slate-500" role="status">{resultCount} matching</span>
+        <span className="text-xs text-muted-foreground" role="status">{resultCount} matching</span>
       )}
     </div>
   );

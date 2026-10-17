@@ -61,45 +61,45 @@ export default function UpdatesPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-50/50">
+    <div className="h-full overflow-y-auto bg-subtle/50">
       <div className="p-6 space-y-8 pb-12">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">System Updates</h1>
-            <p className="text-sm text-slate-500">Recap of all recent activities and upcoming milestones.</p>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">System Updates</h1>
+            <p className="text-sm text-muted-foreground">Recap of all recent activities and upcoming milestones.</p>
           </div>
-          <Badge variant="outline" className="bg-white border-slate-200">
+          <Badge variant="outline" className="bg-background border-border">
             Last 30 Days
           </Badge>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
           {/* New Tasks */}
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="bg-slate-50/50 border-b">
+          <Card className="border-border shadow-sm">
+            <CardHeader className="bg-subtle/50 border-b">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                   <PlusCircle className="w-4 h-4 text-blue-500" />
                   Newly Created
                 </CardTitle>
-                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none">{data?.new_tasks.length}</Badge>
+                <Badge className="bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-500/20 border-none">{data?.new_tasks.length}</Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-4">
               <div className="space-y-4">
                 {data?.new_tasks.length === 0 ? (
-                  <p className="text-xs text-center text-slate-400 py-4">No new tasks recently.</p>
+                  <p className="text-xs text-center text-fg-faint py-4">No new tasks recently.</p>
                 ) : (
                   data?.new_tasks.map((task) => (
                     <Link 
                       key={task.id} 
                       to={`/projects/${task.project_id}`}
-                      className="block p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all group"
+                      className="block p-3 rounded-lg border border-hairline hover:border-blue-200 dark:hover:border-blue-500/30 hover:bg-blue-50/30 transition-all group"
                     >
-                      <p className="text-xs font-bold text-slate-800 group-hover:text-blue-700 line-clamp-1">{task.title}</p>
+                      <p className="text-xs font-bold text-foreground group-hover:text-blue-700 dark:group-hover:text-blue-300 line-clamp-1">{task.title}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        <span className="text-[10px] text-slate-500">{format(parseISO(task.created_at), 'MMM d, h:mm a')}</span>
+                        <Clock className="w-3 h-3 text-fg-faint" />
+                        <span className="text-[10px] text-muted-foreground">{format(parseISO(task.created_at), 'MMM d, h:mm a')}</span>
                       </div>
                     </Link>
                   ))
@@ -109,31 +109,31 @@ export default function UpdatesPage() {
           </Card>
 
           {/* Completed Tasks */}
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="bg-slate-50/50 border-b">
+          <Card className="border-border shadow-sm">
+            <CardHeader className="bg-subtle/50 border-b">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                   Recently Finished
                 </CardTitle>
-                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none">{data?.completed_tasks.length}</Badge>
+                <Badge className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 border-none">{data?.completed_tasks.length}</Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-4">
               <div className="space-y-4">
                 {data?.completed_tasks.length === 0 ? (
-                  <p className="text-xs text-center text-slate-400 py-4">No tasks completed recently.</p>
+                  <p className="text-xs text-center text-fg-faint py-4">No tasks completed recently.</p>
                 ) : (
                   data?.completed_tasks.map((task) => (
                     <Link 
                       key={task.id} 
                       to={`/projects/${task.project_id}`}
-                      className="block p-3 rounded-lg border border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group"
+                      className="block p-3 rounded-lg border border-hairline hover:border-emerald-200 dark:hover:border-emerald-500/30 hover:bg-emerald-50/30 transition-all group"
                     >
-                      <p className="text-xs font-bold text-slate-800 group-hover:text-emerald-700 line-clamp-1">{task.title}</p>
+                      <p className="text-xs font-bold text-foreground group-hover:text-emerald-700 dark:group-hover:text-emerald-300 line-clamp-1">{task.title}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                        <span className="text-[10px] text-slate-500">{format(parseISO(task.completed_at), 'MMM d, h:mm a')}</span>
+                        <span className="text-[10px] text-muted-foreground">{format(parseISO(task.completed_at), 'MMM d, h:mm a')}</span>
                       </div>
                     </Link>
                   ))
@@ -143,31 +143,31 @@ export default function UpdatesPage() {
           </Card>
 
           {/* Upcoming Deadlines */}
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="bg-slate-50/50 border-b">
+          <Card className="border-border shadow-sm">
+            <CardHeader className="bg-subtle/50 border-b">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                   <Bell className="w-4 h-4 text-amber-500" />
                   Upcoming Deadlines
                 </CardTitle>
-                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none">{data?.upcoming_deadlines.length}</Badge>
+                <Badge className="bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/20 border-none">{data?.upcoming_deadlines.length}</Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-4">
               <div className="space-y-4">
                 {data?.upcoming_deadlines.length === 0 ? (
-                  <p className="text-xs text-center text-slate-400 py-4">No upcoming deadlines.</p>
+                  <p className="text-xs text-center text-fg-faint py-4">No upcoming deadlines.</p>
                 ) : (
                   data?.upcoming_deadlines.map((task) => (
                     <Link 
                       key={task.id} 
                       to={`/projects/${task.project_id}`}
-                      className="block p-3 rounded-lg border border-slate-100 hover:border-amber-200 hover:bg-amber-50/30 transition-all group"
+                      className="block p-3 rounded-lg border border-hairline hover:border-amber-200 dark:hover:border-amber-500/30 hover:bg-amber-50/30 transition-all group"
                     >
-                      <p className="text-xs font-bold text-slate-800 group-hover:text-amber-700 line-clamp-1">{task.title}</p>
+                      <p className="text-xs font-bold text-foreground group-hover:text-amber-700 dark:group-hover:text-amber-300 line-clamp-1">{task.title}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <Calendar className="w-3 h-3 text-amber-500" />
-                        <span className="text-[10px] text-slate-600 font-bold">Due {format(parseISO(task.due_date), 'MMM d, h:mm a')}</span>
+                        <span className="text-[10px] text-fg-soft font-bold">Due {format(parseISO(task.due_date), 'MMM d, h:mm a')}</span>
                       </div>
                     </Link>
                   ))

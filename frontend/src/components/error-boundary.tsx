@@ -40,18 +40,18 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         }
       >
         <AlertTriangle className="h-10 w-10 text-amber-500" aria-hidden="true" />
-        <h2 className="text-lg font-semibold text-slate-800">Something went wrong on this page</h2>
-        <p className="max-w-md text-sm text-slate-500">
+        <h2 className="text-lg font-semibold text-foreground">Something went wrong on this page</h2>
+        <p className="max-w-md text-sm text-muted-foreground">
           The rest of the app is still working. You can try again, or reload if the problem persists.
         </p>
-        <pre className="max-h-24 max-w-xl overflow-auto rounded bg-slate-100 p-2 text-left text-xs text-slate-600">
+        <pre className="max-h-24 max-w-xl overflow-auto rounded bg-muted p-2 text-left text-xs text-fg-soft">
           {this.state.error.message}
         </pre>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={this.reset}
-            className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-subtle"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" /> Try again
           </button>

@@ -20,6 +20,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useTitle } from '@/context/title-context';
 import { NotificationPrefsCard } from '@/components/notification-prefs';
+import { ThemeSegmented } from '@/components/theme-toggle';
 import { CalendarFeedCard } from '@/components/calendar-feed-card';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -147,15 +148,15 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1">
-            <h2 className="text-sm font-semibold text-slate-900">Personal Information</h2>
-            <p className="text-xs text-slate-500 mt-1">Update your profile details and email address.</p>
+            <h2 className="text-sm font-semibold text-foreground">Personal Information</h2>
+            <p className="text-xs text-muted-foreground mt-1">Update your profile details and email address.</p>
           </div>
           <div className="md:col-span-2">
-            <Card className="border-slate-200 shadow-sm">
+            <Card className="border-border shadow-sm">
               <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -166,15 +167,15 @@ export default function SettingsPage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="full_name">Full Name</Label>
-                    <Input id="full_name" {...profileForm.register('full_name')} className="bg-white" />
+                    <Input id="full_name" {...profileForm.register('full_name')} className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email address</Label>
-                    <Input id="email" type="email" {...profileForm.register('email')} disabled className="bg-slate-50 border-slate-200" />
-                    <p className="text-[10px] text-slate-400">Email cannot be changed currently.</p>
+                    <Input id="email" type="email" {...profileForm.register('email')} disabled className="bg-subtle border-border" />
+                    <p className="text-[10px] text-fg-faint">Email cannot be changed currently.</p>
                   </div>
                 </CardContent>
-                <CardFooter className="bg-slate-50/50 border-t flex justify-end p-4">
+                <CardFooter className="bg-subtle/50 border-t flex justify-end p-4">
                   <Button type="submit" size="sm" className="gap-2" disabled={isProfileLoading}>
                     <Save className="w-3.5 h-3.5" />
                     {isProfileLoading ? 'Saving...' : 'Save changes'}
@@ -184,12 +185,20 @@ export default function SettingsPage() {
             </Card>
           </div>
 
-          <div className="md:col-span-1 pt-4 border-t border-slate-200 mt-4">
-            <h2 className="text-sm font-semibold text-slate-900">Webhooks</h2>
-            <p className="text-xs text-slate-500 mt-1">Configure external integrations for Slack and Discord.</p>
+          <div className="md:col-span-1 pt-4 border-t border-border mt-4">
+            <h2 className="text-sm font-semibold text-foreground">Appearance</h2>
+            <p className="text-xs text-muted-foreground mt-1">Light, dark, or follow your device.</p>
           </div>
-          <div className="md:col-span-2 pt-4 border-t border-slate-200 mt-4">
-            <Card className="border-slate-200 shadow-sm">
+          <div className="md:col-span-2 pt-4 border-t border-border mt-4">
+            <ThemeSegmented />
+          </div>
+
+          <div className="md:col-span-1 pt-4 border-t border-border mt-4">
+            <h2 className="text-sm font-semibold text-foreground">Webhooks</h2>
+            <p className="text-xs text-muted-foreground mt-1">Configure external integrations for Slack and Discord.</p>
+          </div>
+          <div className="md:col-span-2 pt-4 border-t border-border mt-4">
+            <Card className="border-border shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                         <CardTitle className="text-lg flex items-center gap-2">
@@ -204,28 +213,28 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {isLoadingWebhooks ? (
-                        <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-slate-200" /></div>
+                        <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-border" /></div>
                     ) : webhooks && webhooks.length > 0 ? (
                         <div className="space-y-2">
                             {webhooks.map((w) => (
-                                <div key={w.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-slate-50/50 group">
+                                <div key={w.id} className="flex items-center justify-between p-3 rounded-lg border border-hairline bg-subtle/50 group">
                                     <div className="flex items-center gap-3">
                                         <div className={cn(
                                             "w-8 h-8 rounded-full flex items-center justify-center",
-                                            w.provider === 'slack' ? "bg-indigo-50 text-indigo-600" : "bg-blue-50 text-blue-600"
+                                            w.provider === 'slack' ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" : "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
                                         )}>
                                             <WebhookIcon className="w-4 h-4" />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-900">{w.name}</p>
-                                            <p className="text-[10px] text-slate-400 truncate max-w-[200px]">{w.url}</p>
+                                            <p className="text-xs font-bold text-foreground">{w.name}</p>
+                                            <p className="text-[10px] text-fg-faint truncate max-w-[200px]">{w.url}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="h-7 w-7 text-slate-400 hover:text-primary"
+                                            className="h-7 w-7 text-fg-faint hover:text-primary"
                                             onClick={() => testWebhookMutation.mutate(w.id)}
                                             disabled={testWebhookMutation.isPending}
                                             title="Send Test"
@@ -235,7 +244,7 @@ export default function SettingsPage() {
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="h-7 w-7 text-slate-400 hover:text-destructive"
+                                            className="h-7 w-7 text-fg-faint hover:text-destructive"
                                             onClick={() => {
                                                 if (confirm('Delete this webhook?')) deleteWebhookMutation.mutate(w.id);
                                             }}
@@ -249,23 +258,23 @@ export default function SettingsPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed">
-                            <WebhookIcon className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-                            <p className="text-xs text-slate-400">No webhooks configured yet.</p>
+                        <div className="py-8 text-center bg-subtle/50 rounded-xl border border-dashed">
+                            <WebhookIcon className="w-8 h-8 text-border mx-auto mb-2" />
+                            <p className="text-xs text-fg-faint">No webhooks configured yet.</p>
                         </div>
                     )}
                 </CardContent>
             </Card>
           </div>
 
-          <div className="md:col-span-1 pt-4 border-t border-slate-200 mt-4">
-            <h2 className="text-sm font-semibold text-slate-900">Security</h2>
-            <p className="text-xs text-slate-500 mt-1">Keep your account secure by using a strong password.</p>
+          <div className="md:col-span-1 pt-4 border-t border-border mt-4">
+            <h2 className="text-sm font-semibold text-foreground">Security</h2>
+            <p className="text-xs text-muted-foreground mt-1">Keep your account secure by using a strong password.</p>
           </div>
-          <div className="md:col-span-2 pt-4 border-t border-slate-200 mt-4 space-y-6">
+          <div className="md:col-span-2 pt-4 border-t border-border mt-4 space-y-6">
             <NotificationPrefsCard />
             <CalendarFeedCard />
-            <Card className="border-slate-200 shadow-sm">
+            <Card className="border-border shadow-sm">
               <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -276,18 +285,18 @@ export default function SettingsPage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="current_password">Current Password</Label>
-                    <Input id="current_password" type="password" autoComplete="current-password" {...passwordForm.register('current_password')} className="bg-white" />
+                    <Input id="current_password" type="password" autoComplete="current-password" {...passwordForm.register('current_password')} className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="new_password">New Password</Label>
-                    <Input id="new_password" type="password" {...passwordForm.register('new_password')} className="bg-white" />
+                    <Input id="new_password" type="password" {...passwordForm.register('new_password')} className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirm_password">Confirm New Password</Label>
-                    <Input id="confirm_password" type="password" {...passwordForm.register('confirm_password')} className="bg-white" />
+                    <Input id="confirm_password" type="password" {...passwordForm.register('confirm_password')} className="bg-background" />
                   </div>
                 </CardContent>
-                <CardFooter className="bg-slate-50/50 border-t flex justify-end p-4">
+                <CardFooter className="bg-subtle/50 border-t flex justify-end p-4">
                   <Button type="submit" size="sm" className="gap-2" disabled={isPasswordLoading}>
                     <Shield className="w-3.5 h-3.5" />
                     {isPasswordLoading ? 'Updating...' : 'Update password'}
@@ -307,7 +316,7 @@ export default function SettingsPage() {
             </DialogHeader>
             <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                    <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Hook Name</Label>
+                    <Label className="text-xs font-black uppercase tracking-widest text-fg-faint">Hook Name</Label>
                     <Input 
                         placeholder="e.g. My Team Slack" 
                         value={webhookForm.name}
@@ -315,7 +324,7 @@ export default function SettingsPage() {
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Webhook URL</Label>
+                    <Label className="text-xs font-black uppercase tracking-widest text-fg-faint">Webhook URL</Label>
                     <Input 
                         placeholder="https://hooks.slack.com/services/..." 
                         value={webhookForm.url}
@@ -323,7 +332,7 @@ export default function SettingsPage() {
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Provider</Label>
+                    <Label className="text-xs font-black uppercase tracking-widest text-fg-faint">Provider</Label>
                     <div className="flex gap-2">
                         {['slack', 'discord', 'generic'].map((p) => (
                             <Button 

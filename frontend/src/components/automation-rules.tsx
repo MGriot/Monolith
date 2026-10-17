@@ -124,12 +124,12 @@ export default function AutomationRules({ projectId }: { projectId: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {rules.isLoading && <Loader2 className="w-5 h-5 animate-spin text-slate-400" />}
+        {rules.isLoading && <Loader2 className="w-5 h-5 animate-spin text-fg-faint" />}
         {rules.data?.map((rule) => (
-          <div key={rule.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 space-y-2">
+          <div key={rule.id} className="rounded-xl border border-hairline bg-subtle/50 p-3 space-y-2">
             <div className="flex items-center gap-3">
               <Switch checked={rule.enabled} onCheckedChange={(enabled) => toggle.mutate({ id: rule.id, enabled })} aria-label={`Enable ${rule.name}`} />
-              <span className={`flex-1 font-bold text-sm ${rule.enabled ? '' : 'text-slate-400'}`}>{rule.name}</span>
+              <span className={`flex-1 font-bold text-sm ${rule.enabled ? '' : 'text-fg-faint'}`}>{rule.name}</span>
               <Button type="button" size="sm" variant="ghost" aria-label={`Edit ${rule.name}`} onClick={() => setEditing({ id: rule.id, draft: draftFromRule(rule) })}>
                 <Pencil className="w-4 h-4" />
               </Button>
@@ -137,16 +137,16 @@ export default function AutomationRules({ projectId }: { projectId: string }) {
                 type="button"
                 aria-label={`Delete ${rule.name}`}
                 onClick={() => window.confirm(`Delete the rule “${rule.name}” and its history?`) && remove.mutate(rule.id)}
-                className="p-2 text-slate-300 hover:text-rose-500 rounded-lg"
+                className="p-2 text-fg-ghost hover:text-rose-500 rounded-lg"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-slate-500">{describeRule(rule, lookup)}</p>
+            <p className="text-xs text-muted-foreground">{describeRule(rule, lookup)}</p>
             <button
               type="button"
               onClick={() => setOpenRuns(openRuns === rule.id ? null : rule.id)}
-              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-600"
+              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-fg-faint hover:text-fg-soft"
               aria-expanded={openRuns === rule.id}
             >
               {openRuns === rule.id ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />} Run history
@@ -154,7 +154,7 @@ export default function AutomationRules({ projectId }: { projectId: string }) {
             {openRuns === rule.id && <RunHistory projectId={projectId} ruleId={rule.id} />}
           </div>
         ))}
-        {rules.data?.length === 0 && !editing && <p className="text-sm text-slate-400">No rules yet.</p>}
+        {rules.data?.length === 0 && !editing && <p className="text-sm text-fg-faint">No rules yet.</p>}
 
         {editing ? (
           <RuleForm
@@ -184,21 +184,21 @@ function RunHistory({ projectId, ruleId }: { projectId: string; ruleId: string }
     queryKey: ['automation-runs', ruleId],
     queryFn: async () => (await api.get<RuleRun[]>(`/projects/${projectId}/automations/${ruleId}/runs`)).data,
   });
-  if (runs.isLoading) return <Loader2 className="w-4 h-4 animate-spin text-slate-400" />;
+  if (runs.isLoading) return <Loader2 className="w-4 h-4 animate-spin text-fg-faint" />;
   const list = runs.data ?? [];
-  if (list.length === 0) return <p className="text-xs text-slate-400">It has not run yet.</p>;
+  if (list.length === 0) return <p className="text-xs text-fg-faint">It has not run yet.</p>;
   const s = runSummary(list);
   return (
     <div className="space-y-1">
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-fg-faint">
         Last {list.length} runs: {s.ok} done, {s.error} failed
       </p>
-      <ul className="max-h-48 overflow-auto divide-y divide-slate-100 rounded-lg border bg-white text-xs">
+      <ul className="max-h-48 overflow-auto divide-y divide-hairline rounded-lg border bg-background text-xs">
         {list.map((run) => (
           <li key={run.id} className="flex items-start gap-2 p-2">
             <Badge variant={run.status === 'ok' ? 'secondary' : 'destructive'}>{RUN_STATUS_LABEL[run.status]}</Badge>
-            <span className="flex-1 text-slate-600 break-words">{run.message || '-'}</span>
-            <time className="text-slate-400 whitespace-nowrap" dateTime={run.ran_at}>
+            <span className="flex-1 text-fg-soft break-words">{run.message || '-'}</span>
+            <time className="text-fg-faint whitespace-nowrap" dateTime={run.ran_at}>
               {new Date(run.ran_at + (run.ran_at.endsWith('Z') ? '' : 'Z')).toLocaleString()}
             </time>
           </li>
@@ -235,13 +235,13 @@ function RuleForm({ draft, onChange, members, webhooks, saving, isNew, onSave, o
   );
 
   return (
-    <div className="space-y-5 rounded-xl border-2 border-slate-200 p-4" role="form" aria-label={isNew ? 'New rule' : 'Edit rule'}>
+    <div className="space-y-5 rounded-xl border-2 border-border p-4" role="form" aria-label={isNew ? 'New rule' : 'Edit rule'}>
       <div className="flex gap-2">
         <Input value={draft.name} onChange={(e) => onChange({ ...draft, name: e.target.value })} placeholder="Rule name, e.g. Escalate blocked work" maxLength={120} aria-label="Rule name" />
       </div>
 
       <section className="space-y-2">
-        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500">When</Label>
+        <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">When</Label>
         <select value={draft.trigger} onChange={(e) => onChange(changeTrigger(draft, e.target.value as Trigger))} className={`${selectClass} w-full`} aria-label="Trigger">
           {TRIGGERS.map((t) => (
             <option key={t.value} value={t.value}>
@@ -252,7 +252,7 @@ function RuleForm({ draft, onChange, members, webhooks, saving, isNew, onSave, o
       </section>
 
       <section className="space-y-2">
-        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500">Only if (all must match)</Label>
+        <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Only if (all must match)</Label>
         {draft.conditions.map((c, i) => (
           <div key={i} className="flex flex-wrap items-center gap-2">
             <select value={c.field} onChange={(e) => setCondition(i, changeConditionField(c, e.target.value as Condition['field']))} className={selectClass} aria-label="Condition field">
@@ -270,7 +270,7 @@ function RuleForm({ draft, onChange, members, webhooks, saving, isNew, onSave, o
               ))}
             </select>
             {needsValue(c.op) && <ConditionValue c={c} onChange={(next) => setCondition(i, next)} person={person} />}
-            <button type="button" aria-label="Remove condition" className="p-1 text-slate-300 hover:text-rose-500" onClick={() => onChange({ ...draft, conditions: draft.conditions.filter((_, j) => j !== i) })}>
+            <button type="button" aria-label="Remove condition" className="p-1 text-fg-ghost hover:text-rose-500" onClick={() => onChange({ ...draft, conditions: draft.conditions.filter((_, j) => j !== i) })}>
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -281,9 +281,9 @@ function RuleForm({ draft, onChange, members, webhooks, saving, isNew, onSave, o
       </section>
 
       <section className="space-y-2">
-        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500">Then</Label>
+        <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Then</Label>
         {draft.actions.map((a, i) => (
-          <div key={i} className="flex flex-wrap items-start gap-2 rounded-lg bg-slate-50 p-2">
+          <div key={i} className="flex flex-wrap items-start gap-2 rounded-lg bg-subtle p-2">
             <select value={a.type} onChange={(e) => setAction(i, blankAction(e.target.value as Action['type']))} className={selectClass} aria-label="Action type">
               {ACTION_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -292,7 +292,7 @@ function RuleForm({ draft, onChange, members, webhooks, saving, isNew, onSave, o
               ))}
             </select>
             <ActionFields a={a} onChange={(next) => setAction(i, next)} person={person} webhooks={webhooks} />
-            <button type="button" aria-label="Remove action" className="p-1 text-slate-300 hover:text-rose-500" onClick={() => onChange({ ...draft, actions: draft.actions.filter((_, j) => j !== i) })}>
+            <button type="button" aria-label="Remove action" className="p-1 text-fg-ghost hover:text-rose-500" onClick={() => onChange({ ...draft, actions: draft.actions.filter((_, j) => j !== i) })}>
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -304,7 +304,7 @@ function RuleForm({ draft, onChange, members, webhooks, saving, isNew, onSave, o
 
       <div className="flex items-center gap-3">
         <Switch checked={draft.enabled} onCheckedChange={(enabled) => onChange({ ...draft, enabled })} aria-label="Rule enabled" />
-        <span className="text-sm text-slate-600">{draft.enabled ? 'Enabled' : 'Disabled'}</span>
+        <span className="text-sm text-fg-soft">{draft.enabled ? 'Enabled' : 'Disabled'}</span>
       </div>
       {error && <p className="text-xs text-rose-500">{error}</p>}
       <div className="flex gap-2">
@@ -345,7 +345,7 @@ function ConditionValue({ c, onChange, person }: { c: Condition; onChange: (c: C
             type="button"
             aria-pressed={chosen.includes(o)}
             onClick={() => onChange({ ...c, value: chosen.includes(o) ? chosen.filter((x) => x !== o) : [...chosen, o] })}
-            className={`rounded-full border px-2 py-0.5 text-xs ${chosen.includes(o) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600'}`}
+            className={`rounded-full border px-2 py-0.5 text-xs ${chosen.includes(o) ? 'bg-slate-900 text-white border-slate-900' : 'bg-background text-fg-soft'}`}
           >
             {o}
           </button>
@@ -409,12 +409,12 @@ function ActionFields({ a, onChange, person, webhooks }: { a: Action; onChange: 
           <option value="user">A specific person</option>
         </select>
         {a.to === 'user' && person(a.user_id ?? '', (v) => onChange({ ...a, user_id: v }), 'Person to notify')}
-        <label className="flex items-center gap-1 text-xs text-slate-600">
+        <label className="flex items-center gap-1 text-xs text-fg-soft">
           <input type="checkbox" checked={a.email} onChange={(e) => onChange({ ...a, email: e.target.checked })} /> also e-mail
         </label>
       </div>
       <Input value={a.message} onChange={(e) => onChange({ ...a, message: e.target.value })} maxLength={500} placeholder="Message" aria-label="Notification message" />
-      <p className="text-[10px] text-slate-400">Placeholders: {MESSAGE_PLACEHOLDERS.join(' ')}</p>
+      <p className="text-[10px] text-fg-faint">Placeholders: {MESSAGE_PLACEHOLDERS.join(' ')}</p>
     </div>
   );
 }
@@ -446,19 +446,19 @@ function ProjectWebhooks({ projectId, hooks, loading }: { projectId: string; hoo
 
   return (
     <div className="space-y-3 border-t pt-4">
-      <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500">Project webhooks</Label>
-      <p className="text-xs text-slate-500">
+      <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Project webhooks</Label>
+      <p className="text-xs text-muted-foreground">
         Every active webhook receives this project&apos;s events: task created, status changed, assigned and completed. Rules can also call one on demand.
       </p>
-      {loading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+      {loading && <Loader2 className="w-4 h-4 animate-spin text-fg-faint" />}
       {hooks.map((h) => (
-        <div key={h.id} className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-2">
+        <div key={h.id} className="flex items-center gap-3 rounded-lg border border-hairline bg-subtle/50 p-2">
           <span className="flex-1 text-sm font-bold">{h.name}</span>
           <Badge variant="secondary">{h.provider}</Badge>
           <Button type="button" size="sm" variant="ghost" disabled={test.isPending} onClick={() => test.mutate(h.id)}>
             Test
           </Button>
-          <button type="button" aria-label={`Delete webhook ${h.name}`} className="p-2 text-slate-300 hover:text-rose-500" onClick={() => window.confirm(`Delete the webhook “${h.name}”?`) && remove.mutate(h.id)}>
+          <button type="button" aria-label={`Delete webhook ${h.name}`} className="p-2 text-fg-ghost hover:text-rose-500" onClick={() => window.confirm(`Delete the webhook “${h.name}”?`) && remove.mutate(h.id)}>
             <Trash2 className="w-4 h-4" />
           </button>
         </div>

@@ -64,16 +64,16 @@ export default function WorkflowsPage() {
             setTitle(selectedWorkflow.title);
             setActions(
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => setSelectedWorkflow(null)} className="h-8 w-8 text-slate-500 hover:text-slate-900">
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedWorkflow(null)} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                         <ChevronLeft className="w-4 h-4" />
                     </Button>
-                    <div className="h-6 w-[1px] bg-slate-200 mx-1" />
+                    <div className="h-6 w-[1px] bg-border mx-1" />
                     {canManageWorkflow(selectedWorkflow) && (
                         <>
                             <Button variant="outline" size="sm" onClick={() => handleEdit(selectedWorkflow)} className="gap-2 h-9">
                                 <Edit3 className="w-3.5 h-3.5" /> Edit
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => { if(confirm('Delete this workflow?')) deleteMutation.mutate(selectedWorkflow.id) }} className="h-9 w-9 text-slate-400 hover:text-destructive">
+                            <Button variant="ghost" size="icon" onClick={() => { if(confirm('Delete this workflow?')) deleteMutation.mutate(selectedWorkflow.id) }} className="h-9 w-9 text-fg-faint hover:text-destructive">
                                 <Trash2 className="w-4 h-4" />
                             </Button>
                         </>
@@ -85,10 +85,10 @@ export default function WorkflowsPage() {
             setActions(
                 <div className="flex items-center gap-3">
                     <div className="relative w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-faint" />
                         <Input 
                             placeholder="Search procedures..." 
-                            className="pl-9 h-10 border-slate-200 bg-white"
+                            className="pl-9 h-10 border-border bg-background"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -242,41 +242,41 @@ export default function WorkflowsPage() {
 
     if (selectedWorkflow) {
         return (
-            <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+            <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
                 <div className="flex-1 overflow-auto p-4 md:p-8">
                     <div className="max-w-4xl mx-auto space-y-6">
                         {/* Hero Header */}
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="bg-background rounded-2xl border border-border shadow-sm overflow-hidden">
                             <div className="p-8 md:p-12 space-y-6">
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className={cn("text-[10px] font-black uppercase tracking-tighter", selectedWorkflow.is_public ? "text-blue-600 bg-blue-50 border-blue-100" : "text-slate-500 bg-slate-50 border-slate-200")}>
+                                        <Badge variant="outline" className={cn("text-[10px] font-black uppercase tracking-tighter", selectedWorkflow.is_public ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20" : "text-muted-foreground bg-subtle border-border")}>
                                             {selectedWorkflow.is_public ? 'Public Document' : 'Internal SOP'}
                                         </Badge>
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Modified {new Date(selectedWorkflow.updated_at).toLocaleDateString()}</span>
+                                        <span className="text-[10px] text-fg-faint font-bold uppercase tracking-widest">Modified {new Date(selectedWorkflow.updated_at).toLocaleDateString()}</span>
                                     </div>
-                                    <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-none">{selectedWorkflow.title}</h1>
+                                    <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight leading-none">{selectedWorkflow.title}</h1>
                                     {selectedWorkflow.description && (
-                                        <p className="text-slate-500 text-lg leading-relaxed italic border-l-4 border-primary/20 pl-6 py-1">
+                                        <p className="text-muted-foreground text-lg leading-relaxed italic border-l-4 border-primary/20 pl-6 py-1">
                                             {selectedWorkflow.description}
                                         </p>
                                     )}
                                 </div>
 
-                                <div className="border-t border-slate-100 pt-8">
+                                <div className="border-t border-hairline pt-8">
                                     <MarkdownRenderer content={selectedWorkflow.content} className="max-w-none" />
                                 </div>
                             </div>
 
                             {/* Footer / Meta */}
-                            <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex flex-wrap gap-6 items-center justify-between">
+                            <div className="px-8 py-6 bg-subtle border-t border-hairline flex flex-wrap gap-6 items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm">
-                                        <UserIcon className="w-5 h-5 text-slate-400" />
+                                    <div className="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center shadow-sm">
+                                        <UserIcon className="w-5 h-5 text-fg-faint" />
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Author</span>
-                                        <span className="text-sm font-bold text-slate-700">{selectedWorkflow.owner?.full_name || selectedWorkflow.owner?.email}</span>
+                                        <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest">Author</span>
+                                        <span className="text-sm font-bold text-fg-body">{selectedWorkflow.owner?.full_name || selectedWorkflow.owner?.email}</span>
                                     </div>
                                 </div>
 
@@ -284,14 +284,14 @@ export default function WorkflowsPage() {
                                     <div className="flex items-center gap-3">
                                         <div className="flex -space-x-3 overflow-hidden">
                                             {selectedWorkflow.shared_with.map(u => (
-                                                <div key={u.id} className="w-10 h-10 rounded-full bg-white border-2 border-slate-50 flex items-center justify-center text-[10px] font-black text-slate-500 shadow-sm" title={`Shared with ${u.full_name}`}>
+                                                <div key={u.id} className="w-10 h-10 rounded-full bg-background border-2 border-hairline flex items-center justify-center text-[10px] font-black text-muted-foreground shadow-sm" title={`Shared with ${u.full_name}`}>
                                                     {u.full_name?.charAt(0) || u.email.charAt(0)}
                                                 </div>
                                             ))}
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contributors</span>
-                                            <span className="text-xs font-bold text-slate-500">{selectedWorkflow.shared_with.length} user{selectedWorkflow.shared_with.length > 1 ? 's' : ''}</span>
+                                            <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest">Contributors</span>
+                                            <span className="text-xs font-bold text-muted-foreground">{selectedWorkflow.shared_with.length} user{selectedWorkflow.shared_with.length > 1 ? 's' : ''}</span>
                                         </div>
                                     </div>
                                 )}
@@ -300,7 +300,7 @@ export default function WorkflowsPage() {
 
                         {/* Back navigation helper */}
                         <div className="flex justify-center pb-12">
-                            <Button variant="ghost" onClick={() => setSelectedWorkflow(null)} className="text-slate-400 hover:text-primary gap-2 font-bold uppercase text-[10px] tracking-widest">
+                            <Button variant="ghost" onClick={() => setSelectedWorkflow(null)} className="text-fg-faint hover:text-primary gap-2 font-bold uppercase text-[10px] tracking-widest">
                                 <ChevronLeft className="w-3 h-3" /> Back to Procedure Library
                             </Button>
                         </div>
@@ -311,7 +311,7 @@ export default function WorkflowsPage() {
     }
 
     return (
-        <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+        <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
             <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
                 {isLoading ? (
                     <div className="flex justify-center py-20">
@@ -324,7 +324,7 @@ export default function WorkflowsPage() {
                             return (
                                 <Card 
                                     key={wf.id} 
-                                    className="group hover:shadow-md transition-all cursor-pointer border-slate-200 hover:border-primary/30 flex flex-col relative"
+                                    className="group hover:shadow-md transition-all cursor-pointer border-border hover:border-primary/30 flex flex-col relative"
                                     onClick={() => setSelectedWorkflow(wf)}
                                 >
                                     <CardHeader className="pb-3">
@@ -334,10 +334,10 @@ export default function WorkflowsPage() {
                                             </div>
                                             {canManage && (
                                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={(e) => { e.stopPropagation(); handleEdit(wf); }}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-fg-faint hover:text-primary" onClick={(e) => { e.stopPropagation(); handleEdit(wf); }}>
                                                         <Edit3 className="w-3.5 h-3.5" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive" onClick={(e) => { e.stopPropagation(); if(confirm('Delete this SOP?')) deleteMutation.mutate(wf.id); }}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-fg-faint hover:text-destructive" onClick={(e) => { e.stopPropagation(); if(confirm('Delete this SOP?')) deleteMutation.mutate(wf.id); }}>
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </Button>
                                                 </div>
@@ -348,7 +348,7 @@ export default function WorkflowsPage() {
                                             {wf.is_public ? (
                                                 <span title="Public"><Globe className="w-3 h-3 text-blue-500" /></span>
                                             ) : (
-                                                <span title="Private"><Lock className="w-3 h-3 text-slate-400" /></span>
+                                                <span title="Private"><Lock className="w-3 h-3 text-fg-faint" /></span>
                                             )}
                                         </CardTitle>
                                         <CardDescription className="line-clamp-2 mt-1.5 min-h-[40px]">
@@ -356,15 +356,15 @@ export default function WorkflowsPage() {
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="flex-1">
-                                        <div className="flex items-center text-[10px] font-bold text-slate-400 gap-2 uppercase tracking-tight">
-                                            <div className="w-5 h-5 rounded-full bg-slate-100 border border-white shadow-sm flex items-center justify-center shrink-0">
-                                                <UserIcon className="w-2.5 h-2.5 text-slate-500" />
+                                        <div className="flex items-center text-[10px] font-bold text-fg-faint gap-2 uppercase tracking-tight">
+                                            <div className="w-5 h-5 rounded-full bg-muted border border-background shadow-sm flex items-center justify-center shrink-0">
+                                                <UserIcon className="w-2.5 h-2.5 text-muted-foreground" />
                                             </div>
                                             <span className="truncate">{wf.owner?.full_name || wf.owner?.email}</span>
                                         </div>
                                     </CardContent>
-                                    <CardFooter className="pt-0 p-4 bg-slate-50/50 border-t border-slate-100">
-                                        <Button variant="ghost" className="w-full justify-between group text-xs font-bold text-slate-600 hover:bg-transparent hover:text-primary px-0 h-auto">
+                                    <CardFooter className="pt-0 p-4 bg-subtle/50 border-t border-hairline">
+                                        <Button variant="ghost" className="w-full justify-between group text-xs font-bold text-fg-soft hover:bg-transparent hover:text-primary px-0 h-auto">
                                             Read Procedure
                                             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                                         </Button>
@@ -375,13 +375,13 @@ export default function WorkflowsPage() {
 
                         <Card 
                             onClick={handleCreate}
-                            className="border-dashed border-2 border-slate-200 shadow-none bg-slate-50/50 flex flex-col items-center justify-center p-6 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer min-h-[220px]"
+                            className="border-dashed border-2 border-border shadow-none bg-subtle/50 flex flex-col items-center justify-center p-6 hover:bg-subtle hover:border-fg-ghost transition-colors cursor-pointer min-h-[220px]"
                         >
-                            <div className="h-12 w-12 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-4 text-slate-400">
+                            <div className="h-12 w-12 rounded-full bg-background border border-border flex items-center justify-center mb-4 text-fg-faint">
                                 <FileText className="w-6 h-6" />
                             </div>
-                            <h3 className="font-semibold text-slate-900">Draft New SOP</h3>
-                            <p className="text-sm text-slate-500 text-center mt-1">
+                            <h3 className="font-semibold text-foreground">Draft New SOP</h3>
+                            <p className="text-sm text-muted-foreground text-center mt-1">
                                 Document a new process for the library
                             </p>
                         </Card>
@@ -401,17 +401,17 @@ export default function WorkflowsPage() {
                     <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-6">
                             <div className="space-y-2">
-                                <Label htmlFor="wf-title" className="text-xs font-bold uppercase text-slate-500">Title</Label>
+                                <Label htmlFor="wf-title" className="text-xs font-bold uppercase text-muted-foreground">Title</Label>
                                 <Input id="wf-title" value={title} onChange={(e) => setTitleState(e.target.value)} placeholder="e.g. CI/CD Pipeline Setup" />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="wf-desc" className="text-xs font-bold uppercase text-slate-500">Short Description</Label>
+                                <Label htmlFor="wf-desc" className="text-xs font-bold uppercase text-muted-foreground">Short Description</Label>
                                 <Input id="wf-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Briefly explain what this SOP covers" />
                             </div>
                         </div>
 
-                        <div className="space-y-4 border-b pb-6 bg-slate-50 p-4 rounded-lg border">
-                            <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <div className="space-y-4 border-b pb-6 bg-subtle p-4 rounded-lg border">
+                            <h4 className="text-sm font-bold text-fg-body flex items-center gap-2">
                                 <Share2 className="w-4 h-4" /> Sharing & Access
                             </h4>
                             <div className="flex items-center justify-between">
@@ -435,29 +435,29 @@ export default function WorkflowsPage() {
 
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="wf-content" className="text-xs font-bold uppercase text-slate-500">Content (Markdown)</Label>
+                                <Label htmlFor="wf-content" className="text-xs font-bold uppercase text-muted-foreground">Content (Markdown)</Label>
                                 <div className="flex gap-2">
-                                    <Badge variant="secondary" className="text-[10px] bg-amber-50 text-amber-700 border-amber-100">$ LaTeX $$</Badge>
-                                    <Badge variant="secondary" className="text-[10px] bg-blue-50 text-blue-700 border-blue-100">[Tipsy](#! "Tooltip")</Badge>
+                                    <Badge variant="secondary" className="text-[10px] bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-100 dark:border-amber-500/20">$ LaTeX $$</Badge>
+                                    <Badge variant="secondary" className="text-[10px] bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-500/20">[Tipsy](#! "Tooltip")</Badge>
                                     <Badge variant="secondary" className="text-[10px]">GFM Supported</Badge>
                                 </div>
                             </div>
                             
-                            <div className="bg-slate-100/50 p-3 rounded-lg border border-slate-200 mb-2">
-                                <h5 className="text-[10px] font-black uppercase text-slate-500 mb-1 flex items-center gap-1">
+                            <div className="bg-muted/50 p-3 rounded-lg border border-border mb-2">
+                                <h5 className="text-[10px] font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
                                     <Lightbulb className="w-3 h-3" /> Quick Guide
                                 </h5>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="text-[9px] text-slate-500 italic">
-                                        <span className="font-bold text-slate-700">Math:</span> Use <code className="bg-white px-1 rounded">$E=mc^2$</code> or <code className="bg-white px-1 rounded">$$\sum x_i$$</code> for LaTeX.
+                                    <div className="text-[9px] text-muted-foreground italic">
+                                        <span className="font-bold text-fg-body">Math:</span> Use <code className="bg-background px-1 rounded">$E=mc^2$</code> or <code className="bg-background px-1 rounded">$$\sum x_i$$</code> for LaTeX.
                                     </div>
-                                    <div className="text-[9px] text-slate-500 italic">
-                                        <span className="font-bold text-slate-700">Tipsy:</span> Use <code className="bg-white px-1 rounded">[Hover Me](#! "This is a tooltip")</code> for interactive tips.
+                                    <div className="text-[9px] text-muted-foreground italic">
+                                        <span className="font-bold text-fg-body">Tipsy:</span> Use <code className="bg-background px-1 rounded">[Hover Me](#! "This is a tooltip")</code> for interactive tips.
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="border rounded-md overflow-hidden bg-white shadow-inner">
+                            <div className="border rounded-md overflow-hidden bg-background shadow-inner">
                                 <SimpleMDE
                                     value={content}
                                     onChange={setContent}
@@ -467,8 +467,8 @@ export default function WorkflowsPage() {
                         </div>
                     </div>
 
-                    <DialogFooter className="px-6 py-4 bg-slate-50 border-t flex items-center justify-between">
-                        <p className="text-[10px] text-slate-400 font-medium">Auto-saves are not enabled. Ensure you save your changes.</p>
+                    <DialogFooter className="px-6 py-4 bg-subtle border-t flex items-center justify-between">
+                        <p className="text-[10px] text-fg-faint font-medium">Auto-saves are not enabled. Ensure you save your changes.</p>
                         <div className="flex gap-2">
                             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
                             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending} className="gap-2">

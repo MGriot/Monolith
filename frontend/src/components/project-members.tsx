@@ -102,7 +102,7 @@ export function ProjectMembersCard({ projectId, canManage }: { projectId: string
                     </Badge>
                   )}
                 </p>
-                <p className="truncate text-xs text-slate-500">{m.email}</p>
+                <p className="truncate text-xs text-muted-foreground">{m.email}</p>
               </div>
               {m.is_owner || !canManage ? (
                 <Badge variant="outline">{ROLE_LABELS[m.role] ?? m.role}</Badge>
@@ -177,7 +177,7 @@ export function ProjectMembersCard({ projectId, canManage }: { projectId: string
                 <UserPlus className="w-4 h-4" aria-hidden="true" /> Add
               </Button>
             </div>
-            <p className="text-xs text-slate-500">{ROLE_HINTS[newRole]}</p>
+            <p className="text-xs text-muted-foreground">{ROLE_HINTS[newRole]}</p>
           </form>
         )}
       </CardContent>

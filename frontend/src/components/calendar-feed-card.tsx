@@ -49,7 +49,7 @@ export function CalendarFeedCard() {
   };
 
   return (
-    <Card className="border-slate-200 shadow-sm" data-testid="calendar-feed-card">
+    <Card className="border-border shadow-sm" data-testid="calendar-feed-card">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2"><CalendarDays className="w-5 h-5" /> Calendar feed</CardTitle>
         <CardDescription>
@@ -66,7 +66,7 @@ export function CalendarFeedCard() {
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" size="sm" disabled={busy} onClick={rotate}><RefreshCw className="w-4 h-4 mr-1" /> New link</Button>
-              <Button type="button" variant="outline" size="sm" disabled={busy} onClick={revoke} className="text-red-600"><Trash2 className="w-4 h-4 mr-1" /> Revoke</Button>
+              <Button type="button" variant="outline" size="sm" disabled={busy} onClick={revoke} className="text-red-600 dark:text-red-400"><Trash2 className="w-4 h-4 mr-1" /> Revoke</Button>
             </div>
           </>
         ) : (

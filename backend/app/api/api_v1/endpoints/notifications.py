@@ -1,7 +1,7 @@
 import asyncio
 import json
 import time
-from typing import Any, List
+from typing import Any, List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -87,15 +87,26 @@ async def read_notifications(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
     limit: int = Query(100, ge=1, le=500),
+    is_read: Optional[bool] = None,
+    type: Optional[str] = Query(None, max_length=50),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Retrieve notifications for the current user.
+    Retrieve notifications for the current user, newest first. Filter with `is_read` and `type`.
     """
     notifications = await crud_notification.get_multi_by_user(
-        db, user_id=current_user.id, skip=skip, limit=limit
+        db, user_id=current_user.id, skip=max(skip, 0), limit=limit, is_read=is_read, type=type
     )
     return notifications
+
+
+@router.get("/unread-count")
+async def unread_notification_count(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """Number of unread notifications (the bell badge), without fetching the notifications themselves."""
+    return {"count": await crud_notification.count_unread(db, user_id=current_user.id)}
 
 @router.put("/{notification_id}", response_model=Notification)
 async def update_notification(
@@ -114,7 +125,9 @@ async def update_notification(
     if notification.user_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     
-    notification = await crud_notification.update(db, db_obj=notification, obj_in=notification_in)
+    # Only the read flag is client-editable (true = read, false = back to unread).
+    changes = {"is_read": bool(notification_in.is_read)} if "is_read" in notification_in.model_fields_set else {}
+    notification = await crud_notification.update(db, db_obj=notification, obj_in=changes)
     return notification
 
 @router.post("/mark-all-as-read")

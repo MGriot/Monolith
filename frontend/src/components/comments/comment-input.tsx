@@ -106,18 +106,18 @@ export function CommentInput({
   };
 
   return (
-    <div className="space-y-2 border rounded-md overflow-hidden bg-white">
+    <div className="space-y-2 border rounded-md overflow-hidden bg-background">
       <SimpleMDE
         getMdeInstance={(mde) => { mdeRef.current = { simplemde: mde }; }}
         value={content}
         onChange={setContent}
         options={mdeOptions}
       />
-      <div className="flex justify-between items-center p-2 bg-slate-50 border-t">
+      <div className="flex justify-between items-center p-2 bg-subtle border-t">
         <Button 
           variant="outline" 
           size="sm" 
-          className="h-8 gap-2 text-xs text-slate-600 hover:text-primary"
+          className="h-8 gap-2 text-xs text-fg-soft hover:text-primary"
           onClick={() => setIsGalleryOpen(true)}
         >
           <ImageIcon className="w-3.5 h-3.5" />

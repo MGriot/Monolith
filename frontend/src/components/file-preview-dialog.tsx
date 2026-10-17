@@ -120,18 +120,18 @@ export default function FilePreviewDialog({ url, onClose }: FilePreviewDialogPro
   return (
     <Dialog open={!!url} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0 bg-white z-20">
+        <DialogHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0 bg-background z-20">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-slate-100 rounded">
-              {['xlsx', 'xls', 'csv'].includes(fileExtension || '') ? <TableIcon className="w-4 h-4 text-emerald-600" /> : 
-               ['msg', 'eml'].includes(fileExtension || '') ? <Mail className="w-4 h-4 text-blue-600" /> :
-               <FileText className="w-4 h-4 text-slate-500" />}
+            <div className="p-2 bg-muted rounded">
+              {['xlsx', 'xls', 'csv'].includes(fileExtension || '') ? <TableIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : 
+               ['msg', 'eml'].includes(fileExtension || '') ? <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400" /> :
+               <FileText className="w-4 h-4 text-muted-foreground" />}
             </div>
             <div>
               <DialogTitle className="text-sm font-bold truncate max-w-[300px]">
                 {fileName}
               </DialogTitle>
-              <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">
+              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
                 {fileExtension} Preview
               </p>
             </div>
@@ -152,15 +152,15 @@ export default function FilePreviewDialog({ url, onClose }: FilePreviewDialogPro
           </div>
         </DialogHeader>
 
-        <div className="flex-1 bg-slate-100 relative flex items-center justify-center overflow-hidden">
+        <div className="flex-1 bg-muted relative flex items-center justify-center overflow-hidden">
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-100/80 z-10 backdrop-blur-sm">
+            <div className="absolute inset-0 flex items-center justify-center bg-muted/80 z-10 backdrop-blur-sm">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           )}
 
           {error ? (
-             <div className="flex flex-col items-center gap-4 text-slate-500 p-8">
+             <div className="flex flex-col items-center gap-4 text-muted-foreground p-8">
                 <AlertTriangle className="w-12 h-12 text-amber-500" />
                 <p className="text-sm font-medium">{error}</p>
                 <Button variant="outline" asChild>
@@ -172,18 +172,18 @@ export default function FilePreviewDialog({ url, onClose }: FilePreviewDialogPro
                 <img
                 src={url}
                 alt={fileName}
-                className="max-w-full max-h-full object-contain shadow-2xl bg-white rounded-lg"
+                className="max-w-full max-h-full object-contain shadow-2xl bg-background rounded-lg"
                 onLoad={() => setIsLoading(false)}
                 />
             </div>
           ) : isPdf ? (
             <iframe
               src={`${url}#toolbar=0`}
-              className="w-full h-full border-0 bg-white"
+              className="w-full h-full border-0 bg-background"
               onLoad={() => setIsLoading(false)}
             />
           ) : previewContent ? (
-            <div className="w-full h-full bg-white overflow-auto p-8 lg:p-12">
+            <div className="w-full h-full bg-background overflow-auto p-8 lg:p-12">
                 {previewContent.type === 'html' ? (
                     <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: previewContent.data }} />
                 ) : previewContent.type === 'md' ? (
@@ -193,13 +193,13 @@ export default function FilePreviewDialog({ url, onClose }: FilePreviewDialogPro
                         </ReactMarkdown>
                     </div>
                 ) : (
-                    <pre className="text-xs font-mono whitespace-pre-wrap bg-slate-50 p-6 rounded-lg border border-slate-200 text-slate-700">
+                    <pre className="text-xs font-mono whitespace-pre-wrap bg-subtle p-6 rounded-lg border border-border text-fg-body">
                         {previewContent.data}
                     </pre>
                 )}
             </div>
           ) : !isLoading && (
-            <div className="flex flex-col items-center gap-4 text-slate-500">
+            <div className="flex flex-col items-center gap-4 text-muted-foreground">
               <FileText className="w-16 h-16 opacity-20" />
               <p className="text-sm font-medium">Preview not available for this file type.</p>
               <Button asChild>

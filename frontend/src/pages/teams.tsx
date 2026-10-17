@@ -157,7 +157,7 @@ export default function TeamsPage() {
   };
 
   return (
-    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         {isLoading ? (
           <div className="flex justify-center py-20">
@@ -170,7 +170,7 @@ export default function TeamsPage() {
               const canManage = canManageTeam(team);
               
               return (
-                <Card key={team.id} className="group hover:border-primary/30 transition-all border-slate-200 shadow-sm flex flex-col relative">
+                <Card key={team.id} className="group hover:border-primary/30 transition-all border-border shadow-sm flex flex-col relative">
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col gap-2">
@@ -179,13 +179,13 @@ export default function TeamsPage() {
                         </div>
                         <div className="flex gap-1 flex-wrap">
                           {isOwner && (
-                              <Badge variant="secondary" className="w-fit text-[8px] font-black uppercase bg-blue-50 text-blue-600 border-blue-100 px-1 py-0 h-4">
+                              <Badge variant="secondary" className="w-fit text-[8px] font-black uppercase bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20 px-1 py-0 h-4">
                               <ShieldCheck className="w-2.5 h-2.5 mr-1" />
                               Owner
                               </Badge>
                           )}
                           {team.is_public && (
-                              <Badge variant="outline" className="w-fit text-[8px] font-black uppercase bg-emerald-50 text-emerald-600 border-emerald-100 px-1 py-0 h-4">
+                              <Badge variant="outline" className="w-fit text-[8px] font-black uppercase bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20 px-1 py-0 h-4">
                                   <Globe className="w-2.5 h-2.5 mr-1" />
                                   Public
                               </Badge>
@@ -193,49 +193,49 @@ export default function TeamsPage() {
                         </div>
                       </div>
                       <div className={cn("flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity", !canManage && "hidden")}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-slate-500 hover:text-primary" onClick={() => handleEdit(team)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary" onClick={() => handleEdit(team)}>
                           <Edit2 className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-slate-500 hover:text-destructive" onClick={() => { if(confirm('Delete team?')) deleteMutation.mutate(team.id)}}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" onClick={() => { if(confirm('Delete team?')) deleteMutation.mutate(team.id)}}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </div>
                     <CardTitle className="text-lg group-hover:text-primary transition-colors mt-2 flex items-center gap-2">
                       {team.name}
-                      {!team.is_public && <span title="Private"><Lock className="w-3 h-3 text-slate-400" /></span>}
+                      {!team.is_public && <span title="Private"><Lock className="w-3 h-3 text-fg-faint" /></span>}
                     </CardTitle>
                     <CardDescription className="line-clamp-2 min-h-[40px]">{team.description || 'No description provided.'}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex-1">
                     <div className="space-y-3">
-                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Team Members ({team.members.length})</p>
+                      <p className="text-[10px] font-black uppercase text-fg-faint tracking-widest">Team Members ({team.members.length})</p>
                       <div className="flex flex-wrap gap-2">
                         {team.members.slice(0, 6).map((member) => (
                           <div 
                             key={member.id} 
-                            className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 shadow-sm"
+                            className="w-7 h-7 rounded-full bg-muted border border-border flex items-center justify-center text-[10px] font-bold text-fg-soft shadow-sm"
                             title={member.full_name || member.email}
                           >
                             {member.full_name ? member.full_name.charAt(0) : member.email.charAt(0).toUpperCase()}
                           </div>
                         ))}
                         {team.members.length > 6 && (
-                          <div className="w-7 h-7 rounded-full bg-slate-50 border border-slate-200 border-dashed flex items-center justify-center text-[10px] font-bold text-slate-400">
+                          <div className="w-7 h-7 rounded-full bg-subtle border border-border border-dashed flex items-center justify-center text-[10px] font-bold text-fg-faint">
                             +{team.members.length - 6}
                           </div>
                         )}
                         {team.members.length === 0 && (
-                          <p className="text-xs text-slate-400 italic">Empty team</p>
+                          <p className="text-xs text-fg-faint italic">Empty team</p>
                         )}
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="border-t bg-slate-50/50 p-3 flex justify-between items-center">
-                    <span className="text-[10px] text-slate-400 font-medium italic">Created {new Date(team.created_at).toLocaleDateString()}</span>
+                  <CardFooter className="border-t bg-subtle/50 p-3 flex justify-between items-center">
+                    <span className="text-[10px] text-fg-faint font-medium italic">Created {new Date(team.created_at).toLocaleDateString()}</span>
                     <div className="flex -space-x-2 overflow-hidden">
                       {team.shared_with?.slice(0, 3).map((u) => (
-                          <div key={u.id} className="w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[7px] font-bold" title={`Property shared with ${u.full_name}`}>
+                          <div key={u.id} className="w-5 h-5 rounded-full bg-background border border-border flex items-center justify-center text-[7px] font-bold" title={`Property shared with ${u.full_name}`}>
                               {u.full_name?.charAt(0) || 'U'}
                           </div>
                       ))}
@@ -246,9 +246,9 @@ export default function TeamsPage() {
             })}
             
             {teams?.length === 0 && (
-              <div className="col-span-full py-20 text-center border-2 border-dashed rounded-xl border-slate-200">
-                <Users className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                <p className="text-slate-500 font-medium">No teams defined yet.</p>
+              <div className="col-span-full py-20 text-center border-2 border-dashed rounded-xl border-border">
+                <Users className="w-12 h-12 text-border mx-auto mb-4" />
+                <p className="text-muted-foreground font-medium">No teams defined yet.</p>
                 <Button variant="link" onClick={() => { resetForm(); setEditingTeam(null); setIsDialogOpen(true); }}>Create your first team</Button>
               </div>
             )}
@@ -276,8 +276,8 @@ export default function TeamsPage() {
               </div>
             </div>
 
-            <div className="space-y-4 border-b pb-6 bg-slate-50 p-4 rounded-lg border">
-                <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+            <div className="space-y-4 border-b pb-6 bg-subtle p-4 rounded-lg border">
+                <h4 className="text-sm font-bold text-fg-body flex items-center gap-2">
                     <Share2 className="w-4 h-4" /> Sharing & Access
                 </h4>
                 <div className="flex items-center justify-between">
@@ -301,7 +301,7 @@ export default function TeamsPage() {
 
             <div className="space-y-3">
               <Label>Members</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 border rounded-xl bg-slate-50/50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 border rounded-xl bg-subtle/50">
                 {users?.map((u) => {
                   const isSelected = selectedMemberIds.includes(u.id);
                   return (
@@ -312,21 +312,21 @@ export default function TeamsPage() {
                       className={cn(
                         "flex items-center gap-3 p-2.5 rounded-lg border transition-all text-left group",
                         isSelected 
-                          ? "bg-white border-primary shadow-sm ring-1 ring-primary/10" 
-                          : "bg-slate-100/50 border-transparent hover:border-slate-300"
+                          ? "bg-background border-primary shadow-sm ring-1 ring-primary/10" 
+                          : "bg-muted/50 border-transparent hover:border-fg-ghost"
                       )}
                     >
                       <div className={cn(
                         "w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0",
-                        isSelected ? "bg-primary text-white" : "bg-white text-slate-400 border border-slate-200"
+                        isSelected ? "bg-primary text-primary-foreground" : "bg-background text-fg-faint border border-border"
                       )}>
                         {isSelected ? <Check className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className={cn("text-xs font-bold truncate", isSelected ? "text-slate-900" : "text-slate-600")}>
+                        <span className={cn("text-xs font-bold truncate", isSelected ? "text-foreground" : "text-fg-soft")}>
                           {u.full_name || 'No Name'}
                         </span>
-                        <div className="flex items-center gap-1 text-[10px] text-slate-400 truncate font-medium">
+                        <div className="flex items-center gap-1 text-[10px] text-fg-faint truncate font-medium">
                           <Mail className="w-2.5 h-2.5" />
                           {u.email}
                         </div>

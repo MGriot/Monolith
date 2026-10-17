@@ -185,7 +185,7 @@ export default function ProjectForm({
             onRemove={(id) => removeItem("member_ids", id)}
             placeholder="Assign members..."
         />
-        <p className="text-[10px] text-slate-500">Members selected here will have full visibility and access to this project.</p>
+        <p className="text-[10px] text-muted-foreground">Members selected here will have full visibility and access to this project.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -227,59 +227,59 @@ export default function ProjectForm({
         </div>
       </div>
 
-      <div className="p-4 rounded-xl border border-amber-100 bg-amber-50/30 space-y-4">
-          <h4 className="text-[10px] font-black uppercase text-amber-600 flex items-center gap-1.5 tracking-widest">
+      <div className="p-4 rounded-xl border border-amber-100 dark:border-amber-500/20 bg-amber-50/30 space-y-4">
+          <h4 className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 flex items-center gap-1.5 tracking-widest">
               Risk Management
           </h4>
           <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                      <Label className="text-[10px] text-slate-500 uppercase font-bold">Probability (1-5)</Label>
-                      <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded border">{watch("risk_probability")}</span>
+                      <Label className="text-[10px] text-muted-foreground uppercase font-bold">Probability (1-5)</Label>
+                      <span className="text-[10px] font-black bg-background px-2 py-0.5 rounded border">{watch("risk_probability")}</span>
                   </div>
                   <input 
                       type="range" 
                       min="1" max="5" 
-                      className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                      className="w-full h-1.5 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
                       {...register("risk_probability", { valueAsNumber: true })}
                   />
               </div>
               <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                      <Label className="text-[10px] text-slate-500 uppercase font-bold">Impact (1-5)</Label>
-                      <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded border">{watch("risk_impact")}</span>
+                      <Label className="text-[10px] text-muted-foreground uppercase font-bold">Impact (1-5)</Label>
+                      <span className="text-[10px] font-black bg-background px-2 py-0.5 rounded border">{watch("risk_impact")}</span>
                   </div>
                   <input 
                       type="range" 
                       min="1" max="5" 
-                      className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                      className="w-full h-1.5 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
                       {...register("risk_impact", { valueAsNumber: true })}
                   />
               </div>
           </div>
       </div>
 
-      <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/30 space-y-4">
-          <h4 className="text-[10px] font-black uppercase text-blue-600 flex items-center gap-1.5 tracking-widest">
+      <div className="p-4 rounded-xl border border-blue-100 dark:border-blue-500/20 bg-blue-50/30 space-y-4">
+          <h4 className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 flex items-center gap-1.5 tracking-widest">
               Financial Strategy
           </h4>
           <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                  <Label className="text-[10px] text-slate-500 uppercase font-bold">Total Budget ($)</Label>
+                  <Label className="text-[10px] text-muted-foreground uppercase font-bold">Total Budget ($)</Label>
                   <Input 
                       type="number" 
                       step="0.01"
                       {...register("budget", { valueAsNumber: true })}
-                      className="h-9 bg-white"
+                      className="h-9 bg-background"
                   />
               </div>
               <div className="space-y-1.5">
-                  <Label className="text-[10px] text-slate-500 uppercase font-bold">Actual Expenditure ($)</Label>
+                  <Label className="text-[10px] text-muted-foreground uppercase font-bold">Actual Expenditure ($)</Label>
                   <Input 
                       type="number" 
                       step="0.01"
                       {...register("real_cost", { valueAsNumber: true })}
-                      className="h-9 bg-white"
+                      className="h-9 bg-background"
                   />
               </div>
           </div>
