@@ -6,6 +6,7 @@ import {
   dependencyTypeFor,
   dependencyViolations,
   describeViolation,
+  isCriticalTask,
   keyboardAdjust,
   normalizePriority,
   rangeLength,
@@ -180,5 +181,18 @@ describe('link validation', () => {
     expect(dependencyTypeFor('start', 'end')).toBe('SF');
     expect(sideAt(10, 0, 100)).toBe('start');
     expect(sideAt(60, 0, 100)).toBe('end');
+  });
+});
+
+describe('isCriticalTask', () => {
+  it('trusts only an explicit is_critical flag', () => {
+    expect(isCriticalTask({ is_critical: true })).toBe(true);
+    expect(isCriticalTask({ is_critical: false })).toBe(false);
+    expect(isCriticalTask({})).toBe(false);
+    expect(isCriticalTask(null)).toBe(false);
+  });
+
+  it('ignores slack_days, which is unset when CPM did not run', () => {
+    expect(isCriticalTask({ is_critical: false, slack_days: 0 } as { is_critical: boolean })).toBe(false);
   });
 });

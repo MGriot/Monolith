@@ -241,7 +241,7 @@ export default function FolderTree({ projectId, taskId, onFileClick }: FolderTre
 
       {/* Note Editor Modal */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-          <DialogContent className="sm:max-w-[90vw] h-[85vh] p-0 overflow-hidden">
+          <DialogContent size="full">
               {selectedFile && (
                   <NoteEditor 
                     file={selectedFile} 

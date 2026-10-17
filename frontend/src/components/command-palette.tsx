@@ -114,7 +114,7 @@ export default function CommandPalette({ open, onOpenChange, onCreateTask, onSho
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(true) : close())}>
-      <DialogContent className="top-[20%] max-w-xl translate-y-0 gap-0 overflow-hidden p-0 [&>button]:hidden">
+      <DialogContent hideClose className="top-[20%] max-w-xl translate-y-0">
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <DialogDescription className="sr-only">
           Search pages, projects and tasks, or run an action. Use the arrow keys to move and Enter to select.

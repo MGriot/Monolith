@@ -12,14 +12,9 @@ import {
   Folder,
   Download,
   Trash2,
-  Archive,
   MoreHorizontal,
-  Pencil,
-  MessageSquare,
-  Lightbulb,
-  Clock
+  Pencil
 } from 'lucide-react';
-import { format } from 'date-fns';
 import KanbanBoard from '@/components/kanban-board';
 import ProjectGantt from '@/components/project-gantt';
 import DataExportDialog from '@/components/data-export-dialog';
@@ -32,21 +27,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import TaskForm, { type TaskFormValues } from '@/components/task-form';
-import AttachmentManager from '@/components/attachment-manager';
-import CommentSection from '@/components/comments/comment-section';
-import ProjectIdeas from '@/components/project-ideas';
+import TaskDialog, { TaskFooterMeta } from '@/components/task-dialog';
+import { taskExtraTabs, taskSubtitle } from '@/components/task-dialog-helpers';
 import type { Task } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { toast } from 'sonner';
@@ -264,17 +252,6 @@ export default function MyTasksPage() {
     );
   }
 
-  const formatDateSafe = (dateStr?: string | null) => {
-    if (!dateStr) return "N/A";
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return "Invalid Date";
-      return format(d, "PPP p");
-    } catch (e) {
-      return "N/A";
-    }
-  };
-
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50 pb-12">
 
@@ -426,13 +403,13 @@ export default function MyTasksPage() {
       </div>
 
       {/* Task Dialog */}
-      <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingTask ? 'Edit Task' : 'Task Details'}</DialogTitle>
-          </DialogHeader>
-
-          {editingTask && (
+      <TaskDialog
+        open={isTaskDialogOpen}
+        onOpenChange={setIsTaskDialogOpen}
+        title="Edit task"
+        subtitle={taskSubtitle(editingTask)}
+      >
+        {editingTask && (
             <TaskForm
               projectId={editingTask.project_id || undefined}
               taskObject={editingTask}
@@ -461,92 +438,19 @@ export default function MyTasksPage() {
               isLoading={updateTaskMutation.isPending}
               allTasks={tasks || []}
               editingTaskId={editingTaskId}
+              extraTabs={taskExtraTabs(editingTask, editingTask.project_id || undefined)}
+              footerStart={
+                <TaskFooterMeta
+                  task={editingTask}
+                  onArchive={() => archiveTaskMutation.mutate(editingTask.id)}
+                  onDelete={() => deleteTaskMutation.mutate(editingTask.id)}
+                  archiving={archiveTaskMutation.isPending}
+                  deleting={deleteTaskMutation.isPending}
+                />
+              }
             />
-          )}
-
-          {editingTask && (
-            <div className="space-y-8 mt-6 border-t pt-6">
-               <>
-                  {editingTask.id && (
-                    <AttachmentManager
-                        taskId={editingTask.id}
-                        projectId={editingTask.project_id || undefined}
-                        attachments={editingTask.attachments || []}
-                    />
-                  )}
-
-                  {editingTask.id && (
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4 text-primary" />
-                            Task Activity
-                        </h3>
-                        <CommentSection taskId={editingTask.id} />
-                    </div>
-                  )}
-
-                  {editingTask.id && (
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
-                            <Lightbulb className="w-4 h-4 text-amber-500" />
-                            Linked Project Ideas
-                        </h3>
-                        <ProjectIdeas 
-                            projectId={editingTask.project_id || undefined} 
-                            taskId={editingTask.id} 
-                        />
-                    </div>
-                  )}
-               </>
-
-              {/* Metadata & Footer Actions */}
-              <div className="pt-6 border-t mt-6 flex flex-col gap-6 bg-subtle/50 -mx-6 px-6 pb-6 rounded-b-xl">
-                <div className="flex flex-wrap justify-between items-end gap-4">
-                  <div className="space-y-1">
-                    <div className="text-[10px] text-fg-faint font-bold uppercase tracking-tight flex items-center gap-2">
-                       <Clock className="w-3 h-3" /> Created: {formatDateSafe(editingTask.created_at)}
-                    </div>
-                    <div className="text-[10px] text-fg-faint font-bold uppercase tracking-tight flex items-center gap-2">
-                       <Clock className="w-3 h-3 text-primary/40" /> Modified: {formatDateSafe(editingTask.updated_at)}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
-                        onClick={() => {
-                        if (window.confirm(`Archive the task "${editingTask.title}"?`)) {
-                            archiveTaskMutation.mutate(editingTask.id);
-                        }
-                        }}
-                        disabled={archiveTaskMutation.isPending}
-                    >
-                        {archiveTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
-                        Archive
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
-                        onClick={() => {
-                        if (window.confirm(`Are you sure you want to delete the task "${editingTask.title}"?`)) {
-                            deleteTaskMutation.mutate(editingTask.id);
-                        }
-                        }}
-                        disabled={deleteTaskMutation.isPending}
-                    >
-                        {deleteTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                        Delete
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        )}
+      </TaskDialog>
 
       <DataExportDialog 
         open={isExportDialogOpen} 

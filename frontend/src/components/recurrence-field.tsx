@@ -1,20 +1,15 @@
-import { Repeat } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { DEFAULT_MODEL, WEEKDAYS, WEEKDAY_LABELS, buildRule, describeRule, parseRule, type Freq, type RecurrenceModel } from '@/lib/recurrence';
 
 const selectClass = 'h-8 rounded-md border border-border bg-background px-2 text-xs font-medium';
 
-/** "Repeat" editor for a task; value is the RRULE string (or null/'' for none). Completing the task creates the next one. */
+/** "Repeat" editor for a task (the caller supplies the heading); value is the RRULE string (or null/'' for none). Completing the task creates the next one. */
 export function RecurrenceField({ value, onChange }: { value: string | null | undefined; onChange: (rule: string | null) => void }) {
   const model = parseRule(value);
   const update = (patch: Partial<RecurrenceModel>) => onChange(buildRule({ ...(model ?? DEFAULT_MODEL), ...patch }));
 
   return (
     <div className="space-y-2" data-testid="recurrence-field">
-      <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground tracking-tighter">
-        <Repeat className="w-3.5 h-3.5 text-blue-500" /> Repeat
-      </Label>
       <div className="flex flex-wrap items-center gap-2">
         <select
           aria-label="Repeat"

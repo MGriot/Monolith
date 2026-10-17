@@ -5,12 +5,6 @@ import api from '@/lib/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import KanbanBoard from '@/components/kanban-board';
 import ProjectGantt from '@/components/project-gantt';
@@ -22,8 +16,9 @@ import CommentSection from '@/components/comments/comment-section';
 import FolderTree from '@/components/folder-tree';
 import FilePreviewDialog from '@/components/file-preview-dialog';
 import TaskForm from '@/components/task-form';
+import TaskDialog, { TaskFooterMeta } from '@/components/task-dialog';
+import { taskExtraTabs, taskSubtitle } from '@/components/task-dialog-helpers';
 import type { TaskFormValues } from '@/components/task-form';
-import AttachmentManager from '@/components/attachment-manager';
 import ScopedTaxonomyManager from '@/components/scoped-taxonomy-manager';
 import { toast } from 'sonner';
 import {
@@ -33,7 +28,6 @@ import {
   Folder as FolderIcon,
   List as ListIcon,
   Users as UsersIcon,
-  Trash2,
   Loader2,
   AlertCircle,
   Lightbulb,
@@ -41,10 +35,8 @@ import {
   Download,
   MessageSquare,
   Settings,
-  LayoutDashboard,
-  Clock
+  LayoutDashboard
 } from 'lucide-react';
-import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
@@ -72,6 +64,8 @@ export default function ProjectDetailPage() {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  // shared by the Gantt toggle and the task table highlight
+  const [showCriticalPath, setShowCriticalPath] = useState(false);
   const [parentTaskId, setParentTaskId] = useState<string | null>(null);
   const [initialStatus, setInitialStatus] = useState<string>("Todo");
   const [activeTab, setActiveTab] = useState<string>("overview");
@@ -422,17 +416,6 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const formatDateSafe = (dateStr?: string | null) => {
-    if (!dateStr) return "N/A";
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return "Invalid Date";
-      return format(d, "PPP p");
-    } catch (e) {
-      return "N/A";
-    }
-  };
-
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
       {/* Tabs */}
@@ -541,6 +524,8 @@ export default function ProjectDetailPage() {
                 onTaskClick={handleTaskClick}
                 onTaskDatesChange={canEdit(project.my_role) ? rescheduleTask : undefined}
                 onCreateDependency={canEdit(project.my_role) ? linkTasks : undefined}
+                showCriticalPath={showCriticalPath}
+                onShowCriticalPathChange={setShowCriticalPath}
               />
             </div>
           </div>
@@ -567,6 +552,7 @@ export default function ProjectDetailPage() {
               onReorderTask={handleReorderTask}
               onIndentTask={handleIndentTask}
               selection={bulkEnabled ? { state: selection, onChange: setSelection } : undefined}
+              highlightCritical={showCriticalPath}
             />
             {bulkEnabled && (
               <BulkActionBar ids={[...selection.selected]} assignees={bulkAssignees} onClear={() => setSelection(EMPTY_SELECTION)} />
@@ -715,129 +701,55 @@ export default function ProjectDetailPage() {
       </Tabs>
 
       {/* Task Dialog */}
-      <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
-          </DialogHeader>
-
-          <TaskForm
-            projectId={id}
-            taskObject={editingTask}
-            initialValues={editingTask ? {
-              title: editingTask.title,
-              description: editingTask.description,
-              status: editingTask.status,
-              priority: editingTask.priority,
-              topic_ids: editingTask.topic_ids || editingTask.topics?.map(t => t.id) || [],
-              type_ids: editingTask.type_ids || editingTask.types?.map(t => t.id) || [],
-              is_milestone: editingTask.is_milestone,
-              start_date: editingTask.start_date || '',
-              due_date: editingTask.due_date || '',
-              deadline_at: editingTask.deadline_at || '',
-              completed_at: editingTask.completed_at || '',
-              assignee_ids: editingTask.assignees?.map(u => u.id) || [],
-              parent_id: editingTask.parent_id,
-              color: editingTask.color,
-              optimistic_days: editingTask.optimistic_days,
-              normal_days: editingTask.normal_days,
-              pessimistic_days: editingTask.pessimistic_days,
-              duration_days: editingTask.duration_days
-            } : {
-              status: initialStatus,
-              parent_id: parentTaskId
-            }}
-            onSubmit={handleTaskSubmit}
-            onCancel={() => setIsTaskDialogOpen(false)}
-            isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
-            allTasks={tasks || []}
-            editingTaskId={editingTaskId}
+      <TaskDialog
+        open={isTaskDialogOpen}
+        onOpenChange={setIsTaskDialogOpen}
+        title={editingTask ? 'Edit task' : 'New task'}
+        subtitle={taskSubtitle(editingTask, project.name)}
+      >
+            <TaskForm
+              projectId={id}
+              taskObject={editingTask}
+              initialValues={editingTask ? {
+                title: editingTask.title,
+                description: editingTask.description,
+                status: editingTask.status,
+                priority: editingTask.priority,
+                topic_ids: editingTask.topic_ids || editingTask.topics?.map(t => t.id) || [],
+                type_ids: editingTask.type_ids || editingTask.types?.map(t => t.id) || [],
+                is_milestone: editingTask.is_milestone,
+                start_date: editingTask.start_date || '',
+                due_date: editingTask.due_date || '',
+                deadline_at: editingTask.deadline_at || '',
+                completed_at: editingTask.completed_at || '',
+                assignee_ids: editingTask.assignees?.map(u => u.id) || [],
+                parent_id: editingTask.parent_id,
+                color: editingTask.color,
+                optimistic_days: editingTask.optimistic_days,
+                normal_days: editingTask.normal_days,
+                pessimistic_days: editingTask.pessimistic_days,
+                duration_days: editingTask.duration_days
+              } : {
+                status: initialStatus,
+                parent_id: parentTaskId
+              }}
+              onSubmit={handleTaskSubmit}
+              onCancel={() => setIsTaskDialogOpen(false)}
+              isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
+              allTasks={tasks || []}
+              editingTaskId={editingTaskId}
+              extraTabs={editingTask?.id ? taskExtraTabs(editingTask, id) : undefined}
+              footerStart={editingTask ? (
+                <TaskFooterMeta
+                  task={editingTask}
+                  onArchive={() => archiveTaskMutation.mutate(editingTask.id)}
+                  onDelete={() => deleteTaskMutation.mutate(editingTask.id)}
+                  archiving={archiveTaskMutation.isPending}
+                  deleting={deleteTaskMutation.isPending}
+                />
+              ) : undefined}
           />
-
-          {editingTask && (
-            <div className="space-y-8 mt-6 border-t pt-6">
-              {/* Secondary sections wrapped in a safety check */}
-              <>
-                 {id && editingTask.id && (
-                    <AttachmentManager
-                        taskId={editingTask.id}
-                        projectId={id}
-                        attachments={editingTask.attachments || []}
-                    />
-                 )}
-
-                 {editingTask.id && (
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4 text-primary" />
-                        Task Activity
-                        </h3>
-                        <CommentSection taskId={editingTask.id} />
-                    </div>
-                 )}
-
-                 {id && editingTask.id && (
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
-                        <Lightbulb className="w-4 h-4 text-amber-500" />
-                        Linked Project Ideas
-                        </h3>
-                        <ProjectIdeas 
-                        projectId={id} 
-                        taskId={editingTask.id} 
-                        />
-                    </div>
-                 )}
-              </>
-
-              {/* Metadata & Footer Actions */}
-              <div className="pt-6 border-t mt-6 flex flex-col gap-6 bg-subtle/50 -mx-6 px-6 pb-6 rounded-b-xl">
-                <div className="flex flex-wrap justify-between items-end gap-4">
-                  <div className="space-y-1">
-                    <div className="text-[10px] text-fg-faint font-bold uppercase tracking-tight flex items-center gap-2">
-                       <Clock className="w-3 h-3" /> Created: {formatDateSafe(editingTask.created_at)}
-                    </div>
-                    <div className="text-[10px] text-fg-faint font-bold uppercase tracking-tight flex items-center gap-2">
-                       <Clock className="w-3 h-3 text-primary/40" /> Modified: {formatDateSafe(editingTask.updated_at)}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
-                        onClick={() => {
-                        if (window.confirm(`Archive the task "${editingTask.title}"?`)) {
-                            archiveTaskMutation.mutate(editingTask.id);
-                        }
-                        }}
-                        disabled={archiveTaskMutation.isPending}
-                    >
-                        {archiveTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
-                        Archive
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
-                        onClick={() => {
-                        if (window.confirm(`Are you sure you want to delete the task "${editingTask.title}"?`)) {
-                            deleteTaskMutation.mutate(editingTask.id);
-                        }
-                        }}
-                        disabled={deleteTaskMutation.isPending}
-                    >
-                        {deleteTaskMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                        Delete
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      </TaskDialog>
 
       <FilePreviewDialog 
         url={previewUrl}

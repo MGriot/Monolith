@@ -119,7 +119,7 @@ export default function FilePreviewDialog({ url, onClose }: FilePreviewDialogPro
 
   return (
     <Dialog open={!!url} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent size="full" className="max-w-5xl">
         <DialogHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0 bg-background z-20">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-muted rounded">

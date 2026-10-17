@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Edit2, Tag, Briefcase, Loader2, Info } from 'lucide-react';
 import { toast } from 'sonner';
@@ -371,11 +371,12 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
 
       {/* Edit Topic Dialog */}
       <Dialog open={!!editingTopic} onOpenChange={(open) => !open && setEditingTopic(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent size="sm">
           <DialogHeader>
-            <DialogTitle className="text-sm font-bold">Edit Scoped Topic</DialogTitle>
+            <DialogTitle>Edit Scoped Topic</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleUpdateTopic} className="space-y-4">
+          <form onSubmit={handleUpdateTopic} className="flex min-h-0 flex-1 flex-col">
+            <DialogBody className="space-y-4">
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-black text-fg-faint">Name</Label>
               <Input 
@@ -400,6 +401,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
                 />
               </div>
             </div>
+            </DialogBody>
             <DialogFooter>
               <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => setEditingTopic(null)}>Cancel</Button>
               <Button type="submit" size="sm" className="text-xs font-bold" disabled={updateTopicMutation.isPending}>
@@ -413,11 +415,12 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
 
       {/* Edit Work Type Dialog */}
       <Dialog open={!!editingWorkType} onOpenChange={(open) => !open && setEditingWorkType(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent size="sm">
           <DialogHeader>
-            <DialogTitle className="text-sm font-bold">Edit Scoped Work Type</DialogTitle>
+            <DialogTitle>Edit Scoped Work Type</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleUpdateWorkType} className="space-y-4">
+          <form onSubmit={handleUpdateWorkType} className="flex min-h-0 flex-1 flex-col">
+            <DialogBody className="space-y-4">
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-black text-fg-faint">Name</Label>
               <Input 
@@ -442,6 +445,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
                 />
               </div>
             </div>
+            </DialogBody>
             <DialogFooter>
               <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => setEditingWorkType(null)}>Cancel</Button>
               <Button type="submit" size="sm" className="text-xs font-bold" disabled={updateTypeMutation.isPending}>

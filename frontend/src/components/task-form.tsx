@@ -1,12 +1,12 @@
-import { useMemo, useState, useEffect, useRef } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useMemo, useState, useEffect, useRef, type ReactNode } from "react";
+import { useForm, useFieldArray, type UseFormRegisterReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { 
@@ -22,7 +22,8 @@ import {
     AlertCircle,
     Loader2,
     Timer,
-    SlidersHorizontal
+    SlidersHorizontal,
+    Repeat
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -87,7 +88,24 @@ interface TaskFormProps {
   allTasks?: Task[];
   editingTaskId?: string | null;
   projectId?: string;
+  /** extra sections (attachments, activity, ...) shown as tabs after the built-in ones */
+  extraTabs?: TaskFormTab[];
+  /** left side of the footer, e.g. created/modified info and archive/delete actions */
+  footerStart?: ReactNode;
+  submitLabel?: string;
 }
+
+export interface TaskFormTab {
+  value: string;
+  label: string;
+  icon?: ReactNode;
+  content: ReactNode;
+}
+
+/**
+ * Two-pane task editor meant to fill a DialogContent (see TaskDialog): title, description and
+ * tabbed sections on the left, a properties rail on the right, a fixed footer.
+ */
 
 export default function TaskForm({ 
   initialValues, 
@@ -97,7 +115,10 @@ export default function TaskForm({
   isLoading, 
   allTasks, 
   editingTaskId, 
-  projectId 
+  projectId,
+  extraTabs,
+  footerStart,
+  submitLabel
 }: TaskFormProps) {
   const queryClient = useQueryClient();
   const [planningMode, setPlanningMode] = useState<"dates" | "duration">("dates");
@@ -529,656 +550,499 @@ export default function TaskForm({
     { name: "Slate", value: "#64748b" },
   ];
 
+  const tabTriggerClass = "relative h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2.5 text-xs font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none";
+  const checklist = watch("checklist") || [];
+  const budget = watch("budget") || 0;
+  const realCost = watch("real_cost") || 0;
+
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-0 h-full flex flex-col">
-      <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-6 scrollbar-hide">
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid grid-cols-7 w-full bg-muted/80 p-1 rounded-xl mb-8 border border-border shadow-sm sticky top-0 z-50 backdrop-blur-sm">
-            <TabsTrigger value="general" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2">Essentials</TabsTrigger>
-            <TabsTrigger value="scheduling" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2">Timeline</TabsTrigger>
-            <TabsTrigger value="checklist" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
-              <CheckSquare className="w-3 h-3" /> List
-            </TabsTrigger>
-            <TabsTrigger value="risk" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
-              <AlertCircle className="w-3 h-3" /> Risk & $
-            </TabsTrigger>
-            <TabsTrigger value="dependencies" disabled={!editingTaskId} className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
-              <LinkIcon className="w-3 h-3" /> Deps
-            </TabsTrigger>
-            <TabsTrigger value="time" disabled={!editingTaskId} className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
-              <Timer className="w-3 h-3" /> Time
-            </TabsTrigger>
-            <TabsTrigger value="fields" disabled={!projectId} className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
-              <SlidersHorizontal className="w-3 h-3" /> Fields
-            </TabsTrigger>
-          </TabsList>
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="flex min-h-0 flex-1 flex-col">
+      {/* Mobile: one scrolling column (title, properties, tabs). md+: title and tabs on the left, properties rail on the right, each scrolling on its own. */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto md:grid-cols-[minmax(0,1fr)_20rem] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
+        <div className="space-y-3 px-6 pb-3 pt-5 md:col-start-1 md:row-start-1">
+          <div>
+            <Label htmlFor="title" className="sr-only">Title</Label>
+            <Input
+              id="title"
+              placeholder="Task title"
+              autoComplete="off"
+              className="h-auto border-0 bg-transparent px-0 py-1 text-xl font-semibold shadow-none placeholder:text-fg-ghost focus-visible:ring-0"
+              {...register("title")}
+            />
+            {errors.title && (
+              <p className="mt-1 text-xs font-medium text-red-500">{errors.title.message}</p>
+            )}
+          </div>
+          <div>
+            <Label htmlFor="description" className="sr-only">Description</Label>
+            <Textarea
+              id="description"
+              rows={3}
+              className="max-h-48 min-h-[72px] resize-y text-sm leading-relaxed"
+              placeholder="Add a description, scope or context..."
+              {...register("description")}
+            />
+          </div>
+        </div>
 
-          <TabsContent value="general" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
-            {/* Row 1: Title & Essentials */}
-            <div className="space-y-6">
-                <div className="space-y-2">
-                    <Label htmlFor="title" className="text-[10px] font-black uppercase text-fg-faint tracking-[0.2em] px-1">Primary Objective</Label>
-                    <Input
-                        id="title"
-                        placeholder="Define the task objective..."
-                        className="h-12 text-lg font-bold border-border focus:border-primary shadow-sm rounded-xl px-4 transition-all"
-                        {...register("title")}
-                    />
-                    {errors.title && (
-                        <p className="text-xs font-bold text-red-500 mt-1 px-1">{errors.title.message}</p>
+        {/* Properties rail */}
+        <aside className="space-y-4 border-y bg-subtle/40 px-5 py-4 md:col-start-2 md:row-span-2 md:row-start-1 md:overflow-y-auto md:border-y-0 md:border-l md:py-5">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Status" htmlFor="status">
+              <select id="status" className={selectClass} {...register("status")}>
+                <option value="Backlog">Backlog</option>
+                <option value="Todo">Todo</option>
+                <option value="In Progress">In Progress</option>
+                <option value="On hold">On Hold</option>
+                <option value="Review">Review</option>
+                <option value="Done">Done</option>
+              </select>
+            </Field>
+            <Field label="Priority" htmlFor="priority">
+              <select id="priority" className={selectClass} {...register("priority")}>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </Field>
+          </div>
+
+          <Field label="Assignees">
+            <AssigneeSelector
+              selectedValues={selectedAssignees}
+              onSelect={(id) => toggleItem("assignee_ids", id)}
+              onRemove={(id) => removeItem("assignee_ids", id)}
+              placeholder="Nobody assigned"
+            />
+          </Field>
+
+          <Field label="Topics">
+            <RichDropdown
+              items={topicItems}
+              selectedValues={selectedTopicIds}
+              onSelect={(id) => toggleItem("topic_ids", id)}
+              onRemove={(id) => removeItem("topic_ids", id)}
+              onCreate={projectId ? (name) => createTopicMutation.mutate(name) : undefined}
+              multi={true}
+              isLoading={isLoadingTopics}
+              placeholder="Add topics..."
+              searchPlaceholder="Search topics..."
+            />
+          </Field>
+
+          <Field label="Type">
+            <RichDropdown
+              items={typeItems}
+              selectedValues={selectedTypeIds}
+              onSelect={(id) => toggleItem("type_ids", id)}
+              onRemove={(id) => removeItem("type_ids", id)}
+              onCreate={projectId ? (name) => createWorkTypeMutation.mutate(name) : undefined}
+              multi={true}
+              isLoading={isLoadingTypes}
+              placeholder="Add types..."
+              searchPlaceholder="Search types..."
+            />
+          </Field>
+
+          <Field label="Parent (WBS)" htmlFor="parent_id">
+            <select
+              id="parent_id"
+              className={selectClass}
+              value={selectedParentId || ""}
+              onChange={(e) => setValue("parent_id", e.target.value || null)}
+            >
+              <option value="">None (root task)</option>
+              {availableParents.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Gantt colour">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {colorPresets.map((cp) => (
+                <button
+                  key={cp.value}
+                  type="button"
+                  className={cn(
+                    "h-6 w-6 rounded-full border-2 transition-transform hover:scale-110",
+                    selectedColor === cp.value ? "border-foreground ring-2 ring-background" : "border-transparent"
+                  )}
+                  style={{ backgroundColor: cp.value }}
+                  onClick={() => setValue("color", cp.value)}
+                  title={cp.name}
+                  aria-label={`Colour ${cp.name}`}
+                  aria-pressed={selectedColor === cp.value}
+                />
+              ))}
+              <button
+                type="button"
+                className={cn(
+                  "flex h-6 w-6 items-center justify-center rounded-full border-2 border-dashed border-fg-ghost transition-colors hover:border-muted-foreground",
+                  !colorPresets.find(cp => cp.value === selectedColor) && selectedColor ? "border-solid border-foreground" : ""
+                )}
+                style={!colorPresets.find(cp => cp.value === selectedColor) && selectedColor ? { backgroundColor: selectedColor } : undefined}
+                onClick={() => document.getElementById('custom-color-picker')?.click()}
+                title="Custom colour"
+                aria-label="Custom colour"
+              >
+                {!(selectedColor && !colorPresets.find(cp => cp.value === selectedColor)) && <Plus className="h-3 w-3 text-fg-faint" />}
+              </button>
+              <input
+                type="color"
+                id="custom-color-picker"
+                className="sr-only"
+                value={selectedColor || "#ffffff"}
+                onChange={(e) => setValue("color", e.target.value)}
+              />
+            </div>
+          </Field>
+
+          <div className="flex items-center justify-between rounded-md border bg-background px-3 py-2">
+            <Label htmlFor="is_milestone" className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+              <Milestone className="h-4 w-4 text-blue-500" />
+              Milestone
+            </Label>
+            <Switch
+              id="is_milestone"
+              checked={watch("is_milestone")}
+              onCheckedChange={(checked) => setValue("is_milestone", checked)}
+            />
+          </div>
+        </aside>
+
+        {/* Tabbed sections */}
+        <Tabs defaultValue="scheduling" className="flex min-h-0 flex-col md:col-start-1 md:row-start-2">
+          <div className="shrink-0 border-b px-6">
+            <TabsList className="scrollbar-hide h-auto w-full justify-start gap-0.5 overflow-x-auto rounded-none bg-transparent p-0">
+              <TabsTrigger value="scheduling" className={tabTriggerClass}>
+                <CalendarDays className="h-3.5 w-3.5" /> Timeline
+              </TabsTrigger>
+              <TabsTrigger value="checklist" className={tabTriggerClass}>
+                <CheckSquare className="h-3.5 w-3.5" /> Checklist
+                {checklist.length > 0 && (
+                  <span className="rounded-full bg-muted px-1.5 text-[10px] tabular-nums">
+                    {checklist.filter(c => c.is_done).length}/{checklist.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="risk" className={tabTriggerClass}>
+                <AlertCircle className="h-3.5 w-3.5" /> Risk & cost
+              </TabsTrigger>
+              <TabsTrigger value="dependencies" disabled={!editingTaskId} title={!editingTaskId ? "Save the task first" : undefined} className={tabTriggerClass}>
+                <LinkIcon className="h-3.5 w-3.5" /> Dependencies
+              </TabsTrigger>
+              <TabsTrigger value="time" disabled={!editingTaskId} title={!editingTaskId ? "Save the task first" : undefined} className={tabTriggerClass}>
+                <Timer className="h-3.5 w-3.5" /> Time
+              </TabsTrigger>
+              <TabsTrigger value="fields" disabled={!projectId} title={!projectId ? "Only for tasks in a project" : undefined} className={tabTriggerClass}>
+                <SlidersHorizontal className="h-3.5 w-3.5" /> Fields
+              </TabsTrigger>
+              {extraTabs?.map(tab => (
+                <TabsTrigger key={tab.value} value={tab.value} className={tabTriggerClass}>
+                  {tab.icon} {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+
+          <div className="px-6 py-5 md:min-h-0 md:flex-1 md:overflow-y-auto">
+            <TabsContent value="scheduling" className="mt-0 space-y-5">
+              <Section
+                icon={<CalendarDays className="h-4 w-4" />}
+                title="Schedule"
+                actions={
+                  <div className="flex items-center gap-2">
+                    {taskObject?.subtasks && taskObject.subtasks.length > 0 && (
+                      <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={handleSyncFromChildren}>
+                        <Plus className="h-3.5 w-3.5" /> Roll-up dates
+                      </Button>
                     )}
+                    <Tabs value={planningMode} onValueChange={(v: any) => setPlanningMode(v)}>
+                      <TabsList className="h-8">
+                        <TabsTrigger value="dates" className="h-6 px-3 text-xs">Dates</TabsTrigger>
+                        <TabsTrigger value="duration" className="h-6 px-3 text-xs">Duration</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                }
+              >
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Field label="Start date" htmlFor="start_date">
+                    <Input id="start_date" type="date" className="h-9" {...register("start_date")} />
+                  </Field>
+                  <Field label="Duration (days)" htmlFor="duration_days">
+                    <Input
+                      id="duration_days"
+                      type="number"
+                      className={cn("h-9", planningMode === "dates" && "border-dashed bg-muted text-fg-faint")}
+                      value={durationDays}
+                      onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
+                      disabled={planningMode === "dates"}
+                    />
+                  </Field>
+                  <Field label="Due date" htmlFor="due_date">
+                    <Input
+                      id="due_date"
+                      type="date"
+                      className={cn("h-9", planningMode === "duration" && "border-dashed bg-muted text-fg-faint")}
+                      {...register("due_date")}
+                      disabled={planningMode === "duration"}
+                    />
+                  </Field>
                 </div>
-
-                <div className="grid grid-cols-3 gap-6 p-5 bg-subtle border border-hairline rounded-[2rem] shadow-inner relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
-                    <div className="space-y-2">
-                        <Label htmlFor="status" className="text-[9px] font-black uppercase text-fg-faint tracking-wider">Status</Label>
-                        <select
-                            id="status"
-                            className="flex h-10 w-full rounded-xl border border-border bg-background px-3 py-1 text-xs font-black uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all"
-                            {...register("status")}
-                        >
-                            <option value="Backlog">Backlog</option>
-                            <option value="Todo">Todo</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="On hold">On Hold</option>
-                            <option value="Review">Review</option>
-                            <option value="Done">Done</option>
-                        </select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="priority" className="text-[9px] font-black uppercase text-fg-faint tracking-wider">Priority</Label>
-                        <select
-                            id="priority"
-                            className="flex h-10 w-full rounded-xl border border-border bg-background px-3 py-1 text-xs font-black uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all"
-                            {...register("priority")}
-                        >
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                            <option value="Critical">Critical</option>
-                        </select>
-                    </div>
-
-                    <div className="flex flex-col justify-end pb-1 pl-4">
-                        <div className="flex items-center space-x-3">
-                            <Switch
-                                id="is_milestone"
-                                checked={watch("is_milestone")}
-                                onCheckedChange={(checked) => setValue("is_milestone", checked)}
-                                className="data-[state=checked]:bg-blue-500"
-                            />
-                            <Label htmlFor="is_milestone" className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase text-muted-foreground tracking-tighter">
-                                <Milestone className="w-3.5 h-3.5 text-blue-500" />
-                                Milestone
-                            </Label>
-                        </div>
-                    </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Hard deadline" htmlFor="deadline_at" hint="Late if not done by this day">
+                    <Input id="deadline_at" type="date" className="h-9" {...register("deadline_at")} />
+                  </Field>
+                  <Field label="Actually completed" htmlFor="completed_at">
+                    <Input id="completed_at" type="date" className="h-9" {...register("completed_at")} />
+                  </Field>
                 </div>
+              </Section>
 
+              <Section icon={<Repeat className="h-4 w-4" />} title="Repeat">
                 <RecurrenceField value={watch("recurrence_rule")} onChange={(rule) => setValue("recurrence_rule", rule, { shouldDirty: true })} />
+              </Section>
 
-                <div className="space-y-2">
-                    <Label htmlFor="description" className="text-[10px] font-black uppercase text-fg-faint tracking-[0.2em] px-1">Context & Documentation</Label>
-                    <textarea
-                        id="description"
-                        className="flex min-h-[120px] w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-relaxed ring-offset-background placeholder:text-fg-ghost focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all focus:border-primary shadow-sm resize-none"
-                        placeholder="Detailed scope, technical requirements, or context..."
-                        {...register("description")}
-                    />
+              <Section
+                icon={<Calculator className="h-4 w-4" />}
+                title="PERT estimate"
+                description="Weighted from optimistic, most likely and pessimistic durations."
+                actions={
+                  <div className="flex items-center gap-3">
+                    <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={handleSuggestPERT}>
+                      <Sparkles className="h-3.5 w-3.5 text-indigo-500" /> Suggest
+                    </Button>
+                    <div className="text-right leading-none">
+                      <div className="text-[10px] text-muted-foreground">Expected</div>
+                      <div className="text-base font-semibold tabular-nums">{expectedDuration}<span className="ml-0.5 text-xs font-normal text-muted-foreground">d</span></div>
+                    </div>
+                  </div>
+                }
+              >
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Field label="Optimistic" htmlFor="optimistic_days">
+                    <Input id="optimistic_days" type="number" className="h-9" {...register("optimistic_days", { valueAsNumber: true })} />
+                  </Field>
+                  <Field label="Most likely" htmlFor="normal_days">
+                    <Input id="normal_days" type="number" className="h-9" {...register("normal_days", { valueAsNumber: true })} />
+                  </Field>
+                  <Field label="Pessimistic" htmlFor="pessimistic_days">
+                    <Input id="pessimistic_days" type="number" className="h-9" {...register("pessimistic_days", { valueAsNumber: true })} />
+                  </Field>
                 </div>
+              </Section>
+            </TabsContent>
 
-                {/* People Section */}
-                <div className="pt-2">
-                    <AssigneeSelector 
-                        label="Project Workforce (Assignees)"
-                        selectedValues={selectedAssignees}
-                        onSelect={(id) => toggleItem("assignee_ids", id)}
-                        onRemove={(id) => removeItem("assignee_ids", id)}
-                        placeholder="Who is accountable?"
-                    />
-                </div>
-
-                {/* Organization Row */}
-                <div className="grid grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase text-fg-faint tracking-widest px-1">Taxonomy (Topics)</Label>
-                        <RichDropdown 
-                            items={topicItems}
-                            selectedValues={selectedTopicIds}
-                            onSelect={(id) => toggleItem("topic_ids", id)}
-                            onRemove={(id) => removeItem("topic_ids", id)}
-                            onCreate={projectId ? (name) => createTopicMutation.mutate(name) : undefined}
-                            multi={true}
-                            isLoading={isLoadingTopics}
-                            placeholder="Categorize..."
-                            searchPlaceholder="Search categories..."
-                        />
-                    </div>
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase text-fg-faint tracking-widest px-1">Functional Type</Label>
-                        <RichDropdown 
-                            items={typeItems}
-                            selectedValues={selectedTypeIds}
-                            onSelect={(id) => toggleItem("type_ids", id)}
-                            onRemove={(id) => removeItem("type_ids", id)}
-                            onCreate={projectId ? (name) => createWorkTypeMutation.mutate(name) : undefined}
-                            multi={true}
-                            isLoading={isLoadingTypes}
-                            placeholder="Activity types..."
-                            searchPlaceholder="Search types..."
-                        />
-                    </div>
-                </div>
-
-                {/* Structure Section */}
-                <div className="grid grid-cols-2 gap-8 p-6 bg-subtle border border-hairline rounded-[2rem] shadow-sm">
-                    <div className="space-y-3">
-                        <Label htmlFor="parent_id" className="text-[10px] font-black uppercase text-fg-faint tracking-widest">WBS Hierarchy (Parent)</Label>
-                        <select
-                            id="parent_id"
-                            className="flex h-10 w-full rounded-xl border border-border bg-background px-3 py-1 text-xs font-medium ring-offset-background focus-visible:outline-none transition-all focus:ring-2 focus:ring-primary/10"
-                            value={selectedParentId || ""}
-                            onChange={(e) => setValue("parent_id", e.target.value || null)}
-                        >
-                            <option value="">None (Root Level Task)</option>
-                            {availableParents.map(p => (
-                                <option key={p.id} value={p.id}>
-                                    {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="space-y-3">
-                        <Label htmlFor="color" className="text-[10px] font-black uppercase text-fg-faint tracking-widest">Visual Label (Gantt Color)</Label>
-                        <div className="flex flex-col gap-3">
-                            <div className="flex flex-wrap gap-2">
-                                {colorPresets.map((cp) => (
-                                    <button
-                                        key={cp.value}
-                                        type="button"
-                                        className={cn(
-                                            "w-7 h-7 rounded-full border-2 transition-all hover:scale-125 shadow-sm",
-                                            selectedColor === cp.value ? "border-foreground scale-110" : "border-background"
-                                        )}
-                                        style={{ backgroundColor: cp.value }}
-                                        onClick={() => setValue("color", cp.value)}
-                                        title={cp.name}
-                                    />
-                                ))}
-                                <button
-                                    type="button"
-                                    className={cn(
-                                        "w-7 h-7 rounded-full border-2 border-dashed border-fg-ghost flex items-center justify-center transition-all hover:border-muted-foreground",
-                                        !colorPresets.find(cp => cp.value === selectedColor) && selectedColor ? "border-slate-900 bg-background" : ""
-                                    )}
-                                    onClick={() => document.getElementById('custom-color-picker')?.click()}
-                                >
-                                    <Plus className="w-4 h-4 text-fg-faint" />
-                                </button>
-                                <input
-                                    type="color"
-                                    id="custom-color-picker"
-                                    className="sr-only"
-                                    value={selectedColor || "#ffffff"}
-                                    onChange={(e) => setValue("color", e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="scheduling" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
-            <div className="space-y-8">
-                {/* Main Scheduling Section */}
-                <div className="space-y-6 p-6 rounded-[2rem] border border-border bg-background shadow-md relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                        <CalendarDays className="w-24 h-24 text-foreground" />
-                    </div>
-
-                    <div className="flex items-center justify-between border-b border-hairline pb-4 mb-2">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <CalendarDays className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                                <Label className="text-sm font-black uppercase text-foreground tracking-widest leading-none">Task Chronology</Label>
-                                <p className="text-[10px] text-fg-faint mt-1">Define project start and target deadlines.</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            {taskObject?.subtasks && taskObject.subtasks.length > 0 && (
-                                <Button 
-                                    type="button"
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-9 text-[10px] font-black uppercase text-primary hover:bg-primary/5 gap-2 px-4 border border-primary/20 rounded-xl bg-background shadow-sm"
-                                    onClick={handleSyncFromChildren}
-                                >
-                                    <Plus className="w-4 h-4" /> Roll-up Dates
-                                </Button>
-                            )}
-                            <Tabs value={planningMode} onValueChange={(v: any) => setPlanningMode(v)}>
-                                <TabsList className="h-9 p-1 bg-muted border border-border rounded-xl">
-                                    <TabsTrigger value="dates" className="text-[10px] font-black uppercase h-7 px-4 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Dates</TabsTrigger>
-                                    <TabsTrigger value="duration" className="text-[10px] font-black uppercase h-7 px-4 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Duration</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-8">
-                        <div className="space-y-2.5">
-                            <Label htmlFor="start_date" className="text-[10px] font-black uppercase text-fg-faint tracking-tighter px-1 flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                                Start Date
-                            </Label>
-                            <Input id="start_date" type="date" {...register("start_date")} className="h-11 text-sm font-bold border-border focus:border-primary rounded-xl px-4 shadow-sm bg-subtle/30" />
-                        </div>
-                        
-                        <div className="space-y-2.5">
-                            <Label htmlFor="duration_days" className="text-[10px] font-black uppercase text-fg-faint tracking-tighter px-1 flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                                Span (Days)
-                            </Label>
-                            <div className="relative">
-                                <Input 
-                                    id="duration_days" 
-                                    type="number" 
-                                    value={durationDays}
-                                    onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
-                                    className={cn(
-                                        "h-11 text-sm font-bold border-border focus:border-primary rounded-xl px-4 shadow-sm transition-all", 
-                                        planningMode === "dates" ? "bg-muted italic text-fg-faint border-dashed" : "bg-background"
-                                    )}
-                                    disabled={planningMode === "dates"}
-                                />
-                                <div className="absolute right-3 top-3 text-[10px] font-black text-fg-ghost">DAYS</div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2.5">
-                            <Label htmlFor="due_date" className="text-[10px] font-black uppercase text-fg-faint tracking-tighter px-1 flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                Due Date
-                            </Label>
-                            <Input 
-                                id="due_date" 
-                                type="date" 
-                                {...register("due_date")} 
-                                className={cn(
-                                    "h-11 text-sm font-bold border-border focus:border-primary rounded-xl px-4 shadow-sm transition-all", 
-                                    planningMode === "duration" ? "bg-muted italic text-fg-faint border-dashed" : "bg-background"
-                                )}
-                                disabled={planningMode === "duration"}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Constraints Grid */}
-                <div className="grid grid-cols-2 gap-8">
-                    <div className="p-6 rounded-[2rem] border border-rose-100 dark:border-rose-500/20 bg-rose-50/10 space-y-4 shadow-sm group hover:border-rose-200 dark:hover:border-rose-500/30 transition-all">
-                        <div className="flex items-center gap-3 border-b border-rose-50 pb-3">
-                            <div className="p-2 bg-rose-100 dark:bg-rose-500/20 rounded-lg">
-                                <AlertCircle className="w-4 h-4 text-rose-500" />
-                            </div>
-                            <Label htmlFor="deadline_at" className="text-[10px] font-black uppercase text-rose-500 tracking-[0.15em]">Hard Deadline</Label>
-                        </div>
-                        <Input id="deadline_at" type="date" {...register("deadline_at")} className="h-11 text-sm font-bold border-rose-200 dark:border-rose-500/30 bg-background focus:border-rose-400 rounded-xl px-4 shadow-sm" />
-                    </div>
-
-                    <div className="p-6 rounded-[2rem] border border-emerald-100 dark:border-emerald-500/20 bg-emerald-50/10 space-y-4 shadow-sm group hover:border-emerald-200 dark:hover:border-emerald-500/30 transition-all">
-                        <div className="flex items-center gap-3 border-b border-emerald-50 pb-3">
-                            <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg">
-                                <CheckSquare className="w-4 h-4 text-emerald-500" />
-                            </div>
-                            <Label htmlFor="completed_at" className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-[0.15em]">Actual Conclusion</Label>
-                        </div>
-                        <Input id="completed_at" type="date" {...register("completed_at")} className="h-11 text-sm font-bold border-emerald-200 dark:border-emerald-500/30 bg-background focus:border-emerald-400 rounded-xl px-4 shadow-sm" />
-                    </div>
-                </div>
-
-                {/* PERT Scientific Section */}
-                <div className="p-6 rounded-[2rem] border border-indigo-100 dark:border-indigo-500/20 bg-indigo-50/10 space-y-6 shadow-md border-t-4 border-t-indigo-400 transition-all">
-                    <div className="flex items-center justify-between border-b border-indigo-50 pb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-indigo-600 text-white rounded-lg shadow-lg shadow-indigo-200">
-                                <Calculator className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <Label className="text-sm font-black uppercase text-indigo-900 dark:text-indigo-200 tracking-widest leading-none">PERT Estimations</Label>
-                                <p className="text-[10px] text-indigo-400 mt-1 uppercase font-black">Probabilistic weighted analysis</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Button 
-                                type="button"
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-9 text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 hover:bg-background hover:shadow-sm gap-2 px-4 border border-indigo-200/50 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 transition-all"
-                                onClick={handleSuggestPERT}
-                            >
-                                <Sparkles className="w-4 h-4 text-indigo-500 animate-pulse" /> Suggest Values
-                            </Button>
-                            <div className="flex flex-col items-end">
-                                <span className="text-[9px] font-black text-indigo-300 uppercase leading-none mb-1">Calculated Te</span>
-                                <div className="text-lg font-black text-indigo-700 dark:text-indigo-300 leading-none">
-                                    {expectedDuration}<span className="text-[10px] ml-0.5">DAYS</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-8 px-2">
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center px-1">
-                                <Label htmlFor="optimistic_days" className="text-[10px] font-black uppercase text-indigo-400 tracking-tighter">Optimistic (O)</Label>
-                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 dark:border-indigo-500/20 text-indigo-400 bg-background">Best Case</Badge>
-                            </div>
-                            <Input 
-                                id="optimistic_days" 
-                                type="number" 
-                                {...register("optimistic_days", { valueAsNumber: true })} 
-                                className="h-11 text-base font-black text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30 bg-background focus:border-indigo-500 rounded-xl px-4 shadow-sm"
-                            />
-                        </div>
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center px-1">
-                                <Label htmlFor="normal_days" className="text-[10px] font-black uppercase text-indigo-400 tracking-tighter">Most Likely (M)</Label>
-                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 dark:border-indigo-500/20 text-indigo-400 bg-background">Average</Badge>
-                            </div>
-                            <Input 
-                                id="normal_days" 
-                                type="number" 
-                                {...register("normal_days", { valueAsNumber: true })} 
-                                className="h-11 text-base font-black text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30 bg-background focus:border-indigo-500 rounded-xl px-4 shadow-sm"
-                            />
-                        </div>
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center px-1">
-                                <Label htmlFor="pessimistic_days" className="text-[10px] font-black uppercase text-indigo-400 tracking-tighter">Pessimistic (P)</Label>
-                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 dark:border-indigo-500/20 text-indigo-400 bg-background">Worst Case</Badge>
-                            </div>
-                            <Input 
-                                id="pessimistic_days" 
-                                type="number" 
-                                {...register("pessimistic_days", { valueAsNumber: true })} 
-                                className="h-11 text-base font-black text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30 bg-background focus:border-indigo-500 rounded-xl px-4 shadow-sm"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="checklist" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
-                <div className="p-6 rounded-[2rem] border border-border bg-background shadow-md relative overflow-hidden">
-                    <div className="flex items-center justify-between border-b pb-4 mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-600 text-white rounded-lg shadow-lg shadow-blue-100">
-                                <CheckSquare className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <Label className="text-sm font-black uppercase text-foreground tracking-widest leading-none">Execution Steps</Label>
-                                <p className="text-[10px] text-fg-faint mt-1 uppercase font-black">Micro-task tracking system</p>
-                            </div>
-                        </div>
-                        <Button 
-                            type="button" 
-                            size="sm" 
-                            className="h-9 px-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-slate-100 gap-2 font-bold text-[11px] uppercase tracking-wider"
-                            onClick={() => {
-                                const current = watch("checklist") || [];
-                                const newId = Math.random().toString(36).substring(2, 9);
-                                setValue("checklist", [...current, { id: newId, text: "", is_done: false }]);
-                            }}
-                        >
-                            <Plus className="w-4 h-4" /> Add Action Item
-                        </Button>
-                    </div>
-                    
-                    <div className="space-y-3 max-h-[400px] overflow-auto pr-2 scrollbar-hide">
-                        {(watch("checklist") || []).map((item, index) => (
-                            <div key={item.id} className="flex items-center gap-4 group bg-subtle/50 p-3 rounded-2xl border border-hairline transition-all hover:bg-background hover:border-primary/20 hover:shadow-sm">
-                                <div className="relative flex items-center justify-center">
-                                    <input 
-                                        type="checkbox"
-                                        checked={item.is_done}
-                                        onChange={(e) => {
-                                            const current = [...(watch("checklist") || [])];
-                                            current[index].is_done = e.target.checked;
-                                            setValue("checklist", current);
-                                        }}
-                                        className="w-5 h-5 rounded-lg border-fg-ghost text-primary focus:ring-primary/20 cursor-pointer appearance-none checked:bg-primary checked:border-primary transition-all border-2"
-                                    />
-                                    {item.is_done && <CheckSquare className="absolute w-3.5 h-3.5 text-white pointer-events-none" />}
-                                </div>
-                                <Input 
-                                    className={cn(
-                                        "flex-1 h-9 text-sm border-none bg-transparent focus-visible:ring-0 px-0 font-medium transition-all",
-                                        item.is_done ? "text-fg-faint line-through decoration-2" : "text-fg-body"
-                                    )}
-                                    placeholder="Define sub-step activity..."
-                                    value={item.text}
-                                    onChange={(e) => {
-                                        const current = [...(watch("checklist") || [])];
-                                        current[index].text = e.target.value;
-                                        setValue("checklist", current);
-                                    }}
-                                />
-                                <button 
-                                    type="button"
-                                    onClick={() => {
-                                        const current = [...(watch("checklist") || [])];
-                                        setValue("checklist", current.filter((_, i) => i !== index));
-                                    }}
-                                    className="p-2 text-fg-ghost hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
-                        {(watch("checklist") || []).length === 0 && (
-                            <div className="py-16 text-center border-2 border-dashed rounded-[2rem] border-hairline flex flex-col items-center gap-4 grayscale opacity-40">
-                                <div className="p-4 bg-subtle rounded-full">
-                                    <CheckSquare className="w-10 h-10 text-fg-ghost" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-black uppercase text-fg-faint tracking-widest">No Action Items</p>
-                                    <p className="text-[10px] text-fg-faint mt-1">Break down this task into smaller chunks for better progress.</p>
-                                </div>
-                            </div>
+            <TabsContent value="checklist" className="mt-0">
+              <Section
+                icon={<CheckSquare className="h-4 w-4" />}
+                title="Checklist"
+                actions={
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs"
+                    onClick={() => {
+                      const newId = Math.random().toString(36).substring(2, 9);
+                      setValue("checklist", [...checklist, { id: newId, text: "", is_done: false }]);
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add item
+                  </Button>
+                }
+              >
+                <div className="space-y-1.5">
+                  {checklist.map((item, index) => (
+                    <div key={item.id} className="group flex items-center gap-3 rounded-md border bg-background px-3 py-1.5">
+                      <input
+                        type="checkbox"
+                        aria-label={`Done: ${item.text || 'item'}`}
+                        checked={item.is_done}
+                        onChange={(e) => {
+                          const current = [...checklist];
+                          current[index].is_done = e.target.checked;
+                          setValue("checklist", current);
+                        }}
+                        className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
+                      />
+                      <Input
+                        className={cn(
+                          "h-8 flex-1 border-none bg-transparent px-0 text-sm shadow-none focus-visible:ring-0",
+                          item.is_done && "text-fg-faint line-through"
                         )}
+                        placeholder="Describe the step..."
+                        value={item.text}
+                        onChange={(e) => {
+                          const current = [...checklist];
+                          current[index].text = e.target.value;
+                          setValue("checklist", current);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        aria-label="Remove item"
+                        onClick={() => setValue("checklist", checklist.filter((_, i) => i !== index))}
+                        className="rounded p-1 text-fg-ghost opacity-0 transition-opacity hover:bg-rose-50 hover:text-rose-500 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:bg-rose-500/10"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
+                  ))}
+                  {checklist.length === 0 && (
+                    <EmptyState icon={<CheckSquare className="h-6 w-6" />} title="No checklist items" text="Break the task into smaller steps to track progress." />
+                  )}
                 </div>
-          </TabsContent>
+              </Section>
+            </TabsContent>
 
-          <TabsContent value="risk" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
-            <div className="grid grid-cols-2 gap-8">
-                {/* Risk Section */}
-                <div className="p-8 rounded-[2.5rem] border border-amber-200 dark:border-amber-500/30 bg-amber-50/10 space-y-8 shadow-md relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                        <AlertCircle className="w-24 h-24 text-amber-900 dark:text-amber-200" />
-                    </div>
-                    
-                    <div className="flex items-center gap-4 border-b border-amber-100 dark:border-amber-500/20 pb-4">
-                        <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-lg shadow-amber-200">
-                            <AlertCircle className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-black uppercase text-amber-900 dark:text-amber-200 tracking-widest leading-none">Risk Profile</h4>
-                            <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-black uppercase">Probability x Impact</p>
-                        </div>
-                    </div>
+            <TabsContent value="risk" className="mt-0">
+              <div className="grid gap-5 lg:grid-cols-2">
+                <Section icon={<AlertCircle className="h-4 w-4 text-amber-500" />} title="Risk" description="Probability × impact">
+                  <div className="space-y-4">
+                    <RangeField label="Probability" value={watch("risk_probability")} registration={register("risk_probability", { valueAsNumber: true })} />
+                    <RangeField label="Impact" value={watch("risk_impact")} registration={register("risk_impact", { valueAsNumber: true })} />
+                  </div>
+                  <div className="flex items-center justify-between rounded-md bg-amber-500/10 px-3 py-2 text-amber-800 dark:text-amber-200">
+                    <span className="text-xs font-medium">Exposure score</span>
+                    <span className="text-lg font-semibold tabular-nums">{(watch("risk_probability") || 0) * (watch("risk_impact") || 0)}</span>
+                  </div>
+                </Section>
 
-                    <div className="space-y-8">
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <Label className="text-[11px] text-amber-900 dark:text-amber-200 uppercase font-black tracking-widest">Probability</Label>
-                                <span className="text-sm font-black bg-background px-3 py-1 rounded-xl border-2 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 shadow-sm">{watch("risk_probability")} / 5</span>
-                            </div>
-                            <input 
-                                type="range" 
-                                min="1" max="5" 
-                                className="w-full h-2 bg-amber-200 dark:bg-amber-500/30 rounded-full appearance-none cursor-pointer accent-amber-600 shadow-inner"
-                                {...register("risk_probability", { valueAsNumber: true })}
-                            />
-                        </div>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <Label className="text-[11px] text-amber-900 dark:text-amber-200 uppercase font-black tracking-widest">Severity / Impact</Label>
-                                <span className="text-sm font-black bg-background px-3 py-1 rounded-xl border-2 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 shadow-sm">{watch("risk_impact")} / 5</span>
-                            </div>
-                            <input 
-                                type="range" 
-                                min="1" max="5" 
-                                className="w-full h-2 bg-amber-200 dark:bg-amber-500/30 rounded-full appearance-none cursor-pointer accent-amber-600 shadow-inner"
-                                {...register("risk_impact", { valueAsNumber: true })}
-                            />
-                        </div>
-                    </div>
-                    
-                    <div className="p-4 bg-amber-900 text-white rounded-2xl flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-widest">Exposure Score</span>
-                        <span className="text-xl font-black">{(watch("risk_probability") || 0) * (watch("risk_impact") || 0)}</span>
-                    </div>
-                </div>
+                <Section icon={<Database className="h-4 w-4 text-blue-500" />} title="Cost">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                    <Field label="Planned budget ($)" htmlFor="budget">
+                      <Input id="budget" type="number" step="0.01" className="h-9" {...register("budget", { valueAsNumber: true })} />
+                    </Field>
+                    <Field label="Actual cost ($)" htmlFor="real_cost">
+                      <Input id="real_cost" type="number" step="0.01" className="h-9" {...register("real_cost", { valueAsNumber: true })} />
+                    </Field>
+                  </div>
+                  <div className={cn(
+                    "flex items-center justify-between rounded-md px-3 py-2",
+                    realCost > budget ? "bg-rose-500/10 text-rose-700 dark:text-rose-300" : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  )}>
+                    <span className="text-xs font-medium">Variance</span>
+                    <span className="text-lg font-semibold tabular-nums">
+                      {budget - realCost >= 0 ? "+" : "-"}${Math.abs(budget - realCost).toLocaleString()}
+                    </span>
+                  </div>
+                </Section>
+              </div>
+            </TabsContent>
 
-                {/* Financials Section */}
-                <div className="p-8 rounded-[2.5rem] border border-blue-200 dark:border-blue-500/30 bg-blue-50/10 space-y-8 shadow-md relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                        <Database className="w-24 h-24 text-blue-900 dark:text-blue-200" />
-                    </div>
-
-                    <div className="flex items-center gap-4 border-b border-blue-100 dark:border-blue-500/20 pb-4">
-                        <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200">
-                            <Database className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-black uppercase text-blue-900 dark:text-blue-200 tracking-widest leading-none">Resource Cost</h4>
-                            <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1 font-black uppercase">Financial auditing</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div className="space-y-2.5">
-                            <Label className="text-[11px] text-blue-900 dark:text-blue-200 uppercase font-black tracking-widest px-1">Planned Budget</Label>
-                            <div className="relative">
-                                <Input 
-                                    type="number" 
-                                    step="0.01"
-                                    {...register("budget", { valueAsNumber: true })}
-                                    className="h-12 text-lg font-black border-blue-200 dark:border-blue-500/30 bg-background focus:border-blue-500 rounded-2xl px-10 shadow-sm transition-all"
-                                />
-                                <div className="absolute left-4 top-3.5 text-blue-400 font-bold">$</div>
-                            </div>
-                        </div>
-                        <div className="space-y-2.5">
-                            <Label className="text-[11px] text-blue-900 dark:text-blue-200 uppercase font-black tracking-widest px-1">Actual Expenditure</Label>
-                            <div className="relative">
-                                <Input 
-                                    type="number" 
-                                    step="0.01"
-                                    {...register("real_cost", { valueAsNumber: true })}
-                                    className="h-12 text-lg font-black border-blue-200 dark:border-blue-500/30 bg-background focus:border-blue-500 rounded-2xl px-10 shadow-sm transition-all"
-                                />
-                                <div className="absolute left-4 top-3.5 text-blue-400 font-bold">$</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={cn(
-                        "p-4 rounded-2xl flex items-center justify-between border-2 transition-all",
-                        (watch("real_cost") || 0) > (watch("budget") || 0) 
-                            ? "bg-rose-500 border-rose-600 text-white shadow-lg shadow-rose-200" 
-                            : "bg-emerald-500 border-emerald-600 text-white shadow-lg shadow-emerald-200"
-                    )}>
-                        <span className="text-[10px] font-black uppercase tracking-widest">Variance</span>
-                        <span className="text-xl font-black">
-                            {(watch("budget") || 0) - (watch("real_cost") || 0) >= 0 ? "+" : "-"}$
-                            {Math.abs((watch("budget") || 0) - (watch("real_cost") || 0)).toLocaleString()}
-                        </span>
-                    </div>
-                </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="dependencies" className="animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
-            <div className="p-6 rounded-[2rem] border border-border bg-background shadow-md">
-                <div className="flex items-center gap-3 border-b pb-4 mb-2">
-                    <div className="p-2 bg-primary text-primary-foreground rounded-lg">
-                        <LinkIcon className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <Label className="text-sm font-black uppercase text-foreground tracking-widest leading-none">Chain of Command</Label>
-                        <p className="text-[10px] text-fg-faint mt-1 uppercase font-black">Successor & Predecessor logic</p>
-                    </div>
-                </div>
-
-                {editingTaskId && taskObject && (
-                    <DependencyManager
+            <TabsContent value="dependencies" className="mt-0">
+              <Section icon={<LinkIcon className="h-4 w-4" />} title="Dependencies" description="Tasks this one waits for, and tasks waiting for it.">
+                {editingTaskId && taskObject ? (
+                  <DependencyManager
                     item={taskObject}
                     allPossibleBlockers={(() => {
-                        const flat: any[] = [];
-                        const recurse = (list: Task[], prefix = "") => {
+                      const flat: any[] = [];
+                      const recurse = (list: Task[], prefix = "") => {
                         list.forEach(t => {
-                            const title = prefix ? `${prefix} > ${t.title}` : t.title;
-                            flat.push({ ...t, title });
-                            if (t.subtasks) recurse(t.subtasks, title);
+                          const title = prefix ? `${prefix} > ${t.title}` : t.title;
+                          flat.push({ ...t, title });
+                          if (t.subtasks) recurse(t.subtasks, title);
                         });
-                        };
-                        recurse(allTasks || []);
-                        return flat;
+                      };
+                      recurse(allTasks || []);
+                      return flat;
                     })()}
-                    />
+                  />
+                ) : (
+                  <EmptyState icon={<LinkIcon className="h-6 w-6" />} title="Save the task first" text="Dependencies can be added once the task exists." />
                 )}
-                {!editingTaskId && (
-                    <div className="flex flex-col items-center justify-center py-20 text-fg-faint gap-4 border border-dashed rounded-[2rem] bg-subtle grayscale">
-                    <LinkIcon className="w-12 h-12 opacity-10" />
-                    <div className="text-center">
-                        <p className="text-sm font-black uppercase tracking-widest">Network Locked</p>
-                        <p className="text-[10px] mt-1 font-medium">Dependencies can be defined once the task object is initialized.</p>
-                    </div>
-                    </div>
-                )}
-            </div>
-          </TabsContent>
+              </Section>
+            </TabsContent>
 
-          <TabsContent value="time" className="animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
-            {editingTaskId && <TaskTimeTracker taskId={editingTaskId} />}
-          </TabsContent>
+            <TabsContent value="time" className="mt-0">
+              {editingTaskId && <TaskTimeTracker taskId={editingTaskId} />}
+            </TabsContent>
 
-          <TabsContent value="fields" className="animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
-            <TaskCustomFields
-              projectId={projectId}
-              values={(watch("custom_values") || {}) as CustomValues}
-              onChange={(values) => setValue("custom_values", values, { shouldDirty: true })}
-            />
-          </TabsContent>
+            <TabsContent value="fields" className="mt-0">
+              <TaskCustomFields
+                projectId={projectId}
+                values={(watch("custom_values") || {}) as CustomValues}
+                onChange={(values) => setValue("custom_values", values, { shouldDirty: true })}
+              />
+            </TabsContent>
+
+            {extraTabs?.map(tab => (
+              <TabsContent key={tab.value} value={tab.value} className="mt-0">
+                {tab.content}
+              </TabsContent>
+            ))}
+          </div>
         </Tabs>
       </div>
 
-      <div className="flex justify-end gap-3 pt-6 mt-4 border-t sticky bottom-0 bg-background/90 backdrop-blur-md z-50 -mx-1">
-        <Button 
-            type="button" 
-            variant="ghost" 
-            className="px-8 h-12 rounded-xl text-muted-foreground font-bold uppercase text-xs tracking-widest hover:bg-subtle"
-            onClick={onCancel}
-        >
-          Cancel
-        </Button>
-        <Button 
-            type="submit" 
-            disabled={isLoading}
-            className="px-10 h-12 rounded-xl bg-primary text-primary-foreground font-black uppercase text-xs tracking-[0.2em] shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
-        >
-          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Authorize & Save"}
-        </Button>
+      <div className="flex shrink-0 flex-col-reverse gap-3 border-t bg-subtle/40 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">{footerStart}</div>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isLoading} className="min-w-[120px]">
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (submitLabel ?? (editingTaskId ? "Save changes" : "Create task"))}
+          </Button>
+        </div>
       </div>
     </form>
+  );
+}
+
+const selectClass = "flex h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm shadow-sm ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
+function Field({ label, htmlFor, hint, children }: { label: string; htmlFor?: string; hint?: string; children: ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{label}</Label>
+      {children}
+      {hint && <p className="text-[11px] text-fg-faint">{hint}</p>}
+    </div>
+  );
+}
+
+function Section({ icon, title, description, actions, children }: { icon?: ReactNode; title: string; description?: string; actions?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="space-y-4 rounded-lg border bg-background p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-2.5">
+          {icon && <div className="mt-0.5 text-muted-foreground">{icon}</div>}
+          <div>
+            <h4 className="text-sm font-semibold leading-tight">{title}</h4>
+            {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
+          </div>
+        </div>
+        {actions}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function RangeField({ label, value, registration }: { label: string; value: number | undefined; registration: UseFormRegisterReturn }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+        <span className="text-xs font-semibold tabular-nums">{value} / 5</span>
+      </div>
+      <input type="range" min="1" max="5" aria-label={label} className="w-full cursor-pointer accent-amber-500" {...registration} />
+    </div>
+  );
+}
+
+function EmptyState({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center text-muted-foreground">
+      <div className="text-fg-ghost">{icon}</div>
+      <p className="text-sm font-medium">{title}</p>
+      <p className="text-xs text-fg-faint">{text}</p>
+    </div>
   );
 }

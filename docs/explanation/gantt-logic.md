@@ -62,7 +62,18 @@ To prevent lines from crossing over task bars, the `getOrthogonalPath` algorithm
 ### Line Styles
 - **Hierarchy Lines (Slate-400):** Dashed lines connecting a parent task to its children. They use a "shared spine" logic where all children of one parent anchor to the same vertical axis.
 - **Dependency Lines (Blue-600):** Solid lines pointing from a predecessor's end-right to a successor's start-left.
-- **Critical Path (Red-500):** If a task is on the Critical Path, its dependency lines gain a **pulsing red glow** (`animate-pulse`) and increased stroke width.
+- **Conflicts (Amber-500):** A finish-to-start link whose successor starts before the predecessor ends (plus lag).
+- **Critical Path (Red-500):** Only while the **Critical Path** toggle is on. A link is red when both of its tasks are critical (`is_critical` from the backend CPM); those links gain a **pulsing red glow** and a thicker stroke, critical bars get a red ring, and everything else is dimmed. The toggle is shared with the *Tasks & Subtasks* table on the project page, which flags critical rows. Priority never colours lines: it is shown by the bar border.
+
+### Critical Path Computation
+`backend/app/core/cpm.py` runs a forward/backward pass over all tasks and subtasks:
+- Links are `blocked_by` dependencies (FS, SS, FF, SF with lag) plus legacy `blocked_by_ids` (treated as FS).
+- Tasks without predecessors start at their planned start; tasks with predecessors are scheduled as soon as their links allow, so gaps in the plan do not hide the longest chain. Completed tasks keep their actual span.
+- The backward pass is anchored at the computed project finish (not the project due date), so the longest chain always has zero slack. A task's hard deadline can still tighten it and push slack negative.
+- Endpoints that skip CPM leave `slack_days` unset; the UI trusts only `is_critical`.
+
+### Visible Range
+The timeline spans the earliest to the latest task date plus a small margin (3 days at Months zoom; see `VIEW_BUFFER_DAYS` in `lib/gantt.ts`). Project dates and reference zones only set the range when no task has dates.
 
 ## 5. Summary of Colors
 

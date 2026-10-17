@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { getStatusColors, getPriorityColors } from '@/constants/colors';
 import type { Task } from '@/types';
 import { isAfterDueDay } from "@/lib/dates";
+import { isCriticalTask } from '@/lib/gantt';
 import type { TaskGroup } from '@/lib/task-filters';
 import { clickSelection, headerState, pruneSelection, toggleAll, visibleIds, type SelectionState } from '@/lib/selection';
 
@@ -41,6 +42,8 @@ export interface ProjectTaskListProps {
   onIndentTask?: (taskId: string, direction: 'indent' | 'outdent') => void;
   /** when set, a checkbox column is shown; the parent owns the state (and renders the bulk action bar) */
   selection?: { state: SelectionState; onChange: (next: SelectionState) => void };
+  /** follows the Gantt's Critical Path toggle: critical rows are flagged, the rest dimmed */
+  highlightCritical?: boolean;
 }
 
 interface RecursiveRowProps {
@@ -55,9 +58,10 @@ interface RecursiveRowProps {
   onToggleCollapse: (id: string) => void;
   selected?: ReadonlySet<string>;
   onSelectClick?: (id: string, shift: boolean) => void;
+  highlightCritical?: boolean;
 }
 
-function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask, collapsed, onToggleCollapse, selected, onSelectClick }: RecursiveRowProps) {
+function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask, collapsed, onToggleCollapse, selected, onSelectClick, highlightCritical }: RecursiveRowProps) {
   const isExpanded = !collapsed.has(task.id);
   const hasChildren = task.subtasks && task.subtasks.length > 0;
 
@@ -89,13 +93,17 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
     ? differenceInDays(parseISO(task.due_date), parseISO(task.start_date)) + 1
     : 0;
 
+  const critical = highlightCritical && isCriticalTask(task);
+
   return (
     <>
       <TableRow
         data-state={selected?.has(task.id) ? 'selected' : undefined}
         className={cn(
           "hover:bg-subtle/50 transition-colors cursor-pointer group border-b border-hairline",
-          level > 0 && "bg-subtle/20"
+          level > 0 && "bg-subtle/20",
+          critical && "bg-red-500/5 hover:bg-red-500/10 [&>td:first-child]:shadow-[inset_3px_0_0_#ef4444]",
+          highlightCritical && !critical && "opacity-50"
         )}
         onClick={() => {
           if (level === 0) onTaskClick(task);
@@ -126,7 +134,16 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             </Button>
           )}
         </TableCell>
-        <TableCell className="text-[10px] font-black text-fg-faint py-2">{task.wbs_code}</TableCell>
+        <TableCell className="text-[10px] font-black text-fg-faint py-2">
+          <div className="flex items-center gap-1.5">
+            {task.wbs_code}
+            {critical && (
+              <span className="rounded bg-red-500/10 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-red-600 dark:text-red-400" title="On the critical path">
+                Critical
+              </span>
+            )}
+          </div>
+        </TableCell>
         <TableCell className="font-semibold text-foreground text-sm py-2">
           <div className="flex items-center gap-2" style={{ paddingLeft: `${level * 16}px` }}>
             {level > 0 && (
@@ -316,13 +333,14 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
           onToggleCollapse={onToggleCollapse}
           selected={selected}
           onSelectClick={onSelectClick}
+          highlightCritical={highlightCritical}
         />
       ))}
     </>
   );
 }
 
-export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask, selection }: ProjectTaskListProps) {
+export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask, selection, highlightCritical }: ProjectTaskListProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const toggleCollapse = (id: string) =>
     setCollapsed((prev) => {
@@ -412,6 +430,7 @@ export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, 
                     onToggleCollapse={toggleCollapse}
                     selected={selectionState?.selected}
                     onSelectClick={selectionState && onSelectionChange ? (id, shift) => onSelectionChange(clickSelection(selectionState, order, id, shift)) : undefined}
+                    highlightCritical={highlightCritical}
                   />
                 ))}
               </Fragment>

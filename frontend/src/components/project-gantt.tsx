@@ -18,7 +18,7 @@ import {
   endOfDay,
   eachQuarterOfInterval,
   subDays,
-  addDays // Added addDays import
+  addDays
 } from 'date-fns';
 import { toPng } from 'html-to-image';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/popover";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -50,7 +51,8 @@ import {
   Plus,
   Trash2,
   Link,
-  Target
+  Target,
+  Info
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -66,6 +68,7 @@ import {
   dependencyTypeFor,
   dependencyViolations,
   describeViolation,
+  isCriticalTask,
   keyboardAdjust,
   normalizePriority,
   rangeLength,
@@ -74,6 +77,7 @@ import {
   sideAt,
   snapDelta,
   validateLink,
+  VIEW_BUFFER_DAYS,
   type BarSide,
   type DayRange,
   type DepEdge,
@@ -95,6 +99,9 @@ export interface ProjectGanttProps {
   onTaskDatesChange?: (taskId: string, dates: { start_date: string | null; due_date: string | null }) => Promise<unknown>;
   /** Enables drag-to-link. Must reject when the server refuses (e.g. 400 on a cycle). */
   onCreateDependency?: (predecessorId: string, successorId: string, type: DepType) => Promise<unknown>;
+  /** Controlled Critical Path toggle, so a page can share it with other views. Falls back to internal state. */
+  showCriticalPath?: boolean;
+  onShowCriticalPathChange?: (show: boolean) => void;
 }
 
 interface DragPreview {
@@ -296,6 +303,9 @@ const getOrthogonalPath = (
 
 const ROW_HEIGHT = 56;
 
+/** Summary (parent) bars: dark on light, light on dark, red when on the critical path. */
+const summaryBarColor = (critical: boolean) => critical ? "bg-red-500" : "bg-slate-800 dark:bg-slate-300";
+
 export default function ProjectGantt({
   tasks,
   projectStartDate,
@@ -306,10 +316,17 @@ export default function ProjectGantt({
   showProjectNames = true,
   onTaskClick,
   onTaskDatesChange,
-  onCreateDependency
+  onCreateDependency,
+  showCriticalPath: controlledCriticalPath,
+  onShowCriticalPathChange
 }: ProjectGanttProps) {
   const [showSubtasks, setShowSubtasks] = useState(initialShowSubtasks);
-  const [showCriticalPath, setShowCriticalPath] = useState(false);
+  const [internalCriticalPath, setInternalCriticalPath] = useState(false);
+  const showCriticalPath = controlledCriticalPath ?? internalCriticalPath;
+  const setShowCriticalPath = (show: boolean) => {
+    setInternalCriticalPath(show);
+    onShowCriticalPathChange?.(show);
+  };
   const [showTaskColors, setShowTaskColors] = useState(true);
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('month');
   const [isExporting, setIsExporting] = useState(false);
@@ -665,31 +682,34 @@ export default function ProjectGantt({
   };
 
   const viewWindow = useMemo(() => {
-    const dates: Date[] = []; // IMPROVED: Exclude 'Today' from default bounds to minimize empty space
+    // Bounds come from the tasks only, so the chart opens on the work instead of empty days.
+    // Project dates and regions are a fallback for projects without dated tasks; regions
+    // outside the task range are clipped by the regions layer.
+    const dates: Date[] = [];
     committedItems.forEach(item => {
       if (item.start_date) dates.push(parseISO(item.start_date));
       const effectiveEnd = getEffectiveEndDate(item);
       if (effectiveEnd) dates.push(parseISO(effectiveEnd));
       if (item.completed_at) dates.push(parseISO(item.completed_at));
     });
-    if (projectStartDate) dates.push(parseISO(projectStartDate));
-    if (projectDueDate) dates.push(parseISO(projectDueDate));
-
-    timeRegions.forEach(r => {
-      if (r.start_date) dates.push(parseISO(r.start_date));
-      if (r.end_date) dates.push(parseISO(r.end_date));
-    });
 
     if (dates.length === 0) {
-      // Fallback if no tasks have dates
+      if (projectStartDate) dates.push(parseISO(projectStartDate));
+      if (projectDueDate) dates.push(parseISO(projectDueDate));
+      timeRegions.forEach(r => {
+        if (r.start_date) dates.push(parseISO(r.start_date));
+        if (r.end_date) dates.push(parseISO(r.end_date));
+      });
+    }
+
+    if (dates.length === 0) {
       dates.push(new Date());
     }
 
     let start = min(dates);
     let end = max(dates);
 
-    // Apply buffers based on zoom level (dynamic expansion)
-    const bufferDays = zoomLevel === 'year' ? 60 : zoomLevel === 'quarter' ? 30 : zoomLevel === 'month' ? 14 : 7;
+    const bufferDays = VIEW_BUFFER_DAYS[zoomLevel];
     start = subDays(start, bufferDays);
     end = addDays(end, bufferDays);
 
@@ -972,102 +992,114 @@ export default function ProjectGantt({
           <Button variant="outline" size="sm" className="h-9 gap-2" onClick={exportGantt} disabled={isExporting}>
             <Download className="w-3.5 h-3.5" /> {isExporting ? '...' : 'PNG'}
           </Button>
-        </div>
-      </div>
 
-      <div className="absolute top-[73px] right-4 flex flex-col gap-2 p-2 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg z-50 pointer-events-none">
-        <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Status (Theme)</span>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-fg-faint/20 border border-fg-faint" />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Backlog</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-muted-foreground/20 border border-muted-foreground" />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Todo</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-blue-500/20 border border-blue-500" />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">In Progress</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-amber-500/20 border border-amber-500" />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">On Hold</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-purple-500/20 border border-purple-500" />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Review</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/20 border border-emerald-500" />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Done</span>
-          </div>
-        </div>
-
-        <div className="my-1 border-t border-hairline" />
-        <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Priority (Border)</span>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-blue-600" />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Low</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-amber-600" />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Medium</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-orange-600" />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">High</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-red-600" />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Critical</span>
-          </div>
-        </div>
-
-        <div className="my-1 border-t border-hairline" />
-        <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Indicators</span>
-        <div className="grid grid-cols-1 gap-y-1.5">
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-2 rounded-sm border relative overflow-hidden" style={{ backgroundColor: '#cbd5e122', borderColor: '#94a3b8' }}>
-               <div className="absolute bottom-0 left-0 w-2/3 h-0.5 bg-fg-faint" />
-            </div>
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Progress Underline</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-2 rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(-45deg, #cbd5e1, #cbd5e1 1px, transparent 1px, transparent 3px)', opacity: 0.6 }} />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Buffer (Grace Period)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center justify-center w-4">
-                <div className="w-0.5 h-3 bg-emerald-500 relative">
-                    <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full" />
-                    <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 gap-2">
+                <Info className="w-3.5 h-3.5" /> Legend
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-3 flex flex-col gap-2" align="end">
+              <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Status (Theme)</span>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-fg-faint/20 border border-fg-faint" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Backlog</span>
                 </div>
-            </div>
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Completed On-Time</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center justify-center w-4">
-                <div className="w-0.5 h-3 bg-red-500 relative">
-                    <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full" />
-                    <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full" />
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-muted-foreground/20 border border-muted-foreground" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Todo</span>
                 </div>
-            </div>
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Completed Late</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-0.5 h-2.5 bg-purple-500 opacity-40" />
-            <span className="text-[9px] font-bold text-muted-foreground uppercase">Hard Deadline</span>
-          </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-blue-500/20 border border-blue-500" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">In Progress</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-amber-500/20 border border-amber-500" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">On Hold</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-purple-500/20 border border-purple-500" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Review</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/20 border border-emerald-500" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Done</span>
+                </div>
+              </div>
+
+              <div className="my-1 border-t border-hairline" />
+              <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Priority (Border)</span>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-blue-600" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Low</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-amber-600" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Medium</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-orange-600" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">High</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-red-600" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Critical</span>
+                </div>
+              </div>
+
+              <div className="my-1 border-t border-hairline" />
+              <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Indicators</span>
+              <div className="grid grid-cols-1 gap-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-2 rounded-sm border relative overflow-hidden" style={{ backgroundColor: '#cbd5e122', borderColor: '#94a3b8' }}>
+                     <div className="absolute bottom-0 left-0 w-2/3 h-0.5 bg-fg-faint" />
+                  </div>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Progress Underline</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-2 rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(-45deg, #cbd5e1, #cbd5e1 1px, transparent 1px, transparent 3px)', opacity: 0.6 }} />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Buffer (Grace Period)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-center w-4">
+                      <div className="w-0.5 h-3 bg-emerald-500 relative">
+                          <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full" />
+                          <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full" />
+                      </div>
+                  </div>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Completed On-Time</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-center w-4">
+                      <div className="w-0.5 h-3 bg-red-500 relative">
+                          <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full" />
+                          <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full" />
+                      </div>
+                  </div>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Completed Late</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-0.5 h-2.5 bg-purple-500 opacity-40" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Hard Deadline</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-2 rounded-sm ring-2 ring-red-500" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">Critical Path (when on)</span>
+                </div>
+              </div>
+      
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
       <div className="overflow-x-auto relative" ref={ganttRef}>
         <div style={{ width: `${containerWidth + sidebarWidth}px` }} className="relative bg-background">
           {/* Header Row */}
-          <div className="flex border-b border-border bg-subtle sticky top-0 z-30">
-            <div className="sticky left-0 z-40 flex bg-subtle shrink-0">
+          <div className="flex border-b border-border bg-subtle sticky top-0 z-40">
+            <div className="sticky left-0 z-50 flex bg-subtle shrink-0">
               {columns.filter(c => c.visible).map(col => (
                 <div
                   key={col.id}
@@ -1267,8 +1299,7 @@ export default function ProjectGantt({
                                       lines.push(
                                         <g key={`hier-group-${task.id}`}>
                                           {renderedSubtasks.map(st => {
-                                            const isStCritical = st.is_critical || st.slack_days === 0;
-                                            const isHierCritical = showCriticalPath && isStCritical;
+                                            const isHierCritical = showCriticalPath && isCriticalTask(st) && isCriticalTask(task);
                                             const color = isHierCritical ? "#ef4444" : "#94a3b8";
                 
                                             return (
@@ -1309,7 +1340,7 @@ export default function ProjectGantt({
                                                   stroke={color}
                                                   strokeWidth={getStrokeWidth(isHierCritical) * (isHierCritical ? 1.2 : 1)}
                                                   strokeDasharray={isHierCritical ? "none" : "3 3"}
-                                                  strokeOpacity={isHierCritical ? 1 : 0.5}
+                                                  strokeOpacity={isHierCritical ? 1 : (showCriticalPath ? 0.2 : 0.5)}
                                                   vectorEffect="non-scaling-stroke"
                                                 />
                                               </g>
@@ -1369,28 +1400,11 @@ export default function ProjectGantt({
                                                     
                                                     const isConflict = (startSide === 'right' && endSide === 'left') ? eX < sX + (dep.lag_days || 0) * dayWidth : false;
                 
-                                                    const itemIsCritical = item.is_critical || item.slack_days === 0;
-                
-                                
-                
-                                                    // IMPROVED: Less strict logic. 
-                
-                                                    // A line is "Critical" if:
-                
-                                                    // 1. CPM Critical Path is toggled AND the successor is critical
-                
-                                                    // 2. OR the task itself has a 'critical' priority label
-                
-                                                    const isCritical = (showCriticalPath && itemIsCritical) || (normalizePriority(item.priority) === 'critical');
-                
-                                                    
-                
-                                                    // Use Amber for 'high' priority or conflicts
-                
-                                                    const isHigh = normalizePriority(item.priority) === 'high' || isConflict;
-                
-                                                    
-                
+                                                    // Red only for links on the critical path, and only while the toggle is on.
+                                                    // Priority is shown by the bar border, not by the lines.
+                                                    const isCritical = showCriticalPath && isCriticalTask(item) && isCriticalTask(blocker);
+                                                    const isHigh = isConflict;
+
                                                     const color = isCritical ? "#ef4444" : (isHigh ? "#f59e0b" : "#2563eb");
                 
                                 
@@ -1463,7 +1477,7 @@ export default function ProjectGantt({
                 
                                                           markerEnd={`url(#arrowhead-${isCritical ? 'red' : (isHigh ? 'amber' : 'blue')})`}
                 
-                                                          strokeOpacity={isCritical ? 1 : 0.8}
+                                                          strokeOpacity={isCritical ? 1 : (showCriticalPath ? 0.2 : 0.8)}
                 
                                                           vectorEffect="non-scaling-stroke"
                 
@@ -1500,11 +1514,11 @@ export default function ProjectGantt({
             </div>
 
             {/* Global Timeline Overlay */}
-            <div style={{ left: `${sidebarWidth}px`, width: `${containerWidth}px` }} className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+            <div style={{ left: `${sidebarWidth}px`, width: `${containerWidth}px` }} className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
               {todayPx >= 0 && todayPx <= containerWidth && (
                 <div
                   style={{ left: `${todayPx}px` }}
-                  className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-30 pointer-events-none"
+                  className="absolute top-0 bottom-0 w-0.5 bg-red-500 pointer-events-none"
                 >
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm w-max">
                     TODAY
@@ -1542,7 +1556,8 @@ export default function ProjectGantt({
                   }}
                 >
                   {/* Sidebar Cells */}
-                  <div className="sticky left-0 z-20 flex bg-background shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] h-full shrink-0">
+                  {/* z-30 keeps every timeline layer (bars, pins, lines, Today) underneath while scrolling */}
+                  <div className="sticky left-0 z-30 flex bg-background shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] h-full shrink-0">
                     {columns.filter(c => c.visible).map(col => (
                       <div
                         key={col.id}
@@ -1619,7 +1634,10 @@ export default function ProjectGantt({
                   </div>
 
                   {/* Timeline Row */}
-                  <div className="relative h-14 shrink-0" style={{ width: `${containerWidth}px` }}>
+                  <div
+                    className={cn("relative h-14 shrink-0 transition-opacity", showCriticalPath && !isCriticalTask(item) && "opacity-40")}
+                    style={{ width: `${containerWidth}px` }}
+                  >
                     {/* Grid Lines */}
                     {timeTicks?.map(tick => (
                       <div key={tick.toISOString()} className="absolute top-0 bottom-0 border-l border-hairline h-full z-0" style={{ left: `${getPositionPx(tick)}px` }} />
@@ -1647,6 +1665,7 @@ export default function ProjectGantt({
                           "absolute w-3 h-3 rotate-45 border-2 border-white shadow-md z-10 transition-transform hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
                           editable ? "cursor-grab touch-none" : "cursor-pointer",
                           getBarColor(item),
+                          showCriticalPath && isCriticalTask(item) && "ring-2 ring-red-500 ring-offset-1",
                           stateRing
                         )}
                         data-gantt-bar={item.id}
@@ -1675,11 +1694,11 @@ export default function ProjectGantt({
                           }}
                         >
                           {/* Main thin bar */}
-                          <div className="w-full h-1 bg-slate-800 rounded-full relative">
+                          <div className={cn("w-full h-1 rounded-full relative", summaryBarColor(showCriticalPath && isCriticalTask(item)))}>
                             {/* Left tick */}
-                            <div className="absolute left-0 top-0 w-0.5 h-3 bg-slate-800" style={{ transform: 'translateY(-2px)' }} />
+                            <div className={cn("absolute left-0 top-0 w-0.5 h-3", summaryBarColor(showCriticalPath && isCriticalTask(item)))} style={{ transform: 'translateY(-2px)' }} />
                             {/* Right tick */}
-                            <div className="absolute right-0 top-0 w-0.5 h-3 bg-slate-800" style={{ transform: 'translateY(-2px)' }} />
+                            <div className={cn("absolute right-0 top-0 w-0.5 h-3", summaryBarColor(showCriticalPath && isCriticalTask(item)))} style={{ transform: 'translateY(-2px)' }} />
                           </div>
                         </div>
                         <span className="absolute px-2 text-[9px] font-black uppercase text-muted-foreground truncate pointer-events-none" style={{
@@ -1731,7 +1750,7 @@ export default function ProjectGantt({
                             editable ? "cursor-grab active:cursor-grabbing touch-none" : "cursor-pointer",
                             getPriorityBorder(item.priority),
                             (item.deadline_at && isAfter(new Date(), parseISO(item.deadline_at)) && item.status.toLowerCase() !== 'done') && "ring-2 ring-red-500 ring-offset-1",
-                            showCriticalPath && item.is_critical && "ring-2 ring-red-400 ring-offset-2 animate-pulse",
+                            showCriticalPath && isCriticalTask(item) && "ring-2 ring-red-500 ring-offset-1",
                             stateRing
                           )}
                           style={{
@@ -1830,7 +1849,7 @@ export default function ProjectGantt({
 
       {/* Time Region Dialog */}
       <Dialog open={isRegionDialogOpen} onOpenChange={(open) => { setIsRegionDialogOpen(open); if (!open) setRegionFormView('list'); }}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>{regionFormView === 'list' ? 'Manage Reference Zones' : (editingRegion ? 'Edit Zone' : 'Add Zone')}</DialogTitle>
             <DialogDescription>
@@ -1839,11 +1858,12 @@ export default function ProjectGantt({
                 : 'Define the name, date range, and color for this zone.'}
             </DialogDescription>
           </DialogHeader>
+        <DialogBody>
 
           {regionFormView === 'list' ? (
             <div className="space-y-4">
               <div className="max-h-[300px] overflow-y-auto space-y-2">
-                {timeRegions.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No regions defined.</p>}
+                {timeRegions.length === 0 && <p className="text-sm text-muted-foreground text-center">No regions defined.</p>}
                 {timeRegions.map(r => (
                   <div key={r.id} className="flex items-center justify-between p-3 rounded-md border bg-subtle">
                     <div className="flex items-center gap-3">
@@ -1928,6 +1948,7 @@ export default function ProjectGantt({
               </div>
             </div>
           )}
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </div>

@@ -16,10 +16,12 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -347,7 +349,7 @@ export default function ProjectsListPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertCircle className="w-5 h-5" />
@@ -358,7 +360,7 @@ export default function ProjectsListPage() {
               This will permanently remove all associated tasks, subtasks, and files. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-3 pt-4">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setProjectToDelete(null)}>
               Cancel
             </Button>
@@ -371,21 +373,22 @@ export default function ProjectsListPage() {
               {deleteProjectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               Delete Project
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { setIsCreateDialogOpen(open); if (!open) setCreationStep('type'); }}>
-        <DialogContent className={cn("transition-all duration-300", creationStep === 'type' ? "sm:max-w-[600px]" : "sm:max-w-[500px]")}>
+        <DialogContent size={creationStep === 'type' ? 'lg' : 'md'}>
           <DialogHeader>
             <DialogTitle>{creationStep === 'type' ? 'Select Project Type' : 'Project Details'}</DialogTitle>
             <DialogDescription>
               {creationStep === 'type' ? 'Choose a template or start with a blank project.' : 'Enter the project details to get started.'}
             </DialogDescription>
           </DialogHeader>
+        <DialogBody>
 
           {creationStep === 'type' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Card 
                 className="cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group"
                 onClick={() => { setSelectedTemplate(null); setCreationStep('form'); }}
@@ -426,6 +429,7 @@ export default function ProjectsListPage() {
               } : {}}
             />
           )}
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </div>

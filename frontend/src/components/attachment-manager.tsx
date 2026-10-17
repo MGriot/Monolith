@@ -16,6 +16,7 @@ import {
 import FilePreviewDialog from "./file-preview-dialog";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -310,13 +311,14 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
 
       {/* Decision Dialog */}
       <Dialog open={isAddContentOpen} onOpenChange={setIsAddContentOpen}>
-          <DialogContent className="sm:max-w-[400px]">
+          <DialogContent size="sm">
               <DialogHeader>
-                  <DialogTitle className="text-sm font-bold uppercase tracking-tight">Add Content to Task</DialogTitle>
+                  <DialogTitle>Add content to task</DialogTitle>
               </DialogHeader>
 
+              <DialogBody>
               {contentMode === "select" && (
-                  <div className="grid grid-cols-1 gap-3 py-4">
+                  <div className="grid grid-cols-1 gap-3">
                       <button 
                         className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all text-left group"
                         onClick={() => document.getElementById('file-upload-decision')?.click()}
@@ -360,7 +362,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
               )}
 
               {contentMode === "link" && (
-                  <div className="space-y-4 py-4">
+                  <div className="space-y-4">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase text-fg-faint">Website or Resource URL</Label>
                         <Input 
@@ -378,7 +380,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
               )}
 
               {contentMode === "whiteboard" && (
-                  <div className="space-y-4 py-4">
+                  <div className="space-y-4">
                       <Label className="text-[10px] font-black uppercase text-fg-faint">Select Project Whiteboard</Label>
                       <div className="max-h-[200px] overflow-y-auto space-y-1 pr-2">
                           {projectWhiteboards?.length === 0 && <p className="text-xs text-fg-faint text-center py-4">No whiteboards in project.</p>}
@@ -412,17 +414,18 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                       </div>
                   </div>
               )}
+              </DialogBody>
           </DialogContent>
       </Dialog>
 
-      <FilePreviewDialog 
+      <FilePreviewDialog
         url={previewUrl}
         onClose={() => setPreviewUrl(null)}
       />
 
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="sm:max-w-[95vw] h-[90vh] p-0 overflow-hidden flex flex-col [&>button:last-child]:hidden">
-            <DialogHeader className="p-4 border-b sr-only">
+        <DialogContent size="full" hideClose>
+            <DialogHeader className="sr-only">
                 <DialogTitle>Whiteboard Editor</DialogTitle>
             </DialogHeader>
             <div className="flex-1 overflow-hidden">

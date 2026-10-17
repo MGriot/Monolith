@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -77,7 +78,7 @@ export default function DataExportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="w-5 h-5 text-primary" />
@@ -87,8 +88,9 @@ export default function DataExportDialog({
             {description}
           </DialogDescription>
         </DialogHeader>
+        <DialogBody>
 
-        <div className="grid gap-6 py-4">
+        <div className="grid gap-6">
           <div className="space-y-2">
             <Label htmlFor="format">Format</Label>
             <Select value={format} onValueChange={(v: any) => setFormat(v)}>
@@ -116,6 +118,7 @@ export default function DataExportDialog({
           </div>
         </div>
 
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Cancel
