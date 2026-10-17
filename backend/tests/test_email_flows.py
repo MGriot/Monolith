@@ -37,6 +37,7 @@ def make_user(**kw):
 def db():
     d = MagicMock()
     d.commit, d.flush, d.refresh = AsyncMock(), AsyncMock(), AsyncMock()
+    d.info = {}
     return d
 
 
@@ -450,6 +451,7 @@ class TestAssignmentMail:
 
         u1, u2 = make_user(email="a@example.com"), make_user(email="b@example.com")
         db = MagicMock()
+        db.info = {}
         db.commit, db.rollback = AsyncMock(), AsyncMock()
         results = [
             SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: [u1, u2])),
@@ -474,6 +476,7 @@ class TestAssignmentMail:
             return SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: []))
 
         db = MagicMock()
+        db.info = {}
         db.execute = execute
         run(crud_task._email_assignees(db, None, [uuid4()], "T", "/tasks"))
         assert "is_active" in captured["sql"] and "notify_email_assignments" in captured["sql"]
@@ -482,10 +485,12 @@ class TestAssignmentMail:
         from app.crud.crud_task import task as crud_task
 
         db = MagicMock()
+        db.info = {}
         db.rollback = AsyncMock()
         db.execute = AsyncMock(side_effect=RuntimeError("db hiccup"))
         run(crud_task._email_assignees(db, None, [uuid4()], "T", "/tasks"))  # must not raise
-        db.rollback.assert_awaited_once()
+        # only the SAVEPOINT may be undone; a session-wide rollback would discard the task change around it
+        db.rollback.assert_not_awaited()
 
 
 class TestDigestHtml:

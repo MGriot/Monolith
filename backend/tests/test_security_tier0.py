@@ -424,7 +424,8 @@ class TestKnownCrashes:
                 return 42
 
         db = MagicMock()
-        db.commit, db.refresh = AsyncMock(), AsyncMock()
+        db.info = {}
+        db.commit, db.refresh, db.flush, db.rollback = AsyncMock(), AsyncMock(), AsyncMock(), AsyncMock()
         obj = Thing(id=1, title="keep", note="old")
         out = run(CRUDBase(Thing).update(db, db_obj=obj, obj_in={"title": None, "computed": 5, "note": None}))
         assert out.title == "keep"      # NOT NULL column ignores explicit null (was a 500 at commit)
@@ -443,7 +444,8 @@ class TestKnownCrashes:
         monkeypatch.setattr(t, "get", AsyncMock(return_value="reloaded"))
 
         db = MagicMock()
-        db.commit, db.refresh = AsyncMock(), AsyncMock()
+        db.info = {}
+        db.commit, db.refresh, db.flush, db.rollback = AsyncMock(), AsyncMock(), AsyncMock(), AsyncMock()
         obj = Task(
             id=uuid4(), title="t", project_id=None, parent_id=None,
             start_date=datetime(2025, 1, 1), due_date=datetime(2025, 1, 3), duration_days=3,
@@ -461,7 +463,8 @@ class TestKnownCrashes:
             monkeypatch.setattr(t, name, AsyncMock(), raising=False)
         monkeypatch.setattr(t, "get", AsyncMock(return_value="ok"))
         db = MagicMock()
-        db.commit, db.refresh = AsyncMock(), AsyncMock()
+        db.info = {}
+        db.commit, db.refresh, db.flush, db.rollback = AsyncMock(), AsyncMock(), AsyncMock(), AsyncMock()
         obj = Task(id=uuid4(), title="t", project_id=None, parent_id=None,
                    start_date=datetime(2025, 1, 1), due_date=datetime(2025, 1, 1), duration_days=1)
         run(t.update(db, db_obj=obj, obj_in={"duration_days": 5}))

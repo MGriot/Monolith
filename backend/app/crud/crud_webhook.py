@@ -6,6 +6,7 @@ from sqlalchemy.future import select
 from app.crud.base import CRUDBase
 from app.models.webhook import Webhook
 from app.schemas.webhook import WebhookCreate, WebhookUpdate
+from app.db.transaction import atomic, commit
 
 class CRUDWebhook(CRUDBase[Webhook, WebhookCreate, WebhookUpdate]):
     async def create_with_owner(
@@ -14,7 +15,7 @@ class CRUDWebhook(CRUDBase[Webhook, WebhookCreate, WebhookUpdate]):
         obj_in_data = obj_in.dict()
         db_obj = self.model(**obj_in_data, owner_id=owner_id)
         db.add(db_obj)
-        await db.commit()
+        await commit(db)
         await db.refresh(db_obj)
         return db_obj
 

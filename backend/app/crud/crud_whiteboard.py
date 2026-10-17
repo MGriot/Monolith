@@ -5,6 +5,7 @@ from sqlalchemy.future import select
 from app.crud.base import CRUDBase
 from app.models.whiteboard import Whiteboard
 from app.schemas.whiteboard import WhiteboardCreate, WhiteboardUpdate
+from app.db.transaction import atomic, commit
 
 class CRUDWhiteboard(CRUDBase[Whiteboard, WhiteboardCreate, WhiteboardUpdate]):
     async def get_by_project(
@@ -42,7 +43,7 @@ class CRUDWhiteboard(CRUDBase[Whiteboard, WhiteboardCreate, WhiteboardUpdate]):
             owner_id=owner_id,
         )
         db.add(db_obj)
-        await db.commit()
+        await commit(db)
         await db.refresh(db_obj)
         return db_obj
 

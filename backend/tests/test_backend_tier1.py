@@ -24,6 +24,7 @@ class RecordingDB:
         self.statements = []
         self.scripted = list(scripted or [])
         self.committed = False
+        self.info = {}
 
     async def execute(self, stmt):
         self.statements.append(stmt)

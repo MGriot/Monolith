@@ -99,7 +99,7 @@ services:
       - mail_state:/var/mail-state
       - mail_logs:/var/log/mail
       # Plain config files only (accounts, DKIM keys, certs): safe to bind-mount and edit on the host
-      - ./mailserver/config:/tmp/docker-mailserver:z
+      - ${MAIL_CONFIG_DIR:-./mailserver/config}:/tmp/docker-mailserver:z
     environment:
       OVERRIDE_HOSTNAME: mail.${MAIL_DOMAIN:-monolith.local}
       PERMIT_DOCKER: none          # rootless Podman NATs source IPs; "connected-networks" could open a relay

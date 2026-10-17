@@ -67,11 +67,14 @@ def retry_delay(attempts: int) -> timedelta:
     return timedelta(seconds=min(settings.EMAIL_RETRY_BASE_SECONDS * (2 ** max(attempts - 1, 0)), 12 * 3600))
 
 
-async def deliver_due(batch: int = 20) -> int:
-    """Send up to `batch` due messages. SKIP LOCKED lets several processes share the queue without double sends."""
+async def deliver_due(batch: int = 20, now: Optional[datetime] = None) -> int:
+    """Send up to `batch` due messages. SKIP LOCKED lets several processes share the queue without double sends.
+
+    `now` exists for tests (treat the queue as of another moment); production always uses the real time.
+    """
     from app.core.notifications import email_service  # late import: notifications imports this module
 
-    now = datetime.utcnow()
+    now = now or datetime.utcnow()
     async with AsyncSessionLocal() as db:
         rows = (
             await db.execute(

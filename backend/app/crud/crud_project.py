@@ -12,6 +12,7 @@ from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.schemas.task import TaskCreate
 from app.core.utils import clean_dict_datetimes
+from app.db.transaction import atomic, commit
 
 class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[Project]:
@@ -51,6 +52,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         )
         return result.scalars().all()
 
+    @atomic
     async def create(self, db: AsyncSession, *, obj_in: ProjectCreate) -> Project:
         obj_data = clean_dict_datetimes(obj_in.dict(exclude={'topic_ids', 'type_ids', 'member_ids', 'template_id'}))
         db_obj = self.model(**obj_data)
@@ -68,7 +70,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             db_obj.members = members_result.scalars().all()
 
         db.add(db_obj)
-        await db.commit()
+        await commit(db)
         await db.refresh(db_obj)
         
         # Template Instantiation
@@ -77,6 +79,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
 
         return await self.get(db, id=db_obj.id)
 
+    @atomic
     async def create_with_owner(
         self, db: AsyncSession, *, obj_in: ProjectCreate, owner_id: UUID
     ) -> Project:
@@ -96,7 +99,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             db_obj.members = members_result.scalars().all()
             
         db.add(db_obj)
-        await db.commit()
+        await commit(db)
         await db.refresh(db_obj)
 
         # Template Instantiation
@@ -173,7 +176,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         if template.tasks_json:
             await create_recursive_tasks(template.tasks_json)
         
-        await db.commit()
+        await commit(db)
 
     async def update(
         self, db: AsyncSession, *, db_obj: Project, obj_in: Union[ProjectUpdate, Dict[str, Any]]

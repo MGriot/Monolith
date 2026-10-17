@@ -13,6 +13,7 @@ from app.models.metadata import Topic, WorkType
 from app.schemas.task import TaskCreate, TaskUpdate
 from app.core.enums import Status
 from app.core.utils import clean_dict_datetimes
+from app.db.transaction import atomic, commit
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     # --- tree loading -------------------------------------------------------------------------------
@@ -263,6 +264,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                         
         return active_blocker_titles
 
+    @atomic
     async def create(self, db: AsyncSession, *, obj_in: TaskCreate, owner_id: Optional[UUID] = None) -> Task:
         obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True, exclude={'topic_ids', 'type_ids'}))
         assignee_ids = obj_data.pop("assignee_ids", [])
@@ -326,7 +328,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             db_obj.types = res.scalars().all()
 
         db.add(db_obj)
-        await db.commit()
+        await commit(db)
         await db.refresh(db_obj)
         
         # Handle recursive subtasks
@@ -386,34 +388,34 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             from app.models.project import Project
             from app.models.user import User
 
-            users = (
-                await db.execute(
-                    select(User).where(
-                        User.id.in_(user_ids), User.is_active == True, User.notify_email_assignments == True  # noqa: E712
+            # SAVEPOINT: a failure here must only undo the e-mails, never the surrounding task change
+            async with db.begin_nested():
+                users = (
+                    await db.execute(
+                        select(User).where(
+                            User.id.in_(user_ids), User.is_active == True, User.notify_email_assignments == True  # noqa: E712
+                        )
                     )
-                )
-            ).scalars().all()
-            if not users:
-                return
-            project_name = None
-            if project_id:
-                project_name = (await db.execute(select(Project.name).where(Project.id == project_id))).scalar()
-            for user in users:
-                await enqueue_email(
-                    db,
-                    to=user.email,
-                    kind="assignment",
-                    template="assignment",
-                    name=user.full_name or user.email,
-                    task_title=item_title,
-                    project_name=project_name,
-                    link=absolute_url(link),
-                )
-            await db.commit()
+                ).scalars().all()
+                project_name = None
+                if users and project_id:
+                    project_name = (await db.execute(select(Project.name).where(Project.id == project_id))).scalar()
+                for user in users:
+                    await enqueue_email(
+                        db,
+                        to=user.email,
+                        kind="assignment",
+                        template="assignment",
+                        name=user.full_name or user.email,
+                        task_title=item_title,
+                        project_name=project_name,
+                        link=absolute_url(link),
+                    )
+            await commit(db)
         except Exception:  # an e-mail problem must never break assigning a task
             logging.getLogger(__name__).exception("Could not queue assignment e-mails")
-            await db.rollback()
 
+    @atomic
     async def update(
         self, db: AsyncSession, *, db_obj: Task, obj_in: Union[TaskUpdate, Dict[str, Any]]
     ) -> Task:
@@ -543,6 +545,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         
         return await self.get(db, db_obj.id)
 
+    @atomic
     async def update_assignees(self, db: AsyncSession, *, task_id: UUID, user_ids: List[UUID]) -> Task:
         db_obj = await self.get(db, id=task_id)
         if not db_obj:
@@ -559,10 +562,11 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             await self.notify_assignees(db, db_obj.id, added_ids, db_obj.title)
             
         db.add(db_obj)
-        await db.commit()
+        await commit(db)
         await db.refresh(db_obj)
         return db_obj
 
+    @atomic
     async def remove(self, db: AsyncSession, *, id: UUID) -> Task:
         # Load object first to get parent/project info
         db_obj = await self.get(db, id=id)
