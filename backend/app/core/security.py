@@ -35,3 +35,32 @@ def validate_password_strength(password: str) -> None:
         raise ValueError("Password must be at most 72 bytes (bcrypt limit)")
     if password.strip() != password or not password.strip():
         raise ValueError("Password must not start or end with whitespace")
+
+
+# --- single-purpose tokens (password reset, e-mail verification) ---------------------------------------------
+# They are JWTs signed with the same key but carry a `purpose` claim; get_current_user refuses any token that has
+# one, so a reset link can never be used as a login bearer token.
+
+def password_fingerprint(hashed_password: str) -> str:
+    """Changes whenever the password changes, which makes a reset token single-use."""
+    import hashlib
+
+    return hashlib.sha256(hashed_password.encode("utf-8")).hexdigest()[:16]
+
+
+def create_purpose_token(subject: Union[str, Any], purpose: str, expires_delta: timedelta, **claims: Any) -> str:
+    to_encode = {"sub": str(subject), "purpose": purpose, "exp": datetime.now(timezone.utc) + expires_delta, **claims}
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def decode_purpose_token(token: str, purpose: str) -> dict:
+    """Return the claims, or raise ValueError for a bad/expired token or one issued for another purpose."""
+    from jose import JWTError
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except JWTError:
+        raise ValueError("invalid or expired token")
+    if payload.get("purpose") != purpose or not payload.get("sub"):
+        raise ValueError("invalid or expired token")
+    return payload

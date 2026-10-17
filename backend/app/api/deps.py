@@ -39,8 +39,8 @@ async def get_current_user(
         token_data = TokenPayload(**payload)
     except (JWTError, ValidationError):
         raise _credentials_exc()
-    if token_data.sub is None:
-        raise _credentials_exc()
+    if token_data.sub is None or payload.get("purpose"):
+        raise _credentials_exc()  # purpose tokens (password reset, verification) are not login tokens
     user = await crud_user.get(db, id=token_data.sub)
     # Unknown or deactivated accounts must not keep working with a still-valid token.
     if not user or not user.is_active:
@@ -61,6 +61,8 @@ async def get_current_user_optional(
     except (JWTError, ValidationError):
         return None
     
+    if payload.get("purpose"):
+        return None
     user = await crud_user.get(db, id=token_data.sub) if token_data.sub else None
     return user if user and user.is_active else None
 
