@@ -20,7 +20,9 @@ import {
   Key, 
   ShieldAlert,
   Loader2,
-  Archive
+  Archive,
+  Check,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ResourceTimeline from '@/components/resource-timeline';
@@ -46,6 +48,22 @@ export default function UsersPage() {
       const response = await api.get('/users/');
       return response.data as User[];
     },
+  });
+
+  const { data: pending } = useQuery({
+    queryKey: ['users', 'pending'],
+    queryFn: async () => (await api.get('/users/pending')).data as User[],
+    enabled: !!currentUser?.is_superuser,
+  });
+
+  const decideMutation = useMutation({
+    mutationFn: ({ userId, action }: { userId: string; action: 'approve' | 'reject' }) =>
+      api.post(`/users/${userId}/${action}`),
+    onSuccess: (_res, { action }) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success(action === 'approve' ? 'Approved. A temporary password was e-mailed.' : 'Request rejected');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.detail || 'Could not update the request'),
   });
 
   const { data: calendarData } = useQuery({
@@ -119,6 +137,49 @@ export default function UsersPage() {
   return (
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
+        {!!pending?.length && (
+          <div className="bg-amber-50 dark:bg-amber-500/10 rounded-xl border border-amber-200 dark:border-amber-500/30 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-amber-200 dark:border-amber-500/30">
+              <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">Account requests ({pending.length})</h3>
+              <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
+                Approving activates the account and e-mails the person a temporary password.
+              </p>
+            </div>
+            <ul className="divide-y divide-amber-200 dark:divide-amber-500/30">
+              {pending.map((req) => (
+                <li key={req.id} className="flex items-center justify-between gap-3 p-4">
+                  <div className="min-w-0">
+                    <div className="font-medium text-foreground truncate">{req.full_name || 'No Name'}</div>
+                    <div className="text-xs text-muted-foreground truncate">{req.email}</div>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      disabled={decideMutation.isPending}
+                      onClick={() => decideMutation.mutate({ userId: req.id, action: 'approve' })}
+                    >
+                      <Check className="w-3 h-3" /> Approve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      disabled={decideMutation.isPending}
+                      onClick={() => {
+                        if (confirm(`Reject the request from ${req.email}?`)) {
+                          decideMutation.mutate({ userId: req.id, action: 'reject' });
+                        }
+                      }}
+                    >
+                      <X className="w-3 h-3" /> Reject
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden">
           <Table>
             <TableHeader>

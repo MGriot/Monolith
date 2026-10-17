@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import api from "@/lib/api";
+import { useLoginConfig } from "@/lib/login-config";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,21 +21,28 @@ import { Label } from "@/components/ui/label";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+function loginErrorMessage(err: any): string {
+  const status = err.response?.status;
+  if (status === 429) return "Too many failed attempts. Please wait a few minutes and try again.";
+  if (!err.response) return "Cannot reach the server. Check your connection and try again.";
+  if (status === 400 || status === 401) return err.response?.data?.detail || "Incorrect email or password.";
+  return "Something went wrong. Please try again.";
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+  const { config } = useLoginConfig();
+  const notice = (location.state as { message?: string } | null)?.message;
   const [error, setError] = useState<string | null>(null);
-  // Only offer links that can work: the server says whether sign-up is open and whether e-mail is on.
-  const [features, setFeatures] = useState({ allow_signup: false, email_enabled: true });
-  useEffect(() => {
-    api.get("/auth/config").then((r) => setFeatures(r.data)).catch(() => {});
-  }, []);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -48,7 +57,7 @@ export default function LoginPage() {
     setError(null);
     try {
       const params = new URLSearchParams();
-      params.append("username", data.email);
+      params.append("username", data.email.trim());
       params.append("password", data.password);
 
       const response = await api.post("/login/access-token", params);
@@ -56,14 +65,14 @@ export default function LoginPage() {
       await login(response.data.access_token);
       navigate("/");
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to login. Please check your credentials.");
+      setError(loginErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-subtle">
+    <div className="flex items-center justify-center min-h-screen bg-subtle px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Login</CardTitle>
@@ -72,9 +81,14 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+            {notice && !error && (
+              <div role="status" className="p-3 text-sm text-green-800 dark:text-green-300 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-md">
+                {notice}
+              </div>
+            )}
             {error && (
-              <div className="p-3 text-sm text-white bg-destructive rounded-md">
+              <div role="alert" className="p-3 text-sm text-white bg-destructive rounded-md">
                 {error}
               </div>
             )}
@@ -83,6 +97,8 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
+                autoComplete="username"
+                autoFocus
                 placeholder="m@example.com"
                 {...register("email")}
               />
@@ -92,11 +108,23 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                {...register("password")}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="pr-10"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-fg-body"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-sm text-destructive">{errors.password.message}</p>
               )}
@@ -107,21 +135,25 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
-          {features.email_enabled && (
+          {config.email_enabled && (
             <div className="text-sm text-center">
               <Link to="/forgot-password" className="text-primary hover:underline">
                 Forgot your password?
               </Link>
             </div>
           )}
-          {features.allow_signup && (
-            <div className="text-sm text-muted-foreground text-center">
-              Don't have an account?{" "}
-              <Link to="/register" className="text-primary hover:underline">
-                Register
-              </Link>
-            </div>
-          )}
+          <div className="text-sm text-muted-foreground text-center">
+            {config.allow_signup ? (
+              <>
+                Don't have an account?{" "}
+                <Link to="/register" className="text-primary hover:underline">
+                  Register
+                </Link>
+              </>
+            ) : (
+              "Don't have an account? Ask an administrator to create one."
+            )}
+          </div>
         </CardFooter>
       </Card>
     </div>

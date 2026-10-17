@@ -18,6 +18,7 @@ class UserUpdate(UserBase):
     email_verified_at: Optional[datetime] = None
     notify_email_assignments: Optional[bool] = None
     notify_email_digest: Optional[bool] = None
+    must_change_password: Optional[bool] = None
 
 class UserInDBBase(UserBase):
     id: Optional[UUID] = None
@@ -34,3 +35,4 @@ class UserMe(User):
     email_verified_at: Optional[datetime] = None
     notify_email_assignments: bool = True
     notify_email_digest: bool = True
+    must_change_password: bool = False

@@ -34,10 +34,13 @@ const queryClient = new QueryClient();
 
 /** Authenticated shell. Mounted once for all pages, so the sidebar, search and notification socket survive navigation. */
 const PrivateLayout = () => {
-  const { token, isLoading } = useAuth();
+  const { token, user, isLoading } = useAuth();
   const location = useLocation();
   if (isLoading) return <PageSpinner fullScreen label="Authentication is loading..." />;
   if (!token) return <Navigate to="/login" replace />;
+  if (user?.must_change_password && location.pathname !== "/settings") {
+    return <Navigate to="/settings" replace />;
+  }
   return (
     <TitleProvider>
       <Layout>

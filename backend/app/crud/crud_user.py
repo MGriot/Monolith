@@ -31,6 +31,22 @@ async def create(db: AsyncSession, obj_in: UserCreate) -> User:
     await db.refresh(db_obj)
     return db_obj
 
+async def create_pending(db: AsyncSession, *, email: str, full_name: str) -> User:
+    """A sign-up request: inactive, with a random password nobody knows until an administrator approves it."""
+    import secrets
+
+    db_obj = User(
+        email=email,
+        full_name=full_name,
+        hashed_password=get_password_hash(secrets.token_urlsafe(32)),
+        is_active=False,
+        approval_status="pending",
+    )
+    db.add(db_obj)
+    await commit(db)
+    await db.refresh(db_obj)
+    return db_obj
+
 async def authenticate(db: AsyncSession, email: str, password: str) -> Optional[User]:
     user = await get_by_email(db, email)
     if not user:

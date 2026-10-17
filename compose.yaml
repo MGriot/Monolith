@@ -31,8 +31,8 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-monolith_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-monolith_db}
       SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env (openssl rand -hex 32)}
-      SMTP_HOST: mailserver
-      SMTP_PORT: "587"
+      SMTP_HOST: ${SMTP_HOST:-mailserver}
+      SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
@@ -113,11 +113,12 @@ services:
       ENABLE_POSTGREY: "0"
       ONE_DIR: "1"
       POSTMASTER_ADDRESS: postmaster@${MAIL_DOMAIN:-monolith.local}
-      # On residential/ISP IPs relay through a provider instead of sending direct:
-      # RELAY_HOST: smtp.example.com
-      # RELAY_PORT: "587"
-      # RELAY_USER: user
-      # RELAY_PASSWORD: pass
+      # On residential/ISP IPs relay through a provider (Brevo, Mailgun, SES...) instead of sending direct.
+      # Leave RELAY_HOST empty in .env to keep local-only delivery.
+      RELAY_HOST: ${RELAY_HOST:-}
+      RELAY_PORT: ${RELAY_PORT:-587}
+      RELAY_USER: ${RELAY_USER:-}
+      RELAY_PASSWORD: ${RELAY_PASSWORD:-}
     healthcheck:
       test: ["CMD-SHELL", "ss -ltn | grep -q ':25 ' || exit 1"]
       interval: 30s

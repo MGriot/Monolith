@@ -1,11 +1,15 @@
+import secrets
 from typing import Any, List, Optional
+from uuid import UUID
 from fastapi import APIRouter, Body, Depends, HTTPException, status, Query
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
 from app.core import security
 from app.core.config import settings
+from app.core.mailer import absolute_url, enqueue_email
 from app.crud import crud_user
 from app.schemas.user import User, UserCreate, UserMe, UserUpdate
 from app.models.user import User as UserModel
@@ -22,13 +26,13 @@ async def create_user(
     """
     Create new user.
     """
-    is_admin = bool(current_user and current_user.is_superuser)
-    if not is_admin:
-        # Public sign-up is off by default; admins create accounts otherwise.
-        if not settings.ALLOW_SIGNUP:
-            raise HTTPException(status_code=403, detail="Registration is disabled. Ask an administrator for an account.")
-        if user_in.is_superuser:
-            raise HTTPException(status_code=403, detail="The user doesn't have enough privileges")
+    if not (current_user and current_user.is_superuser):
+        # Only administrators create accounts directly. Everyone else asks via POST /auth/register-request,
+        # and an administrator approves the request (which is what makes the account usable).
+        raise HTTPException(
+            status_code=403,
+            detail="Accounts are created by an administrator. Use the registration request instead.",
+        )
     try:
         security.validate_password_strength(user_in.password)
     except ValueError as e:
@@ -53,7 +57,72 @@ async def read_users(
     Retrieve users.
     """
     users = await crud_user.get_multi(db, skip=skip, limit=limit)
-    return users
+    # sign-up requests are not teammates until approved; admins review them via /users/pending
+    return [u for u in users if u.approval_status == "approved"]
+
+
+@router.get("/pending", response_model=List[User])
+async def read_pending_users(
+    db: AsyncSession = Depends(deps.get_db),
+    _admin: UserModel = Depends(deps.get_current_admin),
+) -> Any:
+    """Sign-up requests waiting for a decision."""
+    result = await db.execute(
+        select(UserModel).where(UserModel.approval_status == "pending").order_by(UserModel.id).limit(200)
+    )
+    return result.scalars().all()
+
+
+def _temp_password() -> str:
+    # no look-alike characters (0/O, 1/l/I) so it can be typed from an e-mail; always passes the password policy
+    alphabet = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    return "".join(secrets.choice(alphabet) for _ in range(max(14, settings.MIN_PASSWORD_LENGTH)))
+
+
+@router.post("/{user_id}/approve", response_model=User)
+async def approve_user(
+    user_id: UUID,
+    db: AsyncSession = Depends(deps.get_db),
+    _admin: UserModel = Depends(deps.get_current_admin),
+) -> Any:
+    """Activate a sign-up request and e-mail the person a temporary password they must change at first login."""
+    user = await crud_user.get(db, id=user_id)
+    if not user or user.approval_status != "pending":
+        raise HTTPException(status_code=404, detail="No pending request for this user")
+    if not settings.EMAIL_ENABLED:
+        raise HTTPException(status_code=409, detail="E-mail is disabled, so the temporary password cannot be delivered")
+    temp = _temp_password()
+    user.hashed_password = security.get_password_hash(temp)
+    user.is_active = True
+    user.approval_status = "approved"
+    user.must_change_password = True
+    db.add(user)
+    await enqueue_email(
+        db,
+        to=user.email,
+        kind="account_approved",
+        template="account_approved",
+        name=user.full_name or user.email,
+        temp_password=temp,
+        link=absolute_url("/login"),
+    )
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+@router.post("/{user_id}/reject", status_code=204)
+async def reject_user(
+    user_id: UUID,
+    db: AsyncSession = Depends(deps.get_db),
+    _admin: UserModel = Depends(deps.get_current_admin),
+) -> None:
+    """Delete a sign-up request (the person may ask again)."""
+    user = await crud_user.get(db, id=user_id)
+    if not user or user.approval_status != "pending":
+        raise HTTPException(status_code=404, detail="No pending request for this user")
+    await db.delete(user)
+    await db.commit()
 
 @router.get("/me", response_model=UserMe)
 async def read_user_me(
@@ -134,6 +203,7 @@ async def update_user_me(
     current_user_data = UserUpdate()
     if password is not None:
         current_user_data.password = password
+        current_user_data.must_change_password = False
     if full_name is not None:
         current_user_data.full_name = full_name
     if email_changed:
