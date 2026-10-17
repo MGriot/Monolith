@@ -56,6 +56,8 @@ class ProjectInDBBase(ProjectBase):
         from_attributes = True
 
 class Project(ProjectInDBBase):
+    # The caller's role (viewer/editor/admin); only filled by GET /projects/{id}
+    my_role: Optional[str] = None
     topic_ref: Optional[Topic] = None
     type_ref: Optional[WorkType] = None
     topics: List[Topic] = []

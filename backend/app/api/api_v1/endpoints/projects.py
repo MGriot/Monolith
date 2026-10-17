@@ -1,14 +1,17 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from pydantic import BaseModel, field_validator
 import io
 import pandas as pd
 from datetime import datetime
 
 from app.api import deps
+from app.api.access import ADMIN, ROLES, project_role, require_project_access
+from app.db.transaction import commit
 from app.crud import crud_project, crud_task
 from app.schemas.project import Project, ProjectCreate, ProjectUpdate
 from app.models.user import User
@@ -138,11 +141,7 @@ async def export_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Check permissions
-    if not current_user.is_superuser and project.owner_id != current_user.id:
-        member_ids = [m.id for m in project.members]
-        if current_user.id not in member_ids:
-            raise HTTPException(status_code=403, detail="Not enough permissions")
+    await require_project_access(db, project_id, current_user)
 
     if mode == "summary":
         # Just project metadata
@@ -386,11 +385,7 @@ async def read_project_statistics(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Check permissions
-    if not current_user.is_superuser and project.owner_id != current_user.id:
-        member_ids = [m.id for m in project.members]
-        if current_user.id not in member_ids:
-             raise HTTPException(status_code=403, detail="Not enough permissions")
+    await require_project_access(db, project_id, current_user)
     
     # Activity query: count all completed tasks in this project per day
     # Using unified Task model
@@ -422,12 +417,10 @@ async def read_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Check permissions (Owner or Member)
-    if not current_user.is_superuser and project.owner_id != current_user.id:
-        member_ids = [m.id for m in project.members]
-        if current_user.id not in member_ids:
-            raise HTTPException(status_code=403, detail="Not enough permissions")
-            
+    role = await project_role(db, project_id, current_user)
+    if role is None:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    project.my_role = role  # lets the UI hide what the user cannot do (the API enforces it regardless)
     return project
 
 @router.put("/{project_id}", response_model=Project)
@@ -445,12 +438,112 @@ async def update_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Only owner or superuser can update project settings/members
-    if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=403, detail="Only the project owner can update settings")
+    # Project admins (owner, superusers and members with the admin role) manage settings and members
+    await require_project_access(db, project_id, current_user, min_role=ADMIN)
         
     project = await crud_project.project.update(db=db, db_obj=project, obj_in=project_in)
     return project
+
+class MemberOut(BaseModel):
+    user_id: UUID
+    email: str
+    full_name: Optional[str] = None
+    role: str
+    is_owner: bool = False
+
+
+class MemberRoleIn(BaseModel):
+    role: str
+
+    @field_validator("role")
+    @classmethod
+    def _known_role(cls, v: str) -> str:
+        if v not in ROLES:
+            raise ValueError(f"role must be one of: {', '.join(ROLES)}")
+        return v
+
+
+@router.get("/{project_id}/members", response_model=List[MemberOut])
+async def list_project_members(
+    project_id: UUID,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """The owner (always admin) and every member with their role. Any project role may look."""
+    from app.models.associations import project_members
+    from app.models.project import Project as ProjectModel
+
+    await require_project_access(db, project_id, current_user)
+    owner_row = (
+        await db.execute(
+            select(User).join(ProjectModel, ProjectModel.owner_id == User.id).where(ProjectModel.id == project_id)
+        )
+    ).scalars().first()
+    rows = (
+        await db.execute(
+            select(User, project_members.c.role)
+            .join(project_members, project_members.c.user_id == User.id)
+            .where(project_members.c.project_id == project_id)
+            .order_by(User.full_name, User.email)
+        )
+    ).all()
+    out = []
+    if owner_row:
+        out.append(MemberOut(user_id=owner_row.id, email=owner_row.email, full_name=owner_row.full_name, role=ADMIN, is_owner=True))
+    out += [
+        MemberOut(user_id=u.id, email=u.email, full_name=u.full_name, role=role)
+        for u, role in rows
+        if not owner_row or u.id != owner_row.id
+    ]
+    return out
+
+
+@router.put("/{project_id}/members/{user_id}", response_model=MemberOut)
+async def set_project_member_role(
+    project_id: UUID,
+    user_id: UUID,
+    body: MemberRoleIn,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """Add a user to the project with `role`, or change an existing member's role. Project admins only."""
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+    from app.models.associations import project_members
+
+    project = await require_project_access(db, project_id, current_user, min_role=ADMIN)
+    if user_id == project.owner_id:
+        raise HTTPException(status_code=400, detail="The owner is always an admin; their role cannot be changed")
+    user = (await db.execute(select(User).where(User.id == user_id))).scalars().first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=404, detail="User not found")
+    await db.execute(
+        pg_insert(project_members)
+        .values(project_id=project_id, user_id=user_id, role=body.role)
+        .on_conflict_do_update(index_elements=["project_id", "user_id"], set_={"role": body.role})
+    )
+    await commit(db)
+    return MemberOut(user_id=user.id, email=user.email, full_name=user.full_name, role=body.role)
+
+
+@router.delete("/{project_id}/members/{user_id}", status_code=204)
+async def remove_project_member(
+    project_id: UUID,
+    user_id: UUID,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> None:
+    """Remove a member. Project admins only; the owner cannot be removed."""
+    from sqlalchemy import delete
+    from app.models.associations import project_members
+
+    project = await require_project_access(db, project_id, current_user, min_role=ADMIN)
+    if user_id == project.owner_id:
+        raise HTTPException(status_code=400, detail="The owner cannot be removed from the project")
+    await db.execute(
+        delete(project_members).where(project_members.c.project_id == project_id, project_members.c.user_id == user_id)
+    )
+    await commit(db)
+
 
 @router.delete("/{project_id}", response_model=Project)
 async def delete_project(
@@ -487,8 +580,7 @@ async def archive_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=403, detail="Only owner can archive")
+    await require_project_access(db, project_id, current_user, min_role=ADMIN)
         
     project = await crud_project.project.update(
         db=db, 
@@ -511,8 +603,7 @@ async def restore_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    if not current_user.is_superuser and (project.owner_id != current_user.id):
-        raise HTTPException(status_code=403, detail="Only owner can restore")
+    await require_project_access(db, project_id, current_user, min_role=ADMIN)
         
     project = await crud_project.project.update(
         db=db, 

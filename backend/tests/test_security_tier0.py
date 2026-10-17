@@ -155,7 +155,7 @@ class TestAccessHelpers:
 
     def test_project_member_has_access(self):
         user = make_user()
-        db = ScriptedDB((uuid4(),), (user.id,))  # owner is someone else, membership row exists
+        db = ScriptedDB((uuid4(),), ("editor",))  # owner is someone else, membership row exists (role)
         assert run(access.has_project_access(db, uuid4(), user))
 
     def test_stranger_has_no_project_access(self):
@@ -297,6 +297,8 @@ def test_author_cannot_self_approve_idea(client, as_user, monkeypatch):
     monkeypatch.setattr(ideas.crud.project, "get", AsyncMock(return_value=project))
     update = AsyncMock()
     monkeypatch.setattr(ideas.crud_idea, "update", update)
+    # an editor (the author) but not a project admin
+    monkeypatch.setattr(ideas, "has_project_access", AsyncMock(side_effect=lambda db, pid, user, min_role="viewer": min_role != "admin"))
     r = client.put(f"/api/v1/ideas/{ID}", json={"status": "Approved"})
     assert r.status_code == 403
     update.assert_not_awaited()

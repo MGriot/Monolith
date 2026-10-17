@@ -6,7 +6,7 @@ from app import crud, models, schemas
 from sqlalchemy import or_, select
 from app.api import deps
 from app.api.access import (
-    require_project_access, require_task_access, require_whiteboard_access,
+    EDITOR, require_project_access, require_task_access, require_whiteboard_access,
 )
 from app.models.associations import project_members
 from app.models.project import Project
@@ -60,7 +60,7 @@ async def create_whiteboard(
     """
     Create new whiteboard.
     """
-    await require_project_access(db, obj_in.project_id, current_user)
+    await require_project_access(db, obj_in.project_id, current_user, min_role=EDITOR)
     if obj_in.task_id:
         await require_task_access(db, obj_in.task_id, current_user, write=True)
     return await crud.whiteboard.create_with_owner(db, obj_in=obj_in, owner_id=current_user.id)
@@ -90,10 +90,10 @@ async def update_whiteboard(
     """
     Update a whiteboard.
     """
-    await require_whiteboard_access(db, id, current_user)
+    await require_whiteboard_access(db, id, current_user, write=True)
     # Moving a board elsewhere requires access to the destination too.
     if obj_in.project_id:
-        await require_project_access(db, obj_in.project_id, current_user)
+        await require_project_access(db, obj_in.project_id, current_user, min_role=EDITOR)
     if obj_in.task_id:
         await require_task_access(db, obj_in.task_id, current_user, write=True)
     whiteboard = await crud.whiteboard.get(db, id=id)
@@ -109,5 +109,5 @@ async def delete_whiteboard(
     """
     Delete a whiteboard.
     """
-    await require_whiteboard_access(db, id, current_user)
+    await require_whiteboard_access(db, id, current_user, write=True)
     return await crud.whiteboard.remove(db, id=id)

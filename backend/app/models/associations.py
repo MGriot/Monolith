@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Table
+from sqlalchemy import CheckConstraint, Column, ForeignKey, String, Table
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.session import Base
 
@@ -34,7 +34,10 @@ project_members = Table(
     "project_members",
     Base.metadata,
     Column("project_id", UUID(as_uuid=True), ForeignKey("projects.id"), primary_key=True),
-    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True),
+    # viewer (read-only) | editor (work on tasks, the role every member had before roles existed) | admin (settings, members)
+    Column("role", String, nullable=False, server_default="editor"),
+    CheckConstraint("role IN ('viewer', 'editor', 'admin')", name="ck_project_members_role"),
 )
 
 task_assignees = Table(

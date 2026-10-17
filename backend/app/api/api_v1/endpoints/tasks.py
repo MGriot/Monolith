@@ -10,7 +10,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.api.access import has_task_access, require_project_access, require_task_access
+from app.api.access import EDITOR, has_task_access, require_project_access, require_task_access
 from app.core.uploads import save_upload
 from app.crud import crud_task, crud_project, crud_dependency, crud_custom_field
 from app.schemas.task import Task, TaskCreate, TaskUpdate, Dependency, DependencyCreate
@@ -218,11 +218,7 @@ async def read_tasks(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Check permissions (Owner or Member)
-    if not current_user.is_superuser and project.owner_id != current_user.id:
-        member_ids = [m.id for m in project.members]
-        if current_user.id not in member_ids:
-            raise HTTPException(status_code=403, detail="Not enough permissions")
+    await require_project_access(db, project_id, current_user)
     
     tasks = await crud_task.task.get_multi_by_project(
         db, 
@@ -259,7 +255,7 @@ async def create_task(
     Create new task.
     """
     if task_in.project_id:
-        await require_project_access(db, task_in.project_id, current_user)
+        await require_project_access(db, task_in.project_id, current_user, min_role=EDITOR)
 
     if task_in.parent_id:
         # A subtask may only hang off a task the caller can write, in the same project.

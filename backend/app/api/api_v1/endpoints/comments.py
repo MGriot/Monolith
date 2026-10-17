@@ -67,6 +67,7 @@ async def create_comment(
     await require_context_access(
         db, current_user,
         project_id=comment_in.project_id, task_id=comment_in.task_id, idea_id=comment_in.idea_id,
+        write=True,
     )
 
     # Check if parent comment exists if provided, and that it belongs to the same thread
