@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import api from "@/lib/api";
+import { useLoginConfig } from "@/lib/login-config";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,29 +17,31 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const registerSchema = z.object({
-  full_name: z.string().min(2, "Full name must be at least 2 characters"),
+const buildSchema = (minLength: number) => z.object({
+  full_name: z.string().trim().min(2, "Full name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(minLength, `Password must be at least ${minLength} characters`),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
 });
 
-type RegisterFormValues = z.infer<typeof registerSchema>;
+type RegisterFormValues = z.infer<ReturnType<typeof buildSchema>>;
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { config, loaded } = useLoginConfig();
+  const schema = useMemo(() => buildSchema(config.min_password_length), [config.min_password_length]);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
@@ -54,14 +57,35 @@ export default function RegisterPage() {
       // Redirect to login after successful registration
       navigate("/login", { state: { message: "Registration successful! Please login." } });
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to register. Please try again.");
+      const detail = err.response?.data?.detail;
+      setError(typeof detail === "string" ? detail : "Failed to register. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (loaded && !config.allow_signup) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold">Registration is closed</CardTitle>
+            <CardDescription>
+              New accounts are created by an administrator. Ask yours to add you, then log in.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Link to="/login" className="text-sm text-primary hover:underline">
+              Back to login
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+    <div className="flex items-center justify-center min-h-screen bg-slate-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
@@ -104,6 +128,7 @@ export default function RegisterPage() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 {...register("password")}
               />
               {errors.password && (
@@ -115,6 +140,7 @@ export default function RegisterPage() {
               <Input
                 id="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 {...register("confirmPassword")}
               />
               {errors.confirmPassword && (
