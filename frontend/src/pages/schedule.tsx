@@ -1,22 +1,15 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth-provider';
 import {
   format,
-  addMonths,
-  subMonths,
   startOfMonth,
   endOfMonth,
-  startOfWeek,
-  endOfWeek,
   isSameMonth,
   isSameDay,
-  eachDayOfInterval,
   parseISO,
   differenceInDays,
-  startOfYear,
-  endOfYear,
   eachMonthOfInterval,
 } from 'date-fns';
 import api from '@/lib/api';
@@ -29,6 +22,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn, formatPercent } from '@/lib/utils';
+import { toast } from 'sonner';
+import {
+  moveItemDates,
+  rangeKey,
+  rangeTitle,
+  shiftAnchor,
+  visibleDays,
+  visibleRange,
+  yearBounds,
+  type CalendarView,
+} from '@/lib/calendar-range';
 import TaskCreateDialog from '@/components/task-create-dialog';
 import { useTitle } from '@/context/title-context';
 
@@ -50,15 +54,30 @@ interface CalendarItem {
 
 // --- Task Roadmap View Component ---
 
+function YearNav({ year, onChange }: { year: number; onChange: (year: number) => void }) {
+  return (
+    <div className="flex items-center bg-white border border-slate-200 rounded-md p-1 shadow-sm">
+      <Button variant="ghost" size="icon" onClick={() => onChange(year - 1)} className="h-7 w-7 text-slate-500" aria-label="Previous year">
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <Button variant="ghost" className="h-7 text-xs font-medium px-3 text-slate-600" onClick={() => onChange(new Date().getFullYear())}>
+        This year
+      </Button>
+      <Button variant="ghost" size="icon" onClick={() => onChange(year + 1)} className="h-7 w-7 text-slate-500" aria-label="Next year">
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+
 function TaskRoadmapView() {
   const { user } = useAuth();
-  const [viewWindow] = useState({
-    start: startOfYear(new Date()),
-    end: endOfYear(new Date()),
-  });
+  const [year, setYear] = useState(new Date().getFullYear());
+  const viewWindow = useMemo(() => yearBounds(year), [year]);
 
   const { data: calendarItems, isLoading } = useQuery({
-    queryKey: ['calendar-tasks-gantt'],
+    queryKey: ['calendar-tasks-gantt', year],
     queryFn: async () => {
       const start = format(viewWindow.start, 'yyyy-MM-dd');
       const end = format(viewWindow.end, 'yyyy-MM-dd');
@@ -101,7 +120,10 @@ function TaskRoadmapView() {
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-slate-900">{format(viewWindow.start, 'yyyy')} Task Progression</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-bold text-slate-900">{year} Task Progression</h2>
+          <YearNav year={year} onChange={setYear} />
+        </div>
         <div className="flex items-center gap-2 text-xs text-slate-500">
             <div className="w-2 h-2 rounded-full bg-purple-500" /> Assigned Tasks
         </div>
@@ -184,23 +206,90 @@ function TaskRoadmapView() {
   );
 }
 
+function MoveToDate({ value, onMove }: { value: string; onMove: (day: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  return (
+    <div className="flex items-end gap-2">
+      <label className="flex-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+        Move to
+        <input
+          type="date"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className="mt-1 block w-full rounded-md border border-slate-200 px-2 py-1 text-xs font-normal normal-case text-slate-700"
+        />
+      </label>
+      <Button size="sm" variant="secondary" className="h-7 text-xs" disabled={!draft || draft === value} onClick={() => onMove(draft)}>
+        Move
+      </Button>
+    </div>
+  );
+}
+
+const VIEW_LABELS: Record<CalendarView, string> = { month: 'Month', week: 'Week', day: 'Day' };
+
+const itemDay = (item: CalendarItem): Date =>
+  parseISO(item.item_type === 'task' || item.item_type === 'subtask' ? item.deadline_at || item.due_date : item.due_date);
+
 function CalendarView() {
   const navigate = useNavigate();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const queryClient = useQueryClient();
+  const [view, setView] = useState<CalendarView>('month');
+  const [anchor, setAnchor] = useState(new Date());
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropDay, setDropDay] = useState<string | null>(null);
+
+  const range = useMemo(() => visibleRange(view, anchor), [view, anchor]);
+  const days = useMemo(() => visibleDays(view, anchor), [view, anchor]);
+  const key = rangeKey(view, anchor);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['calendar', format(currentMonth, 'yyyy-MM')],
+    queryKey: ['calendar', key],
     queryFn: async () => {
-      const start = format(startOfWeek(startOfMonth(currentMonth)), 'yyyy-MM-dd');
-      const end = format(endOfWeek(endOfMonth(currentMonth)), 'yyyy-MM-dd');
+      const start = format(range.start, 'yyyy-MM-dd');
+      const end = format(range.end, 'yyyy-MM-dd');
       const response = await api.get(`/calendar/?start_date=${start}&end_date=${end}`);
       return response.data.items as CalendarItem[];
     },
   });
 
-  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+  // Optimistic reschedule: every cached calendar range is patched at once, and restored if the server refuses.
+  const moveMutation = useMutation({
+    mutationFn: async ({ item, dates }: { item: CalendarItem; dates: ReturnType<typeof moveItemDates> }) => {
+      return api.put(`/tasks/${item.id}`, dates);
+    },
+    onMutate: async ({ item, dates }) => {
+      await queryClient.cancelQueries({ queryKey: ['calendar'] });
+      const snapshots = queryClient.getQueriesData<CalendarItem[]>({ queryKey: ['calendar'] });
+      queryClient.setQueriesData<CalendarItem[]>({ queryKey: ['calendar'] }, (old) =>
+        old?.map((i) => (i.id === item.id ? ({ ...i, ...dates } as CalendarItem) : i)),
+      );
+      return { snapshots };
+    },
+    onError: (error: any, _vars, context) => {
+      context?.snapshots.forEach(([k, d]) => queryClient.setQueryData(k, d));
+      const detail = error?.response?.data?.detail;
+      toast.error(typeof detail === 'string' && detail ? detail : 'Could not move the task');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-tasks-gantt'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+
+  const moveItemTo = (item: CalendarItem, target: Date) => {
+    if (item.item_type === 'project') return;
+    const from = itemDay(item);
+    if (isSameDay(from, target)) return;
+    const dates = moveItemDates(
+      { start_date: item.start_date, due_date: item.due_date, deadline_at: item.deadline_at },
+      from,
+      target,
+    );
+    moveMutation.mutate({ item, dates });
+  };
 
   const handleViewDetails = (item: CalendarItem) => {
     if (item.item_type === 'project') {
@@ -210,141 +299,177 @@ function CalendarView() {
     }
   };
 
-  const renderHeader = () => {
-    return (
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold text-slate-900">{format(currentMonth, 'MMMM yyyy')}</h2>
-          <div className="flex items-center bg-white border border-slate-200 rounded-md p-1 shadow-sm">
-            <Button variant="ghost" size="icon" onClick={prevMonth} className="h-7 w-7 text-slate-500">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" className="h-7 text-xs font-medium px-3 text-slate-600" onClick={() => setCurrentMonth(new Date())}>
-              Today
-            </Button>
-            <Button variant="ghost" size="icon" onClick={nextMonth} className="h-7 w-7 text-slate-500">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        <Button size="sm" className="gap-2 shadow-md shadow-primary/20" onClick={() => setIsTaskDialogOpen(true)}>
-          <Plus className="h-4 w-4" /> New Task
-        </Button>
-      </div>
-    );
-  };
+  const goPrev = () => setAnchor(shiftAnchor(view, anchor, -1));
+  const goNext = () => setAnchor(shiftAnchor(view, anchor, 1));
 
-  const renderDays = () => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const renderHeader = () => (
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center gap-4">
+        <h2 className="text-xl font-bold text-slate-900">{rangeTitle(view, anchor)}</h2>
+        <div className="flex items-center bg-white border border-slate-200 rounded-md p-1 shadow-sm">
+          <Button variant="ghost" size="icon" onClick={goPrev} className="h-7 w-7 text-slate-500" aria-label={`Previous ${view}`}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" className="h-7 text-xs font-medium px-3 text-slate-600" onClick={() => setAnchor(new Date())}>
+            Today
+          </Button>
+          <Button variant="ghost" size="icon" onClick={goNext} className="h-7 w-7 text-slate-500" aria-label={`Next ${view}`}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center bg-white border border-slate-200 rounded-md p-1 shadow-sm" role="group" aria-label="Calendar view">
+          {(['month', 'week', 'day'] as CalendarView[]).map((v) => (
+            <Button
+              key={v}
+              variant={view === v ? 'secondary' : 'ghost'}
+              className="h-7 text-xs font-medium px-3"
+              aria-pressed={view === v}
+              onClick={() => setView(v)}
+            >
+              {VIEW_LABELS[v]}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <Button size="sm" className="gap-2 shadow-md shadow-primary/20" onClick={() => setIsTaskDialogOpen(true)}>
+        <Plus className="h-4 w-4" /> New Task
+      </Button>
+    </div>
+  );
+
+  const renderDayNames = () => {
+    if (view === 'day') return null;
     return (
       <div className="grid grid-cols-7 mb-2">
-        {days.map((day) => (
-          <div key={day} className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider py-2">
-            {day}
+        {days.slice(0, 7).map((day) => (
+          <div key={format(day, 'EEE')} className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider py-2">
+            {format(day, 'EEE')}
           </div>
         ))}
       </div>
     );
   };
 
-  const renderCells = () => {
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(monthStart);
-    const startDate = startOfWeek(monthStart);
-    const endDate = endOfWeek(monthEnd);
-
-    const calendarDays = eachDayOfInterval({
-      start: startDate,
-      end: endDate,
-    });
-
-    const rows: React.ReactNode[] = [];
-    let days: React.ReactNode[] = [];
-
-    calendarDays.forEach((day, i) => {
-      const formattedDate = format(day, 'yyyy-MM-dd');
-      
-      const dayItems = data?.filter((item) => {
-        const dateStr = (item.item_type === 'task' || item.item_type === 'subtask')
-          ? (item.deadline_at || item.due_date)
-          : item.due_date;
-          
-        return isSameDay(day, parseISO(dateStr));
-      }) || [];
-
-      days.push(
-        <div
-          key={formattedDate}
-          className={cn(
-            "min-h-[120px] bg-white border-t border-l border-slate-200 p-2 transition-colors hover:bg-slate-50/50",
-            !isSameMonth(day, monthStart) && "bg-slate-50/30 text-slate-400",
-            i % 7 === 6 && "border-r"
-          )}
-        >
-          <div className="flex justify-between items-center mb-1">
-            <span className={cn(
-              "text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full",
-              isSameDay(day, new Date()) && "bg-primary text-primary-foreground font-bold"
-            )}>
-              {format(day, 'd')}
-            </span>
-          </div>
-          <div className="space-y-1">
-            {dayItems.slice(0, 3).map((item) => (
-              <Popover key={item.id}>
-                <PopoverTrigger asChild>
-                  <div className={cn(
-                    "text-[10px] px-1.5 py-0.5 rounded border cursor-pointer truncate",
-                    item.item_type === 'project' && "bg-blue-50 border-blue-200 text-blue-700",
-                    item.item_type === 'task' && "bg-purple-50 border-purple-200 text-purple-700",
-                    item.item_type === 'subtask' && "bg-slate-50 border-slate-200 text-slate-700"
-                  )}>
-                    {item.title}
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-start">
-                      <Badge variant="outline" className="capitalize text-[10px]">{item.item_type}</Badge>
-                      <Badge className="text-[10px]">{item.status}</Badge>
-                    </div>
-                    <h4 className="font-bold text-sm text-slate-900">{item.title}</h4>
-                    <p className="text-xs text-slate-500">
-                      {item.deadline_at ? `Deadline: ${format(parseISO(item.deadline_at), 'PPP')}` : `Due: ${format(parseISO(item.due_date), 'PPP')}`}
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full mt-2 h-8 text-xs gap-2"
-                      onClick={() => handleViewDetails(item)}
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      View Details
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            ))}
-            {dayItems.length > 3 && (
-              <div className="text-[10px] text-slate-400 pl-1 font-medium">
-                + {dayItems.length - 3} more
-              </div>
+  const renderItem = (item: CalendarItem) => {
+    const movable = item.item_type !== 'project';
+    const day = itemDay(item);
+    return (
+      <Popover key={item.id}>
+        <PopoverTrigger asChild>
+          <div
+            draggable={movable}
+            onDragStart={(e) => {
+              if (!movable) return;
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', item.id);
+              setDragId(item.id);
+            }}
+            onDragEnd={() => { setDragId(null); setDropDay(null); }}
+            className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded border truncate",
+              movable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+              view !== 'month' && "text-xs py-1",
+              dragId === item.id && "opacity-40",
+              item.item_type === 'project' && "bg-blue-50 border-blue-200 text-blue-700",
+              item.item_type === 'task' && "bg-purple-50 border-purple-200 text-purple-700",
+              item.item_type === 'subtask' && "bg-slate-50 border-slate-200 text-slate-700"
             )}
+          >
+            {item.title}
+            {view === 'day' && item.project_name && <span className="ml-2 opacity-60">{item.project_name}</span>}
           </div>
-        </div>
-      );
-
-      if ((i + 1) % 7 === 0) {
-        rows.push(
-          <div className="grid grid-cols-7" key={formattedDate}>
-            {days}
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-4">
+          <div className="space-y-2">
+            <div className="flex justify-between items-start">
+              <Badge variant="outline" className="capitalize text-[10px]">{item.item_type}</Badge>
+              <Badge className="text-[10px]">{item.status}</Badge>
+            </div>
+            <h4 className="font-bold text-sm text-slate-900">{item.title}</h4>
+            <p className="text-xs text-slate-500">
+              {item.deadline_at ? `Deadline: ${format(parseISO(item.deadline_at), 'PPP')}` : `Due: ${format(parseISO(item.due_date), 'PPP')}`}
+            </p>
+            {movable && (
+              <MoveToDate value={format(day, 'yyyy-MM-dd')} onMove={(d) => moveItemTo(item, parseISO(d))} />
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full mt-2 h-8 text-xs gap-2"
+              onClick={() => handleViewDetails(item)}
+            >
+              <ExternalLink className="w-3 h-3" />
+              View Details
+            </Button>
           </div>
-        );
-        days = [];
-      }
-    });
+        </PopoverContent>
+      </Popover>
+    );
+  };
 
-    return <div className="border-b border-r border-slate-200 rounded-lg overflow-hidden shadow-sm">{rows}</div>;
+  const renderCells = () => {
+    const monthStart = startOfMonth(anchor);
+    const maxVisible = view === 'month' ? 3 : Infinity;
+    const minHeight = view === 'month' ? 'min-h-[120px]' : view === 'week' ? 'min-h-[360px]' : 'min-h-[480px]';
+
+    return (
+      <div className={cn("border-b border-r border-slate-200 rounded-lg overflow-hidden shadow-sm grid", view === 'day' ? 'grid-cols-1' : 'grid-cols-7')}>
+        {days.map((day, i) => {
+          const formattedDate = format(day, 'yyyy-MM-dd');
+          const dayItems = data?.filter((item) => isSameDay(day, itemDay(item))) || [];
+          const isDropTarget = dropDay === formattedDate && dragId !== null;
+          return (
+            <div
+              key={formattedDate}
+              onDragOver={(e) => {
+                if (!dragId) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (dropDay !== formattedDate) setDropDay(formattedDate);
+              }}
+              onDragLeave={() => setDropDay((cur) => (cur === formattedDate ? null : cur))}
+              onDrop={(e) => {
+                e.preventDefault();
+                const id = e.dataTransfer.getData('text/plain') || dragId;
+                const item = data?.find((x) => x.id === id);
+                setDragId(null);
+                setDropDay(null);
+                if (item) moveItemTo(item, day);
+              }}
+              className={cn(
+                minHeight,
+                "bg-white border-t border-l border-slate-200 p-2 transition-colors hover:bg-slate-50/50",
+                view === 'month' && !isSameMonth(day, monthStart) && "bg-slate-50/30 text-slate-400",
+                (view === 'day' || i % 7 === 6) && "border-r",
+                isDropTarget && "bg-primary/10 ring-2 ring-inset ring-primary/40"
+              )}
+            >
+              <div className="flex justify-between items-center mb-1">
+                <span className={cn(
+                  "text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full",
+                  isSameDay(day, new Date()) && "bg-primary text-primary-foreground font-bold"
+                )}>
+                  {format(day, 'd')}
+                </span>
+                {view === 'day' && <span className="text-xs text-slate-400">{dayItems.length} item{dayItems.length === 1 ? '' : 's'}</span>}
+              </div>
+              <div className="space-y-1">
+                {dayItems.slice(0, maxVisible).map(renderItem)}
+                {dayItems.length > maxVisible && (
+                  <button
+                    type="button"
+                    className="text-[10px] text-slate-400 pl-1 font-medium hover:text-slate-600"
+                    onClick={() => { setAnchor(day); setView('day'); }}
+                  >
+                    + {dayItems.length - maxVisible} more
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -352,7 +477,7 @@ function CalendarView() {
       {renderHeader()}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 bg-slate-50/50 border-b border-slate-200">
-          {renderDays()}
+          {renderDayNames()}
         </div>
         {isLoading ? (
           <div className="h-[600px] flex items-center justify-center">
@@ -362,6 +487,7 @@ function CalendarView() {
           renderCells()
         )}
       </div>
+      <p className="mt-2 text-[11px] text-slate-400">Drag a task onto another day to reschedule it, or open it and use "Move to".</p>
       <TaskCreateDialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen} />
     </div>
   );
@@ -380,13 +506,11 @@ interface Project {
 }
 
 function RoadmapView() {
-  const [viewWindow] = useState({
-    start: startOfYear(new Date()),
-    end: endOfYear(new Date()),
-  });
+  const [year, setYear] = useState(new Date().getFullYear());
+  const viewWindow = useMemo(() => yearBounds(year), [year]);
 
   const { data: projects, isLoading } = useQuery({
-    queryKey: ['projects-gantt'],
+    queryKey: ['projects-gantt', year],
     queryFn: async () => {
       const response = await api.get('/projects/gantt');
       return response.data as Project[];
@@ -418,7 +542,10 @@ function RoadmapView() {
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-slate-900">{format(viewWindow.start, 'yyyy')} Timeline</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-bold text-slate-900">{year} Timeline</h2>
+          <YearNav year={year} onChange={setYear} />
+        </div>
         <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 text-xs text-slate-500 mr-4">
                 <div className="w-2 h-2 rounded-full bg-primary" /> Active

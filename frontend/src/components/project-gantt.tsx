@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import {
   format,
   differenceInCalendarDays,
@@ -59,6 +59,27 @@ import {
   getPriorityBorderClass as getPriorityBorder
 } from '@/constants/colors';
 import type { Task, Subtask } from '@/types';
+import {
+  applyDrag,
+  apiToDay,
+  collectDependencies,
+  dependencyTypeFor,
+  dependencyViolations,
+  describeViolation,
+  keyboardAdjust,
+  normalizePriority,
+  rangeLength,
+  rangeToApi,
+  sameRange,
+  sideAt,
+  snapDelta,
+  validateLink,
+  type BarSide,
+  type DayRange,
+  type DepEdge,
+  type DepType,
+  type DragMode,
+} from '@/lib/gantt';
 
 export interface ProjectGanttProps {
   tasks: Task[];
@@ -70,7 +91,30 @@ export interface ProjectGanttProps {
   onRegionsChange?: (regions: TimeRegion[]) => void;
   showProjectNames?: boolean;
   onTaskClick?: (task: Task) => void;
+  /** Enables drag / resize / keyboard rescheduling. Must reject (throw) when the server refuses so the bar rolls back. */
+  onTaskDatesChange?: (taskId: string, dates: { start_date: string | null; due_date: string | null }) => Promise<unknown>;
+  /** Enables drag-to-link. Must reject when the server refuses (e.g. 400 on a cycle). */
+  onCreateDependency?: (predecessorId: string, successorId: string, type: DepType) => Promise<unknown>;
 }
+
+interface DragPreview {
+  id: string;
+  mode: DragMode;
+  range: DayRange;
+}
+
+interface LinkDrag {
+  fromId: string;
+  fromSide: BarSide;
+  x: number;
+  y: number;
+  target: { id: string; side: BarSide; ok: boolean; reason?: string } | null;
+}
+
+const errorDetail = (err: any, fallback: string): string => {
+  const d = err?.response?.data?.detail;
+  return typeof d === 'string' && d ? d : fallback;
+};
 
 type GanttItem = (Task | (Subtask & { isSubtask: boolean, parentTitle: string, parentId: string })) & { rowIndex: number, projectName?: string };
 type ZoomLevel = 'day' | 'week' | 'month' | 'quarter' | 'year';
@@ -260,7 +304,9 @@ export default function ProjectGantt({
   initialRegions = [],
   onRegionsChange,
   showProjectNames = true,
-  onTaskClick
+  onTaskClick,
+  onTaskDatesChange,
+  onCreateDependency
 }: ProjectGanttProps) {
   const [showSubtasks, setShowSubtasks] = useState(initialShowSubtasks);
   const [showCriticalPath, setShowCriticalPath] = useState(false);
@@ -350,7 +396,7 @@ export default function ProjectGantt({
     return item.completed_at || item.due_date || item.deadline_at || item.start_date;
   };
 
-  const ganttItems = useMemo(() => {
+  const flatItems = useMemo(() => {
     const items: GanttItem[] = [];
     let currentRow = 0;
 
@@ -380,9 +426,247 @@ export default function ProjectGantt({
     return items;
   }, [tasks, showSubtasks]);
 
+  // --- Interactive editing state -------------------------------------------------------------------------------
+  // `overrides` are optimistic dates (kept until the refetched tasks agree, dropped when the server refuses);
+  // `preview` is the live, uncommitted state of the drag in progress.
+  const [overrides, setOverrides] = useState<Record<string, DayRange>>({});
+  const overridesRef = useRef(overrides);
+  overridesRef.current = overrides;
+  const [pendingDeps, setPendingDeps] = useState<{ id: string; successor_id: string; predecessor_id: string; type: DepType; lag_days: number }[]>([]);
+  const [preview, setPreview] = useState<DragPreview | null>(null);
+  const [linkDrag, setLinkDrag] = useState<LinkDrag | null>(null);
+  const [rejectedId, setRejectedId] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState('');
+  const suppressClickRef = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const kbRef = useRef<{ id: string; range: DayRange; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const editable = !!onTaskDatesChange;
+  const linkable = !!onCreateDependency;
+
+  useEffect(() => () => {
+    cleanupRef.current?.();
+    if (kbRef.current) clearTimeout(kbRef.current.timer);
+  }, []);
+
+  // Once the refetched tasks carry the optimistic values (or the new dependency) the overlay is redundant.
+  useEffect(() => {
+    setOverrides((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const it of flatItems) {
+        const o = next[it.id];
+        if (o && sameRange(o, { start: apiToDay(it.start_date), end: apiToDay(it.due_date || it.start_date) })) {
+          delete next[it.id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    setPendingDeps((prev) => (prev.length ? [] : prev));
+  }, [flatItems]);
+
+  // Committed view: server data + optimistic dates + dependencies still in flight. The time window is derived from this
+  // (not from the live preview) so the chart does not shift under the cursor mid-drag.
+  const committedItems = useMemo(() => {
+    return flatItems.map((it: any) => {
+      const o = overrides[it.id];
+      const extra = pendingDeps.filter((d) => d.successor_id === it.id);
+      if (!o && extra.length === 0) return it;
+      return {
+        ...it,
+        ...(o ? rangeToApi(o) : {}),
+        ...(extra.length ? { blocked_by: [...(it.blocked_by || []), ...extra] } : {}),
+      } as GanttItem;
+    });
+  }, [flatItems, overrides, pendingDeps]);
+
+  const ganttItems = useMemo(() => {
+    if (!preview) return committedItems;
+    return committedItems.map((it: any) => (it.id === preview.id ? ({ ...it, ...rangeToApi(preview.range) } as GanttItem) : it));
+  }, [committedItems, preview]);
+
+  const rangeOf = (item: any): DayRange => ({
+    start: apiToDay(item.start_date),
+    end: apiToDay(item.due_date || item.start_date),
+  });
+
+  const committedRanges = useMemo(() => {
+    const m = new Map<string, DayRange>();
+    committedItems.forEach((it: any) => {
+      if (it.start_date) m.set(it.id, { start: apiToDay(it.start_date), end: apiToDay(it.due_date || it.start_date) });
+    });
+    return m;
+  }, [committedItems]);
+
+  const dependencyEdges: DepEdge[] = useMemo(() => collectDependencies(committedItems as any), [committedItems]);
+  const titleOf = useCallback((id: string) => committedItems.find((i: any) => i.id === id)?.title || 'task', [committedItems]);
+
+  const flashRejected = (id: string) => {
+    setRejectedId(id);
+    setTimeout(() => setRejectedId((cur) => (cur === id ? null : cur)), 900);
+  };
+
+  const commitRange = async (item: any, range: DayRange) => {
+    if (!onTaskDatesChange) return;
+    const id: string = item.id;
+    if (sameRange(range, rangeOf(committedItems.find((i: any) => i.id === id) || item))) return;
+    const previous = overridesRef.current[id];
+    setOverrides((o) => ({ ...o, [id]: range }));
+    const conflicts = dependencyViolations(id, range, committedRanges, dependencyEdges);
+    if (conflicts.length) {
+      toast.warning('Dependency conflict', { description: conflicts.map((c) => describeViolation(c, titleOf)).join('\n') });
+    }
+    try {
+      await onTaskDatesChange(id, rangeToApi(range));
+    } catch (err) {
+      setOverrides((o) => {
+        const n = { ...o };
+        if (previous) n[id] = previous;
+        else delete n[id];
+        return n;
+      });
+      flashRejected(id);
+      toast.error(errorDetail(err, 'Could not reschedule the task'));
+    }
+  };
+
+  const beginBarDrag = (e: React.PointerEvent, item: any, mode: DragMode) => {
+    if (!editable || e.button !== 0) return;
+    e.stopPropagation();
+    document.body.style.userSelect = 'none';
+    const startX = e.clientX;
+    const orig = rangeOf(item);
+    let active = false;
+    let lastDelta = 0;
+
+    const finish = (commit: boolean, clientX: number) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+      window.removeEventListener('keydown', onKey);
+      cleanupRef.current = null;
+      document.body.style.userSelect = '';
+      setPreview(null);
+      if (active) {
+        suppressClickRef.current = true;
+        setTimeout(() => { suppressClickRef.current = false; }, 0);
+        const delta = snapDelta(clientX - startX, dayWidth);
+        if (commit && delta !== 0) void commitRange(item, applyDrag(orig, mode, delta));
+      }
+    };
+    const onMove = (ev: PointerEvent) => {
+      if (!active && Math.abs(ev.clientX - startX) < 4) return;
+      active = true;
+      const delta = snapDelta(ev.clientX - startX, dayWidth);
+      if (delta === lastDelta && lastDelta !== 0) return;
+      lastDelta = delta;
+      setPreview({ id: item.id, mode, range: applyDrag(orig, mode, delta) });
+    };
+    const onUp = (ev: PointerEvent) => finish(true, ev.clientX);
+    const onCancel = (ev: PointerEvent) => finish(false, ev.clientX);
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') finish(false, startX); };
+    cleanupRef.current?.();
+    cleanupRef.current = () => finish(false, startX);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
+    window.addEventListener('keydown', onKey);
+  };
+
+  const flushKeyboard = (item: any) => {
+    const pending = kbRef.current;
+    if (!pending || pending.id !== item.id) return;
+    clearTimeout(pending.timer);
+    kbRef.current = null;
+    setPreview(null);
+    void commitRange(item, pending.range);
+  };
+
+  const handleBarKeyDown = (e: React.KeyboardEvent, item: any) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onTaskClick?.(item as any);
+      return;
+    }
+    if (!editable) return;
+    const adj = keyboardAdjust(e.key, { shift: e.shiftKey, alt: e.altKey });
+    if (!adj) return;
+    e.preventDefault();
+    const mode: DragMode = item.is_milestone ? 'move' : adj.mode;
+    const base = kbRef.current && kbRef.current.id === item.id ? kbRef.current.range : rangeOf(item);
+    const next = applyDrag(base, mode, adj.delta);
+    if (kbRef.current) clearTimeout(kbRef.current.timer);
+    kbRef.current = { id: item.id, range: next, timer: setTimeout(() => flushKeyboard(item), 600) };
+    setPreview({ id: item.id, mode, range: next });
+    setAnnouncement(`${item.title}: ${next.start} to ${next.end}, ${rangeLength(next)} days`);
+  };
+
+  const beginLink = (e: React.PointerEvent, item: any, side: BarSide, anchorX: number) => {
+    if (!linkable || e.button !== 0 || !onCreateDependency) return;
+    e.stopPropagation();
+    document.body.style.userSelect = 'none';
+    const rowY = (item as any).rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+    const toLocal = (ev: PointerEvent) => {
+      const rect = contentRef.current?.getBoundingClientRect();
+      return { x: ev.clientX - (rect?.left ?? 0) - sidebarWidth, y: ev.clientY - (rect?.top ?? 0) };
+    };
+    const targetAt = (ev: PointerEvent): LinkDrag['target'] => {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('[data-gantt-bar]') as HTMLElement | null;
+      const id = el?.dataset.ganttBar;
+      if (!el || !id) return null;
+      const rect = el.getBoundingClientRect();
+      const check = validateLink(dependencyEdges, item.id, id);
+      return { id, side: sideAt(ev.clientX, rect.left, rect.width), ok: check.ok, reason: check.ok ? undefined : check.reason };
+    };
+    setLinkDrag({ fromId: item.id, fromSide: side, x: anchorX, y: rowY, target: null });
+
+    const stop = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', stop);
+      window.removeEventListener('keydown', onKey);
+      cleanupRef.current = null;
+      document.body.style.userSelect = '';
+      setLinkDrag(null);
+    };
+    const onMove = (ev: PointerEvent) => {
+      const pt = toLocal(ev);
+      setLinkDrag({ fromId: item.id, fromSide: side, x: pt.x, y: pt.y, target: targetAt(ev) });
+    };
+    const onUp = async (ev: PointerEvent) => {
+      const target = targetAt(ev);
+      stop();
+      if (!target) return;
+      if (!target.ok) {
+        flashRejected(target.id);
+        toast.error(target.reason || 'Cannot link these tasks');
+        return;
+      }
+      const type = dependencyTypeFor(side, target.side);
+      const temp = { id: `pending-${item.id}-${target.id}`, predecessor_id: item.id, successor_id: target.id, type, lag_days: 0 };
+      setPendingDeps((d) => [...d, temp]);
+      try {
+        await onCreateDependency(item.id, target.id, type);
+        toast.success(`Linked (${type}): "${titleOf(item.id)}" -> "${titleOf(target.id)}"`);
+      } catch (err) {
+        setPendingDeps((d) => d.filter((x) => x.id !== temp.id));
+        flashRejected(target.id);
+        toast.error(errorDetail(err, 'Could not create the dependency'));
+      }
+    };
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') stop(); };
+    cleanupRef.current?.();
+    cleanupRef.current = stop;
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', stop);
+    window.addEventListener('keydown', onKey);
+  };
+
   const viewWindow = useMemo(() => {
     const dates: Date[] = []; // IMPROVED: Exclude 'Today' from default bounds to minimize empty space
-    ganttItems.forEach(item => {
+    committedItems.forEach(item => {
       if (item.start_date) dates.push(parseISO(item.start_date));
       const effectiveEnd = getEffectiveEndDate(item);
       if (effectiveEnd) dates.push(parseISO(effectiveEnd));
@@ -413,7 +697,7 @@ export default function ProjectGantt({
     start = startOfDay(start);
     end = endOfDay(end);
     return { start, end };
-  }, [ganttItems, projectStartDate, projectDueDate, zoomLevel, timeRegions]);
+  }, [committedItems, projectStartDate, projectDueDate, zoomLevel, timeRegions]);
 
   const timeTicks = useMemo(() => {
     if (!viewWindow) return [];
@@ -891,7 +1175,8 @@ export default function ProjectGantt({
           </div>
 
           {/* Content Layer */}
-          <div className="relative">
+          <div className="relative" ref={contentRef}>
+            <div className="sr-only" aria-live="polite">{announcement}</div>
             {/* Time Regions Layer */}
             <div style={{ left: `${sidebarWidth}px`, width: `${containerWidth}px` }} className="absolute top-0 bottom-0 pointer-events-none z-0 overflow-hidden">
               {timeRegions.map(region => {
@@ -1096,13 +1381,13 @@ export default function ProjectGantt({
                 
                                                     // 2. OR the task itself has a 'critical' priority label
                 
-                                                    const isCritical = (showCriticalPath && itemIsCritical) || (item.priority === 'critical');
+                                                    const isCritical = (showCriticalPath && itemIsCritical) || (normalizePriority(item.priority) === 'critical');
                 
                                                     
                 
                                                     // Use Amber for 'high' priority or conflicts
                 
-                                                    const isHigh = item.priority === 'high' || isConflict;
+                                                    const isHigh = normalizePriority(item.priority) === 'high' || isConflict;
                 
                                                     
                 
@@ -1190,7 +1475,28 @@ export default function ProjectGantt({
                 
                                                   });
                 
-                                                })}              </svg>
+                                                })}
+                {linkDrag && (() => {
+                  const src: any = ganttItems.find((i: any) => i.id === linkDrag.fromId);
+                  if (!src) return null;
+                  const sx = linkDrag.fromSide === 'start' ? getItemLeftEdgePx(src) : getItemRightEdgePx(src);
+                  const sy = src.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+                  const bad = !!linkDrag.target && !linkDrag.target.ok;
+                  return (
+                    <g>
+                      <path
+                        d={`M ${sx} ${sy} L ${linkDrag.x} ${linkDrag.y}`}
+                        fill="none"
+                        stroke={bad ? '#ef4444' : '#2563eb'}
+                        strokeWidth={2}
+                        strokeDasharray="6 4"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                      <circle cx={linkDrag.x} cy={linkDrag.y} r={4} fill={bad ? '#ef4444' : '#2563eb'} />
+                    </g>
+                  );
+                })()}
+              </svg>
             </div>
 
             {/* Global Timeline Overlay */}
@@ -1212,6 +1518,15 @@ export default function ProjectGantt({
               const isSub = 'isSubtask' in item;
               const isWbsRoot = !isSub && !item.parent_id;
               const hasColor = showTaskColors && item.color;
+              const isPreviewed = preview?.id === item.id;
+              const previewConflicts = isPreviewed ? dependencyViolations(item.id, preview!.range, committedRanges, dependencyEdges) : [];
+              const linkTarget = linkDrag?.target && linkDrag.target.id === item.id ? linkDrag.target : null;
+              const stateRing = cn(
+                rejectedId === item.id && "ring-2 ring-red-500 ring-offset-1 animate-pulse",
+                linkTarget && (linkTarget.ok ? "ring-2 ring-emerald-500 ring-offset-1" : "ring-2 ring-red-500 ring-offset-1"),
+                isPreviewed && (previewConflicts.length ? "ring-2 ring-red-500 ring-offset-1" : "ring-2 ring-blue-500 ring-offset-1")
+              );
+              const ariaLabel = `${item.title}, ${apiToDay(item.start_date)} to ${apiToDay(item.due_date || item.start_date)}${editable ? '. Arrow keys move by a day, Shift plus arrows resize the end, Alt plus Shift plus arrows resize the start.' : ''}`;
 
               return (
                 <div
@@ -1292,8 +1607,8 @@ export default function ProjectGantt({
                         {col.id === 'priority' && (
                           <span className={cn(
                             "px-1.5 py-0.5 rounded text-[8px] font-bold uppercase",
-                            item.priority === 'critical' ? "bg-red-100 text-red-700" :
-                              item.priority === 'high' ? "bg-orange-100 text-orange-700" :
+                            normalizePriority(item.priority) === 'critical' ? "bg-red-100 text-red-700" :
+                              normalizePriority(item.priority) === 'high' ? "bg-orange-100 text-orange-700" :
                                 "bg-slate-100 text-slate-500"
                           )}>
                             {item.priority}
@@ -1329,14 +1644,23 @@ export default function ProjectGantt({
                     {item.is_milestone ? (
                       <div
                         className={cn(
-                          "absolute w-3 h-3 rotate-45 border-2 border-white shadow-md z-10 transition-transform hover:scale-125 cursor-pointer",
-                          getBarColor(item)
+                          "absolute w-3 h-3 rotate-45 border-2 border-white shadow-md z-10 transition-transform hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                          editable ? "cursor-grab touch-none" : "cursor-pointer",
+                          getBarColor(item),
+                          stateRing
                         )}
+                        data-gantt-bar={item.id}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={ariaLabel}
+                        onKeyDown={(e) => handleBarKeyDown(e, item)}
+                        onBlur={() => flushKeyboard(item)}
+                        onPointerDown={(e) => beginBarDrag(e, item, 'move')}
                         style={{
                           left: `calc(${getPositionPx(item.start_date || item.due_date!)}px - 6px)`,
                           top: '22px'
                         }}
-                        onClick={() => onTaskClick?.(item as any)}
+                        onClick={() => { if (!suppressClickRef.current) onTaskClick?.(item as any); }}
                         title={`${item.title} (Milestone)`}
                       />
                     ) : item.subtasks && item.subtasks.length > 0 ? (
@@ -1383,19 +1707,44 @@ export default function ProjectGantt({
 
                         {/* Main Bar (Planned Time) */}
                         <div
-                          className={cn(
-                            "absolute h-6 rounded shadow-sm flex items-center transition-all group-hover:z-10 border-[1.5px] overflow-hidden z-10 cursor-pointer",
-                            getPriorityBorder(item.priority),
-                            (item.deadline_at && isAfter(new Date(), parseISO(item.deadline_at)) && item.status.toLowerCase() !== 'done') && "ring-2 ring-red-500 ring-offset-1",
-                            showCriticalPath && item.is_critical && "ring-2 ring-red-400 ring-offset-2 animate-pulse"
-                          )}
+                          className="group/bar absolute h-6 z-10 group-hover:z-20 focus-within:z-20"
                           style={{
                             left: `${getPositionPx(item.start_date!)}px`,
                             width: `${getWidthPx(item.start_date!, (item.due_date || item.start_date))}px`,
+                          }}
+                          data-gantt-bar={item.id}
+                        >
+                          {isPreviewed && (
+                            <div
+                              className={cn(
+                                "absolute -top-5 left-0 z-30 whitespace-nowrap rounded px-1.5 py-0.5 text-[9px] font-bold shadow pointer-events-none",
+                                previewConflicts.length ? "bg-red-600 text-white" : "bg-slate-900 text-white"
+                              )}
+                            >
+                              {format(parseISO(preview!.range.start), 'MMM d')} - {format(parseISO(preview!.range.end), 'MMM d')} · {rangeLength(preview!.range)}d
+                              {previewConflicts.length > 0 && ` · ${previewConflicts.length} dependency conflict${previewConflicts.length > 1 ? 's' : ''}`}
+                            </div>
+                          )}
+                        <div
+                          className={cn(
+                            "absolute inset-0 rounded shadow-sm flex items-center border-[1.5px] overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                            editable ? "cursor-grab active:cursor-grabbing touch-none" : "cursor-pointer",
+                            getPriorityBorder(item.priority),
+                            (item.deadline_at && isAfter(new Date(), parseISO(item.deadline_at)) && item.status.toLowerCase() !== 'done') && "ring-2 ring-red-500 ring-offset-1",
+                            showCriticalPath && item.is_critical && "ring-2 ring-red-400 ring-offset-2 animate-pulse",
+                            stateRing
+                          )}
+                          style={{
                             backgroundColor: hasColor ? `${item.color}25` : `${getStatusHex(item.status)}22`,
                             borderColor: hasColor ? item.color : getStatusHex(item.status)
                           }}
-                          onClick={() => onTaskClick?.(item as any)}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={ariaLabel}
+                          onKeyDown={(e) => handleBarKeyDown(e, item)}
+                          onBlur={() => flushKeyboard(item)}
+                          onPointerDown={(e) => beginBarDrag(e, item, 'move')}
+                          onClick={() => { if (!suppressClickRef.current) onTaskClick?.(item as any); }}
                         >
                           {/* Internal Progress Shading (Subtle) */}
                           <div 
@@ -1413,6 +1762,37 @@ export default function ProjectGantt({
                           {(item.deadline_at && isAfter(new Date(), parseISO(item.deadline_at)) && item.status.toLowerCase() !== 'done') && (
                             <div className="absolute right-1 top-1 text-[8px] animate-pulse">⚠️</div>
                           )}
+                        </div>
+
+                        {/* Resize edges and link handles */}
+                        {editable && (
+                          <>
+                            <div
+                              className="absolute inset-y-0 -left-0.5 w-2 cursor-ew-resize touch-none z-10"
+                              title="Drag to change the start date"
+                              onPointerDown={(e) => beginBarDrag(e, item, 'start')}
+                            />
+                            <div
+                              className="absolute inset-y-0 -right-0.5 w-2 cursor-ew-resize touch-none z-10"
+                              title="Drag to change the end date"
+                              onPointerDown={(e) => beginBarDrag(e, item, 'end')}
+                            />
+                          </>
+                        )}
+                        {linkable && (
+                          <>
+                            <div
+                              className="absolute top-1/2 -left-4 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-blue-500 bg-white opacity-0 group-hover/bar:opacity-100 group-focus-within/bar:opacity-100 cursor-crosshair touch-none z-20"
+                              title="Drag to another task to create a dependency"
+                              onPointerDown={(e) => beginLink(e, item, 'start', getItemLeftEdgePx(item))}
+                            />
+                            <div
+                              className="absolute top-1/2 -right-4 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-blue-500 bg-white opacity-0 group-hover/bar:opacity-100 group-focus-within/bar:opacity-100 cursor-crosshair touch-none z-20"
+                              title="Drag to another task to create a dependency"
+                              onPointerDown={(e) => beginLink(e, item, 'end', getItemRightEdgePx(item))}
+                            />
+                          </>
+                        )}
                         </div>
 
                         {/* Actual Completion Pin */}
