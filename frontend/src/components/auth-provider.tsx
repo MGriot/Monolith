@@ -10,6 +10,8 @@ interface User {
   email_verified_at?: string | null;
   notify_email_assignments?: boolean;
   notify_email_digest?: boolean;
+  /** An administrator issued a temporary password: the user must choose their own before using the app. */
+  must_change_password?: boolean;
 }
 
 interface AuthContextType {

@@ -154,14 +154,11 @@ class TestSignup:
         assert r.status_code == 403
         self.created.assert_not_awaited()
 
-    def test_signup_flag_allows_anonymous_regular_user(self, client, monkeypatch):
+    def test_signup_flag_never_lets_anonymous_create_an_active_account(self, client, monkeypatch):
+        # public sign-up goes through /auth/register-request + admin approval, never straight to POST /users/
         monkeypatch.setattr(settings, "ALLOW_SIGNUP", True)
-        assert client.post("/api/v1/users/", json=self.BODY).status_code == 200
-
-    def test_signup_flag_never_allows_anonymous_superuser(self, client, monkeypatch):
-        monkeypatch.setattr(settings, "ALLOW_SIGNUP", True)
-        r = client.post("/api/v1/users/", json={**self.BODY, "is_superuser": True})
-        assert r.status_code == 403
+        for body in (self.BODY, {**self.BODY, "is_superuser": True}):
+            assert client.post("/api/v1/users/", json=body).status_code == 403
         self.created.assert_not_awaited()
 
     def test_admin_can_create_even_when_signup_disabled(self, client, monkeypatch):
@@ -178,7 +175,7 @@ class TestSignup:
 
     @pytest.mark.parametrize("pw", ["short", "", " padded-password ", "x" * 73])
     def test_weak_passwords_rejected(self, client, monkeypatch, pw):
-        monkeypatch.setattr(settings, "ALLOW_SIGNUP", True)
+        app.dependency_overrides[deps.get_current_user_optional] = lambda: make_user(is_superuser=True)
         r = client.post("/api/v1/users/", json={**self.BODY, "password": pw})
         assert r.status_code == 422
         self.created.assert_not_awaited()

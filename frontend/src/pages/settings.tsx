@@ -53,7 +53,7 @@ interface Webhook {
 }
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
@@ -138,6 +138,7 @@ export default function SettingsPage() {
       await api.put('/users/me', { password: values.new_password, current_password: values.current_password });
       toast.success('Password updated successfully');
       passwordForm.reset();
+      await refreshUser();
     } catch (error: any) {
       toast.error(error?.response?.data?.detail || 'Failed to update password');
       console.error(error);
@@ -263,6 +264,12 @@ export default function SettingsPage() {
             <p className="text-xs text-slate-500 mt-1">Keep your account secure by using a strong password.</p>
           </div>
           <div className="md:col-span-2 pt-4 border-t border-slate-200 mt-4 space-y-6">
+            {user?.must_change_password && (
+              <div role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                You are using a temporary password. Choose your own below (enter the temporary password as the current
+                one) to continue using Monolith.
+              </div>
+            )}
             <NotificationPrefsCard />
             <CalendarFeedCard />
             <Card className="border-slate-200 shadow-sm">

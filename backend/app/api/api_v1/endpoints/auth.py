@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
@@ -63,6 +63,30 @@ async def public_config() -> Any:
         "email_enabled": settings.EMAIL_ENABLED,
         "min_password_length": settings.MIN_PASSWORD_LENGTH,
     }
+
+
+class RegisterRequestIn(BaseModel):
+    email: EmailStr
+    full_name: str = Field(min_length=2, max_length=120)
+
+
+GENERIC_REGISTER_REPLY = {"detail": "Request received. An administrator will review it and you will get an e-mail."}
+register_ip_limiter = FailureLimiter(5, 3600)
+
+
+@router.post("/register-request")
+async def register_request(
+    body: RegisterRequestIn, request: Request, db: AsyncSession = Depends(deps.get_db)
+) -> Any:
+    """Ask for an account. Nothing is usable until an administrator approves it (see POST /users/{id}/approve)."""
+    if not settings.ALLOW_SIGNUP:
+        raise HTTPException(status_code=403, detail="Registration is disabled. Ask an administrator for an account.")
+    _throttle(register_ip_limiter, _client_ip(request))
+    email = body.email.lower()
+    # identical answer whether or not the address is already known
+    if not await crud_user.get_by_email(db, email=email):
+        await crud_user.create_pending(db, email=email, full_name=body.full_name.strip())
+    return GENERIC_REGISTER_REPLY
 
 
 @router.post("/forgot-password")
