@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { Fragment, useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -52,6 +52,10 @@ import { useTitle } from '@/context/title-context';
 import { toast } from 'sonner';
 import { fromDateInput } from "@/lib/dates";
 import { calculateSortIndex as sharedSortIndex, flattenTasks } from '@/lib/kanban';
+import TaskFilterBar from '@/components/task-filter-bar';
+import { useTaskView } from '@/hooks/use-task-view';
+import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
+import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
 
 export default function MyTasksPage() {
   const queryClient = useQueryClient();
@@ -106,6 +110,13 @@ export default function MyTasksPage() {
   const activeTasks = useMemo(() => {
     return (tasks || []).filter(t => !t.is_archived && (!t.project || !t.project.is_archived));
   }, [tasks]);
+
+  const taskView = useTaskView(activeTasks);
+  const assigneeOptions = useMemo(() => collectAssignees(activeTasks), [activeTasks]);
+  const filtering = hasActiveFilters(taskView.filters);
+
+  // command palette "toggle view"
+  useEffect(() => onAppEvent(TOGGLE_VIEW_EVENT, () => setView((v) => (v === 'kanban' ? 'list' : 'kanban'))), []);
 
   const findTaskRecursive = (taskList: Task[], taskId: string): Task | null => {
     for (const task of taskList) {
@@ -207,7 +218,7 @@ export default function MyTasksPage() {
   };
 
   const calculateSortIndex = (container: string, index: number, movingId?: string) =>
-    sharedSortIndex(flattenTasks(tasks || []), container, index, movingId);
+    sharedSortIndex(flattenTasks(taskView.filtered), container, index, movingId);
 
   const handleKanbanReorder = (taskId: string, newIndex: number, container: string) => {
     const sortIndex = calculateSortIndex(container, newIndex, taskId);
@@ -251,10 +262,18 @@ export default function MyTasksPage() {
     <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50 pb-12">
 
       <div className="flex-1 overflow-auto p-6 space-y-6">
+        <TaskFilterBar
+          scope="my-tasks"
+          filters={taskView.filters}
+          onChange={taskView.setFilters}
+          assignees={assigneeOptions}
+          showLayoutControls={view === 'list'}
+          resultCount={flattenTasks(taskView.filtered).length}
+        />
         <div className="min-h-[500px]">
           {view === 'kanban' ? (
             <KanbanBoard 
-              tasks={activeTasks} 
+              tasks={taskView.filtered} 
               onTaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx, id) : undefined })}
               onSubtaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx, id) : undefined })}
               onReorder={handleKanbanReorder}
@@ -275,16 +294,25 @@ export default function MyTasksPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {activeTasks.length === 0 ? (
+                  {taskView.sorted.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="h-32 text-center text-slate-500 italic">
-                        You have no tasks assigned to you.
+                        {filtering ? 'No tasks match the current filters.' : 'You have no tasks assigned to you.'}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    activeTasks.map((task) => (
+                    taskView.groups.map((group) => (
+                      <Fragment key={group.key}>
+                      {group.label && (
+                        <TableRow className="bg-slate-50 hover:bg-slate-50">
+                          <TableCell colSpan={6} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                            <span role="heading" aria-level={4}>{group.label} <span className="font-semibold text-slate-400">({group.tasks.length})</span></span>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {group.tasks.map((task) => (
                       <TableRow 
-                        key={task.id} 
+                        key={`${group.key}-${task.id}`}
                         className="hover:bg-slate-50/50 cursor-pointer"
                         onClick={() => handleTaskClick(task)}
                       >
@@ -333,6 +361,8 @@ export default function MyTasksPage() {
                           </DropdownMenu>
                         </TableCell>
                       </TableRow>
+                      ))}
+                      </Fragment>
                     ))
                   )}
                 </TableBody>

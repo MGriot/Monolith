@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -55,6 +55,10 @@ import type { Project, Task } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { fromDateInput } from "@/lib/dates";
 import { calculateSortIndex, flattenTasks } from '@/lib/kanban';
+import TaskFilterBar from '@/components/task-filter-bar';
+import { useTaskView } from '@/hooks/use-task-view';
+import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
+import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -85,6 +89,12 @@ export default function ProjectDetailPage() {
       return response.data as Task[];
     },
   });
+
+  const view = useTaskView(tasks ?? []);
+  const assigneeOptions = useMemo(() => collectAssignees(tasks ?? []), [tasks]);
+
+  // command palette "toggle view": flip between the list overview and the board
+  useEffect(() => onAppEvent(TOGGLE_VIEW_EVENT, () => setActiveTab((t) => (t === 'kanban' ? 'overview' : 'kanban'))), []);
 
   const archiveProjectMutation = useMutation({
     mutationFn: async () => {
@@ -282,7 +292,7 @@ export default function ProjectDetailPage() {
   });
 
   const moveCard = (taskId: string, newStatus: string, index?: number) => {
-    const sortIndex = index === undefined ? undefined : calculateSortIndex(flattenTasks(tasks || []), newStatus, index, taskId);
+    const sortIndex = index === undefined ? undefined : calculateSortIndex(flattenTasks(view.filtered), newStatus, index, taskId);
     moveTaskMutation.mutate({ taskId, newStatus, sortIndex });
   };
 
@@ -496,8 +506,17 @@ export default function ProjectDetailPage() {
               <ListIcon className="w-4 h-4 text-slate-500" />
               Tasks & Subtasks
             </h3>
+            <TaskFilterBar
+              scope="project-tasks"
+              filters={view.filters}
+              onChange={view.setFilters}
+              assignees={assigneeOptions}
+              resultCount={flattenTasks(view.filtered).length}
+            />
             <ProjectTaskList
-              tasks={tasks || []}
+              tasks={view.sorted}
+              groups={view.groups}
+              filtered={hasActiveFilters(view.filters)}
               onTaskClick={handleTaskClick}
               onSubtaskClick={handleSubtaskClick}
               onAddSubtask={handleAddSubtask}
@@ -514,8 +533,18 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="kanban" className="flex-1 overflow-hidden m-0 p-6 bg-slate-50/30">
+          <div className="mb-4">
+            <TaskFilterBar
+              scope="project-tasks"
+              filters={view.filters}
+              onChange={view.setFilters}
+              assignees={assigneeOptions}
+              showLayoutControls={false}
+              resultCount={flattenTasks(view.filtered).length}
+            />
+          </div>
           <KanbanBoard
-            tasks={tasks || []}
+            tasks={view.filtered}
             onTaskMove={handleTaskMove}
             onSubtaskMove={handleSubtaskMove}
             onReorder={handleKanbanReorder}

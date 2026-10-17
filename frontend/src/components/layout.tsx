@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './auth-provider';
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
 import {
   LayoutDashboard,
   Bell,
@@ -20,17 +18,16 @@ import {
   Menu,
   X,
   Search,
-  Hash,
-  Lightbulb,
-  ArrowRight
+  Lightbulb
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { UserAvatar } from './ui/user-avatar';
 import NotificationPopover from './notification-popover';
 import TaskCreateDialog from './task-create-dialog';
+import CommandPalette from './command-palette';
+import ShortcutSheet from './shortcut-sheet';
+import { INITIAL_CHORD, isPaletteShortcut, stepShortcut, type ChordState } from '@/lib/shortcuts';
 import { useTitle } from '@/context/title-context';
 import {
   Popover,
@@ -50,53 +47,29 @@ export default function Layout({ children }: LayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { title, icon: DisplayIcon, actions } = useTitle();
 
-  // Search State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const [activeResult, setActiveResult] = useState(-1);
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 250);
-    return () => clearTimeout(t);
-  }, [searchQuery]);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const chordRef = useRef<ChordState>(INITIAL_CHORD);
 
-  const { data: searchResults, isLoading: isSearching } = useQuery({
-    queryKey: ['global-search', debouncedQuery],
-    queryFn: async () => {
-      if (debouncedQuery.length < 2) return [];
-      // params: lets axios encode the query (a raw `&`, `#` or `%` used to break the URL)
-      const response = await api.get('/search/', { params: { q: debouncedQuery } });
-      return response.data;
-    },
-    enabled: debouncedQuery.length >= 2,
-  });
-
-  // Close search on escape or click outside
+  // Global shortcuts: Ctrl/Cmd+K toggles the palette anywhere; single keys are ignored while typing.
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+    const onKey = (e: KeyboardEvent) => {
+      if (isPaletteShortcut(e)) {
         e.preventDefault();
-        setIsSearchOpen(true);
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
+        setIsPaletteOpen((o) => !o);
+        return;
       }
+      const { state, action } = stepShortcut(chordRef.current, e, e.target as HTMLElement | null, Date.now());
+      chordRef.current = state;
+      if (!action) return;
+      e.preventDefault();
+      if (action.type === 'go') navigate(action.to);
+      else if (action.type === 'create-task') setIsTaskCreateOpen(true);
+      else setIsHelpOpen(true);
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Handle click outside search
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setIsSearchOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigate]);
 
   // Close mobile menu on navigation
   useEffect(() => {
@@ -226,97 +199,27 @@ export default function Layout({ children }: LayoutProps) {
                <Menu className="w-5 h-5" />
              </Button>
              
-             {/* Global Search */}
-             <div className="relative max-w-md w-full hidden md:block" ref={searchRef}>
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input 
-                        ref={searchInputRef}
-                        role="combobox"
-                        aria-label="Search projects, tasks and ideas"
-                        aria-expanded={isSearchOpen && searchQuery.length >= 2}
-                        aria-controls="global-search-results"
-                        aria-autocomplete="list"
-                        aria-activedescendant={activeResult >= 0 ? `search-result-${activeResult}` : undefined}
-                        placeholder="Search projects, tasks, ideas... (Ctrl+K)" 
-                        className="pl-10 h-9 bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary/20 text-sm transition-all"
-                        value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setIsSearchOpen(true);
-                        }}
-                        onFocus={() => setIsSearchOpen(true)}
-                        onKeyDown={(e) => {
-                            const results = (searchResults as any[]) || [];
-                            if (e.key === 'Escape') {
-                                setIsSearchOpen(false);
-                                setActiveResult(-1);
-                            } else if (e.key === 'ArrowDown' && results.length) {
-                                e.preventDefault();
-                                setIsSearchOpen(true);
-                                setActiveResult((i) => (i + 1) % results.length);
-                            } else if (e.key === 'ArrowUp' && results.length) {
-                                e.preventDefault();
-                                setActiveResult((i) => (i <= 0 ? results.length - 1 : i - 1));
-                            } else if (e.key === 'Enter') {
-                                const target = results[activeResult >= 0 ? activeResult : 0];
-                                if (target) {
-                                    navigate(target.link);
-                                    setIsSearchOpen(false);
-                                    setSearchQuery("");
-                                    setActiveResult(-1);
-                                }
-                            }
-                        }}
-                    />
-                </div>
-
-                {isSearchOpen && searchQuery.length >= 2 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div id="global-search-results" role="listbox" aria-label="Search results" className="max-h-[400px] overflow-y-auto p-2 space-y-1">
-                            {isSearching ? (
-                                <div className="p-4 text-center text-xs text-slate-400">Searching...</div>
-                            ) : searchResults && searchResults.length > 0 ? (
-                                (searchResults as any[]).map((res: any, idx: number) => (
-                                    <button
-                                        key={`${res.type}-${res.id}`}
-                                        id={`search-result-${idx}`}
-                                        role="option"
-                                        aria-selected={idx === activeResult}
-                                        className={cn("w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 text-left group transition-colors", idx === activeResult && "bg-slate-100")}
-                                        onClick={() => {
-                                            navigate(res.link);
-                                            setIsSearchOpen(false);
-                                            setSearchQuery("");
-                                        }}
-                                    >
-                                        <div className={cn(
-                                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                                            res.type === 'project' ? "bg-blue-50 text-blue-600" :
-                                            res.type === 'task' ? "bg-slate-100 text-slate-600" :
-                                            "bg-amber-50 text-amber-600"
-                                        )}>
-                                            {res.type === 'project' ? <FolderKanban className="w-4 h-4" /> :
-                                             res.type === 'task' ? <Hash className="w-4 h-4" /> :
-                                             <Lightbulb className="w-4 h-4" />}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-xs font-bold text-slate-900 truncate">{res.title}</p>
-                                                <Badge variant="outline" className="text-[9px] uppercase font-black px-1 py-0 h-4 ml-2">{res.type}</Badge>
-                                            </div>
-                                            {res.description && <p className="text-[10px] text-slate-500 truncate mt-0.5">{res.description}</p>}
-                                        </div>
-                                        <ArrowRight className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="p-4 text-center text-xs text-slate-400">No results found for "{searchQuery}"</div>
-                            )}
-                        </div>
-                    </div>
-                )}
-             </div>
+             {/* Global search: opens the command palette */}
+             <button
+               type="button"
+               onClick={() => setIsPaletteOpen(true)}
+               aria-label="Open command palette"
+               aria-haspopup="dialog"
+               className="hidden md:flex h-9 w-full max-w-md items-center gap-2 rounded-md bg-slate-50 px-3 text-left text-sm text-slate-400 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+             >
+               <Search className="h-4 w-4" aria-hidden />
+               <span className="flex-1 truncate">Search projects, tasks, ideas...</span>
+               <kbd className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">Ctrl K</kbd>
+             </button>
+             <Button
+               variant="ghost"
+               size="icon"
+               className="md:hidden text-slate-500"
+               aria-label="Search"
+               onClick={() => setIsPaletteOpen(true)}
+             >
+               <Search className="w-5 h-5" />
+             </Button>
 
              {/* Mobile Title */}
              <div className="flex items-center gap-2 md:hidden">
@@ -381,6 +284,13 @@ export default function Layout({ children }: LayoutProps) {
       </div>
       
       <TaskCreateDialog open={isTaskCreateOpen} onOpenChange={setIsTaskCreateOpen} />
+      <CommandPalette
+        open={isPaletteOpen}
+        onOpenChange={setIsPaletteOpen}
+        onCreateTask={() => setIsTaskCreateOpen(true)}
+        onShowHelp={() => setIsHelpOpen(true)}
+      />
+      <ShortcutSheet open={isHelpOpen} onOpenChange={setIsHelpOpen} />
     </div>
   );
 }
