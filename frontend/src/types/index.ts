@@ -92,6 +92,8 @@ export interface Project {
   type_ref?: WorkType | null;
   tags?: string[];
   members?: User[];
+  /** The caller's role in this project (viewer | editor | admin); only set by GET /projects/{id}. */
+  my_role?: 'viewer' | 'editor' | 'admin' | null;
   is_archived?: boolean;
   archived_at?: string | null;
   gantt_regions?: any[];

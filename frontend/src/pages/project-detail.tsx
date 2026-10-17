@@ -48,6 +48,8 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
+import { ProjectMembersCard } from '@/components/project-members';
+import { canAdmin, canEdit } from '@/lib/roles';
 import DataExportDialog from '@/components/data-export-dialog';
 import CustomFieldsManager from '@/components/custom-fields-manager';
 import { UserAvatar } from '@/components/ui/user-avatar';
@@ -114,7 +116,7 @@ export default function ProjectDetailPage() {
         <div className="flex items-center gap-3">
           <Badge variant="secondary" className="capitalize px-2 py-0 h-4 text-[9px] font-black uppercase bg-slate-100 text-slate-600 border-none">{project.status}</Badge>
           <div className="flex items-center gap-0.5 mr-2">
-            {!project.is_archived && (
+            {!project.is_archived && canAdmin(project.my_role) && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -151,9 +153,15 @@ export default function ProjectDetailPage() {
           >
             <Download className="w-3.5 h-3.5" /> Export
           </Button>
-          <Button onClick={() => handleAddTask()} size="sm" className="gap-2 shadow-lg shadow-primary/20 h-9">
-            <Plus className="w-4 h-4" /> Add Task
-          </Button>
+          {canEdit(project.my_role) ? (
+            <Button onClick={() => handleAddTask()} size="sm" className="gap-2 shadow-lg shadow-primary/20 h-9">
+              <Plus className="w-4 h-4" /> Add Task
+            </Button>
+          ) : (
+            <Badge variant="outline" className="h-9 px-3 capitalize" title="Your role in this project">
+              {project.my_role ?? 'viewer'}
+            </Badge>
+          )}
         </div>
       );
     }
@@ -548,7 +556,7 @@ export default function ProjectDetailPage() {
             onTaskMove={handleTaskMove}
             onSubtaskMove={handleSubtaskMove}
             onReorder={handleKanbanReorder}
-            onAddTask={handleAddTask}
+            onAddTask={canEdit(project.my_role) ? handleAddTask : undefined}
             onTaskClick={handleTaskClick}
             onSubtaskClick={handleSubtaskClick}
             syncKey={kanbanSyncKey}
@@ -622,6 +630,14 @@ export default function ProjectDetailPage() {
 
         <TabsContent value="settings" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
           <div className="max-w-4xl mx-auto space-y-6">
+            {id && <ProjectMembersCard projectId={id} canManage={canAdmin(project.my_role)} />}
+
+            {!canAdmin(project.my_role) && (
+              <p role="status" className="rounded-lg border bg-white p-4 text-sm text-slate-600">
+                Only project admins can change the settings, custom fields and taxonomy of this project.
+              </p>
+            )}
+            {canAdmin(project.my_role) && (<>
             <Card>
                 <CardHeader>
                     <CardTitle className="text-lg">Project Settings</CardTitle>
@@ -651,6 +667,7 @@ export default function ProjectDetailPage() {
                 title="Project Taxonomy"
                 description="Custom categories and activity types exclusive to this project."
             />
+            </>)}
           </div>
         </TabsContent>
       </Tabs>

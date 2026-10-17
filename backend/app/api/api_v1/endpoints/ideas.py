@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud, models, schemas
 from app.api import deps
-from app.api.access import require_idea_access, require_project_access
+from app.api.access import ADMIN, EDITOR, has_project_access, require_idea_access, require_project_access
 from app.crud.crud_idea import idea as crud_idea
 
 router = APIRouter()
@@ -41,7 +41,7 @@ async def vote_idea(
     """
     Toggle vote for an idea.
     """
-    await require_idea_access(db, idea_id, current_user)
+    await require_idea_access(db, idea_id, current_user, min_role=EDITOR)
 
     voted = await crud_idea.toggle_vote(db, idea_id=idea_id, user_id=current_user.id)
     return {"voted": voted}
@@ -56,7 +56,7 @@ async def downvote_idea(
     """
     Toggle downvote for an idea.
     """
-    await require_idea_access(db, idea_id, current_user)
+    await require_idea_access(db, idea_id, current_user, min_role=EDITOR)
 
     voted = await crud_idea.toggle_downvote(db, idea_id=idea_id, user_id=current_user.id)
     return {"voted": voted}
@@ -76,9 +76,8 @@ async def promote_idea_to_project(
         raise HTTPException(status_code=404, detail="Idea not found")
     
     # Only project owner/admin can promote
-    project = await crud.project.get(db, id=idea.project_id)
-    if project.owner_id != current_user.id and not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Only project owners can promote ideas")
+    if not await has_project_access(db, idea.project_id, current_user, min_role=ADMIN):
+        raise HTTPException(status_code=403, detail="Only project admins can promote ideas")
         
     try:
         return await crud_idea.promote_to_project(db, idea_id=idea_id, owner_id=current_user.id)
@@ -95,7 +94,7 @@ async def create_idea(
     """
     Create a new idea.
     """
-    await require_project_access(db, idea_in.project_id, current_user)
+    await require_project_access(db, idea_in.project_id, current_user, min_role=EDITOR)
 
     return await crud_idea.create(db, obj_in=idea_in, author_id=current_user.id)
 
@@ -115,9 +114,9 @@ async def update_idea(
         raise HTTPException(status_code=404, detail="Idea not found")
     
     # Check permission (author, project owner, or superuser)
-    project = await crud.project.get(db, id=idea.project_id)
-    is_manager = current_user.is_superuser or project.owner_id == current_user.id
-    if idea.author_id != current_user.id and not is_manager:
+    is_manager = await has_project_access(db, idea.project_id, current_user, min_role=ADMIN)
+    can_edit = await has_project_access(db, idea.project_id, current_user, min_role=EDITOR)
+    if not is_manager and not (idea.author_id == current_user.id and can_edit):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     # Authors may edit their text but must not approve/convert their own idea.
     if "status" in idea_in.model_fields_set and not is_manager:
@@ -139,9 +138,9 @@ async def delete_idea(
     if not idea:
         raise HTTPException(status_code=404, detail="Idea not found")
     
-    project = await crud.project.get(db, id=idea.project_id)
-    if (idea.author_id != current_user.id and project.owner_id != current_user.id
-            and not current_user.is_superuser):
+    is_manager = await has_project_access(db, idea.project_id, current_user, min_role=ADMIN)
+    can_edit = await has_project_access(db, idea.project_id, current_user, min_role=EDITOR)
+    if not is_manager and not (idea.author_id == current_user.id and can_edit):
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     return await crud_idea.remove(db, id=idea_id)
@@ -161,9 +160,8 @@ async def promote_idea(
         raise HTTPException(status_code=404, detail="Idea not found")
     
     # Only project owner/admin can promote
-    project = await crud.project.get(db, id=idea.project_id)
-    if project.owner_id != current_user.id and not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Only project owners can promote ideas")
+    if not await has_project_access(db, idea.project_id, current_user, min_role=ADMIN):
+        raise HTTPException(status_code=403, detail="Only project admins can promote ideas")
         
     try:
         return await crud_idea.promote_to_task(db, idea_id=idea_id, owner_id=current_user.id)

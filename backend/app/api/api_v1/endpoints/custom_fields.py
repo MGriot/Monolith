@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
-from app.api.access import require_project_access
+from app.api.access import ADMIN, require_project_access
 from app.core.custom_fields import normalize_options
 from app.crud import crud_custom_field
 from app.models.custom_field import CustomFieldDef as CustomFieldDefModel
@@ -47,7 +47,7 @@ async def create_custom_field(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
-    await require_project_access(db, project_id, current_user)
+    await require_project_access(db, project_id, current_user, min_role=ADMIN)
     try:
         options = normalize_options(body.field_type, body.options)
     except ValueError as e:
@@ -82,7 +82,7 @@ async def update_custom_field(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
-    await require_project_access(db, project_id, current_user)
+    await require_project_access(db, project_id, current_user, min_role=ADMIN)
     obj = await _get_def(db, project_id, field_id)
     data = body.model_dump(exclude_unset=True)
     if data.get("name") is not None:
@@ -117,7 +117,7 @@ async def delete_custom_field(
     current_user: User = Depends(deps.get_current_user),
 ) -> None:
     """Delete the definition and the values stored for it on the project's tasks."""
-    await require_project_access(db, project_id, current_user)
+    await require_project_access(db, project_id, current_user, min_role=ADMIN)
     obj = await _get_def(db, project_id, field_id)
     await crud_custom_field.strip_field_from_tasks(db, project_id, field_id)
     await db.delete(obj)

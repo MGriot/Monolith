@@ -118,7 +118,7 @@ async def start_timer(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """Start a timer on a task. A user can have only one running timer."""
-    await require_task_access(db, task_id, current_user)
+    await require_task_access(db, task_id, current_user, participate=True)
     if await _running_entry(db, current_user.id):
         raise HTTPException(status_code=409, detail=RUNNING_TIMER_CONFLICT)
     entry = TimeEntryModel(task_id=task_id, user_id=current_user.id, started_at=datetime.utcnow(), note=body.note)
@@ -139,7 +139,7 @@ async def create_manual_entry(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """Log a finished span of work by hand."""
-    await require_task_access(db, task_id, current_user)
+    await require_task_access(db, task_id, current_user, participate=True)
     started, ended = make_naive(body.started_at), make_naive(body.ended_at)
     if ended > datetime.utcnow() + timedelta(minutes=5):
         raise HTTPException(status_code=400, detail="A time entry cannot end in the future")

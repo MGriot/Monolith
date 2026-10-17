@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app import crud, models, schemas
 from app.api import deps
-from app.api.access import require_folder_access, require_project_access, require_task_access
+from app.api.access import EDITOR, require_folder_access, require_project_access, require_task_access
 from app.core.uploads import save_upload
 from app.models.folder import Folder, FolderType
 from app.models.file import File as FileModel
@@ -59,11 +59,11 @@ async def create_folder(
     Create new folder.
     """
     if folder_in.project_id:
-        await require_project_access(db, folder_in.project_id, current_user)
+        await require_project_access(db, folder_in.project_id, current_user, min_role=EDITOR)
     if folder_in.task_id:
         await require_task_access(db, folder_in.task_id, current_user, write=True)
     if folder_in.parent_id:
-        await require_folder_access(db, folder_in.parent_id, current_user)
+        await require_folder_access(db, folder_in.parent_id, current_user, write=True)
 
     db_obj = Folder(
         **folder_in.dict(),
@@ -85,7 +85,7 @@ async def upload_file_to_folder(
     """
     Upload a file to a specific folder.
     """
-    await require_folder_access(db, folder_id, current_user)
+    await require_folder_access(db, folder_id, current_user, write=True)
 
     # Save file to disk (size/extension limits enforced, streamed in chunks)
     filename, ext, _size = await save_upload(file)
@@ -115,7 +115,7 @@ async def create_note(
     """
     Create a new Markdown note in a folder.
     """
-    await require_folder_access(db, folder_id, current_user)
+    await require_folder_access(db, folder_id, current_user, write=True)
 
     db_obj = FileModel(
         name=note_in.name or "Untitled Note.md",
@@ -144,6 +144,7 @@ async def update_file(
     file = await db.get(FileModel, file_id)
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
+    await require_folder_access(db, file.folder_id, current_user, write=True)
     if file.owner_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Not authorized")
     
@@ -167,12 +168,11 @@ async def update_folder(
     """
     Update a folder (rename).
     """
+    await require_folder_access(db, folder_id, current_user, write=True)
     folder = await db.get(Folder, folder_id)
-    if not folder:
-        raise HTTPException(status_code=404, detail="Folder not found")
     if folder.owner_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
+
     update_data = folder_in.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(folder, field, value)
@@ -192,12 +192,11 @@ async def delete_folder(
     """
     Delete a folder.
     """
+    await require_folder_access(db, folder_id, current_user, write=True)
     folder = await db.get(Folder, folder_id)
-    if not folder:
-        raise HTTPException(status_code=404, detail="Folder not found")
     if folder.owner_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
+
     await db.delete(folder)
     await db.commit()
     return folder
