@@ -67,6 +67,9 @@ class Task(Base):
     # Structure: List of { id, text, is_done }
     checklist = Column(JSONB, nullable=False, default=[])
 
+    # Values of the project's custom fields, keyed by CustomFieldDef.id (validated by app.core.custom_fields)
+    custom_values = Column(JSONB, nullable=False, default=dict, server_default="{}")
+
     @property
     def expected_duration_days(self) -> float:
         """

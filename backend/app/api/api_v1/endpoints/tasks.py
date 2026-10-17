@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 from app.api import deps
 from app.api.access import has_task_access, require_project_access, require_task_access
 from app.core.uploads import save_upload
-from app.crud import crud_task, crud_project, crud_dependency
+from app.crud import crud_task, crud_project, crud_dependency, crud_custom_field
 from app.schemas.task import Task, TaskCreate, TaskUpdate, Dependency, DependencyCreate
 from app.models.user import User
 from app.models.dependency import Dependency as DependencyModel
@@ -271,6 +271,10 @@ async def create_task(
         task_in.owner_id = current_user.id
         
     try:
+        if task_in.custom_values:
+            task_in.custom_values = await crud_custom_field.validate_for_project(
+                db, task_in.project_id, task_in.custom_values
+            )
         task_obj = await crud_task.task.create(db=db, obj_in=task_in)
         return task_obj
     except ValueError as e:
@@ -314,6 +318,10 @@ async def update_task(
     await check_task_permissions(db, task_obj, current_user, "write")
             
     try:
+        if "custom_values" in task_in.model_fields_set:
+            task_in.custom_values = await crud_custom_field.validate_for_project(
+                db, task_obj.project_id, task_in.custom_values
+            )
         task_obj = await crud_task.task.update(db=db, db_obj=task_obj, obj_in=task_in)
         return task_obj
     except ValueError as e:
