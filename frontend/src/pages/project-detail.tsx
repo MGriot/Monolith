@@ -61,6 +61,8 @@ import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
 import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
 import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
+import BulkActionBar from '@/components/bulk-action-bar';
+import { EMPTY_SELECTION, type SelectionState } from '@/lib/selection';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -94,6 +96,17 @@ export default function ProjectDetailPage() {
 
   const view = useTaskView(tasks ?? []);
   const assigneeOptions = useMemo(() => collectAssignees(tasks ?? []), [tasks]);
+  const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
+  const bulkEnabled = canEdit(project?.my_role);
+  const { data: members } = useQuery({
+    queryKey: ['project-members', id],
+    queryFn: async () => (await api.get<{ user_id: string; email: string; full_name?: string | null }[]>(`/projects/${id}/members`)).data,
+    enabled: !!id && bulkEnabled,
+  });
+  const bulkAssignees = useMemo(
+    () => (members ?? []).map((m) => ({ id: m.user_id, label: m.full_name || m.email })),
+    [members],
+  );
 
   // command palette "toggle view": flip between the list overview and the board
   useEffect(() => onAppEvent(TOGGLE_VIEW_EVENT, () => setActiveTab((t) => (t === 'kanban' ? 'overview' : 'kanban'))), []);
@@ -530,7 +543,11 @@ export default function ProjectDetailPage() {
               onAddSubtask={handleAddSubtask}
               onReorderTask={handleReorderTask}
               onIndentTask={handleIndentTask}
+              selection={bulkEnabled ? { state: selection, onChange: setSelection } : undefined}
             />
+            {bulkEnabled && (
+              <BulkActionBar ids={[...selection.selected]} assignees={bulkAssignees} onClear={() => setSelection(EMPTY_SELECTION)} />
+            )}
           </div>
 
           <div className="flex justify-center">

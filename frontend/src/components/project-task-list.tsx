@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { parseISO, differenceInDays } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import { getStatusColors, getPriorityColors } from '@/constants/colors';
 import type { Task } from '@/types';
 import { isAfterDueDay } from "@/lib/dates";
 import type { TaskGroup } from '@/lib/task-filters';
+import { clickSelection, headerState, pruneSelection, toggleAll, visibleIds, type SelectionState } from '@/lib/selection';
 
 export interface ProjectTaskListProps {
   tasks: Task[];
@@ -38,6 +39,8 @@ export interface ProjectTaskListProps {
   onAddSubtask?: (parentTask: Task) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
   onIndentTask?: (taskId: string, direction: 'indent' | 'outdent') => void;
+  /** when set, a checkbox column is shown; the parent owns the state (and renders the bulk action bar) */
+  selection?: { state: SelectionState; onChange: (next: SelectionState) => void };
 }
 
 interface RecursiveRowProps {
@@ -48,10 +51,14 @@ interface RecursiveRowProps {
   onAddSubtask?: (parentTask: Task) => void;
   onReorderTask?: (taskId: string, direction: 'up' | 'down') => void;
   onIndentTask?: (taskId: string, direction: 'indent' | 'outdent') => void;
+  collapsed: ReadonlySet<string>;
+  onToggleCollapse: (id: string) => void;
+  selected?: ReadonlySet<string>;
+  onSelectClick?: (id: string, shift: boolean) => void;
 }
 
-function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask }: RecursiveRowProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask, collapsed, onToggleCollapse, selected, onSelectClick }: RecursiveRowProps) {
+  const isExpanded = !collapsed.has(task.id);
   const hasChildren = task.subtasks && task.subtasks.length > 0;
 
   // Refined Alert Logic: 
@@ -85,6 +92,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
   return (
     <>
       <TableRow
+        data-state={selected?.has(task.id) ? 'selected' : undefined}
         className={cn(
           "hover:bg-slate-50/50 transition-colors cursor-pointer group border-b border-slate-100",
           level > 0 && "bg-slate-50/20"
@@ -94,10 +102,22 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
           else onSubtaskClick ? onSubtaskClick(task) : onTaskClick(task);
         }}
       >
+        {onSelectClick && (
+          <TableCell className="w-8 py-2" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
+              aria-label={`Select ${task.title}`}
+              checked={selected?.has(task.id) ?? false}
+              onChange={() => undefined}
+              onClick={(e) => onSelectClick(task.id, e.shiftKey)}
+            />
+          </TableCell>
+        )}
         <TableCell className="py-2" onClick={(e) => {
           if (hasChildren) {
             e.stopPropagation();
-            setIsExpanded(!isExpanded);
+            onToggleCollapse(task.id);
           }
         }}>
           {hasChildren && (
@@ -292,19 +312,58 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
           onAddSubtask={onAddSubtask}
           onReorderTask={onReorderTask}
           onIndentTask={onIndentTask}
+          collapsed={collapsed}
+          onToggleCollapse={onToggleCollapse}
+          selected={selected}
+          onSelectClick={onSelectClick}
         />
       ))}
     </>
   );
 }
 
-export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask }: ProjectTaskListProps) {
+export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask, selection }: ProjectTaskListProps) {
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const toggleCollapse = (id: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+
+  const shownGroups = groups && groups.length > 0 && groups[0].label ? groups : [{ key: 'all', label: '', tasks }];
+  // rows as displayed, top to bottom: what a shift-click range runs over
+  const order = useMemo(() => shownGroups.flatMap((g) => visibleIds(g.tasks, collapsed)), [shownGroups, collapsed]);
+  const selectionState = selection?.state;
+  const onSelectionChange = selection?.onChange;
+  useEffect(() => {
+    // a filter or a deletion can remove selected rows from view; they must not be acted on invisibly
+    if (!selectionState || !onSelectionChange) return;
+    const pruned = pruneSelection(selectionState, order);
+    if (pruned !== selectionState) onSelectionChange(pruned);
+  }, [order, selectionState, onSelectionChange]);
+
+  const header = selectionState ? headerState(selectionState, order) : 'none';
+  const colCount = selection ? 16 : 15;
+
   return (
     <div className="rounded-md border border-slate-200 bg-white overflow-hidden shadow-sm">
       <div className="table-container">
         <Table>
           <TableHeader className="bg-slate-50">
           <TableRow className="border-b border-slate-100 hover:bg-slate-50">
+            {selection && (
+              <TableHead className="w-8">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
+                  aria-label="Select all tasks"
+                  checked={header === 'all'}
+                  ref={(el) => { if (el) el.indeterminate = header === 'some'; }}
+                  onChange={() => selectionState && selection.onChange(toggleAll(selectionState, order))}
+                />
+              </TableHead>
+            )}
             <TableHead className="w-10"></TableHead>
             <TableHead className="w-16 text-[10px] font-black uppercase tracking-widest text-slate-500">WBS</TableHead>
             <TableHead className="min-w-[200px] text-[10px] font-black uppercase tracking-widest text-slate-500">Task</TableHead>
@@ -325,16 +384,16 @@ export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, 
         <TableBody>
           {tasks.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={13} className="h-32 text-center text-slate-500 italic text-sm">
+              <TableCell colSpan={colCount} className="h-32 text-center text-slate-500 italic text-sm">
                 {filtered ? 'No tasks match the current filters.' : 'No tasks found in this project.'}
               </TableCell>
             </TableRow>
           ) : (
-            (groups && groups.length > 0 && groups[0].label ? groups : [{ key: 'all', label: '', tasks }]).map((group) => (
+            shownGroups.map((group) => (
               <Fragment key={group.key}>
                 {group.label && (
                   <TableRow className="bg-slate-50 hover:bg-slate-50">
-                    <TableCell colSpan={15} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                    <TableCell colSpan={colCount} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-slate-500">
                       <span role="heading" aria-level={4}>{group.label} <span className="font-semibold text-slate-400">({group.tasks.length})</span></span>
                     </TableCell>
                   </TableRow>
@@ -349,6 +408,10 @@ export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, 
                     onAddSubtask={onAddSubtask}
                     onReorderTask={onReorderTask}
                     onIndentTask={onIndentTask}
+                    collapsed={collapsed}
+                    onToggleCollapse={toggleCollapse}
+                    selected={selectionState?.selected}
+                    onSelectClick={selectionState && onSelectionChange ? (id, shift) => onSelectionChange(clickSelection(selectionState, order, id, shift)) : undefined}
                   />
                 ))}
               </Fragment>

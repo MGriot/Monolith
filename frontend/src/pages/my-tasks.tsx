@@ -56,6 +56,9 @@ import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
 import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
 import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
+import BulkActionBar from '@/components/bulk-action-bar';
+import { clickSelection, EMPTY_SELECTION, headerState, pruneSelection, toggleAll, type SelectionState } from '@/lib/selection';
+import { useAuth } from '@/components/auth-provider';
 
 export default function MyTasksPage() {
   const queryClient = useQueryClient();
@@ -114,6 +117,20 @@ export default function MyTasksPage() {
   const taskView = useTaskView(activeTasks);
   const assigneeOptions = useMemo(() => collectAssignees(activeTasks), [activeTasks]);
   const filtering = hasActiveFilters(taskView.filters);
+
+  // bulk selection (list view): rows in display order, groups included
+  const { user: me } = useAuth();
+  const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
+  const rowOrder = useMemo(() => taskView.groups.flatMap((g) => g.tasks.map((t) => t.id)), [taskView.groups]);
+  useEffect(() => {
+    setSelection((s) => pruneSelection(s, rowOrder));
+  }, [rowOrder]);
+  const bulkAssignees = useMemo(() => {
+    const opts = collectAssignees(activeTasks);
+    if (me && !opts.some((o) => o.id === me.id)) opts.unshift({ id: me.id, label: me.full_name || me.email });
+    return opts;
+  }, [activeTasks, me]);
+  const selectionHeader = headerState(selection, rowOrder);
 
   // command palette "toggle view"
   useEffect(() => onAppEvent(TOGGLE_VIEW_EVENT, () => setView((v) => (v === 'kanban' ? 'list' : 'kanban'))), []);
@@ -285,6 +302,16 @@ export default function MyTasksPage() {
               <Table>
                 <TableHeader className="bg-slate-50">
                   <TableRow>
+                    <TableHead className="w-8">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
+                        aria-label="Select all tasks"
+                        checked={selectionHeader === 'all'}
+                        ref={(el) => { if (el) el.indeterminate = selectionHeader === 'some'; }}
+                        onChange={() => setSelection((s) => toggleAll(s, rowOrder))}
+                      />
+                    </TableHead>
                     <TableHead className="text-[10px] font-black uppercase text-slate-500">Task</TableHead>
                     <TableHead className="text-[10px] font-black uppercase text-slate-500">Project</TableHead>
                     <TableHead className="text-[10px] font-black uppercase text-slate-500">Status</TableHead>
@@ -296,7 +323,7 @@ export default function MyTasksPage() {
                 <TableBody>
                   {taskView.sorted.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-32 text-center text-slate-500 italic">
+                      <TableCell colSpan={7} className="h-32 text-center text-slate-500 italic">
                         {filtering ? 'No tasks match the current filters.' : 'You have no tasks assigned to you.'}
                       </TableCell>
                     </TableRow>
@@ -305,7 +332,7 @@ export default function MyTasksPage() {
                       <Fragment key={group.key}>
                       {group.label && (
                         <TableRow className="bg-slate-50 hover:bg-slate-50">
-                          <TableCell colSpan={6} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                          <TableCell colSpan={7} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-slate-500">
                             <span role="heading" aria-level={4}>{group.label} <span className="font-semibold text-slate-400">({group.tasks.length})</span></span>
                           </TableCell>
                         </TableRow>
@@ -314,8 +341,19 @@ export default function MyTasksPage() {
                       <TableRow 
                         key={`${group.key}-${task.id}`}
                         className="hover:bg-slate-50/50 cursor-pointer"
+                        data-state={selection.selected.has(task.id) ? 'selected' : undefined}
                         onClick={() => handleTaskClick(task)}
                       >
+                        <TableCell className="w-8" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
+                            aria-label={`Select ${task.title}`}
+                            checked={selection.selected.has(task.id)}
+                            onChange={() => undefined}
+                            onClick={(e) => setSelection((s) => clickSelection(s, rowOrder, task.id, e.shiftKey))}
+                          />
+                        </TableCell>
                         <TableCell className="font-semibold text-slate-900">{task.title}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5 text-xs text-slate-600">
@@ -368,6 +406,9 @@ export default function MyTasksPage() {
                 </TableBody>
               </Table>
             </div>
+          )}
+          {view === 'list' && (
+            <BulkActionBar ids={[...selection.selected]} assignees={bulkAssignees} onClear={() => setSelection(EMPTY_SELECTION)} />
           )}
         </div>
 
