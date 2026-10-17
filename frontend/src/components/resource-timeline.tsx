@@ -155,7 +155,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
 
   if (!viewWindow || userResources.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center border-2 border-dashed rounded-xl h-64 text-slate-400">
+      <div className="flex flex-col items-center justify-center p-8 text-center border-2 border-dashed rounded-xl h-64 text-fg-faint">
         <UserIcon className="w-8 h-8 mb-2 opacity-20" />
         <p className="font-medium">No assigned tasks with dates found.</p>
       </div>
@@ -204,7 +204,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
       case 'high': return "bg-orange-500 border-orange-600";
       case 'medium': return "bg-amber-500 border-amber-600";
       case 'low': return "bg-blue-500 border-blue-600";
-      default: return "bg-slate-500 border-slate-600";
+      default: return "bg-muted-foreground border-slate-600";
     }
   };
 
@@ -218,18 +218,18 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
   const todayPx = getPositionPx(new Date());
 
   return (
-    <div className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="p-4 border-b flex items-center justify-between bg-slate-50/50">
+    <div className="flex flex-col bg-background rounded-xl border border-border shadow-sm overflow-hidden">
+      <div className="p-4 border-b flex items-center justify-between bg-subtle/50">
         <div className="flex items-center gap-4">
-          <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
             <UserIcon className="w-4 h-4 text-primary" />
             {title}
           </h3>
-          <div className="flex items-center gap-1 border rounded-md bg-white p-1">
+          <div className="flex items-center gap-1 border rounded-md bg-background p-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleZoom('in')} disabled={zoomLevel === 'day'}>
               <ZoomIn className="w-4 h-4" />
             </Button>
-            <span className="text-[9px] font-black uppercase w-12 text-center text-slate-500">{zoomLevel}</span>
+            <span className="text-[9px] font-black uppercase w-12 text-center text-muted-foreground">{zoomLevel}</span>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleZoom('out')} disabled={zoomLevel === 'year'}>
               <ZoomOut className="w-4 h-4" />
             </Button>
@@ -242,10 +242,10 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
       </div>
 
       <div className="overflow-x-auto relative" ref={timelineRef}>
-        <div style={{ width: `${containerWidth + 200}px` }} className="relative min-w-full bg-white">
+        <div style={{ width: `${containerWidth + 200}px` }} className="relative min-w-full bg-background">
           {/* Header */}
-          <div className="flex border-b border-slate-200 bg-slate-50/30 sticky top-0 z-20">
-            <div className="w-48 border-r border-slate-200 p-3 flex-shrink-0 font-bold text-[10px] text-slate-500 uppercase tracking-widest bg-slate-50/50 sticky left-0 z-30">
+          <div className="flex border-b border-border bg-subtle/30 sticky top-0 z-20">
+            <div className="w-48 border-r border-border p-3 flex-shrink-0 font-bold text-[10px] text-muted-foreground uppercase tracking-widest bg-subtle/50 sticky left-0 z-30">
               Person
             </div>
             <div className="flex-1 relative h-10 flex items-center">
@@ -259,7 +259,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
                 return (
                   <div 
                     key={tick.toISOString()} 
-                    className="absolute border-l border-slate-200 h-full flex items-center pl-2 text-[9px] font-bold text-slate-400 uppercase"
+                    className="absolute border-l border-border h-full flex items-center pl-2 text-[9px] font-bold text-fg-faint uppercase"
                     style={{ left: `${left}px` }}
                   >
                     {label}
@@ -280,14 +280,14 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
             )}
 
             {userResources.map((res) => (
-              <div key={res.user.id} className="flex border-b border-slate-100 hover:bg-slate-50/30 transition-colors group">
-                <div className="w-48 border-r border-slate-200 p-3 flex-shrink-0 flex items-center gap-2.5 sticky left-0 bg-white z-20 shadow-sm">
-                  <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 shrink-0 group-hover:scale-110 transition-transform">
-                    <UserIcon className="w-3.5 h-3.5 text-slate-500" />
+              <div key={res.user.id} className="flex border-b border-hairline hover:bg-subtle/30 transition-colors group">
+                <div className="w-48 border-r border-border p-3 flex-shrink-0 flex items-center gap-2.5 sticky left-0 bg-background z-20 shadow-sm">
+                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center border border-border shrink-0 group-hover:scale-110 transition-transform">
+                    <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-slate-900 truncate">{res.user.full_name || res.user.email}</span>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase">{res.tasks.length} tasks</span>
+                    <span className="text-xs font-bold text-foreground truncate">{res.user.full_name || res.user.email}</span>
+                    <span className="text-[9px] text-fg-faint font-bold uppercase">{res.tasks.length} tasks</span>
                   </div>
                 </div>
                 
@@ -296,7 +296,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
                   {timeTicks.map((tick) => (
                     <div 
                       key={tick.toISOString()} 
-                      className="absolute top-0 bottom-0 border-l border-slate-50 h-full"
+                      className="absolute top-0 bottom-0 border-l border-hairline h-full"
                       style={{ left: `${getPositionPx(tick)}px` }}
                     />
                   ))}

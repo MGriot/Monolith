@@ -105,3 +105,15 @@
     scrollbar-width: none;
   }
 }
+/* Markdown editor (EasyMDE / CodeMirror) ships light-only styles */
+.dark .EasyMDEContainer .CodeMirror {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+.dark .EasyMDEContainer .CodeMirror-cursor { border-left-color: hsl(var(--foreground)); }
+.dark .editor-toolbar { background-color: hsl(var(--subtle)); border-color: hsl(var(--border)); }
+.dark .editor-toolbar button { color: hsl(var(--foreground)); }
+.dark .editor-toolbar button:hover, .dark .editor-toolbar button.active { background-color: hsl(var(--muted)); border-color: hsl(var(--border)); }
+.dark .editor-toolbar i.separator { border-color: hsl(var(--border)); }
+.dark .editor-preview, .dark .editor-preview-side { background-color: hsl(var(--background)); color: hsl(var(--foreground)); }

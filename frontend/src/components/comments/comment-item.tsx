@@ -61,10 +61,10 @@ export function CommentItem({
       )}>
         {/* Header: Author & Time */}
         <div className="flex items-center gap-2 px-1">
-          <span className="text-[10px] font-black uppercase text-slate-400 tracking-tight">
+          <span className="text-[10px] font-black uppercase text-fg-faint tracking-tight">
             {isMe ? 'You' : (comment.author?.full_name || 'Guest')}
           </span>
-          <span className="text-[9px] text-slate-300 font-bold">
+          <span className="text-[9px] text-fg-ghost font-bold">
             {format(new Date(comment.created_at), 'HH:mm')}
           </span>
         </div>
@@ -74,7 +74,7 @@ export function CommentItem({
             "relative p-3 rounded-2xl group shadow-sm border transition-all",
             isMe 
                 ? "bg-primary text-primary-foreground rounded-tr-none border-primary shadow-primary/10" 
-                : "bg-white text-slate-800 rounded-tl-none border-slate-100 shadow-slate-200/50"
+                : "bg-background text-foreground rounded-tl-none border-hairline shadow-slate-200/50"
         )}>
           {isEditing ? (
             <div className="min-w-[300px]">
@@ -105,21 +105,21 @@ export function CommentItem({
                   {comment.attachments.map((url, idx) => (
                       <div key={idx} className={cn(
                           "rounded-lg overflow-hidden border shadow-sm max-w-sm",
-                          isMe ? "bg-white/10 border-white/20" : "bg-slate-50 border-slate-100"
+                          isMe ? "bg-background/10 border-white/20" : "bg-subtle border-hairline"
                       )}>
                           {isImage(url) ? (
                               <div className="group/img relative">
                                 <img src={url} alt="attachment" className="w-full h-auto max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(url, '_blank')} />
                                 <div className="absolute top-1 right-1 opacity-0 group-hover/img:opacity-100 transition-opacity">
-                                    <Button variant="secondary" size="icon" className="h-6 w-6 rounded-md bg-white/90 backdrop-blur" onClick={() => window.open(url, '_blank')}>
+                                    <Button variant="secondary" size="icon" className="h-6 w-6 rounded-md bg-background/90 backdrop-blur" onClick={() => window.open(url, '_blank')}>
                                         <ExternalLink className="h-3 w-3" />
                                     </Button>
                                 </div>
                               </div>
                           ) : (
                               <a href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 hover:bg-black/5 transition-colors">
-                                  <div className="h-8 w-8 rounded bg-slate-200 flex items-center justify-center shrink-0">
-                                      <FileText className="h-4 w-4 text-slate-500" />
+                                  <div className="h-8 w-8 rounded bg-border flex items-center justify-center shrink-0">
+                                      <FileText className="h-4 w-4 text-muted-foreground" />
                                   </div>
                                   <div className="min-w-0">
                                       <p className="text-[10px] font-bold truncate tracking-tight">{url.split('/').pop()}</p>
@@ -134,13 +134,13 @@ export function CommentItem({
 
           {/* Actions Popover (Hover only on non-mobile) */}
           <div className={cn(
-              "absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white border border-slate-100 p-0.5 rounded-lg shadow-lg z-10",
+              "absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-background border border-hairline p-0.5 rounded-lg shadow-lg z-10",
               isMe ? "-left-12" : "-right-12"
           )}>
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-primary" onClick={() => setIsEditing(true)}>
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-fg-faint hover:text-primary" onClick={() => setIsEditing(true)}>
                 <Edit2 className="h-3 w-3" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-destructive" onClick={() => onDelete(comment.id)}>
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-fg-faint hover:text-destructive" onClick={() => onDelete(comment.id)}>
                 <Trash2 className="h-3 w-3" />
             </Button>
           </div>
@@ -155,11 +155,11 @@ export function CommentItem({
                       href={link} 
                       target="_blank" 
                       rel="noreferrer"
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-100 bg-white text-slate-600 hover:border-primary/30 transition-all group/link shadow-sm"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-hairline bg-background text-fg-soft hover:border-primary/30 transition-all group/link shadow-sm"
                     >
-                        <Globe className="h-3 w-3 text-slate-300 group-hover/link:text-primary" />
+                        <Globe className="h-3 w-3 text-fg-ghost group-hover/link:text-primary" />
                         <span className="text-[10px] font-bold truncate max-w-[150px]">{link.replace(/^https?:\/\//, '')}</span>
-                        <ExternalLink className="h-2.5 w-2.5 text-slate-200 ml-auto" />
+                        <ExternalLink className="h-2.5 w-2.5 text-border ml-auto" />
                     </a>
                 ))}
             </div>

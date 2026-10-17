@@ -94,8 +94,8 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
       <TableRow
         data-state={selected?.has(task.id) ? 'selected' : undefined}
         className={cn(
-          "hover:bg-slate-50/50 transition-colors cursor-pointer group border-b border-slate-100",
-          level > 0 && "bg-slate-50/20"
+          "hover:bg-subtle/50 transition-colors cursor-pointer group border-b border-hairline",
+          level > 0 && "bg-subtle/20"
         )}
         onClick={() => {
           if (level === 0) onTaskClick(task);
@@ -121,21 +121,21 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
           }
         }}>
           {hasChildren && (
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-primary hover:bg-primary/10">
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-fg-faint hover:text-primary hover:bg-primary/10">
               {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </Button>
           )}
         </TableCell>
-        <TableCell className="text-[10px] font-black text-slate-400 py-2">{task.wbs_code}</TableCell>
-        <TableCell className="font-semibold text-slate-900 text-sm py-2">
+        <TableCell className="text-[10px] font-black text-fg-faint py-2">{task.wbs_code}</TableCell>
+        <TableCell className="font-semibold text-foreground text-sm py-2">
           <div className="flex items-center gap-2" style={{ paddingLeft: `${level * 16}px` }}>
             {level > 0 && (
               <div className="flex items-center gap-2 mr-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                <div className="w-1.5 h-1.5 rounded-full bg-fg-ghost" />
               </div>
             )}
             {task.is_milestone && <Milestone className={cn("w-3.5 h-3.5 text-blue-500 shrink-0", level > 0 && "w-3 h-3 text-blue-400")} />}
-            <span className={cn(level > 0 && "text-xs text-slate-600 font-medium", "flex items-center gap-1.5")}>
+            <span className={cn(level > 0 && "text-xs text-fg-soft font-medium", "flex items-center gap-1.5")}>
               {task.title}
               {overdue && (
                 <AlertTriangle className="w-3.5 h-3.5 text-red-500 animate-pulse" />
@@ -148,7 +148,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-primary"
+              className="h-7 w-7 text-fg-faint hover:text-primary"
               onClick={(e) => {
                 e.stopPropagation();
                 onReorderTask?.(task.id, 'up');
@@ -160,7 +160,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-primary"
+              className="h-7 w-7 text-fg-faint hover:text-primary"
               onClick={(e) => {
                 e.stopPropagation();
                 onReorderTask?.(task.id, 'down');
@@ -172,7 +172,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-primary"
+              className="h-7 w-7 text-fg-faint hover:text-primary"
               onClick={(e) => {
                 e.stopPropagation();
                 // Indent (make subtask)
@@ -185,7 +185,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-primary"
+              className="h-7 w-7 text-fg-faint hover:text-primary"
               onClick={(e) => {
                 e.stopPropagation();
                 // Outdent (promote to parent)
@@ -201,12 +201,12 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
           {(task.topics && task.topics.length > 0) ? (
             <div className="flex flex-wrap gap-1 justify-center">
               {task.topics.map(t => (
-                <Badge key={t.id} variant="secondary" className="text-[9px] font-bold bg-slate-100 border-none px-1.5" style={{ color: t.color }}>{t.name}</Badge>
+                <Badge key={t.id} variant="secondary" className="text-[9px] font-bold bg-muted border-none px-1.5" style={{ color: t.color }}>{t.name}</Badge>
               ))}
             </div>
           ) : (
             (task.topic_ref?.name || task.topic) && (
-              <Badge variant="secondary" className="text-[9px] font-bold bg-slate-100 text-slate-600 border-none px-1.5" style={{ color: task.topic_ref?.color }}>
+              <Badge variant="secondary" className="text-[9px] font-bold bg-muted text-fg-soft border-none px-1.5" style={{ color: task.topic_ref?.color }}>
                 {task.topic_ref?.name || task.topic}
               </Badge>
             )
@@ -250,47 +250,47 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             {task.assignees && task.assignees.length > 0 ? task.assignees.map((u) => (
               <div
                 key={u.id}
-                className="inline-block h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center shrink-0 shadow-sm"
+                className="inline-block h-5 w-5 rounded-full bg-muted border border-background flex items-center justify-center shrink-0 shadow-sm"
                 title={u.full_name || u.email}
               >
-                <UserIcon className="w-2.5 h-2.5 text-slate-500" />
+                <UserIcon className="w-2.5 h-2.5 text-muted-foreground" />
               </div>
             )) : (
-              <span className="text-[10px] text-slate-400 italic">Unassigned</span>
+              <span className="text-[10px] text-fg-faint italic">Unassigned</span>
             )}
           </div>
         </TableCell>
         <TableCell className="py-2 text-center">
             {task.checklist && task.checklist.length > 0 ? (
-                <Badge variant="secondary" className="text-[9px] font-black bg-blue-50 text-blue-700 border-blue-100">
+                <Badge variant="secondary" className="text-[9px] font-black bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-500/20">
                     {task.checklist.filter(i => i.is_done).length}/{task.checklist.length}
                 </Badge>
-            ) : <span className="text-slate-300">-</span>}
+            ) : <span className="text-fg-ghost">-</span>}
         </TableCell>
         <TableCell className="py-2 text-center">
             <span className={cn(
                 "text-[10px] font-bold",
-                (task.real_cost || 0) > (task.budget || 0) ? "text-red-500" : "text-slate-700"
+                (task.real_cost || 0) > (task.budget || 0) ? "text-red-500" : "text-fg-body"
             )}>
                 {task.real_cost ? `$${task.real_cost.toLocaleString()}` : '-'}
             </span>
         </TableCell>
         <TableCell className="py-2 text-center">
-          <span className="text-[10px] font-black text-slate-500">{duration > 0 ? `${duration}d` : '-'}</span>
+          <span className="text-[10px] font-black text-muted-foreground">{duration > 0 ? `${duration}d` : '-'}</span>
         </TableCell>
         <TableCell className="py-2">
-          <span className="text-[10px] font-medium text-slate-500">
+          <span className="text-[10px] font-medium text-muted-foreground">
             {task.start_date ? new Date(task.start_date).toLocaleDateString() : '-'}
           </span>
         </TableCell>
         <TableCell className="py-2">
-          <span className="text-[10px] font-medium text-slate-500">
+          <span className="text-[10px] font-medium text-muted-foreground">
             {task.completed_at ? new Date(task.completed_at).toLocaleDateString() : '-'}
           </span>
         </TableCell>
         <TableCell className="text-right py-2">
           <div className="flex flex-col items-end">
-            <span className={cn("font-bold text-slate-500", level === 0 ? "text-[11px]" : "text-[10px]")}>
+            <span className={cn("font-bold text-muted-foreground", level === 0 ? "text-[11px]" : "text-[10px]")}>
               {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
             </span>
             {task.deadline_at && (
@@ -347,11 +347,11 @@ export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, 
   const colCount = selection ? 16 : 15;
 
   return (
-    <div className="rounded-md border border-slate-200 bg-white overflow-hidden shadow-sm">
+    <div className="rounded-md border border-border bg-background overflow-hidden shadow-sm">
       <div className="table-container">
         <Table>
-          <TableHeader className="bg-slate-50">
-          <TableRow className="border-b border-slate-100 hover:bg-slate-50">
+          <TableHeader className="bg-subtle">
+          <TableRow className="border-b border-hairline hover:bg-subtle">
             {selection && (
               <TableHead className="w-8">
                 <input
@@ -365,26 +365,26 @@ export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, 
               </TableHead>
             )}
             <TableHead className="w-10"></TableHead>
-            <TableHead className="w-16 text-[10px] font-black uppercase tracking-widest text-slate-500">WBS</TableHead>
-            <TableHead className="min-w-[200px] text-[10px] font-black uppercase tracking-widest text-slate-500">Task</TableHead>
+            <TableHead className="w-16 text-[10px] font-black uppercase tracking-widest text-muted-foreground">WBS</TableHead>
+            <TableHead className="min-w-[200px] text-[10px] font-black uppercase tracking-widest text-muted-foreground">Task</TableHead>
             <TableHead className="w-10"></TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Topic</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Type</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Status</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Priority</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Assignees</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">List</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Cost ($)</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Days</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Start</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Concluded</TableHead>
-            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-slate-500">Due / Deadline</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Topic</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Type</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Status</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Priority</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Assignees</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">List</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Cost ($)</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Days</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Start</TableHead>
+            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Concluded</TableHead>
+            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Due / Deadline</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {tasks.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={colCount} className="h-32 text-center text-slate-500 italic text-sm">
+              <TableCell colSpan={colCount} className="h-32 text-center text-muted-foreground italic text-sm">
                 {filtered ? 'No tasks match the current filters.' : 'No tasks found in this project.'}
               </TableCell>
             </TableRow>
@@ -392,9 +392,9 @@ export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, 
             shownGroups.map((group) => (
               <Fragment key={group.key}>
                 {group.label && (
-                  <TableRow className="bg-slate-50 hover:bg-slate-50">
-                    <TableCell colSpan={colCount} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-slate-500">
-                      <span role="heading" aria-level={4}>{group.label} <span className="font-semibold text-slate-400">({group.tasks.length})</span></span>
+                  <TableRow className="bg-subtle hover:bg-subtle">
+                    <TableCell colSpan={colCount} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                      <span role="heading" aria-level={4}>{group.label} <span className="font-semibold text-fg-faint">({group.tasks.length})</span></span>
                     </TableCell>
                   </TableRow>
                 )}

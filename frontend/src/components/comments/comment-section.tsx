@@ -72,15 +72,15 @@ export default function CommentSection({ projectId, taskId, ideaId }: CommentSec
   }
 
   return (
-    <div className="flex flex-col h-[600px] border rounded-2xl bg-slate-50/30 overflow-hidden shadow-inner">
-      <div className="px-4 py-3 border-b bg-white flex items-center justify-between">
+    <div className="flex flex-col h-[600px] border rounded-2xl bg-subtle/30 overflow-hidden shadow-inner">
+      <div className="px-4 py-3 border-b bg-background flex items-center justify-between">
           <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">Project Communication</h3>
+              <h3 className="text-xs font-black uppercase tracking-widest text-fg-body">Project Communication</h3>
           </div>
           <div className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Live Chat</span>
+              <span className="text-[10px] font-bold text-fg-faint uppercase">Live Chat</span>
           </div>
       </div>
 
@@ -102,7 +102,7 @@ export default function CommentSection({ projectId, taskId, ideaId }: CommentSec
         ))}
         {comments?.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-2 opacity-30 grayscale">
-                <MessageSquare className="w-12 h-12 text-slate-300" />
+                <MessageSquare className="w-12 h-12 text-fg-ghost" />
                 <div>
                     <p className="text-sm font-black uppercase tracking-tighter">No Messages</p>
                     <p className="text-[10px] font-bold">Start the communication flow below.</p>
@@ -111,7 +111,7 @@ export default function CommentSection({ projectId, taskId, ideaId }: CommentSec
         )}
       </div>
       
-      <div className="p-4 bg-white border-t">
+      <div className="p-4 bg-background border-t">
         <CommentInput 
           onSubmit={async (content) => await createMutation.mutateAsync(content)}
           isSubmitting={createMutation.isPending}

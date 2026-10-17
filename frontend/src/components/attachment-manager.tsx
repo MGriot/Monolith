@@ -154,10 +154,10 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
   return (
     <div className="space-y-4 pt-6 border-t mt-6">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-          <Paperclip className="w-4 h-4 text-slate-400" />
+        <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Paperclip className="w-4 h-4 text-fg-faint" />
           Attachments & Resources
-          <span className="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+          <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
             {attachments.length + (taskWhiteboards?.length || 0)}
           </span>
         </h4>
@@ -181,10 +181,10 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
         {taskWhiteboards?.map((wb: any) => (
             <div 
               key={wb.id} 
-              className="flex items-center gap-3 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 group hover:border-blue-300 transition-all shadow-sm"
+              className="flex items-center gap-3 p-2.5 rounded-xl border border-blue-100 dark:border-blue-500/20 bg-blue-50/30 group hover:border-blue-300 dark:hover:border-blue-500/40 transition-all shadow-sm"
             >
               <div 
-                className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden border border-blue-100 cursor-pointer hover:opacity-80 transition-opacity shadow-inner"
+                className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shrink-0 overflow-hidden border border-blue-100 dark:border-blue-500/20 cursor-pointer hover:opacity-80 transition-opacity shadow-inner"
                 onClick={() => {
                     setEditingWhiteboard(wb);
                     setIsEditorOpen(true);
@@ -200,16 +200,16 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                     setIsEditorOpen(true);
                 }}
               >
-                <p className="text-[10px] font-bold text-slate-700 truncate">
+                <p className="text-[10px] font-bold text-fg-body truncate">
                   {wb.title}
                 </p>
-                <p className="text-[8px] text-blue-600 font-black uppercase tracking-tight">Project Whiteboard</p>
+                <p className="text-[8px] text-blue-600 dark:text-blue-400 font-black uppercase tracking-tight">Project Whiteboard</p>
               </div>
 
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button 
                   onClick={() => deleteWhiteboardMutation.mutate(wb.id)}
-                  className="p-1 hover:bg-white rounded-md text-slate-400 hover:text-destructive transition-colors"
+                  className="p-1 hover:bg-background rounded-md text-fg-faint hover:text-destructive transition-colors"
                   title="Unlink Whiteboard"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -229,11 +229,11 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
               key={String(url)} 
               className={cn(
                   "flex items-center gap-3 p-2.5 rounded-xl border group transition-all shadow-sm",
-                  isExternal ? "bg-slate-50/50 border-slate-100 hover:border-slate-300" : "bg-white border-slate-200 hover:border-primary/30"
+                  isExternal ? "bg-subtle/50 border-hairline hover:border-fg-ghost" : "bg-background border-border hover:border-primary/30"
               )}
             >
               <div 
-                className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => {
                     if (isExternal) window.open(String(url), '_blank');
                     else if (canPreview) setPreviewUrl(String(url));
@@ -246,9 +246,9 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                     className="w-full h-full object-cover"
                   />
                 ) : isExternal ? (
-                  <Globe className="w-5 h-5 text-slate-400" />
+                  <Globe className="w-5 h-5 text-fg-faint" />
                 ) : (
-                  <FileText className="w-5 h-5 text-slate-400" />
+                  <FileText className="w-5 h-5 text-fg-faint" />
                 )}
               </div>
               
@@ -259,10 +259,10 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                     else if (canPreview) setPreviewUrl(String(url));
                 }}
               >
-                <p className="text-[10px] font-bold text-slate-700 truncate">
+                <p className="text-[10px] font-bold text-fg-body truncate">
                   {getFileName(String(url))}
                 </p>
-                <p className="text-[8px] text-slate-400 font-black uppercase tracking-tight">
+                <p className="text-[8px] text-fg-faint font-black uppercase tracking-tight">
                     {isExternal ? "External Link" : (canPreview ? "Click to preview" : "File Attachment")}
                 </p>
               </div>
@@ -271,7 +271,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                 {canPreview && (
                   <button 
                     onClick={() => setPreviewUrl(String(url))}
-                    className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-primary transition-colors"
+                    className="p-1 hover:bg-muted rounded-md text-fg-faint hover:text-primary transition-colors"
                     title="Preview"
                   >
                     <Eye className="w-3.5 h-3.5" />
@@ -282,7 +282,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                     href={String(url)} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-primary transition-colors"
+                    className="p-1 hover:bg-muted rounded-md text-fg-faint hover:text-primary transition-colors"
                     title="Download"
                     >
                     <Download className="w-3.5 h-3.5" />
@@ -290,7 +290,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                 )}
                 <button 
                   onClick={() => removeMutation.mutate(String(url))}
-                  className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-destructive transition-colors"
+                  className="p-1 hover:bg-muted rounded-md text-fg-faint hover:text-destructive transition-colors"
                   title="Delete"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -302,9 +302,9 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
       </div>
 
       {attachments.length === 0 && (taskWhiteboards?.length || 0) === 0 && !isUploading && (
-        <div className="text-center py-8 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-             <Paperclip className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No resources attached</p>
+        <div className="text-center py-8 bg-subtle/50 rounded-2xl border border-dashed border-border">
+             <Paperclip className="w-8 h-8 text-border mx-auto mb-2" />
+             <p className="text-[10px] font-bold text-fg-faint uppercase tracking-widest">No resources attached</p>
         </div>
       )}
 
@@ -318,42 +318,42 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
               {contentMode === "select" && (
                   <div className="grid grid-cols-1 gap-3 py-4">
                       <button 
-                        className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-all text-left group"
+                        className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all text-left group"
                         onClick={() => document.getElementById('file-upload-decision')?.click()}
                       >
-                          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                            <ImageIcon className="w-5 h-5 text-slate-500 group-hover:text-primary" />
+                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                            <ImageIcon className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
                           </div>
                           <div>
-                              <p className="text-xs font-bold text-slate-900">Upload Image or File</p>
-                              <p className="text-[10px] text-slate-500">From your computer</p>
+                              <p className="text-xs font-bold text-foreground">Upload Image or File</p>
+                              <p className="text-[10px] text-muted-foreground">From your computer</p>
                           </div>
                           <input type="file" id="file-upload-decision" className="hidden" onChange={handleFileChange} />
                       </button>
 
                       <button 
-                        className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all text-left group"
+                        className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-blue-500 hover:bg-blue-50/50 transition-all text-left group"
                         onClick={() => setContentMode("whiteboard")}
                       >
-                          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                            <Layout className="w-5 h-5 text-slate-500 group-hover:text-blue-500" />
+                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 transition-colors">
+                            <Layout className="w-5 h-5 text-muted-foreground group-hover:text-blue-500" />
                           </div>
                           <div>
-                              <p className="text-xs font-bold text-slate-900">Project Whiteboard</p>
-                              <p className="text-[10px] text-slate-500">Link an existing drawing board</p>
+                              <p className="text-xs font-bold text-foreground">Project Whiteboard</p>
+                              <p className="text-[10px] text-muted-foreground">Link an existing drawing board</p>
                           </div>
                       </button>
 
                       <button 
-                        className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition-all text-left group"
+                        className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-emerald-500 hover:bg-emerald-50/50 transition-all text-left group"
                         onClick={() => setContentMode("link")}
                       >
-                          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
-                            <Globe className="w-5 h-5 text-slate-500 group-hover:text-emerald-500" />
+                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20 transition-colors">
+                            <Globe className="w-5 h-5 text-muted-foreground group-hover:text-emerald-500" />
                           </div>
                           <div>
-                              <p className="text-xs font-bold text-slate-900">External Link</p>
-                              <p className="text-[10px] text-slate-500">Web URL, document, or site</p>
+                              <p className="text-xs font-bold text-foreground">External Link</p>
+                              <p className="text-[10px] text-muted-foreground">Web URL, document, or site</p>
                           </div>
                       </button>
                   </div>
@@ -362,7 +362,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
               {contentMode === "link" && (
                   <div className="space-y-4 py-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400">Website or Resource URL</Label>
+                        <Label className="text-[10px] font-black uppercase text-fg-faint">Website or Resource URL</Label>
                         <Input 
                             placeholder="https://example.com" 
                             value={externalLink}
@@ -379,15 +379,15 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
 
               {contentMode === "whiteboard" && (
                   <div className="space-y-4 py-4">
-                      <Label className="text-[10px] font-black uppercase text-slate-400">Select Project Whiteboard</Label>
+                      <Label className="text-[10px] font-black uppercase text-fg-faint">Select Project Whiteboard</Label>
                       <div className="max-h-[200px] overflow-y-auto space-y-1 pr-2">
-                          {projectWhiteboards?.length === 0 && <p className="text-xs text-slate-400 text-center py-4">No whiteboards in project.</p>}
+                          {projectWhiteboards?.length === 0 && <p className="text-xs text-fg-faint text-center py-4">No whiteboards in project.</p>}
                           {projectWhiteboards?.map((wb: any) => (
                               <button
                                 key={wb.id}
                                 className={cn(
-                                    "w-full text-left p-2 rounded-lg text-xs font-medium hover:bg-blue-50 transition-colors border border-transparent",
-                                    wb.task_id === taskId && "bg-blue-50/50 border-blue-100 text-blue-700 pointer-events-none"
+                                    "w-full text-left p-2 rounded-lg text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors border border-transparent",
+                                    wb.task_id === taskId && "bg-blue-50/50 border-blue-100 dark:border-blue-500/20 text-blue-700 dark:text-blue-300 pointer-events-none"
                                 )}
                                 onClick={() => linkWhiteboardMutation.mutate(wb.id)}
                               >

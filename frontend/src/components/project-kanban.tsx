@@ -158,15 +158,15 @@ function KanbanColumn({ id, title, projects, onProjectClick }: { id: string, tit
   return (
     <div className="flex flex-col w-80 shrink-0 h-full">
       <div className="flex items-center justify-between mb-4 px-2 shrink-0">
-        <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm uppercase tracking-wider">
+        <h3 className="font-bold text-foreground flex items-center gap-2 text-sm uppercase tracking-wider">
           <div className={cn(
               "w-2 h-2 rounded-full",
               id === 'planning' ? "bg-blue-400" :
               id === 'active' ? "bg-amber-400" :
-              id === 'done' ? "bg-emerald-400" : "bg-slate-300"
+              id === 'done' ? "bg-emerald-400" : "bg-fg-ghost"
           )} />
           {title}
-          <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-black">
+          <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-black">
             {projects.length}
           </span>
         </h3>
@@ -176,7 +176,7 @@ function KanbanColumn({ id, title, projects, onProjectClick }: { id: string, tit
         <div 
           ref={setNodeRef}
           className={cn(
-            "flex-1 bg-slate-100/40 rounded-2xl p-2 border-2 border-dashed border-transparent transition-all duration-300 min-h-[500px] flex flex-col gap-3 overflow-y-auto scrollbar-hide",
+            "flex-1 bg-muted/40 rounded-2xl p-2 border-2 border-dashed border-transparent transition-all duration-300 min-h-[500px] flex flex-col gap-3 overflow-y-auto scrollbar-hide",
             isOver && "bg-primary/5 border-primary/20 ring-4 ring-primary/5 scale-[1.01]"
           )}
         >
@@ -184,7 +184,7 @@ function KanbanColumn({ id, title, projects, onProjectClick }: { id: string, tit
             <SortableProjectCard key={p.id} project={p} onClick={() => onProjectClick(p)} />
           ))}
           {projects.length === 0 && !isOver && (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-300 gap-2 opacity-50 py-10 font-black uppercase text-[10px]">
+            <div className="flex-1 flex flex-col items-center justify-center text-fg-ghost gap-2 opacity-50 py-10 font-black uppercase text-[10px]">
                 Empty Zone
             </div>
           )}
@@ -216,32 +216,32 @@ function ProjectCard({ project, isDragging, dragProps, onClick }: { project: Pro
       <CardContent className="p-4 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-bold text-slate-900 truncate group-hover:text-primary transition-colors">{project.name}</h4>
+            <h4 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">{project.name}</h4>
             <div className="flex flex-wrap gap-1 mt-1.5">
                 {project.topics?.map(t => (
-                    <Badge key={t.id} variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-slate-100 text-slate-600 border-none uppercase font-black">{t.name}</Badge>
+                    <Badge key={t.id} variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-muted text-fg-soft border-none uppercase font-black">{t.name}</Badge>
                 ))}
             </div>
           </div>
-          <div {...dragProps} className="cursor-grab active:cursor-grabbing text-slate-300 group-hover:text-slate-400 shrink-0 p-1">
+          <div {...dragProps} className="cursor-grab active:cursor-grabbing text-fg-ghost group-hover:text-fg-faint shrink-0 p-1">
             <GripVertical className="w-4 h-4" />
           </div>
         </div>
 
         <div className="space-y-1.5">
-            <div className="flex justify-between text-[10px] font-black uppercase text-slate-400 tracking-tighter">
+            <div className="flex justify-between text-[10px] font-black uppercase text-fg-faint tracking-tighter">
                 <span>Progress</span>
-                <span className="text-slate-900">{formatPercent(project.progress_percent)}%</span>
+                <span className="text-foreground">{formatPercent(project.progress_percent)}%</span>
             </div>
             <Progress value={project.progress_percent} className="h-1.5" />
         </div>
 
-        <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold border-t pt-3 mt-1 border-slate-50">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold border-t pt-3 mt-1 border-hairline">
             <div className="flex items-center gap-1.5">
-                <Calendar className="w-3 h-3 text-slate-300" />
+                <Calendar className="w-3 h-3 text-fg-ghost" />
                 {project.due_date ? format(parseISO(project.due_date), 'MMM d, yyyy') : 'No Date'}
             </div>
-            <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-primary transition-colors" />
+            <ArrowRight className="w-3 h-3 text-fg-ghost group-hover:text-primary transition-colors" />
         </div>
       </CardContent>
     </Card>

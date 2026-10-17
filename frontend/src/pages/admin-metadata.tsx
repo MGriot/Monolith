@@ -139,7 +139,7 @@ export default function AdminMetadataPage() {
   const ScopeBadge = ({ item }: { item: Topic | WorkType }) => {
     if (!item.project_id && !item.task_id) {
       return (
-        <Badge variant="outline" className="gap-1 bg-blue-50 text-blue-700 border-blue-200">
+        <Badge variant="outline" className="gap-1 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30">
           <Globe className="w-3 h-3" />
           Global
         </Badge>
@@ -147,14 +147,14 @@ export default function AdminMetadataPage() {
     }
     if (item.task_id) {
       return (
-        <Badge variant="outline" className="gap-1 bg-amber-50 text-amber-700 border-amber-200">
+        <Badge variant="outline" className="gap-1 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30">
           <Lock className="w-3 h-3" />
           Task
         </Badge>
       );
     }
     return (
-      <Badge variant="outline" className="gap-1 bg-indigo-50 text-indigo-700 border-indigo-200">
+      <Badge variant="outline" className="gap-1 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30">
         <Lock className="w-3 h-3" />
         Project
       </Badge>
@@ -162,7 +162,7 @@ export default function AdminMetadataPage() {
   };
 
   return (
-    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         <Tabs defaultValue="topics" className="w-full">
           <TabsList className="mb-8">
@@ -178,14 +178,14 @@ export default function AdminMetadataPage() {
 
           <TabsContent value="topics">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card className="md:col-span-1 h-fit shadow-sm border-slate-200">
+              <Card className="md:col-span-1 h-fit shadow-sm border-border">
                 <CardHeader>
                   <CardTitle className="text-lg">Add New Global Topic</CardTitle>
                   <CardDescription>Create a new category label visible everywhere.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Name</Label>
                     <Input
                       placeholder="e.g. Backend"
                       value={newTopicName}
@@ -193,7 +193,7 @@ export default function AdminMetadataPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Color</Label>
                     <div className="flex gap-2">
                       <Input
                         type="color"
@@ -219,10 +219,10 @@ export default function AdminMetadataPage() {
                 </CardContent>
               </Card>
 
-              <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+              <Card className="md:col-span-2 shadow-sm border-border overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50/50">
+                    <TableRow className="bg-subtle/50">
                       <TableHead className="w-12">Color</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Scope</TableHead>
@@ -234,38 +234,38 @@ export default function AdminMetadataPage() {
                     {topicsLoading ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center py-12">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-fg-faint" />
                         </TableCell>
                       </TableRow>
                     ) : topics?.map((topic) => (
-                      <TableRow key={topic.id} className="hover:bg-slate-50/50 transition-colors">
+                      <TableRow key={topic.id} className="hover:bg-subtle/50 transition-colors">
                         <TableCell>
                           <div
-                            className="w-6 h-6 rounded-full border border-slate-200 shadow-sm"
+                            className="w-6 h-6 rounded-full border border-border shadow-sm"
                             style={{ backgroundColor: topic.color }}
                           />
                         </TableCell>
-                        <TableCell className="font-medium text-slate-900">{topic.name}</TableCell>
+                        <TableCell className="font-medium text-foreground">{topic.name}</TableCell>
                         <TableCell>
                           <ScopeBadge item={topic} />
                         </TableCell>
                         <TableCell>
                           <span className={cn(
                             "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                            topic.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+                            topic.is_active ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground"
                           )}>
                             {topic.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" onClick={() => setEditingTopic(topic)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setEditingTopic(topic)}>
                               <Edit2 className="w-3.5 h-3.5" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10"
+                              className="h-8 w-8 text-fg-faint hover:text-destructive hover:bg-destructive/10"
                               onClick={() => {
                                 if (window.confirm('Are you sure you want to delete this topic?')) deleteTopicMutation.mutate(topic.id);
                               }}
@@ -284,14 +284,14 @@ export default function AdminMetadataPage() {
 
           <TabsContent value="work-types">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card className="md:col-span-1 h-fit shadow-sm border-slate-200">
+              <Card className="md:col-span-1 h-fit shadow-sm border-border">
                 <CardHeader>
                   <CardTitle className="text-lg">Add New Global Work Type</CardTitle>
                   <CardDescription>Define a type of activity visible everywhere.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Name</Label>
                     <Input
                       placeholder="e.g. Development"
                       value={newTypeName}
@@ -299,7 +299,7 @@ export default function AdminMetadataPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Color</Label>
                     <div className="flex gap-2">
                       <Input
                         type="color"
@@ -325,10 +325,10 @@ export default function AdminMetadataPage() {
                 </CardContent>
               </Card>
 
-              <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+              <Card className="md:col-span-2 shadow-sm border-border overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50/50">
+                    <TableRow className="bg-subtle/50">
                       <TableHead className="w-12">Color</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Scope</TableHead>
@@ -340,38 +340,38 @@ export default function AdminMetadataPage() {
                     {typesLoading ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center py-12">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-fg-faint" />
                         </TableCell>
                       </TableRow>
                     ) : workTypes?.map((type) => (
-                      <TableRow key={type.id} className="hover:bg-slate-50/50 transition-colors">
+                      <TableRow key={type.id} className="hover:bg-subtle/50 transition-colors">
                         <TableCell>
                           <div
-                            className="w-6 h-6 rounded-full border border-slate-200 shadow-sm"
+                            className="w-6 h-6 rounded-full border border-border shadow-sm"
                             style={{ backgroundColor: type.color }}
                           />
                         </TableCell>
-                        <TableCell className="font-medium text-slate-900">{type.name}</TableCell>
+                        <TableCell className="font-medium text-foreground">{type.name}</TableCell>
                         <TableCell>
                           <ScopeBadge item={type} />
                         </TableCell>
                         <TableCell>
                           <span className={cn(
                             "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                            type.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+                            type.is_active ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground"
                           )}>
                             {type.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" onClick={() => setEditingWorkType(type)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setEditingWorkType(type)}>
                               <Edit2 className="w-3.5 h-3.5" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10"
+                              className="h-8 w-8 text-fg-faint hover:text-destructive hover:bg-destructive/10"
                               onClick={() => {
                                 if (window.confirm('Are you sure you want to delete this work type?')) deleteTypeMutation.mutate(type.id);
                               }}
@@ -399,14 +399,14 @@ export default function AdminMetadataPage() {
           </DialogHeader>
           <form onSubmit={handleUpdateTopic} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
+              <Label className="text-xs font-bold uppercase text-muted-foreground">Name</Label>
               <Input 
                 value={editingTopic?.name || ''} 
                 onChange={(e) => setEditingTopic(prev => prev ? ({...prev, name: e.target.value}) : null)} 
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
+              <Label className="text-xs font-bold uppercase text-muted-foreground">Color</Label>
               <div className="flex gap-2">
                 <Input 
                   type="color" 
@@ -447,14 +447,14 @@ export default function AdminMetadataPage() {
           </DialogHeader>
           <form onSubmit={handleUpdateWorkType} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-slate-500">Name</Label>
+              <Label className="text-xs font-bold uppercase text-muted-foreground">Name</Label>
               <Input 
                 value={editingWorkType?.name || ''} 
                 onChange={(e) => setEditingWorkType(prev => prev ? ({...prev, name: e.target.value}) : null)} 
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-slate-500">Color</Label>
+              <Label className="text-xs font-bold uppercase text-muted-foreground">Color</Label>
               <div className="flex gap-2">
                 <Input 
                   type="color" 

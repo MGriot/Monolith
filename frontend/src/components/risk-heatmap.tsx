@@ -39,7 +39,7 @@ export default function RiskHeatmap({ items }: RiskHeatmapProps) {
     <div className="flex flex-col h-full gap-4">
       <div className="flex-1 grid grid-cols-[30px_1fr] grid-rows-[1fr_30px] gap-2">
         {/* Y-Axis Label */}
-        <div className="flex flex-col justify-between text-[8px] font-black uppercase text-slate-400 py-2">
+        <div className="flex flex-col justify-between text-[8px] font-black uppercase text-fg-faint py-2">
           <span>High</span>
           <div className="-rotate-90 origin-center whitespace-nowrap">Probability</div>
           <span>Low</span>
@@ -69,7 +69,7 @@ export default function RiskHeatmap({ items }: RiskHeatmapProps) {
                               key={item.id}
                               className={cn(
                                   "w-2.5 h-2.5 rounded-full border border-white/50 shadow-sm cursor-pointer hover:scale-150 transition-transform",
-                                  item.type === 'project' ? "bg-white" : "bg-white/40"
+                                  item.type === 'project' ? "bg-background" : "bg-background/40"
                               )}
                               title={`${item.name} (${item.type}) - Priority: ${item.priority}`}
                           />
@@ -88,7 +88,7 @@ export default function RiskHeatmap({ items }: RiskHeatmapProps) {
         <div></div>
 
         {/* X-Axis Label */}
-        <div className="flex justify-between text-[8px] font-black uppercase text-slate-400 px-2">
+        <div className="flex justify-between text-[8px] font-black uppercase text-fg-faint px-2">
           <span>Low</span>
           <div className="text-center">Impact / Severity</div>
           <span>Critical</span>

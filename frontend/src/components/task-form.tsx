@@ -530,7 +530,7 @@ export default function TaskForm({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-0 h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-6 scrollbar-hide">
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid grid-cols-7 w-full bg-slate-100/80 p-1 rounded-xl mb-8 border border-slate-200 shadow-sm sticky top-0 z-50 backdrop-blur-sm">
+          <TabsList className="grid grid-cols-7 w-full bg-muted/80 p-1 rounded-xl mb-8 border border-border shadow-sm sticky top-0 z-50 backdrop-blur-sm">
             <TabsTrigger value="general" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2">Essentials</TabsTrigger>
             <TabsTrigger value="scheduling" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2">Timeline</TabsTrigger>
             <TabsTrigger value="checklist" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
@@ -554,11 +554,11 @@ export default function TaskForm({
             {/* Row 1: Title & Essentials */}
             <div className="space-y-6">
                 <div className="space-y-2">
-                    <Label htmlFor="title" className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Primary Objective</Label>
+                    <Label htmlFor="title" className="text-[10px] font-black uppercase text-fg-faint tracking-[0.2em] px-1">Primary Objective</Label>
                     <Input
                         id="title"
                         placeholder="Define the task objective..."
-                        className="h-12 text-lg font-bold border-slate-200 focus:border-primary shadow-sm rounded-xl px-4 transition-all"
+                        className="h-12 text-lg font-bold border-border focus:border-primary shadow-sm rounded-xl px-4 transition-all"
                         {...register("title")}
                     />
                     {errors.title && (
@@ -566,13 +566,13 @@ export default function TaskForm({
                     )}
                 </div>
 
-                <div className="grid grid-cols-3 gap-6 p-5 bg-slate-50 border border-slate-100 rounded-[2rem] shadow-inner relative overflow-hidden">
+                <div className="grid grid-cols-3 gap-6 p-5 bg-subtle border border-hairline rounded-[2rem] shadow-inner relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
                     <div className="space-y-2">
-                        <Label htmlFor="status" className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Status</Label>
+                        <Label htmlFor="status" className="text-[9px] font-black uppercase text-fg-faint tracking-wider">Status</Label>
                         <select
                             id="status"
-                            className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all"
+                            className="flex h-10 w-full rounded-xl border border-border bg-background px-3 py-1 text-xs font-black uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all"
                             {...register("status")}
                         >
                             <option value="Backlog">Backlog</option>
@@ -585,10 +585,10 @@ export default function TaskForm({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="priority" className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Priority</Label>
+                        <Label htmlFor="priority" className="text-[9px] font-black uppercase text-fg-faint tracking-wider">Priority</Label>
                         <select
                             id="priority"
-                            className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all"
+                            className="flex h-10 w-full rounded-xl border border-border bg-background px-3 py-1 text-xs font-black uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all"
                             {...register("priority")}
                         >
                             <option value="Low">Low</option>
@@ -606,7 +606,7 @@ export default function TaskForm({
                                 onCheckedChange={(checked) => setValue("is_milestone", checked)}
                                 className="data-[state=checked]:bg-blue-500"
                             />
-                            <Label htmlFor="is_milestone" className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase text-slate-500 tracking-tighter">
+                            <Label htmlFor="is_milestone" className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase text-muted-foreground tracking-tighter">
                                 <Milestone className="w-3.5 h-3.5 text-blue-500" />
                                 Milestone
                             </Label>
@@ -615,10 +615,10 @@ export default function TaskForm({
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="description" className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Context & Documentation</Label>
+                    <Label htmlFor="description" className="text-[10px] font-black uppercase text-fg-faint tracking-[0.2em] px-1">Context & Documentation</Label>
                     <textarea
                         id="description"
-                        className="flex min-h-[120px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed ring-offset-background placeholder:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all focus:border-primary shadow-sm resize-none"
+                        className="flex min-h-[120px] w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-relaxed ring-offset-background placeholder:text-fg-ghost focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all focus:border-primary shadow-sm resize-none"
                         placeholder="Detailed scope, technical requirements, or context..."
                         {...register("description")}
                     />
@@ -638,7 +638,7 @@ export default function TaskForm({
                 {/* Organization Row */}
                 <div className="grid grid-cols-2 gap-8">
                     <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Taxonomy (Topics)</Label>
+                        <Label className="text-[10px] font-black uppercase text-fg-faint tracking-widest px-1">Taxonomy (Topics)</Label>
                         <RichDropdown 
                             items={topicItems}
                             selectedValues={selectedTopicIds}
@@ -652,7 +652,7 @@ export default function TaskForm({
                         />
                     </div>
                     <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Functional Type</Label>
+                        <Label className="text-[10px] font-black uppercase text-fg-faint tracking-widest px-1">Functional Type</Label>
                         <RichDropdown 
                             items={typeItems}
                             selectedValues={selectedTypeIds}
@@ -668,12 +668,12 @@ export default function TaskForm({
                 </div>
 
                 {/* Structure Section */}
-                <div className="grid grid-cols-2 gap-8 p-6 bg-slate-50 border border-slate-100 rounded-[2rem] shadow-sm">
+                <div className="grid grid-cols-2 gap-8 p-6 bg-subtle border border-hairline rounded-[2rem] shadow-sm">
                     <div className="space-y-3">
-                        <Label htmlFor="parent_id" className="text-[10px] font-black uppercase text-slate-400 tracking-widest">WBS Hierarchy (Parent)</Label>
+                        <Label htmlFor="parent_id" className="text-[10px] font-black uppercase text-fg-faint tracking-widest">WBS Hierarchy (Parent)</Label>
                         <select
                             id="parent_id"
-                            className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-medium ring-offset-background focus-visible:outline-none transition-all focus:ring-2 focus:ring-primary/10"
+                            className="flex h-10 w-full rounded-xl border border-border bg-background px-3 py-1 text-xs font-medium ring-offset-background focus-visible:outline-none transition-all focus:ring-2 focus:ring-primary/10"
                             value={selectedParentId || ""}
                             onChange={(e) => setValue("parent_id", e.target.value || null)}
                         >
@@ -686,7 +686,7 @@ export default function TaskForm({
                         </select>
                     </div>
                     <div className="space-y-3">
-                        <Label htmlFor="color" className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Visual Label (Gantt Color)</Label>
+                        <Label htmlFor="color" className="text-[10px] font-black uppercase text-fg-faint tracking-widest">Visual Label (Gantt Color)</Label>
                         <div className="flex flex-col gap-3">
                             <div className="flex flex-wrap gap-2">
                                 {colorPresets.map((cp) => (
@@ -695,7 +695,7 @@ export default function TaskForm({
                                         type="button"
                                         className={cn(
                                             "w-7 h-7 rounded-full border-2 transition-all hover:scale-125 shadow-sm",
-                                            selectedColor === cp.value ? "border-slate-900 scale-110" : "border-white"
+                                            selectedColor === cp.value ? "border-foreground scale-110" : "border-background"
                                         )}
                                         style={{ backgroundColor: cp.value }}
                                         onClick={() => setValue("color", cp.value)}
@@ -705,12 +705,12 @@ export default function TaskForm({
                                 <button
                                     type="button"
                                     className={cn(
-                                        "w-7 h-7 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center transition-all hover:border-slate-500",
-                                        !colorPresets.find(cp => cp.value === selectedColor) && selectedColor ? "border-slate-900 bg-white" : ""
+                                        "w-7 h-7 rounded-full border-2 border-dashed border-fg-ghost flex items-center justify-center transition-all hover:border-muted-foreground",
+                                        !colorPresets.find(cp => cp.value === selectedColor) && selectedColor ? "border-slate-900 bg-background" : ""
                                     )}
                                     onClick={() => document.getElementById('custom-color-picker')?.click()}
                                 >
-                                    <Plus className="w-4 h-4 text-slate-400" />
+                                    <Plus className="w-4 h-4 text-fg-faint" />
                                 </button>
                                 <input
                                     type="color"
@@ -729,19 +729,19 @@ export default function TaskForm({
           <TabsContent value="scheduling" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
             <div className="space-y-8">
                 {/* Main Scheduling Section */}
-                <div className="space-y-6 p-6 rounded-[2rem] border border-slate-200 bg-white shadow-md relative overflow-hidden">
+                <div className="space-y-6 p-6 rounded-[2rem] border border-border bg-background shadow-md relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                        <CalendarDays className="w-24 h-24 text-slate-900" />
+                        <CalendarDays className="w-24 h-24 text-foreground" />
                     </div>
 
-                    <div className="flex items-center justify-between border-b border-slate-50 pb-4 mb-2">
+                    <div className="flex items-center justify-between border-b border-hairline pb-4 mb-2">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-primary/10 rounded-lg">
                                 <CalendarDays className="w-5 h-5 text-primary" />
                             </div>
                             <div>
-                                <Label className="text-sm font-black uppercase text-slate-800 tracking-widest leading-none">Task Chronology</Label>
-                                <p className="text-[10px] text-slate-400 mt-1">Define project start and target deadlines.</p>
+                                <Label className="text-sm font-black uppercase text-foreground tracking-widest leading-none">Task Chronology</Label>
+                                <p className="text-[10px] text-fg-faint mt-1">Define project start and target deadlines.</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -750,14 +750,14 @@ export default function TaskForm({
                                     type="button"
                                     variant="ghost" 
                                     size="sm" 
-                                    className="h-9 text-[10px] font-black uppercase text-primary hover:bg-primary/5 gap-2 px-4 border border-primary/20 rounded-xl bg-white shadow-sm"
+                                    className="h-9 text-[10px] font-black uppercase text-primary hover:bg-primary/5 gap-2 px-4 border border-primary/20 rounded-xl bg-background shadow-sm"
                                     onClick={handleSyncFromChildren}
                                 >
                                     <Plus className="w-4 h-4" /> Roll-up Dates
                                 </Button>
                             )}
                             <Tabs value={planningMode} onValueChange={(v: any) => setPlanningMode(v)}>
-                                <TabsList className="h-9 p-1 bg-slate-100 border border-slate-200 rounded-xl">
+                                <TabsList className="h-9 p-1 bg-muted border border-border rounded-xl">
                                     <TabsTrigger value="dates" className="text-[10px] font-black uppercase h-7 px-4 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Dates</TabsTrigger>
                                     <TabsTrigger value="duration" className="text-[10px] font-black uppercase h-7 px-4 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Duration</TabsTrigger>
                                 </TabsList>
@@ -767,15 +767,15 @@ export default function TaskForm({
 
                     <div className="grid grid-cols-3 gap-8">
                         <div className="space-y-2.5">
-                            <Label htmlFor="start_date" className="text-[10px] font-black uppercase text-slate-400 tracking-tighter px-1 flex items-center gap-1.5">
+                            <Label htmlFor="start_date" className="text-[10px] font-black uppercase text-fg-faint tracking-tighter px-1 flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                                 Start Date
                             </Label>
-                            <Input id="start_date" type="date" {...register("start_date")} className="h-11 text-sm font-bold border-slate-200 focus:border-primary rounded-xl px-4 shadow-sm bg-slate-50/30" />
+                            <Input id="start_date" type="date" {...register("start_date")} className="h-11 text-sm font-bold border-border focus:border-primary rounded-xl px-4 shadow-sm bg-subtle/30" />
                         </div>
                         
                         <div className="space-y-2.5">
-                            <Label htmlFor="duration_days" className="text-[10px] font-black uppercase text-slate-400 tracking-tighter px-1 flex items-center gap-1.5">
+                            <Label htmlFor="duration_days" className="text-[10px] font-black uppercase text-fg-faint tracking-tighter px-1 flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                                 Span (Days)
                             </Label>
@@ -786,17 +786,17 @@ export default function TaskForm({
                                     value={durationDays}
                                     onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
                                     className={cn(
-                                        "h-11 text-sm font-bold border-slate-200 focus:border-primary rounded-xl px-4 shadow-sm transition-all", 
-                                        planningMode === "dates" ? "bg-slate-100 italic text-slate-400 border-dashed" : "bg-white"
+                                        "h-11 text-sm font-bold border-border focus:border-primary rounded-xl px-4 shadow-sm transition-all", 
+                                        planningMode === "dates" ? "bg-muted italic text-fg-faint border-dashed" : "bg-background"
                                     )}
                                     disabled={planningMode === "dates"}
                                 />
-                                <div className="absolute right-3 top-3 text-[10px] font-black text-slate-300">DAYS</div>
+                                <div className="absolute right-3 top-3 text-[10px] font-black text-fg-ghost">DAYS</div>
                             </div>
                         </div>
 
                         <div className="space-y-2.5">
-                            <Label htmlFor="due_date" className="text-[10px] font-black uppercase text-slate-400 tracking-tighter px-1 flex items-center gap-1.5">
+                            <Label htmlFor="due_date" className="text-[10px] font-black uppercase text-fg-faint tracking-tighter px-1 flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                                 Due Date
                             </Label>
@@ -805,8 +805,8 @@ export default function TaskForm({
                                 type="date" 
                                 {...register("due_date")} 
                                 className={cn(
-                                    "h-11 text-sm font-bold border-slate-200 focus:border-primary rounded-xl px-4 shadow-sm transition-all", 
-                                    planningMode === "duration" ? "bg-slate-100 italic text-slate-400 border-dashed" : "bg-white"
+                                    "h-11 text-sm font-bold border-border focus:border-primary rounded-xl px-4 shadow-sm transition-all", 
+                                    planningMode === "duration" ? "bg-muted italic text-fg-faint border-dashed" : "bg-background"
                                 )}
                                 disabled={planningMode === "duration"}
                             />
@@ -816,36 +816,36 @@ export default function TaskForm({
 
                 {/* Constraints Grid */}
                 <div className="grid grid-cols-2 gap-8">
-                    <div className="p-6 rounded-[2rem] border border-rose-100 bg-rose-50/10 space-y-4 shadow-sm group hover:border-rose-200 transition-all">
+                    <div className="p-6 rounded-[2rem] border border-rose-100 dark:border-rose-500/20 bg-rose-50/10 space-y-4 shadow-sm group hover:border-rose-200 dark:hover:border-rose-500/30 transition-all">
                         <div className="flex items-center gap-3 border-b border-rose-50 pb-3">
-                            <div className="p-2 bg-rose-100 rounded-lg">
+                            <div className="p-2 bg-rose-100 dark:bg-rose-500/20 rounded-lg">
                                 <AlertCircle className="w-4 h-4 text-rose-500" />
                             </div>
                             <Label htmlFor="deadline_at" className="text-[10px] font-black uppercase text-rose-500 tracking-[0.15em]">Hard Deadline</Label>
                         </div>
-                        <Input id="deadline_at" type="date" {...register("deadline_at")} className="h-11 text-sm font-bold border-rose-200 bg-white focus:border-rose-400 rounded-xl px-4 shadow-sm" />
+                        <Input id="deadline_at" type="date" {...register("deadline_at")} className="h-11 text-sm font-bold border-rose-200 dark:border-rose-500/30 bg-background focus:border-rose-400 rounded-xl px-4 shadow-sm" />
                     </div>
 
-                    <div className="p-6 rounded-[2rem] border border-emerald-100 bg-emerald-50/10 space-y-4 shadow-sm group hover:border-emerald-200 transition-all">
+                    <div className="p-6 rounded-[2rem] border border-emerald-100 dark:border-emerald-500/20 bg-emerald-50/10 space-y-4 shadow-sm group hover:border-emerald-200 dark:hover:border-emerald-500/30 transition-all">
                         <div className="flex items-center gap-3 border-b border-emerald-50 pb-3">
-                            <div className="p-2 bg-emerald-100 rounded-lg">
+                            <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg">
                                 <CheckSquare className="w-4 h-4 text-emerald-500" />
                             </div>
-                            <Label htmlFor="completed_at" className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.15em]">Actual Conclusion</Label>
+                            <Label htmlFor="completed_at" className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-[0.15em]">Actual Conclusion</Label>
                         </div>
-                        <Input id="completed_at" type="date" {...register("completed_at")} className="h-11 text-sm font-bold border-emerald-200 bg-white focus:border-emerald-400 rounded-xl px-4 shadow-sm" />
+                        <Input id="completed_at" type="date" {...register("completed_at")} className="h-11 text-sm font-bold border-emerald-200 dark:border-emerald-500/30 bg-background focus:border-emerald-400 rounded-xl px-4 shadow-sm" />
                     </div>
                 </div>
 
                 {/* PERT Scientific Section */}
-                <div className="p-6 rounded-[2rem] border border-indigo-100 bg-indigo-50/10 space-y-6 shadow-md border-t-4 border-t-indigo-400 transition-all">
+                <div className="p-6 rounded-[2rem] border border-indigo-100 dark:border-indigo-500/20 bg-indigo-50/10 space-y-6 shadow-md border-t-4 border-t-indigo-400 transition-all">
                     <div className="flex items-center justify-between border-b border-indigo-50 pb-4">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-indigo-600 text-white rounded-lg shadow-lg shadow-indigo-200">
                                 <Calculator className="w-5 h-5" />
                             </div>
                             <div>
-                                <Label className="text-sm font-black uppercase text-indigo-900 tracking-widest leading-none">PERT Estimations</Label>
+                                <Label className="text-sm font-black uppercase text-indigo-900 dark:text-indigo-200 tracking-widest leading-none">PERT Estimations</Label>
                                 <p className="text-[10px] text-indigo-400 mt-1 uppercase font-black">Probabilistic weighted analysis</p>
                             </div>
                         </div>
@@ -854,14 +854,14 @@ export default function TaskForm({
                                 type="button"
                                 variant="ghost" 
                                 size="sm" 
-                                className="h-9 text-[10px] font-black uppercase text-indigo-600 hover:bg-white hover:shadow-sm gap-2 px-4 border border-indigo-200/50 rounded-xl bg-indigo-50 transition-all"
+                                className="h-9 text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 hover:bg-background hover:shadow-sm gap-2 px-4 border border-indigo-200/50 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 transition-all"
                                 onClick={handleSuggestPERT}
                             >
                                 <Sparkles className="w-4 h-4 text-indigo-500 animate-pulse" /> Suggest Values
                             </Button>
                             <div className="flex flex-col items-end">
                                 <span className="text-[9px] font-black text-indigo-300 uppercase leading-none mb-1">Calculated Te</span>
-                                <div className="text-lg font-black text-indigo-700 leading-none">
+                                <div className="text-lg font-black text-indigo-700 dark:text-indigo-300 leading-none">
                                     {expectedDuration}<span className="text-[10px] ml-0.5">DAYS</span>
                                 </div>
                             </div>
@@ -872,37 +872,37 @@ export default function TaskForm({
                         <div className="space-y-3">
                             <div className="flex justify-between items-center px-1">
                                 <Label htmlFor="optimistic_days" className="text-[10px] font-black uppercase text-indigo-400 tracking-tighter">Optimistic (O)</Label>
-                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 text-indigo-400 bg-white">Best Case</Badge>
+                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 dark:border-indigo-500/20 text-indigo-400 bg-background">Best Case</Badge>
                             </div>
                             <Input 
                                 id="optimistic_days" 
                                 type="number" 
                                 {...register("optimistic_days", { valueAsNumber: true })} 
-                                className="h-11 text-base font-black text-indigo-700 border-indigo-200 bg-white focus:border-indigo-500 rounded-xl px-4 shadow-sm"
+                                className="h-11 text-base font-black text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30 bg-background focus:border-indigo-500 rounded-xl px-4 shadow-sm"
                             />
                         </div>
                         <div className="space-y-3">
                             <div className="flex justify-between items-center px-1">
                                 <Label htmlFor="normal_days" className="text-[10px] font-black uppercase text-indigo-400 tracking-tighter">Most Likely (M)</Label>
-                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 text-indigo-400 bg-white">Average</Badge>
+                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 dark:border-indigo-500/20 text-indigo-400 bg-background">Average</Badge>
                             </div>
                             <Input 
                                 id="normal_days" 
                                 type="number" 
                                 {...register("normal_days", { valueAsNumber: true })} 
-                                className="h-11 text-base font-black text-indigo-700 border-indigo-200 bg-white focus:border-indigo-500 rounded-xl px-4 shadow-sm"
+                                className="h-11 text-base font-black text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30 bg-background focus:border-indigo-500 rounded-xl px-4 shadow-sm"
                             />
                         </div>
                         <div className="space-y-3">
                             <div className="flex justify-between items-center px-1">
                                 <Label htmlFor="pessimistic_days" className="text-[10px] font-black uppercase text-indigo-400 tracking-tighter">Pessimistic (P)</Label>
-                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 text-indigo-400 bg-white">Worst Case</Badge>
+                                <Badge variant="outline" className="h-4 text-[8px] border-indigo-100 dark:border-indigo-500/20 text-indigo-400 bg-background">Worst Case</Badge>
                             </div>
                             <Input 
                                 id="pessimistic_days" 
                                 type="number" 
                                 {...register("pessimistic_days", { valueAsNumber: true })} 
-                                className="h-11 text-base font-black text-indigo-700 border-indigo-200 bg-white focus:border-indigo-500 rounded-xl px-4 shadow-sm"
+                                className="h-11 text-base font-black text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30 bg-background focus:border-indigo-500 rounded-xl px-4 shadow-sm"
                             />
                         </div>
                     </div>
@@ -911,21 +911,21 @@ export default function TaskForm({
           </TabsContent>
 
           <TabsContent value="checklist" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
-                <div className="p-6 rounded-[2rem] border border-slate-200 bg-white shadow-md relative overflow-hidden">
+                <div className="p-6 rounded-[2rem] border border-border bg-background shadow-md relative overflow-hidden">
                     <div className="flex items-center justify-between border-b pb-4 mb-6">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-blue-600 text-white rounded-lg shadow-lg shadow-blue-100">
                                 <CheckSquare className="w-5 h-5" />
                             </div>
                             <div>
-                                <Label className="text-sm font-black uppercase text-slate-800 tracking-widest leading-none">Execution Steps</Label>
-                                <p className="text-[10px] text-slate-400 mt-1 uppercase font-black">Micro-task tracking system</p>
+                                <Label className="text-sm font-black uppercase text-foreground tracking-widest leading-none">Execution Steps</Label>
+                                <p className="text-[10px] text-fg-faint mt-1 uppercase font-black">Micro-task tracking system</p>
                             </div>
                         </div>
                         <Button 
                             type="button" 
                             size="sm" 
-                            className="h-9 px-4 rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-100 gap-2 font-bold text-[11px] uppercase tracking-wider"
+                            className="h-9 px-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-slate-100 gap-2 font-bold text-[11px] uppercase tracking-wider"
                             onClick={() => {
                                 const current = watch("checklist") || [];
                                 const newId = Math.random().toString(36).substring(2, 9);
@@ -938,7 +938,7 @@ export default function TaskForm({
                     
                     <div className="space-y-3 max-h-[400px] overflow-auto pr-2 scrollbar-hide">
                         {(watch("checklist") || []).map((item, index) => (
-                            <div key={item.id} className="flex items-center gap-4 group bg-slate-50/50 p-3 rounded-2xl border border-slate-100 transition-all hover:bg-white hover:border-primary/20 hover:shadow-sm">
+                            <div key={item.id} className="flex items-center gap-4 group bg-subtle/50 p-3 rounded-2xl border border-hairline transition-all hover:bg-background hover:border-primary/20 hover:shadow-sm">
                                 <div className="relative flex items-center justify-center">
                                     <input 
                                         type="checkbox"
@@ -948,14 +948,14 @@ export default function TaskForm({
                                             current[index].is_done = e.target.checked;
                                             setValue("checklist", current);
                                         }}
-                                        className="w-5 h-5 rounded-lg border-slate-300 text-primary focus:ring-primary/20 cursor-pointer appearance-none checked:bg-primary checked:border-primary transition-all border-2"
+                                        className="w-5 h-5 rounded-lg border-fg-ghost text-primary focus:ring-primary/20 cursor-pointer appearance-none checked:bg-primary checked:border-primary transition-all border-2"
                                     />
                                     {item.is_done && <CheckSquare className="absolute w-3.5 h-3.5 text-white pointer-events-none" />}
                                 </div>
                                 <Input 
                                     className={cn(
                                         "flex-1 h-9 text-sm border-none bg-transparent focus-visible:ring-0 px-0 font-medium transition-all",
-                                        item.is_done ? "text-slate-400 line-through decoration-2" : "text-slate-700"
+                                        item.is_done ? "text-fg-faint line-through decoration-2" : "text-fg-body"
                                     )}
                                     placeholder="Define sub-step activity..."
                                     value={item.text}
@@ -971,20 +971,20 @@ export default function TaskForm({
                                         const current = [...(watch("checklist") || [])];
                                         setValue("checklist", current.filter((_, i) => i !== index));
                                     }}
-                                    className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                    className="p-2 text-fg-ghost hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
                         ))}
                         {(watch("checklist") || []).length === 0 && (
-                            <div className="py-16 text-center border-2 border-dashed rounded-[2rem] border-slate-100 flex flex-col items-center gap-4 grayscale opacity-40">
-                                <div className="p-4 bg-slate-50 rounded-full">
-                                    <CheckSquare className="w-10 h-10 text-slate-300" />
+                            <div className="py-16 text-center border-2 border-dashed rounded-[2rem] border-hairline flex flex-col items-center gap-4 grayscale opacity-40">
+                                <div className="p-4 bg-subtle rounded-full">
+                                    <CheckSquare className="w-10 h-10 text-fg-ghost" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-black uppercase text-slate-400 tracking-widest">No Action Items</p>
-                                    <p className="text-[10px] text-slate-400 mt-1">Break down this task into smaller chunks for better progress.</p>
+                                    <p className="text-sm font-black uppercase text-fg-faint tracking-widest">No Action Items</p>
+                                    <p className="text-[10px] text-fg-faint mt-1">Break down this task into smaller chunks for better progress.</p>
                                 </div>
                             </div>
                         )}
@@ -995,43 +995,43 @@ export default function TaskForm({
           <TabsContent value="risk" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
             <div className="grid grid-cols-2 gap-8">
                 {/* Risk Section */}
-                <div className="p-8 rounded-[2.5rem] border border-amber-200 bg-amber-50/10 space-y-8 shadow-md relative overflow-hidden">
+                <div className="p-8 rounded-[2.5rem] border border-amber-200 dark:border-amber-500/30 bg-amber-50/10 space-y-8 shadow-md relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                        <AlertCircle className="w-24 h-24 text-amber-900" />
+                        <AlertCircle className="w-24 h-24 text-amber-900 dark:text-amber-200" />
                     </div>
                     
-                    <div className="flex items-center gap-4 border-b border-amber-100 pb-4">
+                    <div className="flex items-center gap-4 border-b border-amber-100 dark:border-amber-500/20 pb-4">
                         <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-lg shadow-amber-200">
                             <AlertCircle className="w-6 h-6" />
                         </div>
                         <div>
-                            <h4 className="text-sm font-black uppercase text-amber-900 tracking-widest leading-none">Risk Profile</h4>
-                            <p className="text-[10px] text-amber-600 mt-1 font-black uppercase">Probability x Impact</p>
+                            <h4 className="text-sm font-black uppercase text-amber-900 dark:text-amber-200 tracking-widest leading-none">Risk Profile</h4>
+                            <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-black uppercase">Probability x Impact</p>
                         </div>
                     </div>
 
                     <div className="space-y-8">
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
-                                <Label className="text-[11px] text-amber-900 uppercase font-black tracking-widest">Probability</Label>
-                                <span className="text-sm font-black bg-white px-3 py-1 rounded-xl border-2 border-amber-200 text-amber-700 shadow-sm">{watch("risk_probability")} / 5</span>
+                                <Label className="text-[11px] text-amber-900 dark:text-amber-200 uppercase font-black tracking-widest">Probability</Label>
+                                <span className="text-sm font-black bg-background px-3 py-1 rounded-xl border-2 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 shadow-sm">{watch("risk_probability")} / 5</span>
                             </div>
                             <input 
                                 type="range" 
                                 min="1" max="5" 
-                                className="w-full h-2 bg-amber-200 rounded-full appearance-none cursor-pointer accent-amber-600 shadow-inner"
+                                className="w-full h-2 bg-amber-200 dark:bg-amber-500/30 rounded-full appearance-none cursor-pointer accent-amber-600 shadow-inner"
                                 {...register("risk_probability", { valueAsNumber: true })}
                             />
                         </div>
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
-                                <Label className="text-[11px] text-amber-900 uppercase font-black tracking-widest">Severity / Impact</Label>
-                                <span className="text-sm font-black bg-white px-3 py-1 rounded-xl border-2 border-amber-200 text-amber-700 shadow-sm">{watch("risk_impact")} / 5</span>
+                                <Label className="text-[11px] text-amber-900 dark:text-amber-200 uppercase font-black tracking-widest">Severity / Impact</Label>
+                                <span className="text-sm font-black bg-background px-3 py-1 rounded-xl border-2 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 shadow-sm">{watch("risk_impact")} / 5</span>
                             </div>
                             <input 
                                 type="range" 
                                 min="1" max="5" 
-                                className="w-full h-2 bg-amber-200 rounded-full appearance-none cursor-pointer accent-amber-600 shadow-inner"
+                                className="w-full h-2 bg-amber-200 dark:bg-amber-500/30 rounded-full appearance-none cursor-pointer accent-amber-600 shadow-inner"
                                 {...register("risk_impact", { valueAsNumber: true })}
                             />
                         </div>
@@ -1044,42 +1044,42 @@ export default function TaskForm({
                 </div>
 
                 {/* Financials Section */}
-                <div className="p-8 rounded-[2.5rem] border border-blue-200 bg-blue-50/10 space-y-8 shadow-md relative overflow-hidden">
+                <div className="p-8 rounded-[2.5rem] border border-blue-200 dark:border-blue-500/30 bg-blue-50/10 space-y-8 shadow-md relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                        <Database className="w-24 h-24 text-blue-900" />
+                        <Database className="w-24 h-24 text-blue-900 dark:text-blue-200" />
                     </div>
 
-                    <div className="flex items-center gap-4 border-b border-blue-100 pb-4">
+                    <div className="flex items-center gap-4 border-b border-blue-100 dark:border-blue-500/20 pb-4">
                         <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200">
                             <Database className="w-6 h-6" />
                         </div>
                         <div>
-                            <h4 className="text-sm font-black uppercase text-blue-900 tracking-widest leading-none">Resource Cost</h4>
-                            <p className="text-[10px] text-blue-600 mt-1 font-black uppercase">Financial auditing</p>
+                            <h4 className="text-sm font-black uppercase text-blue-900 dark:text-blue-200 tracking-widest leading-none">Resource Cost</h4>
+                            <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1 font-black uppercase">Financial auditing</p>
                         </div>
                     </div>
 
                     <div className="space-y-6">
                         <div className="space-y-2.5">
-                            <Label className="text-[11px] text-blue-900 uppercase font-black tracking-widest px-1">Planned Budget</Label>
+                            <Label className="text-[11px] text-blue-900 dark:text-blue-200 uppercase font-black tracking-widest px-1">Planned Budget</Label>
                             <div className="relative">
                                 <Input 
                                     type="number" 
                                     step="0.01"
                                     {...register("budget", { valueAsNumber: true })}
-                                    className="h-12 text-lg font-black border-blue-200 bg-white focus:border-blue-500 rounded-2xl px-10 shadow-sm transition-all"
+                                    className="h-12 text-lg font-black border-blue-200 dark:border-blue-500/30 bg-background focus:border-blue-500 rounded-2xl px-10 shadow-sm transition-all"
                                 />
                                 <div className="absolute left-4 top-3.5 text-blue-400 font-bold">$</div>
                             </div>
                         </div>
                         <div className="space-y-2.5">
-                            <Label className="text-[11px] text-blue-900 uppercase font-black tracking-widest px-1">Actual Expenditure</Label>
+                            <Label className="text-[11px] text-blue-900 dark:text-blue-200 uppercase font-black tracking-widest px-1">Actual Expenditure</Label>
                             <div className="relative">
                                 <Input 
                                     type="number" 
                                     step="0.01"
                                     {...register("real_cost", { valueAsNumber: true })}
-                                    className="h-12 text-lg font-black border-blue-200 bg-white focus:border-blue-500 rounded-2xl px-10 shadow-sm transition-all"
+                                    className="h-12 text-lg font-black border-blue-200 dark:border-blue-500/30 bg-background focus:border-blue-500 rounded-2xl px-10 shadow-sm transition-all"
                                 />
                                 <div className="absolute left-4 top-3.5 text-blue-400 font-bold">$</div>
                             </div>
@@ -1103,14 +1103,14 @@ export default function TaskForm({
           </TabsContent>
 
           <TabsContent value="dependencies" className="animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
-            <div className="p-6 rounded-[2rem] border border-slate-200 bg-white shadow-md">
+            <div className="p-6 rounded-[2rem] border border-border bg-background shadow-md">
                 <div className="flex items-center gap-3 border-b pb-4 mb-2">
-                    <div className="p-2 bg-slate-900 text-white rounded-lg">
+                    <div className="p-2 bg-primary text-primary-foreground rounded-lg">
                         <LinkIcon className="w-5 h-5" />
                     </div>
                     <div>
-                        <Label className="text-sm font-black uppercase text-slate-800 tracking-widest leading-none">Chain of Command</Label>
-                        <p className="text-[10px] text-slate-400 mt-1 uppercase font-black">Successor & Predecessor logic</p>
+                        <Label className="text-sm font-black uppercase text-foreground tracking-widest leading-none">Chain of Command</Label>
+                        <p className="text-[10px] text-fg-faint mt-1 uppercase font-black">Successor & Predecessor logic</p>
                     </div>
                 </div>
 
@@ -1132,7 +1132,7 @@ export default function TaskForm({
                     />
                 )}
                 {!editingTaskId && (
-                    <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-4 border border-dashed rounded-[2rem] bg-slate-50 grayscale">
+                    <div className="flex flex-col items-center justify-center py-20 text-fg-faint gap-4 border border-dashed rounded-[2rem] bg-subtle grayscale">
                     <LinkIcon className="w-12 h-12 opacity-10" />
                     <div className="text-center">
                         <p className="text-sm font-black uppercase tracking-widest">Network Locked</p>
@@ -1157,11 +1157,11 @@ export default function TaskForm({
         </Tabs>
       </div>
 
-      <div className="flex justify-end gap-3 pt-6 mt-4 border-t sticky bottom-0 bg-white/90 backdrop-blur-md z-50 -mx-1">
+      <div className="flex justify-end gap-3 pt-6 mt-4 border-t sticky bottom-0 bg-background/90 backdrop-blur-md z-50 -mx-1">
         <Button 
             type="button" 
             variant="ghost" 
-            className="px-8 h-12 rounded-xl text-slate-500 font-bold uppercase text-xs tracking-widest hover:bg-slate-50"
+            className="px-8 h-12 rounded-xl text-muted-foreground font-bold uppercase text-xs tracking-widest hover:bg-subtle"
             onClick={onCancel}
         >
           Cancel

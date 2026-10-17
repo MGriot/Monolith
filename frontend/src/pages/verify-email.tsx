@@ -27,19 +27,19 @@ export default function VerifyEmailPage() {
       showBackLink={false}
     >
       {state.kind === "working" && (
-        <p role="status" className="text-sm text-slate-600">
+        <p role="status" className="text-sm text-fg-soft">
           One moment...
         </p>
       )}
       {state.kind === "ok" && (
-        <p role="status" className="text-sm text-slate-700">
+        <p role="status" className="text-sm text-fg-body">
           Your e-mail address is verified. <Link to="/" className="text-primary hover:underline">Continue to the app</Link>
         </p>
       )}
       {state.kind === "error" && (
         <div role="alert" className="space-y-2 text-sm">
           <p className="text-destructive">{state.message}</p>
-          <p className="text-slate-600">
+          <p className="text-fg-soft">
             Sign in and use <b>Settings &rsaquo; Notifications</b> to send a new verification e-mail.{" "}
             <Link to="/login" className="text-primary hover:underline">Sign in</Link>
           </p>

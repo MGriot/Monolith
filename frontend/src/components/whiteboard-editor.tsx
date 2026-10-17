@@ -220,14 +220,14 @@ export default function WhiteboardEditor({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-      <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+    <div className="flex flex-col h-full bg-background rounded-xl border border-border overflow-hidden shadow-sm">
+      <div className="p-4 border-b border-hairline flex items-center justify-between bg-subtle/50">
         <div className="flex items-center gap-4 flex-1">
           {onClose && (
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 bg-white border-slate-200 hover:bg-slate-100 mr-2"
+              className="gap-2 bg-background border-border hover:bg-muted mr-2"
               onClick={onClose}
             >
               <ArrowLeft className="w-4 h-4" /> Back
@@ -237,11 +237,11 @@ export default function WhiteboardEditor({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="bg-transparent border-none font-bold text-slate-700 focus:outline-none focus:ring-0 text-lg w-full max-w-md"
+            className="bg-transparent border-none font-bold text-fg-body focus:outline-none focus:ring-0 text-lg w-full max-w-md"
             placeholder="Sketch Title"
           />
           {isLegacyData && (
-            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-100 text-xs font-medium">
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-3 py-1 rounded-full border border-amber-100 dark:border-amber-500/20 text-xs font-medium">
               <AlertTriangle className="w-3.5 h-3.5" />
               Legacy Format: Drawing may be lost
             </div>

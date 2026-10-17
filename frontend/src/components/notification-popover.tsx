@@ -91,30 +91,30 @@ export default function NotificationPopover() {
       case 'unblocked':
         return <CheckCheck className="w-4 h-4 text-emerald-500" />;
       default:
-        return <Info className="w-4 h-4 text-slate-400" />;
+        return <Info className="w-4 h-4 text-fg-faint" />;
     }
   };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'} className="relative text-slate-500 hover:text-slate-900 transition-colors">
+        <Button variant="ghost" size="icon" aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'} className="relative text-muted-foreground hover:text-foreground transition-colors">
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white ring-2 ring-white animate-in zoom-in duration-300">
+            <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground ring-2 ring-background animate-in zoom-in duration-300">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0 overflow-hidden" align="end">
-        <div className="flex items-center justify-between p-4 border-b bg-slate-50/50">
+        <div className="flex items-center justify-between p-4 border-b bg-subtle/50">
           <h3 className="font-semibold text-sm">Notifications</h3>
           {unreadCount > 0 && (
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-7 text-xs px-2 gap-1.5 hover:bg-slate-200"
+              className="h-7 text-xs px-2 gap-1.5 hover:bg-border"
               onClick={() => markAllRead.mutate()}
               disabled={markAllRead.isPending}
             >
@@ -134,7 +134,7 @@ export default function NotificationPopover() {
               <div 
                 key={n.id} 
                 className={cn(
-                  "p-4 transition-colors hover:bg-slate-50 relative group",
+                  "p-4 transition-colors hover:bg-subtle relative group",
                   !n.is_read && "bg-primary/5 hover:bg-primary/10"
                 )}
                 onClick={() => !n.is_read && setRead.mutate({ id: n.id, isRead: true })}
@@ -150,16 +150,16 @@ export default function NotificationPopover() {
                     <div className="flex items-start justify-between gap-2">
                       <p className={cn(
                         "text-xs font-semibold truncate",
-                        !n.is_read ? "text-slate-900" : "text-slate-600"
+                        !n.is_read ? "text-foreground" : "text-fg-soft"
                       )}>
                         {n.title}
                       </p>
-                      <span className="text-[10px] text-slate-400 whitespace-nowrap flex items-center gap-1">
+                      <span className="text-[10px] text-fg-faint whitespace-nowrap flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 leading-normal line-clamp-2">
+                    <p className="text-[11px] text-muted-foreground leading-normal line-clamp-2">
                       {n.message}
                     </p>
                     {n.link && (
@@ -178,11 +178,11 @@ export default function NotificationPopover() {
             ))
           ) : (
             <div className="p-8 text-center">
-              <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Bell className="w-6 h-6 text-slate-300" />
+              <div className="w-12 h-12 bg-subtle rounded-full flex items-center justify-center mx-auto mb-3">
+                <Bell className="w-6 h-6 text-fg-ghost" />
               </div>
-              <p className="text-sm font-medium text-slate-900">All caught up!</p>
-              <p className="text-xs text-slate-500 mt-1">No new notifications for you.</p>
+              <p className="text-sm font-medium text-foreground">All caught up!</p>
+              <p className="text-xs text-muted-foreground mt-1">No new notifications for you.</p>
             </div>
           )}
         </div>
