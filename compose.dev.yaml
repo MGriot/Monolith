@@ -1,0 +1,27 @@
+# Dev overlay: podman-compose -f compose.yaml -f compose.dev.yaml up -d --build
+# Bind mounts use :z so SELinux hosts (Fedora/RHEL) can read them under rootless Podman.
+services:
+  db:
+    ports:
+      - "127.0.0.1:54321:5432"
+
+  backend:
+    build:
+      target: dev
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend:/app:z
+      - uploads:/app/uploads
+
+  frontend:
+    build:
+      target: dev
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - ./frontend:/app:z
+      - frontend_node_modules:/app/node_modules
+
+volumes:
+  frontend_node_modules:

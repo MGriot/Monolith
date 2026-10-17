@@ -9,7 +9,7 @@ passlib[bcrypt]
 python-multipart
 alembic
 python-dotenv
-mcp
+mcp<2
 sse-starlette
 email-validator
 httpx

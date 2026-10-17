@@ -50,6 +50,8 @@ import ProjectIdeas from '@/components/project-ideas';
 import type { Task } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { toast } from 'sonner';
+import { fromDateInput } from "@/lib/dates";
+import { calculateSortIndex as sharedSortIndex, flattenTasks } from '@/lib/kanban';
 
 export default function MyTasksPage() {
   const queryClient = useQueryClient();
@@ -189,7 +191,7 @@ export default function MyTasksPage() {
   });
 
   const handleTaskSubmit = (data: TaskFormValues) => {
-    const formatDate = (d?: string | null) => (d && d.trim()) ? new Date(d).toISOString() : null;
+    const formatDate = fromDateInput;
 
     const formattedData = {
       ...data,
@@ -204,32 +206,11 @@ export default function MyTasksPage() {
     }
   };
 
-  const calculateSortIndex = (container: string, index: number) => {
-    const columnTasks = (tasks || [])
-      .filter(t => t.status.toLowerCase() === container.toLowerCase())
-      .sort((a, b) => {
-        if ((a.sort_index || 0) !== (b.sort_index || 0)) {
-          return (a.sort_index || 0) - (b.sort_index || 0);
-        }
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      });
-
-    if (columnTasks.length === 0) return 100;
-    if (index <= 0) return (columnTasks[0].sort_index || 0) - 10;
-    if (index >= columnTasks.length) return (columnTasks[columnTasks.length - 1].sort_index || 0) + 10;
-
-    const prev = columnTasks[index - 1].sort_index || 0;
-    const next = columnTasks[index].sort_index || 0;
-    
-    if (prev === next) {
-        return prev + 1;
-    }
-    
-    return Math.round((prev + next) / 2);
-  };
+  const calculateSortIndex = (container: string, index: number, movingId?: string) =>
+    sharedSortIndex(flattenTasks(tasks || []), container, index, movingId);
 
   const handleKanbanReorder = (taskId: string, newIndex: number, container: string) => {
-    const sortIndex = calculateSortIndex(container, newIndex);
+    const sortIndex = calculateSortIndex(container, newIndex, taskId);
     moveTaskMutation.mutate({ taskId, newStatus: container, sortIndex });
   };
 
@@ -274,8 +255,8 @@ export default function MyTasksPage() {
           {view === 'kanban' ? (
             <KanbanBoard 
               tasks={activeTasks} 
-              onTaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx) : undefined })}
-              onSubtaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx) : undefined })}
+              onTaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx, id) : undefined })}
+              onSubtaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx, id) : undefined })}
               onReorder={handleKanbanReorder}
               onTaskClick={handleTaskClick}
               onSubtaskClick={handleTaskClick}

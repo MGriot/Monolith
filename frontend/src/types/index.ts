@@ -58,6 +58,12 @@ export interface Task {
   normal_days?: number;
   pessimistic_days?: number;
   expected_duration_days?: number;
+  duration_days?: number;
+  // Financials
+  budget?: number;
+  real_cost?: number;
+  // List
+  checklist?: { id: string; content: string; is_done: boolean }[];
 }
 
 // Deprecated: use Task
@@ -68,6 +74,7 @@ export interface Project {
   name: string;
   description: string;
   status: string;
+  priority?: string;
   progress_percent: number;
   start_date: string;
   due_date: string;
@@ -88,6 +95,12 @@ export interface Project {
   gantt_regions?: any[];
   allowed_global_topics?: string[];
   allowed_global_work_types?: string[];
+  // Financials
+  budget?: number;
+  real_cost?: number;
+  // Risk
+  risk_probability?: number;
+  risk_impact?: number;
 }
 
 export interface Topic {
@@ -191,6 +204,8 @@ export interface Comment {
   updated_at: string;
   author?: User | null;
   replies?: Comment[];
+  attachments?: string[] | null;
+  links?: string[] | null;
 }
 
 

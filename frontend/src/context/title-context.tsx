@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useLayoutEffect, useState, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 
 interface TitleContextType {
   title: string | null;
@@ -21,6 +22,15 @@ export const TitleProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [title, setTitle] = useState<string | null>(null);
   const [icon, setIcon] = useState<React.ElementType | null>(null);
   const [actions, setActions] = useState<React.ReactNode | null>(null);
+
+  // The provider now lives across navigation (one Layout for all pages). Clear page-specific chrome on every route
+  // change, in a layout effect so it runs before the new page's own (passive) effects set its title again.
+  const { pathname } = useLocation();
+  useLayoutEffect(() => {
+    setTitle(null);
+    setIcon(null);
+    setActions(null);
+  }, [pathname]);
 
   const stableSetTitle = React.useCallback((t: string | null) => setTitle(t), []);
   const stableSetIcon = React.useCallback((i: React.ElementType | null) => setIcon(i), []);

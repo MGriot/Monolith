@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
@@ -10,14 +10,11 @@ import {
   MoreVertical,
   ChevronRight,
   ChevronDown,
-  Image as ImageIcon,
   FileText,
   Trash2,
-  Download,
   ExternalLink,
   Loader2,
   Check,
-  Type,
   Upload,
   Pencil
 } from 'lucide-react';
@@ -34,8 +31,6 @@ import {
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
-    DialogTitle,
   } from "@/components/ui/dialog";
 import { toast } from 'sonner';
 import NoteEditor from './note-editor';

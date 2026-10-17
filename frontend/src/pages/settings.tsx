@@ -118,8 +118,8 @@ export default function SettingsPage() {
     try {
       await api.put('/users/me', values);
       toast.success('Profile updated successfully');
-    } catch (error) {
-      toast.error('Failed to update profile');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.detail || 'Failed to update profile');
       console.error(error);
     } finally {
       setIsProfileLoading(false);
@@ -133,11 +133,11 @@ export default function SettingsPage() {
     }
     setIsPasswordLoading(true);
     try {
-      await api.put('/users/me', { password: values.new_password });
+      await api.put('/users/me', { password: values.new_password, current_password: values.current_password });
       toast.success('Password updated successfully');
       passwordForm.reset();
-    } catch (error) {
-      toast.error('Failed to update password');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.detail || 'Failed to update password');
       console.error(error);
     } finally {
       setIsPasswordLoading(false);
@@ -270,6 +270,10 @@ export default function SettingsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="current_password">Current Password</Label>
+                    <Input id="current_password" type="password" autoComplete="current-password" {...passwordForm.register('current_password')} className="bg-white" />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="new_password">New Password</Label>
                     <Input id="new_password" type="password" {...passwordForm.register('new_password')} className="bg-white" />

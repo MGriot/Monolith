@@ -1,4 +1,8 @@
+from urllib.parse import urlsplit
+
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
+from app.core.config import settings
 from app.crud import crud_project, crud_task, crud_user, crud_whiteboard
 from app.db.session import AsyncSessionLocal
 from app.schemas.task import TaskCreate, TaskUpdate
@@ -18,7 +22,29 @@ from app.models.idea import Idea
 from sqlalchemy import select, and_, func
 from sqlalchemy.orm import selectinload
 
-mcp = FastMCP("Monolith Planner", dependencies=["sqlalchemy", "asyncpg", "pydantic"])
+def _mcp_transport_security() -> TransportSecuritySettings:
+    """DNS-rebinding protection stays on; the allowed Host values come from config.
+
+    The default (host of APP_BASE_URL + loopback) is what the bundled proxy forwards. Add more with
+    MCP_ALLOWED_HOSTS="mcp.example.com,10.0.0.5" (a trailing :* port wildcard is added automatically).
+    """
+    hosts = {"localhost", "127.0.0.1"}
+    base_host = urlsplit(settings.APP_BASE_URL).hostname
+    if base_host:
+        hosts.add(base_host)
+    hosts.update(h.strip() for h in settings.MCP_ALLOWED_HOSTS.split(",") if h.strip())
+    allowed_hosts = sorted(hosts | {f"{h}:*" for h in hosts})
+    origins = [f"http://{h}" for h in allowed_hosts] + [f"https://{h}" for h in allowed_hosts]
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True, allowed_hosts=allowed_hosts, allowed_origins=origins
+    )
+
+
+mcp = FastMCP(
+    "Monolith Planner",
+    dependencies=["sqlalchemy", "asyncpg", "pydantic"],
+    transport_security=_mcp_transport_security(),
+)
 
 # --- ANALYTICS & RECAP TOOLS ---
 

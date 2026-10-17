@@ -1,5 +1,6 @@
 import logging
 import httpx
+from app.core.netguard import UnsafeURLError, assert_safe_url
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -8,10 +9,15 @@ class WebhookService:
     async def _send_post(self, url: str, payload: Dict[str, Any]) -> bool:
         """Helper to send an async POST request."""
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            # Re-check at send time (the stored URL may have been valid when saved), never follow redirects.
+            await assert_safe_url(url)
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
                 response = await client.post(url, json=payload)
                 response.raise_for_status()
                 return True
+        except UnsafeURLError as e:
+            logger.warning(f"Blocked webhook to {url}: {e}")
+            return False
         except Exception as e:
             logger.error(f"Failed to send webhook to {url}: {e}")
             return False

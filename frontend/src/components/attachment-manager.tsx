@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -7,12 +7,9 @@ import {
   X, 
   FileText, 
   Download,
-  Loader2,
   Plus,
   Eye,
   Layout,
-  Pencil,
-  Link as LinkIcon,
   Globe,
   Image as ImageIcon
 } from "lucide-react";

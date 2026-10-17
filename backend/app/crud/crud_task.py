@@ -1,9 +1,11 @@
+from collections import defaultdict
 from typing import List, Union, Dict, Any, Optional
 from uuid import UUID
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm.attributes import set_committed_value
 
 from app.crud.base import CRUDBase
 from app.models.task import Task
@@ -13,139 +15,77 @@ from app.core.enums import Status
 from app.core.utils import clean_dict_datetimes
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
-    async def get(self, db: AsyncSession, id: Any) -> Optional[Task]:
-        # Deep eager loading for recursive task structure (up to 3 levels)
-        result = await db.execute(
-            select(self.model)
-            .filter(self.model.id == id)
-            .options(
-                selectinload(Task.owner),
-                selectinload(Task.assignees),
-                selectinload(Task.blocked_by),
-                selectinload(Task.blocking),
-                selectinload(Task.topic_ref),
-                selectinload(Task.type_ref),
-                selectinload(Task.topics),
-                selectinload(Task.types),
-                selectinload(Task.project),
-                selectinload(Task.subtasks).options(
-                    selectinload(Task.owner),
-                    selectinload(Task.assignees),
-                    selectinload(Task.blocked_by),
-                    selectinload(Task.blocking),
-                    selectinload(Task.topic_ref),
-                    selectinload(Task.type_ref),
-                    selectinload(Task.topics),
-                    selectinload(Task.types),
-                    selectinload(Task.subtasks).options(
-                        selectinload(Task.owner),
-                        selectinload(Task.assignees),
-                        selectinload(Task.blocked_by),
-                        selectinload(Task.blocking),
-                        selectinload(Task.topic_ref),
-                        selectinload(Task.type_ref),
-                        selectinload(Task.topics),
-                        selectinload(Task.types),
-                        selectinload(Task.subtasks).options(
-                            selectinload(Task.owner),
-                            selectinload(Task.assignees),
-                            selectinload(Task.blocked_by),
-                            selectinload(Task.blocking),
-                            selectinload(Task.topic_ref),
-                            selectinload(Task.type_ref),
-                            selectinload(Task.topics),
-                            selectinload(Task.types),
-                            selectinload(Task.subtasks)
-                        )
-                    )
-                )
-            )
+    # --- tree loading -------------------------------------------------------------------------------
+    # The old implementation hand-nested selectinload() four levels deep: ~30 queries for 155 tasks, and a
+    # MissingGreenlet (HTTP 500) as soon as a tree was deeper than that. Now the whole subtree is fetched with one
+    # recursive CTE, its relations with one query each (constant, independent of depth/size), and the tree is
+    # assembled in memory.
+
+    @staticmethod
+    def _load_options():
+        return (
+            joinedload(Task.owner),
+            joinedload(Task.topic_ref),
+            joinedload(Task.type_ref),
+            selectinload(Task.project),
+            selectinload(Task.assignees),
+            selectinload(Task.blocked_by),
+            selectinload(Task.blocking),
+            selectinload(Task.topics),
+            selectinload(Task.types),
         )
-        obj = result.scalars().first()
-        # Sort subtasks recursively
-        def sort_recursive(task):
-            if task.subtasks:
-                task.subtasks.sort(key=lambda x: (x.sort_index or 0, x.created_at))
-                for st in task.subtasks:
-                    sort_recursive(st)
-        
-        if obj:
-            sort_recursive(obj)
-        return obj
+
+    async def _load_trees(self, db: AsyncSession, root_ids: List[UUID]) -> Dict[UUID, Task]:
+        """Load the given tasks and all of their descendants, with `subtasks` populated recursively."""
+        if not root_ids:
+            return {}
+        tree = select(Task.id).where(Task.id.in_(root_ids)).cte("task_tree", recursive=True)
+        # UNION (not UNION ALL): a corrupt parent cycle terminates instead of looping forever
+        tree = tree.union(select(Task.id).where(Task.parent_id == tree.c.id))
+        result = await db.execute(
+            select(Task).where(Task.id.in_(select(tree.c.id))).options(*self._load_options())
+        )
+        by_id: Dict[UUID, Task] = {t.id: t for t in result.unique().scalars().all()}
+        self._attach_children(by_id)
+        return by_id
+
+    @staticmethod
+    def _attach_children(by_id: Dict[UUID, Task]) -> None:
+        """Populate `.subtasks` of every task from the flat id->task map, sorted by (sort_index, created_at)."""
+        children: Dict[UUID, List[Task]] = defaultdict(list)
+        for t in by_id.values():
+            if t.parent_id in by_id:
+                children[t.parent_id].append(t)
+        for t in by_id.values():
+            kids = sorted(children.get(t.id, []), key=lambda x: (x.sort_index or 0, x.created_at or datetime.min))
+            # set_committed_value: populate the collection without marking it modified (no UPDATEs on commit)
+            set_committed_value(t, "subtasks", kids)
+
+    async def get(self, db: AsyncSession, id: Any) -> Optional[Task]:
+        by_id = await self._load_trees(db, [id])
+        return by_id.get(id)
 
     async def get_multi_by_project(
         self, db: AsyncSession, *, project_id: UUID, skip: int = 0, limit: int = 100, parent_id: Optional[UUID] = None, include_archived: bool = False
     ) -> List[Task]:
-        query = select(self.model).filter(self.model.project_id == project_id)
-        
+        query = select(self.model.id).filter(self.model.project_id == project_id)
+
         if not include_archived:
             query = query.filter(self.model.is_archived == False)
-        
+
         if parent_id:
             query = query.filter(self.model.parent_id == parent_id)
         else:
             # Only top-level tasks by default
             query = query.filter(self.model.parent_id == None)
-            
-        result = await db.execute(
-            query
-            .order_by(self.model.sort_index.asc(), self.model.created_at.asc())
-            .options(
-                selectinload(Task.owner),
-                selectinload(Task.assignees),
-                selectinload(Task.blocked_by),
-                selectinload(Task.blocking),
-                selectinload(Task.topic_ref),
-                selectinload(Task.type_ref),
-                selectinload(Task.topics),
-                selectinload(Task.types),
-                selectinload(Task.project),
-                selectinload(Task.subtasks).options(
-                    selectinload(Task.owner),
-                    selectinload(Task.assignees),
-                    selectinload(Task.blocked_by),
-                    selectinload(Task.blocking),
-                    selectinload(Task.topic_ref),
-                    selectinload(Task.type_ref),
-                    selectinload(Task.topics),
-                    selectinload(Task.types),
-                    selectinload(Task.subtasks).options(
-                        selectinload(Task.owner),
-                        selectinload(Task.assignees),
-                        selectinload(Task.blocked_by),
-                        selectinload(Task.blocking),
-                        selectinload(Task.topic_ref),
-                        selectinload(Task.type_ref),
-                        selectinload(Task.topics),
-                        selectinload(Task.types),
-                        selectinload(Task.subtasks).options(
-                            selectinload(Task.owner),
-                            selectinload(Task.assignees),
-                            selectinload(Task.blocked_by),
-                            selectinload(Task.blocking),
-                            selectinload(Task.topic_ref),
-                            selectinload(Task.type_ref),
-                            selectinload(Task.topics),
-                            selectinload(Task.types),
-                            selectinload(Task.subtasks)
-                        )
-                    )
-                )
-            )
-            .offset(skip)
-            .limit(limit)
-        )
-        tasks = result.scalars().all()
-        
-        def sort_recursive(task):
-            if task.subtasks:
-                task.subtasks.sort(key=lambda x: (x.sort_index or 0, x.created_at))
-                for st in task.subtasks:
-                    sort_recursive(st)
 
-        for t in tasks:
-            sort_recursive(t)
-        return tasks
+        root_ids = (
+            await db.execute(
+                query.order_by(self.model.sort_index.asc(), self.model.created_at.asc()).offset(skip).limit(limit)
+            )
+        ).scalars().all()
+        by_id = await self._load_trees(db, list(root_ids))
+        return [by_id[i] for i in root_ids if i in by_id]
 
     def calculate_task_progress(self, task: Task) -> float:
         """
@@ -459,26 +399,27 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         
         # 2. Bidirectional Date/Duration logic
         from datetime import timedelta
-        start = obj_data.get("start_date", db_obj.start_date)
-        due = obj_data.get("due_date", db_obj.due_date)
-        dur = obj_data.get("duration_days", db_obj.duration_days)
+        # `.get(key, default)` would return None for an explicit null, so test for key presence.
+        start = obj_data["start_date"] if "start_date" in obj_data else db_obj.start_date
+        due = obj_data["due_date"] if "due_date" in obj_data else db_obj.due_date
+        dur = obj_data["duration_days"] if "duration_days" in obj_data else db_obj.duration_days
 
-        # Detect what changed to decide calculation priority
-        changed = obj_data.keys()
-        
+        # Detect what changed to decide calculation priority (explicit nulls just clear the field)
+        changed = list(obj_data.keys())
+
         if "duration_days" in changed:
             # If duration changed, update due date (dur=1 means same day)
             if start and dur and dur > 0:
                 obj_data["due_date"] = start + timedelta(days=dur - 1)
         elif "start_date" in changed:
             # If start changed, either update due (if dur exists) or dur (if due exists)
-            if dur and dur > 0:
+            if start and dur and dur > 0:
                 obj_data["due_date"] = start + timedelta(days=dur - 1)
-            elif due:
+            elif start and due:
                 obj_data["duration_days"] = (due - start).days + 1
         elif "due_date" in changed:
             # If due changed, update duration
-            if start:
+            if start and due:
                 obj_data["duration_days"] = (due - start).days + 1
 
         # 3. Status logic: check blockers ONLY if moving TO Done

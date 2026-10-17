@@ -1,6 +1,6 @@
 from typing import Any, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
@@ -8,6 +8,7 @@ from app.crud import crud_webhook
 from app.schemas.webhook import Webhook, WebhookCreate, WebhookUpdate
 from app.models.user import User
 from app.core.webhooks import webhook_service
+from app.core.netguard import UnsafeURLError, assert_safe_url
 
 router = APIRouter()
 
@@ -15,7 +16,7 @@ router = APIRouter()
 async def read_webhooks(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
@@ -37,6 +38,10 @@ async def create_webhook(
     """
     Create a new webhook.
     """
+    try:
+        await assert_safe_url(obj_in.url)
+    except UnsafeURLError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return await crud_webhook.webhook.create_with_owner(
         db, obj_in=obj_in, owner_id=current_user.id
     )
@@ -57,6 +62,11 @@ async def update_webhook(
         raise HTTPException(status_code=404, detail="Webhook not found")
     if webhook.owner_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Not enough permissions")
+    if obj_in.url:
+        try:
+            await assert_safe_url(obj_in.url)
+        except UnsafeURLError as e:
+            raise HTTPException(status_code=400, detail=str(e))
     return await crud_webhook.webhook.update(db, db_obj=webhook, obj_in=obj_in)
 
 @router.delete("/{id}", response_model=Webhook)
@@ -89,7 +99,9 @@ async def test_webhook(
     webhook = await crud_webhook.webhook.get(db, id=id)
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
-    
+    if webhook.owner_id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
     success = False
     if webhook.provider == "slack":
         success = await webhook_service.send_slack_notification(

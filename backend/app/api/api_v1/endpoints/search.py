@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
 from app.api import deps
+from app.models.associations import project_members, task_assignees
 from app.models.project import Project
 from app.models.task import Task
 from app.models.idea import Idea
@@ -22,21 +23,24 @@ async def search_all(
     Search across Projects, Tasks, and Ideas.
     """
     results = []
-    query_str = f"%{q}%"
+    # Escape LIKE wildcards so "100%" or "a_b" are searched literally (and "%" cannot match everything)
+    escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    query_str = f"%{escaped}%"
+    uid = current_user.id
+    member_projects = select(project_members.c.project_id).where(project_members.c.user_id == uid)
+    owned_projects = select(Project.id).where(Project.owner_id == uid)
 
     # 1. Search Projects
     project_stmt = select(Project).filter(
         or_(
-            Project.name.ilike(query_str),
-            Project.description.ilike(query_str)
+            Project.name.ilike(query_str, escape="\\"),
+            Project.description.ilike(query_str, escape="\\")
         )
     )
     if not current_user.is_superuser:
-        # Simplified: check owner_id. For full member check, would need joins.
-        # But for global search, we'll keep it simple for now.
-        project_stmt = project_stmt.filter(Project.owner_id == current_user.id)
+        project_stmt = project_stmt.filter(or_(Project.owner_id == uid, Project.id.in_(member_projects)))
     
-    project_res = await db.execute(project_stmt)
+    project_res = await db.execute(project_stmt.limit(20))
     for p in project_res.scalars().all():
         results.append(SearchResult(
             id=p.id,
@@ -50,17 +54,21 @@ async def search_all(
     # 2. Search Tasks
     task_stmt = select(Task).filter(
         or_(
-            Task.title.ilike(query_str),
-            Task.description.ilike(query_str)
+            Task.title.ilike(query_str, escape="\\"),
+            Task.description.ilike(query_str, escape="\\")
         )
     )
     # Filter by owner or assignment
     # This is more complex, but we'll try to be efficient
     if not current_user.is_superuser:
-        task_stmt = task_stmt.filter(Task.owner_id == current_user.id)
-        # Note: missing assigned users check here for brevity, but owner is a good start
+        task_stmt = task_stmt.filter(or_(
+            Task.owner_id == uid,
+            Task.project_id.in_(owned_projects),
+            Task.project_id.in_(member_projects),
+            Task.id.in_(select(task_assignees.c.task_id).where(task_assignees.c.user_id == uid)),
+        ))
     
-    task_res = await db.execute(task_stmt)
+    task_res = await db.execute(task_stmt.limit(20))
     for t in task_res.scalars().all():
         link = f"/projects/{t.project_id}" if t.project_id else "/tasks"
         results.append(SearchResult(
@@ -75,12 +83,17 @@ async def search_all(
     # 3. Search Ideas
     idea_stmt = select(Idea).filter(
         or_(
-            Idea.title.ilike(query_str),
-            Idea.description.ilike(query_str)
+            Idea.title.ilike(query_str, escape="\\"),
+            Idea.description.ilike(query_str, escape="\\")
         )
     )
-    # Ideas are usually tied to projects
-    idea_res = await db.execute(idea_stmt)
+    # Only ideas from projects the user owns or belongs to
+    if not current_user.is_superuser:
+        idea_stmt = idea_stmt.filter(or_(
+            Idea.project_id.in_(owned_projects),
+            Idea.project_id.in_(member_projects),
+        ))
+    idea_res = await db.execute(idea_stmt.limit(20))
     for i in idea_res.scalars().all():
         results.append(SearchResult(
             id=i.id,

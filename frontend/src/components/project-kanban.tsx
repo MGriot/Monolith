@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   DndContext, 
   DragOverlay, 
@@ -14,16 +14,15 @@ import {
   defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
 import { 
-  arrayMove, 
   SortableContext, 
   sortableKeyboardCoordinates, 
   verticalListSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Card, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreVertical, GripVertical, Plus, Calendar, FolderKanban, ArrowRight } from 'lucide-react';
+import { GripVertical, Calendar, ArrowRight } from 'lucide-react';
 import { cn, formatPercent } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { Progress } from '@/components/ui/progress';

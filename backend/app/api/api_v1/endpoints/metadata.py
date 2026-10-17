@@ -15,13 +15,16 @@ router = APIRouter()
 async def read_topics(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     project_id: Optional[UUID] = None,
     task_id: Optional[UUID] = None,
     all_scopes: bool = Query(False, description="Fetch all topics regardless of scope (Admin only)"),
-    include_global: bool = True
+    include_global: bool = True,
+    current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     if all_scopes:
+        if not current_user.is_superuser:
+            raise HTTPException(status_code=403, detail="all_scopes is admin only")
         return await crud_metadata.topic.get_multi(db, skip=skip, limit=limit)
     
     return await crud_metadata.topic.get_multi_scoped(
@@ -73,13 +76,16 @@ async def delete_topic(
 async def read_work_types(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     project_id: Optional[UUID] = None,
     task_id: Optional[UUID] = None,
     all_scopes: bool = Query(False, description="Fetch all work types regardless of scope (Admin only)"),
-    include_global: bool = True
+    include_global: bool = True,
+    current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     if all_scopes:
+        if not current_user.is_superuser:
+            raise HTTPException(status_code=403, detail="all_scopes is admin only")
         return await crud_metadata.work_type.get_multi(db, skip=skip, limit=limit)
     
     return await crud_metadata.work_type.get_multi_scoped(

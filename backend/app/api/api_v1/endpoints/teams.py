@@ -1,6 +1,6 @@
 from typing import Any, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -13,7 +13,7 @@ router = APIRouter()
 async def read_teams(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     current_user: models.user.User = Depends(deps.get_current_user),
 ) -> Any:
     """
@@ -31,7 +31,7 @@ async def read_teams(
 async def read_team_activity(
     db: AsyncSession = Depends(deps.get_db),
     current_user: models.user.User = Depends(deps.get_current_user),
-    limit: int = 20
+    limit: int = Query(20, ge=1, le=100)
 ) -> Any:
     """
     Retrieve recent activity (completions) from teammates.

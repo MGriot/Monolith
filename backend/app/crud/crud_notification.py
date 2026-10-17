@@ -1,6 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import update
 from sqlalchemy.future import select
 
 from app.crud.base import CRUDBase
@@ -51,8 +52,14 @@ class CRUDNotification(CRUDBase[Notification, NotificationCreate, NotificationUp
             await db.refresh(db_obj)
         return db_obj
 
-    async def mark_all_as_read(self, db: AsyncSession, *, user_id: UUID):
-        # Implementation for marking all as read
-        pass
+    async def mark_all_as_read(self, db: AsyncSession, *, user_id: UUID) -> int:
+        """Mark every unread notification of the user as read with a single UPDATE; returns the row count."""
+        result = await db.execute(
+            update(self.model)
+            .where(self.model.user_id == user_id, self.model.is_read == False)  # noqa: E712
+            .values(is_read=True)
+        )
+        await db.commit()
+        return result.rowcount or 0
 
 notification = CRUDNotification(Notification)

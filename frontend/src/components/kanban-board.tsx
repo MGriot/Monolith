@@ -25,8 +25,9 @@ import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MoreVertical, GripVertical, Plus, User as UserIcon, Milestone, AlertTriangle, Folder } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { parseISO, isAfter } from 'date-fns';
+import { parseISO } from 'date-fns';
 import type { Task, Subtask } from '@/types';
+import { isAfterDueDay } from "@/lib/dates";
 
 interface KanbanItem {
   id: string;
@@ -56,6 +57,8 @@ interface KanbanBoardProps {
   onAddTask?: (status: string) => void;
   onTaskClick?: (task: Task) => void;
   onSubtaskClick?: (subtask: Subtask) => void;
+  /** Bump to discard the board's local (optimistic) order and re-read `tasks`, e.g. after a failed move. */
+  syncKey?: number;
 }
 
 const COLUMNS = [
@@ -67,7 +70,7 @@ const COLUMNS = [
   { id: 'Done', title: 'Done' }
 ];
 
-export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorder, onAddTask, onTaskClick, onSubtaskClick }: KanbanBoardProps) {
+export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorder, onAddTask, onTaskClick, onSubtaskClick, syncKey = 0 }: KanbanBoardProps) {
   const [items, setItems] = useState<Record<string, string[]>>({
     'Backlog': [],
     'Todo': [],
@@ -129,7 +132,7 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorde
       }
     });
     setItems(newItems);
-  }, [kanbanItems]);
+  }, [kanbanItems, syncKey]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -420,12 +423,12 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
   const today = new Date();
 
   const checkDate = conclusionDate || today;
-  const isPastDue = dueDate ? isAfter(checkDate, dueDate) : false;
-  const isPastDeadline = deadlineAt ? isAfter(checkDate, deadlineAt) : false;
+  const isPastDue = isAfterDueDay(checkDate, dueDate);
+  const isPastDeadline = isAfterDueDay(checkDate, deadlineAt);
 
   const finishedOnTime = conclusionDate && (
-    (dueDate && !isAfter(conclusionDate, dueDate)) || 
-    (deadlineAt && !isAfter(conclusionDate, deadlineAt))
+    (dueDate && !isAfterDueDay(conclusionDate, dueDate)) || 
+    (deadlineAt && !isAfterDueDay(conclusionDate, deadlineAt))
   );
 
   const overdue = !finishedOnTime && (isPastDue || isPastDeadline);
@@ -440,6 +443,16 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
         isDone && "bg-slate-50 opacity-80 hover:opacity-100"
       )}
       onClick={onClick}
+      // Cards are the main interaction on the board: reachable and operable from the keyboard
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `Open ${item.title}` : undefined}
+      onKeyDown={(e) => {
+        if (onClick && e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
       <CardContent className="p-3 space-y-3">
         <div className="flex items-start justify-between gap-2">

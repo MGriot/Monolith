@@ -254,24 +254,23 @@ async def get_dashboard_summary(
     # 2. Tasks Count & Breakdown
     # For tasks, we need to filter by projects owned by the user if not superuser
     # And EXCLUDE archived tasks
-    if current_user.is_superuser:
-        task_query = select(Task).where(Task.is_archived == False)
-    else:
-        task_query = select(Task).join(Project).where(
-            Project.owner_id == current_user.id,
-            Task.is_archived == False
+    count_query = select(Task.status, func.count(Task.id)).where(Task.is_archived == False)
+    if not current_user.is_superuser:
+        count_query = count_query.join(Project, Task.project_id == Project.id).where(
+            Project.owner_id == current_user.id
         )
 
-    res = await db.execute(task_query)
-    all_tasks = res.scalars().all()
-    
-    total_tasks = len(all_tasks)
-    tasks_backlog = sum(1 for t in all_tasks if t.status == Status.BACKLOG)
-    tasks_todo = sum(1 for t in all_tasks if t.status == Status.TODO)
-    tasks_in_progress = sum(1 for t in all_tasks if t.status == Status.IN_PROGRESS)
-    tasks_on_hold = sum(1 for t in all_tasks if t.status == Status.ON_HOLD)
-    tasks_review = sum(1 for t in all_tasks if t.status == Status.REVIEW)
-    tasks_done = sum(1 for t in all_tasks if t.status == Status.DONE)
+    # One GROUP BY instead of loading every task row into Python just to count them
+    res = await db.execute(count_query.group_by(Task.status))
+    counts = {status: n for status, n in res.all()}
+
+    total_tasks = sum(counts.values())
+    tasks_backlog = counts.get(Status.BACKLOG, 0)
+    tasks_todo = counts.get(Status.TODO, 0)
+    tasks_in_progress = counts.get(Status.IN_PROGRESS, 0)
+    tasks_on_hold = counts.get(Status.ON_HOLD, 0)
+    tasks_review = counts.get(Status.REVIEW, 0)
+    tasks_done = counts.get(Status.DONE, 0)
     
     # 3. Upcoming Deadlines (next 7 days)
     # Exclude archived

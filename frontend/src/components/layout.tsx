@@ -54,15 +54,23 @@ export default function Layout({ children }: LayoutProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [activeResult, setActiveResult] = useState(-1);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 250);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   const { data: searchResults, isLoading: isSearching } = useQuery({
-    queryKey: ['global-search', searchQuery],
+    queryKey: ['global-search', debouncedQuery],
     queryFn: async () => {
-      if (!searchQuery || searchQuery.length < 2) return [];
-      const response = await api.get(`/search/?q=${searchQuery}`);
+      if (debouncedQuery.length < 2) return [];
+      // params: lets axios encode the query (a raw `&`, `#` or `%` used to break the URL)
+      const response = await api.get('/search/', { params: { q: debouncedQuery } });
       return response.data;
     },
-    enabled: searchQuery.length >= 2,
+    enabled: debouncedQuery.length >= 2,
   });
 
   // Close search on escape or click outside
@@ -71,6 +79,8 @@ export default function Layout({ children }: LayoutProps) {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setIsSearchOpen(true);
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -154,6 +164,7 @@ export default function Layout({ children }: LayoutProps) {
             variant="ghost" 
             size="icon" 
             className="lg:hidden text-slate-400"
+            aria-label="Close menu"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             <X className="w-5 h-5" />
@@ -209,6 +220,7 @@ export default function Layout({ children }: LayoutProps) {
                variant="ghost" 
                size="icon" 
                className="lg:hidden mr-1 text-slate-500"
+               aria-label="Open menu"
                onClick={() => setIsMobileMenuOpen(true)}
              >
                <Menu className="w-5 h-5" />
@@ -219,6 +231,13 @@ export default function Layout({ children }: LayoutProps) {
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input 
+                        ref={searchInputRef}
+                        role="combobox"
+                        aria-label="Search projects, tasks and ideas"
+                        aria-expanded={isSearchOpen && searchQuery.length >= 2}
+                        aria-controls="global-search-results"
+                        aria-autocomplete="list"
+                        aria-activedescendant={activeResult >= 0 ? `search-result-${activeResult}` : undefined}
                         placeholder="Search projects, tasks, ideas... (Ctrl+K)" 
                         className="pl-10 h-9 bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary/20 text-sm transition-all"
                         value={searchQuery}
@@ -227,19 +246,44 @@ export default function Layout({ children }: LayoutProps) {
                             setIsSearchOpen(true);
                         }}
                         onFocus={() => setIsSearchOpen(true)}
+                        onKeyDown={(e) => {
+                            const results = (searchResults as any[]) || [];
+                            if (e.key === 'Escape') {
+                                setIsSearchOpen(false);
+                                setActiveResult(-1);
+                            } else if (e.key === 'ArrowDown' && results.length) {
+                                e.preventDefault();
+                                setIsSearchOpen(true);
+                                setActiveResult((i) => (i + 1) % results.length);
+                            } else if (e.key === 'ArrowUp' && results.length) {
+                                e.preventDefault();
+                                setActiveResult((i) => (i <= 0 ? results.length - 1 : i - 1));
+                            } else if (e.key === 'Enter') {
+                                const target = results[activeResult >= 0 ? activeResult : 0];
+                                if (target) {
+                                    navigate(target.link);
+                                    setIsSearchOpen(false);
+                                    setSearchQuery("");
+                                    setActiveResult(-1);
+                                }
+                            }
+                        }}
                     />
                 </div>
 
                 {isSearchOpen && searchQuery.length >= 2 && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="max-h-[400px] overflow-y-auto p-2 space-y-1">
+                        <div id="global-search-results" role="listbox" aria-label="Search results" className="max-h-[400px] overflow-y-auto p-2 space-y-1">
                             {isSearching ? (
                                 <div className="p-4 text-center text-xs text-slate-400">Searching...</div>
                             ) : searchResults && searchResults.length > 0 ? (
-                                (searchResults as any[]).map((res: any) => (
+                                (searchResults as any[]).map((res: any, idx: number) => (
                                     <button
                                         key={`${res.type}-${res.id}`}
-                                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 text-left group transition-colors"
+                                        id={`search-result-${idx}`}
+                                        role="option"
+                                        aria-selected={idx === activeResult}
+                                        className={cn("w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 text-left group transition-colors", idx === activeResult && "bg-slate-100")}
                                         onClick={() => {
                                             navigate(res.link);
                                             setIsSearchOpen(false);
@@ -291,7 +335,7 @@ export default function Layout({ children }: LayoutProps) {
             
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="icon" className="h-8 w-8 rounded-full shadow-md shadow-primary/20 shrink-0">
+                <Button size="icon" aria-label="Create new" className="h-8 w-8 rounded-full shadow-md shadow-primary/20 shrink-0">
                   <Plus className="w-4 h-4" />
                 </Button>
               </PopoverTrigger>

@@ -1,6 +1,9 @@
+import asyncio
+import json
+import time
 from typing import Any, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import jwt, JWTError
 
@@ -16,46 +19,72 @@ from app.crud import crud_user
 
 router = APIRouter()
 
-@router.websocket("/ws/{token}")
-async def websocket_endpoint(websocket: WebSocket, token: str):
+WS_AUTH_TIMEOUT_SECONDS = 10
+
+
+async def _authenticate_ws_token(token: str):
+    """Return (user_id, exp) for a valid token of an active user, else None.
+
+    The DB session lives only for this lookup: holding one for the whole connection would pin a
+    pooled connection per open socket and starve the API.
+    """
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id = UUID(payload.get("sub"))
+    except (JWTError, ValueError, TypeError):
+        return None
+    async with AsyncSessionLocal() as db:
+        user = await crud_user.get(db, id=user_id)
+    if not user or not user.is_active:
+        return None
+    return user.id, payload.get("exp")
+
+
+@router.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
     """
     WebSocket endpoint for real-time notifications.
+
+    The JWT is NOT taken from the URL (URLs end up in proxy/access logs). Protocol:
+      1. client connects to /ws
+      2. client sends {"type": "auth", "token": "<jwt>"} within WS_AUTH_TIMEOUT_SECONDS
+      3. server answers {"type": "auth_ok"}; "ping" is answered with "pong"
+    The socket is closed (1008) once the token expires.
     """
-    async with AsyncSessionLocal() as db:
-        try:
-            # Validate token
-            payload = jwt.decode(
-                token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-            )
-            user_id = payload.get("sub")
-            if not user_id:
+    await websocket.accept()
+    try:
+        first = await asyncio.wait_for(websocket.receive_text(), timeout=WS_AUTH_TIMEOUT_SECONDS)
+        msg = json.loads(first)
+        if msg.get("type") != "auth":
+            raise ValueError("first message must be auth")
+        auth = await _authenticate_ws_token(msg.get("token") or "")
+    except (asyncio.TimeoutError, ValueError, WebSocketDisconnect, AttributeError):
+        auth = None
+    if auth is None:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    user_id, exp = auth
+    await manager.connect(websocket, user_id, accept=False)
+    try:
+        await websocket.send_text(json.dumps({"type": "auth_ok"}))
+        while True:
+            data = await websocket.receive_text()
+            if exp is not None and time.time() >= exp:
                 await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-                return
-            
-            user = await crud_user.get(db, id=UUID(user_id))
-            if not user:
-                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-                return
-                
-            await manager.connect(websocket, user.id)
-            try:
-                while True:
-                    # Wait for any data from client (ping/pong)
-                    data = await websocket.receive_text()
-                    if data == "ping":
-                        await websocket.send_text("pong")
-            except WebSocketDisconnect:
-                manager.disconnect(websocket, user.id)
-        except (JWTError, Exception) as e:
-            import logging
-            logging.getLogger(__name__).error(f"WebSocket auth failed: {e}")
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                break
+            if data == "ping":
+                await websocket.send_text("pong")
+    except WebSocketDisconnect:
+        pass
+    finally:
+        manager.disconnect(websocket, user_id)
 
 @router.get("/", response_model=List[Notification])
 async def read_notifications(
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
@@ -94,11 +123,5 @@ async def mark_all_notifications_as_read(
     """
     Mark all notifications as read for the current user.
     """
-    # Simple implementation: fetch all unread and update
-    notifications = await crud_notification.get_multi_by_user(db, user_id=current_user.id, limit=1000)
-    for n in notifications:
-        if not n.is_read:
-            n.is_read = True
-            db.add(n)
-    await db.commit()
-    return {"status": "success"}
+    updated = await crud_notification.mark_all_as_read(db, user_id=current_user.id)
+    return {"status": "success", "updated": updated}

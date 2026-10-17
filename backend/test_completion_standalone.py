@@ -33,7 +33,8 @@ async def test_completion_logic():
     
     # Mock CRUD
     with patch("app.api.api_v1.endpoints.tasks.crud_task") as mock_crud_task, \
-         patch("app.api.api_v1.endpoints.tasks.crud_project") as mock_crud_project:
+         patch("app.api.api_v1.endpoints.tasks.crud_project") as mock_crud_project, \
+         patch("app.api.api_v1.endpoints.tasks.has_task_access", AsyncMock(return_value=True)):
         
         # Setup common returns
         mock_crud_project.project.get = AsyncMock(return_value=project)

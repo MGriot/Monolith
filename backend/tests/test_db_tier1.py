@@ -1,0 +1,109 @@
+"""Tier-1 database work: migration chain integrity and in-memory task tree assembly (no database needed).
+
+The SQL side (recursive CTE, baseline == models, index usage, stamp/upgrade of a legacy database) is verified
+against a live PostgreSQL by scripts documented in docs/how-to/database-migrations.md.
+"""
+import os
+from datetime import datetime, timedelta
+from uuid import uuid4
+
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+
+from app.crud.crud_task import CRUDTask
+from app.db import migrate
+from app.models.task import Task
+
+
+def _script_dir() -> ScriptDirectory:
+    return ScriptDirectory.from_config(migrate._alembic_config())
+
+
+class TestMigrations:
+    def test_single_linear_history_with_baseline_first(self):
+        script = _script_dir()
+        assert len(script.get_heads()) == 1, "branched migration history"
+        revisions = list(script.walk_revisions())          # newest -> oldest
+        assert revisions[-1].revision == migrate.BASELINE_REVISION
+        assert revisions[-1].down_revision is None
+        chain = [r.revision for r in reversed(revisions)]
+        assert chain == sorted(chain), "revision ids should sort in application order"
+
+    def test_every_revision_defines_downgrade(self):
+        for rev in _script_dir().walk_revisions():
+            assert "def downgrade" in open(rev.path, encoding="utf-8").read(), rev.revision
+
+    def test_index_migration_covers_every_declared_index(self):
+        """If someone adds an Index in app/models/indexes.py they must also add a migration."""
+        import app.models  # noqa: F401
+        from app.db.session import Base
+
+        declared = {
+            ix.name for t in Base.metadata.tables.values() for ix in t.indexes if ix.name and ix.name.startswith("ix_")
+            and ix.name in open(os.path.join(os.path.dirname(migrate.__file__), "..", "models", "indexes.py"), encoding="utf-8").read()
+        }
+        assert declared, "indexes.py declares no indexes?"
+        migration_src = ""
+        for rev in _script_dir().walk_revisions():
+            migration_src += open(rev.path, encoding="utf-8").read()
+        missing = sorted(n for n in declared if f"'{n}'" not in migration_src and f'"{n}"' not in migration_src)
+        assert not missing, f"indexes declared but not created by any migration: {missing}"
+
+    def test_alembic_ini_points_at_migrations_dir(self):
+        cfg = migrate._alembic_config()
+        assert os.path.isdir(cfg.get_main_option("script_location"))
+        assert isinstance(cfg, Config)
+
+
+class TestTreeAssembly:
+    @staticmethod
+    def _task(parent=None, sort_index=0, created=None, tid=None):
+        return Task(id=tid or uuid4(), parent_id=parent.id if parent else None, sort_index=sort_index,
+                    created_at=created or datetime(2025, 1, 1))
+
+    def test_children_are_attached_and_sorted(self):
+        root = self._task()
+        b = self._task(root, sort_index=20)
+        a = self._task(root, sort_index=10)
+        c_late = self._task(root, sort_index=10, created=datetime(2025, 1, 2))
+        grandchild = self._task(a)
+        by_id = {t.id: t for t in (root, b, a, c_late, grandchild)}
+
+        CRUDTask._attach_children(by_id)
+
+        assert [t.id for t in root.subtasks] == [a.id, c_late.id, b.id]
+        assert [t.id for t in a.subtasks] == [grandchild.id]
+        assert b.subtasks == [] and grandchild.subtasks == []
+
+    def test_depth_is_unbounded(self):
+        chain = [self._task()]
+        for _ in range(60):
+            chain.append(self._task(chain[-1]))
+        CRUDTask._attach_children({t.id: t for t in chain})
+        node, depth = chain[0], 0
+        while node.subtasks:
+            node = node.subtasks[0]
+            depth += 1
+        assert depth == 60
+
+    def test_only_loaded_tasks_become_children(self):
+        outside = self._task()
+        orphan = self._task(outside)        # parent not part of the loaded set
+        CRUDTask._attach_children({orphan.id: orphan})
+        assert orphan.subtasks == []
+
+    def test_attaching_does_not_mark_the_collection_dirty(self):
+        from sqlalchemy import inspect
+
+        root = self._task()
+        child = self._task(root)
+        CRUDTask._attach_children({root.id: root, child.id: child})
+        state = inspect(root)
+        assert "subtasks" not in state.committed_state or not state.modified
+
+    def test_missing_created_at_does_not_break_sorting(self):
+        root = self._task()
+        x = Task(id=uuid4(), parent_id=root.id, sort_index=0, created_at=None)
+        y = Task(id=uuid4(), parent_id=root.id, sort_index=0, created_at=datetime(2025, 1, 1))
+        CRUDTask._attach_children({t.id: t for t in (root, x, y)})
+        assert len(root.subtasks) == 2

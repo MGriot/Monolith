@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,14 +13,14 @@ import {
     Milestone, 
     Calculator, 
     CalendarDays, 
-    Clock, 
     Link as LinkIcon,
     Plus,
     Sparkles,
     Database,
     X,
     CheckSquare,
-    AlertCircle
+    AlertCircle,
+    Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -201,10 +201,16 @@ export default function TaskForm({
     defaultValues: processedInitialValues as any,
   });
 
-  // Sync form state when initialValues change (essential for Dialog reuse)
+  // Sync form state when the initial values change (essential for Dialog reuse). Callers pass a fresh object literal
+  // on every render, so compare by content: resetting on identity wiped what the user was typing whenever a
+  // background refetch re-rendered the parent.
+  const initialValuesKey = JSON.stringify(processedInitialValues);
+  const lastInitialValuesKey = useRef(initialValuesKey);
   useEffect(() => {
+    if (lastInitialValuesKey.current === initialValuesKey) return;
+    lastInitialValuesKey.current = initialValuesKey;
     reset(processedInitialValues);
-  }, [processedInitialValues, reset]);
+  }, [initialValuesKey, processedInitialValues, reset]);
 
   useFieldArray({
     control,
@@ -478,11 +484,14 @@ export default function TaskForm({
 
     traverse(taskObject.subtasks);
 
-    if (minStart && !isNaN(minStart.getTime())) {
-        setValue("start_date", format(minStart, "yyyy-MM-dd"));
+    // minStart/maxDue are assigned inside the traverse() closure, so TS narrows them to `never` here.
+    const syncedStart = minStart as Date | null;
+    const syncedDue = maxDue as Date | null;
+    if (syncedStart && !isNaN(syncedStart.getTime())) {
+        setValue("start_date", format(syncedStart, "yyyy-MM-dd"));
     }
-    if (maxDue && !isNaN(maxDue.getTime())) {
-        setValue("due_date", format(maxDue, "yyyy-MM-dd"));
+    if (syncedDue && !isNaN(syncedDue.getTime())) {
+        setValue("due_date", format(syncedDue, "yyyy-MM-dd"));
     }
     
     toast.success("Dates synced from all descendants");

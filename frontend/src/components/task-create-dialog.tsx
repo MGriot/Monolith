@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import TaskForm, { type TaskFormValues } from '@/components/task-form';
 import type { Project } from '@/types';
 import { toast } from 'sonner';
+import { fromDateInput } from "@/lib/dates";
 
 interface TaskCreateDialogProps {
   open: boolean;
@@ -40,7 +41,7 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
 
   const createTaskMutation = useMutation({
     mutationFn: async (newTask: TaskFormValues) => {
-      const formatDate = (d?: string | null) => (d && d.trim()) ? new Date(d).toISOString() : null;
+      const formatDate = fromDateInput;
       
       const formattedTask = {
         ...newTask,

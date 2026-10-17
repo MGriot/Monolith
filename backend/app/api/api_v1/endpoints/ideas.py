@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud, models, schemas
 from app.api import deps
+from app.api.access import require_idea_access, require_project_access
 from app.crud.crud_idea import idea as crud_idea
 
 router = APIRouter()
@@ -15,7 +16,7 @@ async def read_ideas(
     task_id: Optional[UUID] = Query(None),
     db: AsyncSession = Depends(deps.get_db),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     current_user: models.User = Depends(deps.get_current_user),
 ) -> Any:
     """
@@ -23,10 +24,8 @@ async def read_ideas(
     Otherwise, returns all ideas relevant to the current user.
     """
     if project_id:
-        # Check project access (implied by dependency but let's be safe)
-        project = await crud.project.get(db, id=project_id)
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
+        await require_project_access(db, project_id, current_user)
+        limit = max(1, min(limit, 500))
             
         return await crud_idea.get_multi_by_project(db, project_id=project_id, task_id=task_id, skip=skip, limit=limit, current_user_id=current_user.id)
     
@@ -42,10 +41,8 @@ async def vote_idea(
     """
     Toggle vote for an idea.
     """
-    idea = await crud_idea.get(db, id=idea_id)
-    if not idea:
-        raise HTTPException(status_code=404, detail="Idea not found")
-    
+    await require_idea_access(db, idea_id, current_user)
+
     voted = await crud_idea.toggle_vote(db, idea_id=idea_id, user_id=current_user.id)
     return {"voted": voted}
 
@@ -59,10 +56,8 @@ async def downvote_idea(
     """
     Toggle downvote for an idea.
     """
-    idea = await crud_idea.get(db, id=idea_id)
-    if not idea:
-        raise HTTPException(status_code=404, detail="Idea not found")
-    
+    await require_idea_access(db, idea_id, current_user)
+
     voted = await crud_idea.toggle_downvote(db, idea_id=idea_id, user_id=current_user.id)
     return {"voted": voted}
 
@@ -100,11 +95,8 @@ async def create_idea(
     """
     Create a new idea.
     """
-    # Check project existence
-    project = await crud.project.get(db, id=idea_in.project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-        
+    await require_project_access(db, idea_in.project_id, current_user)
+
     return await crud_idea.create(db, obj_in=idea_in, author_id=current_user.id)
 
 @router.put("/{idea_id}", response_model=schemas.idea.Idea)
@@ -122,11 +114,15 @@ async def update_idea(
     if not idea:
         raise HTTPException(status_code=404, detail="Idea not found")
     
-    # Check permission (author or project owner)
+    # Check permission (author, project owner, or superuser)
     project = await crud.project.get(db, id=idea.project_id)
-    if idea.author_id != current_user.id and project.owner_id != current_user.id:
+    is_manager = current_user.is_superuser or project.owner_id == current_user.id
+    if idea.author_id != current_user.id and not is_manager:
         raise HTTPException(status_code=403, detail="Not enough permissions")
-        
+    # Authors may edit their text but must not approve/convert their own idea.
+    if "status" in idea_in.model_fields_set and not is_manager:
+        raise HTTPException(status_code=403, detail="Only project owners can change idea status")
+
     return await crud_idea.update(db, db_obj=idea, obj_in=idea_in)
 
 @router.delete("/{idea_id}", response_model=schemas.idea.Idea)
@@ -144,9 +140,10 @@ async def delete_idea(
         raise HTTPException(status_code=404, detail="Idea not found")
     
     project = await crud.project.get(db, id=idea.project_id)
-    if idea.author_id != current_user.id and project.owner_id != current_user.id:
+    if (idea.author_id != current_user.id and project.owner_id != current_user.id
+            and not current_user.is_superuser):
         raise HTTPException(status_code=403, detail="Not enough permissions")
-        
+
     return await crud_idea.remove(db, id=idea_id)
 
 @router.post("/{idea_id}/promote", response_model=schemas.task.Task)

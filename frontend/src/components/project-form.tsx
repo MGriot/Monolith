@@ -18,6 +18,7 @@ import {
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
 import { AssigneeSelector } from "@/components/assignee-selector";
 import type { Topic, WorkType, Project } from "@/types";
+import { toDateInputValue } from "@/lib/dates";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -89,8 +90,8 @@ export default function ProjectForm({
         topic_ids: initialValues.topic_ids || initialValues.topics?.map(t => t.id) || [],
         type_ids: initialValues.type_ids || initialValues.types?.map(t => t.id) || [],
         member_ids: initialValues.member_ids || initialValues.members?.map(m => m.id) || [],
-        start_date: initialValues.start_date ? new Date(initialValues.start_date).toISOString().split('T')[0] : "",
-        due_date: initialValues.due_date ? new Date(initialValues.due_date).toISOString().split('T')[0] : "",
+        start_date: toDateInputValue(initialValues.start_date),
+        due_date: toDateInputValue(initialValues.due_date),
         tags: Array.isArray(initialValues.tags) ? initialValues.tags.join(', ') : initialValues.tags || "",
         budget: initialValues.budget || 0,
         real_cost: initialValues.real_cost || 0,
