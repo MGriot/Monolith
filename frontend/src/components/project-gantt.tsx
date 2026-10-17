@@ -791,7 +791,7 @@ export default function ProjectGantt({
   if (!viewWindow || ganttItems.length === 0) {
     return (
       <div className="flex flex-col h-full items-center justify-center p-8 space-y-4 text-center">
-        <div className="h-64 flex flex-col items-center justify-center text-slate-500 border-2 border-dashed rounded-xl w-full max-w-2xl">
+        <div className="h-64 flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl w-full max-w-2xl">
           <p className="font-medium">No schedule data available.</p>
           <p className="text-xs opacity-70 mt-1">Ensure tasks have start dates and either due dates or deadlines.</p>
         </div>
@@ -896,9 +896,9 @@ export default function ProjectGantt({
   };
 
   return (
-    <div className="flex flex-col bg-white relative">
+    <div className="flex flex-col bg-background relative">
       {/* Gantt Controls */}
-      <div className="p-4 border-b flex items-center justify-between bg-slate-50/30 sticky left-0 z-40">
+      <div className="p-4 border-b flex items-center justify-between bg-subtle/30 sticky left-0 z-40">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center space-x-2">
             <Switch id="show-subtasks" checked={showSubtasks} onCheckedChange={setShowSubtasks} />
@@ -913,19 +913,19 @@ export default function ProjectGantt({
             <Label htmlFor="show-colors" className="text-xs font-medium">Row Colors</Label>
           </div>
 
-          <div className="h-4 w-px bg-slate-300 mx-2" />
+          <div className="h-4 w-px bg-fg-ghost mx-2" />
 
-          <div className="flex items-center gap-1 border rounded-md bg-white p-1">
+          <div className="flex items-center gap-1 border rounded-md bg-background p-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleZoom('in')} disabled={zoomLevel === 'day'}>
               <ZoomIn className="w-4 h-4" />
             </Button>
-            <span className="text-[10px] font-black uppercase w-16 text-center text-slate-500">{ZOOM_CONFIG[zoomLevel].label}</span>
+            <span className="text-[10px] font-black uppercase w-16 text-center text-muted-foreground">{ZOOM_CONFIG[zoomLevel].label}</span>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleZoom('out')} disabled={zoomLevel === 'year'}>
               <ZoomOut className="w-4 h-4" />
             </Button>
           </div>
 
-          <div className="h-4 w-px bg-slate-300 mx-2" />
+          <div className="h-4 w-px bg-fg-ghost mx-2" />
 
           <Button variant="outline" size="sm" className="h-9 gap-2" onClick={scrollToToday}>
             <Target className="w-3.5 h-3.5" /> Today
@@ -939,9 +939,9 @@ export default function ProjectGantt({
             </PopoverTrigger>
             <PopoverContent className="w-64 p-3" align="start">
               <div className="space-y-2">
-                <h4 className="font-bold text-xs uppercase text-slate-500 mb-2">Configure Columns</h4>
+                <h4 className="font-bold text-xs uppercase text-muted-foreground mb-2">Configure Columns</h4>
                 {columns.map((col, idx) => (
-                  <div key={col.id} className="flex items-center justify-between bg-slate-50 p-2 rounded-md">
+                  <div key={col.id} className="flex items-center justify-between bg-subtle p-2 rounded-md">
                     <div className="flex items-center gap-2">
                       <Switch
                         id={`col-${col.id}`}
@@ -975,68 +975,68 @@ export default function ProjectGantt({
         </div>
       </div>
 
-      <div className="absolute top-[73px] right-4 flex flex-col gap-2 p-2 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-md shadow-lg z-50 pointer-events-none">
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Status (Theme)</span>
+      <div className="absolute top-[73px] right-4 flex flex-col gap-2 p-2 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-lg z-50 pointer-events-none">
+        <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Status (Theme)</span>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-slate-400/20 border border-slate-400" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Backlog</span>
+            <div className="w-2.5 h-2.5 rounded-sm bg-fg-faint/20 border border-fg-faint" />
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Backlog</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-slate-500/20 border border-slate-500" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Todo</span>
+            <div className="w-2.5 h-2.5 rounded-sm bg-muted-foreground/20 border border-muted-foreground" />
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Todo</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-sm bg-blue-500/20 border border-blue-500" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">In Progress</span>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">In Progress</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-sm bg-amber-500/20 border border-amber-500" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">On Hold</span>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">On Hold</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-sm bg-purple-500/20 border border-purple-500" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Review</span>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Review</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/20 border border-emerald-500" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Done</span>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Done</span>
           </div>
         </div>
 
-        <div className="my-1 border-t border-slate-100" />
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Priority (Border)</span>
+        <div className="my-1 border-t border-hairline" />
+        <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Priority (Border)</span>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-white border-2 border-blue-600" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Low</span>
+            <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-blue-600" />
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Low</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-white border-2 border-amber-600" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Medium</span>
+            <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-amber-600" />
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Medium</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-white border-2 border-orange-600" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">High</span>
+            <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-orange-600" />
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">High</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-white border-2 border-red-600" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Critical</span>
+            <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-red-600" />
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Critical</span>
           </div>
         </div>
 
-        <div className="my-1 border-t border-slate-100" />
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Indicators</span>
+        <div className="my-1 border-t border-hairline" />
+        <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Indicators</span>
         <div className="grid grid-cols-1 gap-y-1.5">
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-2 rounded-sm border relative overflow-hidden" style={{ backgroundColor: '#cbd5e122', borderColor: '#94a3b8' }}>
-               <div className="absolute bottom-0 left-0 w-2/3 h-0.5 bg-slate-400" />
+               <div className="absolute bottom-0 left-0 w-2/3 h-0.5 bg-fg-faint" />
             </div>
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Progress Underline</span>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Progress Underline</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-2 rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(-45deg, #cbd5e1, #cbd5e1 1px, transparent 1px, transparent 3px)', opacity: 0.6 }} />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Buffer (Grace Period)</span>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Buffer (Grace Period)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="flex items-center justify-center w-4">
@@ -1045,7 +1045,7 @@ export default function ProjectGantt({
                     <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full" />
                 </div>
             </div>
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Completed On-Time</span>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Completed On-Time</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="flex items-center justify-center w-4">
@@ -1054,26 +1054,26 @@ export default function ProjectGantt({
                     <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full" />
                 </div>
             </div>
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Completed Late</span>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Completed Late</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-0.5 h-2.5 bg-purple-500 opacity-40" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Hard Deadline</span>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase">Hard Deadline</span>
           </div>
         </div>
       </div>
 
       <div className="overflow-x-auto relative" ref={ganttRef}>
-        <div style={{ width: `${containerWidth + sidebarWidth}px` }} className="relative bg-white">
+        <div style={{ width: `${containerWidth + sidebarWidth}px` }} className="relative bg-background">
           {/* Header Row */}
-          <div className="flex border-b border-slate-200 bg-slate-50 sticky top-0 z-30">
-            <div className="sticky left-0 z-40 flex bg-slate-50 shrink-0">
+          <div className="flex border-b border-border bg-subtle sticky top-0 z-30">
+            <div className="sticky left-0 z-40 flex bg-subtle shrink-0">
               {columns.filter(c => c.visible).map(col => (
                 <div
                   key={col.id}
                   style={{ width: `${col.width}px` }}
                   className={cn(
-                    "border-r border-slate-200 p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0 flex items-center box-border",
+                    "border-r border-border p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest shrink-0 flex items-center box-border",
                     ['wbs', 'duration', 'status', 'priority', 'start_date', 'end_date'].includes(col.id) ? "justify-center text-center" : "justify-start"
                   )}
                 >
@@ -1095,7 +1095,7 @@ export default function ProjectGantt({
                 return (
                   <div
                     key={tick.toISOString()}
-                    className="absolute border-l border-slate-300 flex flex-col justify-start pt-1.5 pl-2 text-[10px] font-bold text-slate-600 uppercase whitespace-nowrap z-20"
+                    className="absolute border-l border-fg-ghost flex flex-col justify-start pt-1.5 pl-2 text-[10px] font-bold text-fg-soft uppercase whitespace-nowrap z-20"
                     style={{ left: `${left}px`, height: '100%' }}
                   >
                     {label}
@@ -1131,13 +1131,13 @@ export default function ProjectGantt({
                 return (
                   <div
                     key={`minor1-${tick.toISOString()}`}
-                    className={cn("absolute border-l border-slate-200", containerClass)}
+                    className={cn("absolute border-l border-border", containerClass)}
                     style={{
                       left: `${left}px`,
                       ...heightStyle
                     }}
                   >
-                    <span className="text-[8px] text-slate-500 font-semibold leading-none">{label}</span>
+                    <span className="text-[8px] text-muted-foreground font-semibold leading-none">{label}</span>
                   </div>
                 );
               })}
@@ -1158,7 +1158,7 @@ export default function ProjectGantt({
                 return (
                   <div
                     key={`minor2-${tick.toISOString()}`}
-                    className="absolute border-l border-slate-100 flex items-end pb-0.5"
+                    className="absolute border-l border-hairline flex items-end pb-0.5"
                     style={{
                       left: `${left}px`,
                       height: zoomLevel === 'year' || zoomLevel === 'quarter' ? '30%' : '25%',
@@ -1166,7 +1166,7 @@ export default function ProjectGantt({
                     }}
                   >
                     {label && (
-                      <span className="text-[7px] text-slate-400 font-medium leading-none">{label}</span>
+                      <span className="text-[7px] text-fg-faint font-medium leading-none">{label}</span>
                     )}
                   </div>
                 );
@@ -1532,8 +1532,8 @@ export default function ProjectGantt({
                 <div
                   key={item.id}
                   className={cn(
-                    "flex border-b border-slate-100 hover:bg-slate-50 transition-colors group relative box-border shrink-0",
-                    !hasColor && (isWbsRoot ? "bg-slate-50/40" : "")
+                    "flex border-b border-hairline hover:bg-subtle transition-colors group relative box-border shrink-0",
+                    !hasColor && (isWbsRoot ? "bg-subtle/40" : "")
                   )}
                   style={{
                     height: `${ROW_HEIGHT}px`,
@@ -1542,17 +1542,17 @@ export default function ProjectGantt({
                   }}
                 >
                   {/* Sidebar Cells */}
-                  <div className="sticky left-0 z-20 flex bg-white shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] h-full shrink-0">
+                  <div className="sticky left-0 z-20 flex bg-background shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] h-full shrink-0">
                     {columns.filter(c => c.visible).map(col => (
                       <div
                         key={col.id}
                         style={{ width: `${col.width}px` }}
                         className={cn(
-                          "border-r border-slate-200 p-2 flex items-center min-w-0 shrink-0 text-xs h-full box-border",
+                          "border-r border-border p-2 flex items-center min-w-0 shrink-0 text-xs h-full box-border",
                           ['wbs', 'duration', 'status', 'priority', 'start_date', 'end_date'].includes(col.id) ? "justify-center" : "justify-start"
                         )}
                       >
-                        {col.id === 'wbs' && <span className="font-mono text-[10px] text-slate-400">{item.wbs_code}</span>}
+                        {col.id === 'wbs' && <span className="font-mono text-[10px] text-fg-faint">{item.wbs_code}</span>}
                         {col.id === 'title' && (
                           <div className="flex flex-col min-w-0 w-full">
                             <div className="flex items-center gap-1.5 min-w-0">
@@ -1576,22 +1576,22 @@ export default function ProjectGantt({
                                 </span>
                               )}
                             </div>
-                            {showProjectNames && isSub && <span className="text-[8px] text-slate-400 truncate" style={{ paddingLeft: `${(item.hierarchyLevel || 0) * 12}px` }}>In {item.projectName}</span>}
+                            {showProjectNames && isSub && <span className="text-[8px] text-fg-faint truncate" style={{ paddingLeft: `${(item.hierarchyLevel || 0) * 12}px` }}>In {item.projectName}</span>}
                           </div>
                         )}
                         {col.id === 'assignee' && (
                           <div className="flex -space-x-1">
                             {item.assignees?.slice(0, 3).map((u: any) => (
-                              <div key={u.id} className="w-5 h-5 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[8px] font-bold text-slate-600" title={u.full_name}>
+                              <div key={u.id} className="w-5 h-5 rounded-full bg-muted border border-white flex items-center justify-center text-[8px] font-bold text-fg-soft" title={u.full_name}>
                                 {u.full_name?.[0] || 'U'}
                               </div>
                             ))}
-                            {(!item.assignees || item.assignees.length === 0) && <span className="text-slate-300">-</span>}
+                            {(!item.assignees || item.assignees.length === 0) && <span className="text-fg-ghost">-</span>}
                           </div>
                         )}
-                        {col.id === 'start_date' && <span className="text-slate-500">{item.start_date ? format(parseISO(item.start_date), 'MMM d') : '-'}</span>}
-                        {col.id === 'end_date' && <span className="text-slate-500">{item.due_date ? format(parseISO(item.due_date), 'MMM d') : '-'}</span>}
-                        {col.id === 'duration' && <span className="text-slate-500">{item.start_date ? differenceInCalendarDays(parseISO(getEffectiveEndDate(item)!), parseISO(item.start_date)) + 1 : '-'}</span>}
+                        {col.id === 'start_date' && <span className="text-muted-foreground">{item.start_date ? format(parseISO(item.start_date), 'MMM d') : '-'}</span>}
+                        {col.id === 'end_date' && <span className="text-muted-foreground">{item.due_date ? format(parseISO(item.due_date), 'MMM d') : '-'}</span>}
+                        {col.id === 'duration' && <span className="text-muted-foreground">{item.start_date ? differenceInCalendarDays(parseISO(getEffectiveEndDate(item)!), parseISO(item.start_date)) + 1 : '-'}</span>}
                         {col.id === 'status' && (
                           <div className="flex items-center gap-1.5">
                             <Circle className={cn("w-2 h-2 fill-current",
@@ -1599,7 +1599,7 @@ export default function ProjectGantt({
                                 item.status.toLowerCase() === 'in progress' ? "text-blue-500" :
                                   item.status.toLowerCase() === 'on hold' ? "text-amber-500" :
                                     item.status.toLowerCase() === 'review' ? "text-purple-500" :
-                                      "text-slate-300"
+                                      "text-fg-ghost"
                             )} />
                             <span className="capitalize text-[10px]">{item.status}</span>
                           </div>
@@ -1607,9 +1607,9 @@ export default function ProjectGantt({
                         {col.id === 'priority' && (
                           <span className={cn(
                             "px-1.5 py-0.5 rounded text-[8px] font-bold uppercase",
-                            normalizePriority(item.priority) === 'critical' ? "bg-red-100 text-red-700" :
-                              normalizePriority(item.priority) === 'high' ? "bg-orange-100 text-orange-700" :
-                                "bg-slate-100 text-slate-500"
+                            normalizePriority(item.priority) === 'critical' ? "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300" :
+                              normalizePriority(item.priority) === 'high' ? "bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300" :
+                                "bg-muted text-muted-foreground"
                           )}>
                             {item.priority}
                           </span>
@@ -1622,13 +1622,13 @@ export default function ProjectGantt({
                   <div className="relative h-14 shrink-0" style={{ width: `${containerWidth}px` }}>
                     {/* Grid Lines */}
                     {timeTicks?.map(tick => (
-                      <div key={tick.toISOString()} className="absolute top-0 bottom-0 border-l border-slate-100 h-full z-0" style={{ left: `${getPositionPx(tick)}px` }} />
+                      <div key={tick.toISOString()} className="absolute top-0 bottom-0 border-l border-hairline h-full z-0" style={{ left: `${getPositionPx(tick)}px` }} />
                     ))}
                     {minorTicksLevel1?.map(tick => (
-                      <div key={`grid-minor1-${tick.toISOString()}`} className="absolute top-0 bottom-0 border-l border-slate-50 h-full z-0" style={{ left: `${getPositionPx(tick)}px` }} />
+                      <div key={`grid-minor1-${tick.toISOString()}`} className="absolute top-0 bottom-0 border-l border-hairline h-full z-0" style={{ left: `${getPositionPx(tick)}px` }} />
                     ))}
                     {minorTicksLevel2?.map(tick => (
-                      <div key={`grid-minor2-${tick.toISOString()}`} className="absolute top-0 bottom-0 border-l border-slate-50/40 h-full z-0" style={{ left: `${getPositionPx(tick)}px` }} />
+                      <div key={`grid-minor2-${tick.toISOString()}`} className="absolute top-0 bottom-0 border-l border-hairline/40 h-full z-0" style={{ left: `${getPositionPx(tick)}px` }} />
                     ))}
 
                     {/* Deadline Indicator */}
@@ -1682,7 +1682,7 @@ export default function ProjectGantt({
                             <div className="absolute right-0 top-0 w-0.5 h-3 bg-slate-800" style={{ transform: 'translateY(-2px)' }} />
                           </div>
                         </div>
-                        <span className="absolute px-2 text-[9px] font-black uppercase text-slate-500 truncate pointer-events-none" style={{
+                        <span className="absolute px-2 text-[9px] font-black uppercase text-muted-foreground truncate pointer-events-none" style={{
                             left: `${getPositionPx(item.start_date!)}px`,
                             top: '8px'
                         }}>
@@ -1755,7 +1755,7 @@ export default function ProjectGantt({
                             }}
                           />
 
-                          <span className="px-2 text-[10px] font-bold truncate text-slate-800 pointer-events-none z-10">
+                          <span className="px-2 text-[10px] font-bold truncate text-foreground pointer-events-none z-10">
                             {item.title}
                           </span>
 
@@ -1782,12 +1782,12 @@ export default function ProjectGantt({
                         {linkable && (
                           <>
                             <div
-                              className="absolute top-1/2 -left-4 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-blue-500 bg-white opacity-0 group-hover/bar:opacity-100 group-focus-within/bar:opacity-100 cursor-crosshair touch-none z-20"
+                              className="absolute top-1/2 -left-4 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-blue-500 bg-background opacity-0 group-hover/bar:opacity-100 group-focus-within/bar:opacity-100 cursor-crosshair touch-none z-20"
                               title="Drag to another task to create a dependency"
                               onPointerDown={(e) => beginLink(e, item, 'start', getItemLeftEdgePx(item))}
                             />
                             <div
-                              className="absolute top-1/2 -right-4 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-blue-500 bg-white opacity-0 group-hover/bar:opacity-100 group-focus-within/bar:opacity-100 cursor-crosshair touch-none z-20"
+                              className="absolute top-1/2 -right-4 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-blue-500 bg-background opacity-0 group-hover/bar:opacity-100 group-focus-within/bar:opacity-100 cursor-crosshair touch-none z-20"
                               title="Drag to another task to create a dependency"
                               onPointerDown={(e) => beginLink(e, item, 'end', getItemRightEdgePx(item))}
                             />
@@ -1843,14 +1843,14 @@ export default function ProjectGantt({
           {regionFormView === 'list' ? (
             <div className="space-y-4">
               <div className="max-h-[300px] overflow-y-auto space-y-2">
-                {timeRegions.length === 0 && <p className="text-sm text-slate-500 text-center py-4">No regions defined.</p>}
+                {timeRegions.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No regions defined.</p>}
                 {timeRegions.map(r => (
-                  <div key={r.id} className="flex items-center justify-between p-3 rounded-md border bg-slate-50">
+                  <div key={r.id} className="flex items-center justify-between p-3 rounded-md border bg-subtle">
                     <div className="flex items-center gap-3">
                       <div className="w-4 h-4 rounded shadow-sm" style={{ backgroundColor: r.color }} />
                       <div className="flex flex-col">
                         <span className="text-sm font-medium">{r.name}</span>
-                        <span className="text-[10px] text-slate-500">
+                        <span className="text-[10px] text-muted-foreground">
                           {format(parseISO(r.start_date), 'MMM d')} - {format(parseISO(r.end_date), 'MMM d')}
                         </span>
                       </div>
@@ -1859,7 +1859,7 @@ export default function ProjectGantt({
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditRegion(r)}>
                         <Settings2 className="w-3 h-3" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-600" onClick={() => handleDeleteRegion(r.id)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-600 dark:hover:text-red-400" onClick={() => handleDeleteRegion(r.id)}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
