@@ -559,12 +559,54 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         await self.sync_project_from_tasks(db, project_id)
 
         task_id = db_obj.id  # read now: a rolled-back rule SAVEPOINT expires the instance
+        if old_status != "Done" and _enum_val(db_obj.status) == "Done" and db_obj.recurrence_rule:
+            await self._spawn_next_occurrence(db, db_obj)
         await fire_task_events(
             db, task_id=task_id, project_id=db_obj.project_id,
             old_status=old_status, new_status=_enum_val(db_obj.status), added_assignees=added_assignee_ids,
         )
 
         return await self.get(db, task_id)
+
+    async def _spawn_next_occurrence(self, db: AsyncSession, done: Task) -> Optional[Task]:
+        """Create the next copy of a recurring task that was just completed (same unit of work as the completion).
+
+        Dates move by the distance between the old and the new anchor date. Subtasks are not copied; the checklist is
+        reset; assignees, taxonomy and custom values carry over. A rule that has run out (UNTIL) simply stops.
+        """
+        import logging
+
+        from app.core.recurrence import RecurrenceError, next_occurrence
+
+        completed = done.completed_at or datetime.utcnow()
+        base = done.due_date or done.start_date or completed.replace(hour=0, minute=0, second=0, microsecond=0)
+        try:
+            nxt = next_occurrence(done.recurrence_rule, base, not_before=completed)
+        except RecurrenceError:
+            logging.getLogger(__name__).warning("Task %s has an unusable recurrence rule %r", done.id, done.recurrence_rule)
+            return None
+        if nxt is None:
+            return None
+        delta = nxt - base
+
+        def shift(d):
+            return d + delta if d else None
+
+        fresh_checklist = [{**item, "is_done": False} for item in (done.checklist or []) if isinstance(item, dict)]
+        data = dict(
+            title=done.title, description=done.description, project_id=done.project_id, parent_id=done.parent_id,
+            color=done.color, topic=done.topic, type=done.type, topic_id=done.topic_id, type_id=done.type_id,
+            priority=done.priority, is_milestone=done.is_milestone, status=Status.TODO,
+            start_date=shift(done.start_date), due_date=shift(done.due_date) if done.due_date else nxt,
+            deadline_at=shift(done.deadline_at), duration_days=done.duration_days,
+            tags=list(done.tags or []), budget=done.budget, risk_probability=done.risk_probability,
+            risk_impact=done.risk_impact, optimistic_days=done.optimistic_days, normal_days=done.normal_days,
+            pessimistic_days=done.pessimistic_days, checklist=fresh_checklist, recurrence_rule=done.recurrence_rule,
+            custom_values=dict(done.custom_values or {}),
+            assignee_ids=[u.id for u in (done.assignees or [])],
+            topic_ids=[t.id for t in (done.topics or [])], type_ids=[t.id for t in (done.types or [])],
+        )
+        return await self.create(db, obj_in=TaskCreate(**data), owner_id=done.owner_id)
 
     @atomic
     async def update_assignees(self, db: AsyncSession, *, task_id: UUID, user_ids: List[UUID]) -> Task:

@@ -33,6 +33,7 @@ import { addDays, differenceInDays, format, parseISO } from "date-fns";
 import DependencyManager from "./dependency-manager";
 import TaskTimeTracker from "./task-time-tracker";
 import TaskCustomFields, { useCustomFieldDefs } from "./task-custom-fields";
+import { RecurrenceField } from "./recurrence-field";
 import { sanitizeCustomValues, validateCustomValues, type CustomValues } from "@/lib/custom-fields";
 import type { Task, Topic, WorkType, Project } from "@/types";
 
@@ -72,6 +73,7 @@ const taskSchema = z.object({
   })).optional(),
   subtasks: z.array(subtaskSchema).optional(),
   custom_values: z.record(z.string(), z.any()).optional(),
+  recurrence_rule: z.string().nullable().optional(),
 });
 
 export type TaskFormValues = z.infer<typeof taskSchema>;
@@ -385,6 +387,7 @@ export default function TaskForm({
       parent_id: data.parent_id === "" ? null : data.parent_id,
       color: data.color === "" ? null : data.color,
       description: data.description === "" ? null : data.description,
+      recurrence_rule: data.recurrence_rule || null,
     };
 
     // Auto-calculations
@@ -613,6 +616,8 @@ export default function TaskForm({
                         </div>
                     </div>
                 </div>
+
+                <RecurrenceField value={watch("recurrence_rule")} onChange={(rule) => setValue("recurrence_rule", rule, { shouldDirty: true })} />
 
                 <div className="space-y-2">
                     <Label htmlFor="description" className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">Context & Documentation</Label>
