@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Targets: dev (Vite dev server), prod (default; static bundle on unprivileged nginx :8080)
-FROM docker.io/library/node:20-alpine AS deps
+FROM docker.io/library/node:22-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci || npm install

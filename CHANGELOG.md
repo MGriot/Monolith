@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **Project roles**: viewer / editor / admin per project, enforced by the API.
+- **Automations**: per-project rules engine and signed outgoing webhooks.
+- **Recurring tasks** and a private iCalendar feed.
+- **Time tracking and custom fields** on tasks.
+- **Command palette** (Ctrl+K), keyboard shortcuts, filters and saved views.
+- **E-mail**: outbox queue, password reset, address verification, assignment mails, digests, sign-up approval and an
+  optional outbound relay.
+- **Interactive Gantt** (drag, resize, link) and week/day calendar views.
+- **Dark mode**, a notification centre and bulk task actions.
+- README screenshots of the Gantt, Kanban, schedule and dark-mode dashboard.
+
+### Changed
+- Rootless Podman stack with a bundled mail server; Alembic migrations; one transaction per compound operation.
+- JWT handling moved from `python-jose` to `PyJWT`: `python-jose` and its `ecdsa` dependency have known vulnerabilities
+  with no fixed release.
+- CI uses Node 22 and the Node 24-based majors of `actions/checkout`, `actions/setup-node` and `actions/setup-python`;
+  the frontend image builds on `node:22-alpine`.
+
+### Fixed
+- CI: the `pip-audit` step no longer fails, and the stray `.agent` gitlink that broke checkout cleanup
+  (`git` exit code 128) is gone. `.agent/` is now ignored.
+- CI now runs the registration-approval tests.
+
 ## [3.0.0] - 2026-04-14
 
 ### Added

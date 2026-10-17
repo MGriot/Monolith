@@ -8,7 +8,18 @@
 **Monolith** is a high-performance, dockerized project management platform built for technical teams. It enforces a strict **Project → Task → Subtask** hierarchy and provides advanced high-density visualizations to turn complex roadmaps into actionable plans.
 
 ---
-![docs/img/image.png](docs/img/image.png)
+
+![Interactive Gantt chart with dependencies, critical path and a today marker](docs/img/gantt.png)
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/img/kanban.png" alt="Kanban board with filters and saved views"></td>
+    <td width="50%"><img src="docs/img/schedule.png" alt="Master schedule showing every project on one yearly roadmap"></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/img/dashboard-dark.png" alt="Dashboard in dark mode with KPIs and the task status breakdown"></td>
+  </tr>
+</table>
 
 ## 🚀 Key Features
 
@@ -22,19 +33,27 @@
 - **📜 Professional Workflows:** Enhanced SOP library with full LaTeX math support and interactive "Tipsy" tooltips.
 - **📥 Data Portability:** High-DPI Gantt PNGs, Project CSV, and Excel (.xlsx) exports for comprehensive reporting.
 - **🤖 AI-Ready (MCP):** Integrated **Model Context Protocol** server allows AI agents to autonomously manage your projects, tasks, and subtasks.
+- **🔐 Project Roles:** Viewer / editor / admin per project, enforced by the API. See [Project roles](docs/how-to/project-roles.md).
+- **⚙️ Automations & Webhooks:** "When X happens, do Y" rules per project plus signed outgoing webhooks. See [Automations](docs/how-to/automations.md).
+- **🔁 Recurring Tasks & Calendar Feed:** RRULE-based repeats and a private iCalendar (ICS) feed for Outlook, Google or Apple Calendar. See [Recurring tasks](docs/how-to/recurring-tasks-and-calendar-feed.md).
+- **⏱️ Time Tracking & Custom Fields:** Log time against tasks and add typed custom fields per project. See [the API reference](docs/reference-time-and-custom-fields.md).
+- **✉️ E-mail:** Bundled mail server with an outbox queue, password reset, address verification, assignment notifications, digests and an optional outbound relay. See [E-mail](docs/how-to/email.md).
+- **⌨️ Fast Navigation:** Command palette (<kbd>Ctrl</kbd>+<kbd>K</kbd>), keyboard shortcuts, filters and saved views. See [Command palette](docs/how-to/command-palette-and-saved-views.md).
+- **🔔 Notification Centre, Bulk Actions & Dark Mode:** An in-app inbox with real-time updates, multi-select edits on task lists, and a light / dark / system theme.
 - **⚡ Technical Excellence:**
     - Manual sorting with `sort_index` (Up/Down).
     - Recursive dependency tracking and status propagation.
+    - One database transaction per compound operation; schema changes via Alembic migrations.
     - Automated weekly email summaries for users, team owners, and project owners.
-    - Fully Dockerized (Nginx, FastAPI, React, Postgres).
+    - Rootless Podman (or Docker) stack: Nginx, FastAPI, React, PostgreSQL and a mail server.
 
 ---
 
 ## 🛠️ Tech Stack
 
 - **Frontend:** React 19, TypeScript, Tailwind CSS, Shadcn/UI, Lucide Icons, TanStack Query.
-- **Backend:** FastAPI, SQLAlchemy (Async), PostgreSQL, Pandas (for exports).
-- **Infrastructure:** Docker & Docker Compose, Nginx.
+- **Backend:** FastAPI, SQLAlchemy (Async), PostgreSQL, Alembic, PyJWT, Pandas (for exports).
+- **Infrastructure:** Podman or Docker Compose, Nginx, docker-mailserver.
 - **AI Integration:** Model Context Protocol (MCP).
 
 ---
@@ -52,7 +71,7 @@ podman-compose up -d --build    # or: docker compose up -d --build
 ```
 
 ### 2. Access the Application
-- **Frontend:** [http://localhost:8080](http://localhost:8080)
+- **Frontend:** [http://localhost:8080](http://localhost:8080) (change the port with `HTTP_PORT` in `.env`)
 - **API Docs:** [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
 - **MCP Server:** `http://localhost:8080/mcp/sse` when `MCP_API_KEY` is set (send it as a Bearer token).
 
@@ -64,11 +83,30 @@ screen, then remove the password from `.env`. Public sign-up is disabled unless 
 
 ## 📚 Documentation
 
+**Tutorial**
 - [Getting Started Guide](docs/tutorials/getting-started.md)
+
+**How-to guides**
+- [Run with Podman (and the internal mail server)](docs/how-to/run-with-podman.md)
 - [Administrator Guide](docs/how-to/admin-guide.md)
-- [Hierarchy & Status Logic](docs/explanation/hierarchy-logic.md)
-- [System Architecture](docs/explanation/architecture.md)
+- [Project roles](docs/how-to/project-roles.md)
+- [Automation rules and webhooks](docs/how-to/automations.md)
+- [Recurring tasks and the calendar feed](docs/how-to/recurring-tasks-and-calendar-feed.md)
+- [Command palette, shortcuts and saved views](docs/how-to/command-palette-and-saved-views.md)
+- [E-mail](docs/how-to/email.md)
+- [Database migrations (Alembic)](docs/how-to/database-migrations.md)
+- [Transactions](docs/how-to/transactions.md)
 - [MCP Connection Guide](docs/how-to/setup-mcp.md)
+
+**Reference**
+- [MCP tools](docs/reference/mcp-tools.md)
+- [Time tracking and custom fields (API)](docs/reference-time-and-custom-fields.md)
+- Interactive API docs at `/api/docs` on a running stack
+
+**Explanation**
+- [System Architecture](docs/explanation/architecture.md)
+- [Hierarchy & Status Logic](docs/explanation/hierarchy-logic.md)
+- [Gantt logic](docs/explanation/gantt-logic.md)
 
 ---
 
@@ -89,12 +127,31 @@ Monolith comes with a standalone MCP container. You can connect your favorite AI
 
 ```text
 Monolith/
-├── backend/          # FastAPI application & Database models
-├── frontend/         # React application (Vite)
-├── mcp/              # MCP Server entrypoint & Agent scripts
-├── nginx/            # Reverse proxy configuration
-└── docker-compose.yml # Full stack orchestration
+├── backend/            # FastAPI application, models, Alembic migrations, tests
+├── frontend/           # React application (Vite)
+├── mcp/                # MCP Server entrypoint & Agent scripts
+├── nginx/              # Reverse proxy configuration
+├── scripts/            # mail-bootstrap.sh, live-smoke.sh
+├── docs/               # Tutorials, how-tos, reference, explanation, screenshots
+├── compose.yaml        # Full stack orchestration
+└── compose.dev.yaml    # Dev overlay: hot reload, ports for db/backend/Vite
 ```
+
+---
+
+## 🧪 Tests and CI
+
+```bash
+# backend unit tests (no database needed); CI runs the explicit file list in ci.yml
+cd backend && pip install -r requirements.txt pytest pytest-asyncio && python -m pytest -q tests/test_security_tier0.py
+# frontend
+cd frontend && npm ci && npm run typecheck && npm test && npm run build
+# live checks against a running stack with a fresh database
+scripts/live-smoke.sh
+```
+
+GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the backend unit tests and a `pip-audit` dependency scan,
+the frontend typecheck, tests and build on Node 22, and then builds the full Podman stack and runs the live checks.
 
 ---
 

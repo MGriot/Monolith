@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Union
-from jose import jwt
+import jwt
 import bcrypt
 from app.core.config import settings
 
@@ -55,11 +55,11 @@ def create_purpose_token(subject: Union[str, Any], purpose: str, expires_delta: 
 
 def decode_purpose_token(token: str, purpose: str) -> dict:
     """Return the claims, or raise ValueError for a bad/expired token or one issued for another purpose."""
-    from jose import JWTError
+    from jwt import InvalidTokenError
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    except JWTError:
+    except InvalidTokenError:
         raise ValueError("invalid or expired token")
     if payload.get("purpose") != purpose or not payload.get("sub"):
         raise ValueError("invalid or expired token")

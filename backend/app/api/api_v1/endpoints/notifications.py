@@ -5,7 +5,8 @@ from typing import Any, List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from jose import jwt, JWTError
+import jwt
+from jwt import InvalidTokenError
 
 from app.api import deps
 from app.crud import notification as crud_notification
@@ -33,7 +34,7 @@ async def _authenticate_ws_token(token: str):
         if payload.get("purpose"):
             return None
         user_id = UUID(payload.get("sub"))
-    except (JWTError, ValueError, TypeError):
+    except (InvalidTokenError, ValueError, TypeError):
         return None
     async with AsyncSessionLocal() as db:
         user = await crud_user.get(db, id=user_id)
