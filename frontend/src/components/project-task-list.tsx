@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { parseISO, differenceInDays } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
@@ -25,9 +25,14 @@ import { cn } from '@/lib/utils';
 import { getStatusColors, getPriorityColors } from '@/constants/colors';
 import type { Task } from '@/types';
 import { isAfterDueDay } from "@/lib/dates";
+import type { TaskGroup } from '@/lib/task-filters';
 
 export interface ProjectTaskListProps {
   tasks: Task[];
+  /** when set (and labelled), rows are rendered under a heading per group instead of from `tasks` */
+  groups?: TaskGroup<Task>[];
+  /** true when a filter hides tasks, to word the empty state accordingly */
+  filtered?: boolean;
   onTaskClick: (task: Task) => void;
   onSubtaskClick?: (subtask: Task) => void;
   onAddSubtask?: (parentTask: Task) => void;
@@ -293,7 +298,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
   );
 }
 
-export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask }: ProjectTaskListProps) {
+export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask }: ProjectTaskListProps) {
   return (
     <div className="rounded-md border border-slate-200 bg-white overflow-hidden shadow-sm">
       <div className="table-container">
@@ -321,21 +326,32 @@ export default function ProjectTaskList({ tasks, onTaskClick, onSubtaskClick, on
           {tasks.length === 0 ? (
             <TableRow>
               <TableCell colSpan={13} className="h-32 text-center text-slate-500 italic text-sm">
-                No tasks found in this project.
+                {filtered ? 'No tasks match the current filters.' : 'No tasks found in this project.'}
               </TableCell>
             </TableRow>
           ) : (
-            tasks.map((task) => (
-              <RecursiveTaskRow
-                key={task.id}
-                task={task}
-                level={0}
-                onTaskClick={onTaskClick}
-                onSubtaskClick={onSubtaskClick}
-                onAddSubtask={onAddSubtask}
-                onReorderTask={onReorderTask}
-                onIndentTask={onIndentTask}
-              />
+            (groups && groups.length > 0 && groups[0].label ? groups : [{ key: 'all', label: '', tasks }]).map((group) => (
+              <Fragment key={group.key}>
+                {group.label && (
+                  <TableRow className="bg-slate-50 hover:bg-slate-50">
+                    <TableCell colSpan={15} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                      <span role="heading" aria-level={4}>{group.label} <span className="font-semibold text-slate-400">({group.tasks.length})</span></span>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {group.tasks.map((task) => (
+                  <RecursiveTaskRow
+                    key={task.id}
+                    task={task}
+                    level={0}
+                    onTaskClick={onTaskClick}
+                    onSubtaskClick={onSubtaskClick}
+                    onAddSubtask={onAddSubtask}
+                    onReorderTask={onReorderTask}
+                    onIndentTask={onIndentTask}
+                  />
+                ))}
+              </Fragment>
             ))
           )}
         </TableBody>
