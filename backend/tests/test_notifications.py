@@ -10,6 +10,9 @@ def mock_settings():
         mock.SMTP_USER = "user"
         mock.SMTP_PASSWORD = "password"
         mock.EMAILS_FROM_EMAIL = "noreply@test.com"
+        mock.SMTP_TIMEOUT = 10
+        mock.SMTP_STARTTLS = False
+        mock.SMTP_VERIFY_TLS = True
         yield mock
 
 def test_send_email_success(mock_settings):
@@ -21,7 +24,7 @@ def test_send_email_success(mock_settings):
         service.send_email("recipient@test.com", "Subject", "Body")
         
         # Verify SMTP was initialized with correct host and port
-        mock_smtp.assert_called_with("localhost", 1025)
+        mock_smtp.assert_called_with("localhost", 1025, timeout=10)
         
         # Verify login was called
         instance.login.assert_called_with("user", "password")
