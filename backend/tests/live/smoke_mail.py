@@ -51,6 +51,23 @@ def wait_sent(admin, timeout=60, **params):
     return item
 
 
+def wait_for_smtp(timeout=240):
+    """The mail server needs up to a minute after the backend is healthy; do not race it."""
+    import smtplib
+
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with smtplib.SMTP(os.environ.get("SMTP_HOST", "mailserver"), int(os.environ.get("SMTP_PORT", "587")), timeout=5) as s:
+                s.ehlo()
+                return True
+        except OSError:
+            time.sleep(2)
+    return False
+
+
+check("mail server accepts connections", wait_for_smtp())
+
 admin = login(ADMIN_EMAIL, ADMIN_PW)
 check("admin signs in", admin)
 
@@ -165,25 +182,32 @@ from app.models.email_outbox import EmailOutbox  # noqa: E402
 
 
 async def queue_checks():
-    sent = []
-    from app.core import notifications
+    """Three workers hammer one queue; every message must be sent exactly once.
 
+    The app's own background worker polls the same table, so the rows are scheduled 30 minutes ahead (invisible to it)
+    and the test workers look at the queue "one hour from now" via deliver_due(now=...).
+    """
+    from app.core import notifications
+    from sqlalchemy import update
+
+    sent = []
     orig = notifications.email_service.send_email
     notifications.email_service.send_email = lambda to, *a, **k: sent.append(to)
     try:
         async with AsyncSessionLocal() as db:
             for i in range(10):
                 await mailer.enqueue_raw(db, to=f"bulk{i}@example.com", subject="bulk", text="x", kind="smoke-bulk")
+            await db.execute(update(EmailOutbox).where(EmailOutbox.kind == "smoke-bulk").values(next_attempt_at=datetime.utcnow() + timedelta(minutes=30)))
             await db.commit()
-        counts = await asyncio.gather(*[mailer.deliver_due(batch=10) for _ in range(3)])
-        check("3 concurrent workers deliver each message exactly once", len(sent) == 10 and len(set(sent)) == 10, (sent, counts))
+        future = datetime.utcnow() + timedelta(hours=1)
+        counts = await asyncio.gather(*[mailer.deliver_due(batch=4, now=future) for _ in range(3)])
+        bulk = [to for to in sent if to.startswith("bulk")]
+        check("3 concurrent workers deliver each message exactly once", len(bulk) == 10 and len(set(bulk)) == 10, (bulk, counts))
         async with AsyncSessionLocal() as db:
             rows = (await db.execute(select(EmailOutbox).where(EmailOutbox.kind == "smoke-bulk"))).scalars().all()
-            check("all of them are marked sent", all(r.status == "sent" and r.attempts == 1 for r in rows))
+            check("all of them are marked sent after exactly one attempt", all(r.status == "sent" and r.attempts == 1 for r in rows) and len(rows) == 10, [(r.status, r.attempts) for r in rows])
     finally:
         notifications.email_service.send_email = orig
-
-
 
 
 async def main():

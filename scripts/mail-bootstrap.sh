@@ -14,7 +14,7 @@ ENV_FILE=${ENV_FILE:-.env}
 set -a; . "$ENV_FILE"; set +a
 : "${MAIL_DOMAIN:?MAIL_DOMAIN not set}" "${SMTP_USER:?SMTP_USER not set}" "${SMTP_PASSWORD:?SMTP_PASSWORD not set}"
 
-mkdir -p mailserver/config
+mkdir -p "${MAIL_CONFIG_DIR:-mailserver/config}"
 
 MSYS_NO_PATHCONV=1 "$COMPOSE" --env-file "$ENV_FILE" -f compose.yaml run --rm --no-deps \
   -e "MAIL_DOMAIN=$MAIL_DOMAIN" -e "SMTP_USER=$SMTP_USER" -e "SMTP_PASSWORD=$SMTP_PASSWORD" \
@@ -30,7 +30,9 @@ if [ ! -f /tmp/docker-mailserver/ssl/mail.key ]; then
   echo "generated self-signed certificate"
 fi
 if grep -q "^${SMTP_USER}|" /tmp/docker-mailserver/postfix-accounts.cf 2>/dev/null; then
-  echo "mailbox ${SMTP_USER} already exists"
+  # keep the mailbox password in sync with SMTP_PASSWORD (a rotated password used to leave the app unable to log in: 535)
+  setup email update "${SMTP_USER}" "${SMTP_PASSWORD}"
+  echo "mailbox ${SMTP_USER} exists; password synced with SMTP_PASSWORD"
 else
   setup email add "${SMTP_USER}" "${SMTP_PASSWORD}"
   echo "created mailbox ${SMTP_USER}"

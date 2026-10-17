@@ -38,6 +38,7 @@ jobs:
           tests/test_email_flows.py
           tests/test_summaries.py
           tests/test_notifications.py
+          tests/test_transactions.py
           tests/test_time_and_custom_fields.py
       - name: Dependencies have no known vulnerabilities
         continue-on-error: true   # advisory for now; flip to blocking once the baseline is clean

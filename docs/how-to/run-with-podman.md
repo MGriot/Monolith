@@ -29,6 +29,9 @@ Open `http://localhost:8080` and sign in with `FIRST_SUPERUSER_EMAIL`. Public si
 > **User e-mail domains:** the API rejects special-use domains (`.test`, `.local`, `.localhost`, `.invalid`) in user addresses.
 > `MAIL_DOMAIN` may be `monolith.local`, but the accounts you create in the app need a normal domain such as `example.com`.
 
+> **Several stacks on one host?** Give each its own `MAIL_CONFIG_DIR` (accounts, certificate, DKIM keys live there), and re-run `scripts/mail-bootstrap.sh`
+> after rotating `SMTP_PASSWORD`: it syncs the mailbox password (otherwise the app gets `535 authentication failed`).
+
 > **Why the bootstrap script?** docker-mailserver does not create a TLS certificate for `SSL_TYPE=manual`, and Dovecot shuts the container
 > down 120 s after start if no mailbox exists. The script prepares both before the first start.
 
