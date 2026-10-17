@@ -1,6 +1,6 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, status, Query
-from pydantic import EmailStr
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
@@ -63,6 +63,45 @@ async def read_user_me(
     Get current user.
     """
     return current_user
+
+class CalendarFeedOut(BaseModel):
+    enabled: bool
+    url: Optional[str] = None
+
+
+def _feed_url(token: str) -> str:
+    return f"{settings.APP_BASE_URL.rstrip('/')}/api/v1/calendar/feed/{token}.ics"
+
+
+@router.get("/me/calendar-feed", response_model=CalendarFeedOut)
+async def read_my_calendar_feed(current_user: UserModel = Depends(deps.get_current_user)) -> Any:
+    token = current_user.calendar_token
+    return CalendarFeedOut(enabled=bool(token), url=_feed_url(token) if token else None)
+
+
+@router.post("/me/calendar-feed", response_model=CalendarFeedOut)
+async def create_my_calendar_feed(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: UserModel = Depends(deps.get_current_user),
+) -> Any:
+    """Create the personal calendar link, or replace it with a new one (the old link stops working at once)."""
+    import secrets
+
+    current_user.calendar_token = secrets.token_urlsafe(32)
+    db.add(current_user)
+    await db.commit()
+    return CalendarFeedOut(enabled=True, url=_feed_url(current_user.calendar_token))
+
+
+@router.delete("/me/calendar-feed", status_code=204)
+async def revoke_my_calendar_feed(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: UserModel = Depends(deps.get_current_user),
+) -> None:
+    current_user.calendar_token = None
+    db.add(current_user)
+    await db.commit()
+
 
 @router.put("/me", response_model=UserMe)
 async def update_user_me(

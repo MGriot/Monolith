@@ -42,6 +42,7 @@ jobs:
           tests/test_project_roles.py
           tests/test_time_and_custom_fields.py
           tests/test_automations.py
+          tests/test_recurrence_ics.py
       - name: Dependencies have no known vulnerabilities
         continue-on-error: true   # advisory for now; flip to blocking once the baseline is clean
         run: pip install pip-audit && pip-audit -r backend/requirements.txt
