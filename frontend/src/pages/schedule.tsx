@@ -56,14 +56,14 @@ interface CalendarItem {
 
 function YearNav({ year, onChange }: { year: number; onChange: (year: number) => void }) {
   return (
-    <div className="flex items-center bg-white border border-slate-200 rounded-md p-1 shadow-sm">
-      <Button variant="ghost" size="icon" onClick={() => onChange(year - 1)} className="h-7 w-7 text-slate-500" aria-label="Previous year">
+    <div className="flex items-center bg-background border border-border rounded-md p-1 shadow-sm">
+      <Button variant="ghost" size="icon" onClick={() => onChange(year - 1)} className="h-7 w-7 text-muted-foreground" aria-label="Previous year">
         <ChevronLeft className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" className="h-7 text-xs font-medium px-3 text-slate-600" onClick={() => onChange(new Date().getFullYear())}>
+      <Button variant="ghost" className="h-7 text-xs font-medium px-3 text-fg-soft" onClick={() => onChange(new Date().getFullYear())}>
         This year
       </Button>
-      <Button variant="ghost" size="icon" onClick={() => onChange(year + 1)} className="h-7 w-7 text-slate-500" aria-label="Next year">
+      <Button variant="ghost" size="icon" onClick={() => onChange(year + 1)} className="h-7 w-7 text-muted-foreground" aria-label="Next year">
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
@@ -121,18 +121,18 @@ function TaskRoadmapView() {
     <div className="mt-4">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold text-slate-900">{year} Task Progression</h2>
+          <h2 className="text-xl font-bold text-foreground">{year} Task Progression</h2>
           <YearNav year={year} onChange={setYear} />
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <div className="w-2 h-2 rounded-full bg-purple-500" /> Assigned Tasks
         </div>
       </div>
       
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden flex flex-col">
         {/* Timeline Header */}
-        <div className="flex border-b border-slate-200 bg-slate-50/50">
-          <div className="w-64 border-r border-slate-200 p-4 flex-shrink-0 font-semibold text-sm text-slate-600">
+        <div className="flex border-b border-border bg-subtle/50">
+          <div className="w-64 border-r border-border p-4 flex-shrink-0 font-semibold text-sm text-fg-soft">
             Task / Project
           </div>
           <div className="flex-1 relative h-14 flex items-end">
@@ -142,7 +142,7 @@ function TaskRoadmapView() {
               return (
                 <div 
                   key={month.toISOString()} 
-                  className="absolute border-l border-slate-200 h-full flex items-center justify-center text-[10px] font-bold text-slate-400 uppercase tracking-tighter"
+                  className="absolute border-l border-border h-full flex items-center justify-center text-[10px] font-bold text-fg-faint uppercase tracking-tighter"
                   style={{ left: `${left}%`, width: `${width}%` }}
                 >
                   {format(month, 'MMM')}
@@ -159,15 +159,15 @@ function TaskRoadmapView() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : relevantTasks.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-slate-500">
+            <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
               <p>No tasks with progression found in other projects.</p>
             </div>
           ) : (
             relevantTasks.map((task) => (
-              <div key={task.id} className="flex border-b border-slate-100 hover:bg-slate-50/50 transition-colors group">
-                <div className="w-64 border-r border-slate-200 p-4 flex-shrink-0 flex flex-col justify-center">
-                  <span className="text-sm font-semibold text-slate-900 truncate">{task.title}</span>
-                  <span className="text-[10px] text-slate-400 truncate">{task.project_name || 'Individual Task'}</span>
+              <div key={task.id} className="flex border-b border-hairline hover:bg-subtle/50 transition-colors group">
+                <div className="w-64 border-r border-border p-4 flex-shrink-0 flex flex-col justify-center">
+                  <span className="text-sm font-semibold text-foreground truncate">{task.title}</span>
+                  <span className="text-[10px] text-fg-faint truncate">{task.project_name || 'Individual Task'}</span>
                 </div>
                 <div className="flex-1 relative h-16 py-4 px-0">
                   {/* Grid lines */}
@@ -176,7 +176,7 @@ function TaskRoadmapView() {
                     return (
                       <div 
                         key={month.toISOString()} 
-                        className="absolute top-0 bottom-0 border-l border-slate-100 h-full"
+                        className="absolute top-0 bottom-0 border-l border-hairline h-full"
                         style={{ left: `${left}%` }}
                       />
                     );
@@ -185,14 +185,14 @@ function TaskRoadmapView() {
                   {/* Task Bar */}
                   <div 
                     className={cn(
-                      "absolute h-8 rounded-md border flex items-center px-3 shadow-sm transition-transform group-hover:scale-[1.01] bg-purple-50 border-purple-200"
+                      "absolute h-8 rounded-md border flex items-center px-3 shadow-sm transition-transform group-hover:scale-[1.01] bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30"
                     )}
                     style={{ 
                       left: `${getPosition(task.start_date!)}%`, 
                       width: `${getWidth(task.start_date!, task.due_date)}%` 
                     }}
                   >
-                    <span className="text-[10px] font-bold truncate text-purple-700">
+                    <span className="text-[10px] font-bold truncate text-purple-700 dark:text-purple-300">
                       {task.title}
                     </span>
                   </div>
@@ -210,13 +210,13 @@ function MoveToDate({ value, onMove }: { value: string; onMove: (day: string) =>
   const [draft, setDraft] = useState(value);
   return (
     <div className="flex items-end gap-2">
-      <label className="flex-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+      <label className="flex-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         Move to
         <input
           type="date"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-200 px-2 py-1 text-xs font-normal normal-case text-slate-700"
+          className="mt-1 block w-full rounded-md border border-border px-2 py-1 text-xs font-normal normal-case text-fg-body"
         />
       </label>
       <Button size="sm" variant="secondary" className="h-7 text-xs" disabled={!draft || draft === value} onClick={() => onMove(draft)}>
@@ -305,19 +305,19 @@ function CalendarView() {
   const renderHeader = () => (
     <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
       <div className="flex flex-wrap items-center gap-4">
-        <h2 className="text-xl font-bold text-slate-900">{rangeTitle(view, anchor)}</h2>
-        <div className="flex items-center bg-white border border-slate-200 rounded-md p-1 shadow-sm">
-          <Button variant="ghost" size="icon" onClick={goPrev} className="h-7 w-7 text-slate-500" aria-label={`Previous ${view}`}>
+        <h2 className="text-xl font-bold text-foreground">{rangeTitle(view, anchor)}</h2>
+        <div className="flex items-center bg-background border border-border rounded-md p-1 shadow-sm">
+          <Button variant="ghost" size="icon" onClick={goPrev} className="h-7 w-7 text-muted-foreground" aria-label={`Previous ${view}`}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" className="h-7 text-xs font-medium px-3 text-slate-600" onClick={() => setAnchor(new Date())}>
+          <Button variant="ghost" className="h-7 text-xs font-medium px-3 text-fg-soft" onClick={() => setAnchor(new Date())}>
             Today
           </Button>
-          <Button variant="ghost" size="icon" onClick={goNext} className="h-7 w-7 text-slate-500" aria-label={`Next ${view}`}>
+          <Button variant="ghost" size="icon" onClick={goNext} className="h-7 w-7 text-muted-foreground" aria-label={`Next ${view}`}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="flex items-center bg-white border border-slate-200 rounded-md p-1 shadow-sm" role="group" aria-label="Calendar view">
+        <div className="flex items-center bg-background border border-border rounded-md p-1 shadow-sm" role="group" aria-label="Calendar view">
           {(['month', 'week', 'day'] as CalendarView[]).map((v) => (
             <Button
               key={v}
@@ -342,7 +342,7 @@ function CalendarView() {
     return (
       <div className="grid grid-cols-7 mb-2">
         {days.slice(0, 7).map((day) => (
-          <div key={format(day, 'EEE')} className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider py-2">
+          <div key={format(day, 'EEE')} className="text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider py-2">
             {format(day, 'EEE')}
           </div>
         ))}
@@ -370,9 +370,9 @@ function CalendarView() {
               movable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
               view !== 'month' && "text-xs py-1",
               dragId === item.id && "opacity-40",
-              item.item_type === 'project' && "bg-blue-50 border-blue-200 text-blue-700",
-              item.item_type === 'task' && "bg-purple-50 border-purple-200 text-purple-700",
-              item.item_type === 'subtask' && "bg-slate-50 border-slate-200 text-slate-700"
+              item.item_type === 'project' && "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-300",
+              item.item_type === 'task' && "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 text-purple-700 dark:text-purple-300",
+              item.item_type === 'subtask' && "bg-subtle border-border text-fg-body"
             )}
           >
             {item.title}
@@ -385,8 +385,8 @@ function CalendarView() {
               <Badge variant="outline" className="capitalize text-[10px]">{item.item_type}</Badge>
               <Badge className="text-[10px]">{item.status}</Badge>
             </div>
-            <h4 className="font-bold text-sm text-slate-900">{item.title}</h4>
-            <p className="text-xs text-slate-500">
+            <h4 className="font-bold text-sm text-foreground">{item.title}</h4>
+            <p className="text-xs text-muted-foreground">
               {item.deadline_at ? `Deadline: ${format(parseISO(item.deadline_at), 'PPP')}` : `Due: ${format(parseISO(item.due_date), 'PPP')}`}
             </p>
             {movable && (
@@ -413,7 +413,7 @@ function CalendarView() {
     const minHeight = view === 'month' ? 'min-h-[120px]' : view === 'week' ? 'min-h-[360px]' : 'min-h-[480px]';
 
     return (
-      <div className={cn("border-b border-r border-slate-200 rounded-lg overflow-hidden shadow-sm grid", view === 'day' ? 'grid-cols-1' : 'grid-cols-7')}>
+      <div className={cn("border-b border-r border-border rounded-lg overflow-hidden shadow-sm grid", view === 'day' ? 'grid-cols-1' : 'grid-cols-7')}>
         {days.map((day, i) => {
           const formattedDate = format(day, 'yyyy-MM-dd');
           const dayItems = data?.filter((item) => isSameDay(day, itemDay(item))) || [];
@@ -438,8 +438,8 @@ function CalendarView() {
               }}
               className={cn(
                 minHeight,
-                "bg-white border-t border-l border-slate-200 p-2 transition-colors hover:bg-slate-50/50",
-                view === 'month' && !isSameMonth(day, monthStart) && "bg-slate-50/30 text-slate-400",
+                "bg-background border-t border-l border-border p-2 transition-colors hover:bg-subtle/50",
+                view === 'month' && !isSameMonth(day, monthStart) && "bg-subtle/30 text-fg-faint",
                 (view === 'day' || i % 7 === 6) && "border-r",
                 isDropTarget && "bg-primary/10 ring-2 ring-inset ring-primary/40"
               )}
@@ -451,14 +451,14 @@ function CalendarView() {
                 )}>
                   {format(day, 'd')}
                 </span>
-                {view === 'day' && <span className="text-xs text-slate-400">{dayItems.length} item{dayItems.length === 1 ? '' : 's'}</span>}
+                {view === 'day' && <span className="text-xs text-fg-faint">{dayItems.length} item{dayItems.length === 1 ? '' : 's'}</span>}
               </div>
               <div className="space-y-1">
                 {dayItems.slice(0, maxVisible).map(renderItem)}
                 {dayItems.length > maxVisible && (
                   <button
                     type="button"
-                    className="text-[10px] text-slate-400 pl-1 font-medium hover:text-slate-600"
+                    className="text-[10px] text-fg-faint pl-1 font-medium hover:text-fg-soft"
                     onClick={() => { setAnchor(day); setView('day'); }}
                   >
                     + {dayItems.length - maxVisible} more
@@ -475,8 +475,8 @@ function CalendarView() {
   return (
     <div className="mt-4">
       {renderHeader()}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 bg-slate-50/50 border-b border-slate-200">
+      <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="p-4 bg-subtle/50 border-b border-border">
           {renderDayNames()}
         </div>
         {isLoading ? (
@@ -487,7 +487,7 @@ function CalendarView() {
           renderCells()
         )}
       </div>
-      <p className="mt-2 text-[11px] text-slate-400">Drag a task onto another day to reschedule it, or open it and use "Move to".</p>
+      <p className="mt-2 text-[11px] text-fg-faint">Drag a task onto another day to reschedule it, or open it and use "Move to".</p>
       <TaskCreateDialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen} />
     </div>
   );
@@ -543,11 +543,11 @@ function RoadmapView() {
     <div className="mt-4">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold text-slate-900">{year} Timeline</h2>
+          <h2 className="text-xl font-bold text-foreground">{year} Timeline</h2>
           <YearNav year={year} onChange={setYear} />
         </div>
         <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-xs text-slate-500 mr-4">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mr-4">
                 <div className="w-2 h-2 rounded-full bg-primary" /> Active
                 <div className="w-2 h-2 rounded-full bg-emerald-500" /> Done
             </div>
@@ -557,10 +557,10 @@ function RoadmapView() {
         </div>
       </div>
       
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden flex flex-col">
         {/* Timeline Header */}
-        <div className="flex border-b border-slate-200 bg-slate-50/50">
-          <div className="w-64 border-r border-slate-200 p-4 flex-shrink-0 font-semibold text-sm text-slate-600">
+        <div className="flex border-b border-border bg-subtle/50">
+          <div className="w-64 border-r border-border p-4 flex-shrink-0 font-semibold text-sm text-fg-soft">
             Project Name
           </div>
           <div className="flex-1 relative h-14 flex items-end">
@@ -570,7 +570,7 @@ function RoadmapView() {
               return (
                 <div 
                   key={month.toISOString()} 
-                  className="absolute border-l border-slate-200 h-full flex items-center justify-center text-[10px] font-bold text-slate-400 uppercase tracking-tighter"
+                  className="absolute border-l border-border h-full flex items-center justify-center text-[10px] font-bold text-fg-faint uppercase tracking-tighter"
                   style={{ left: `${left}%`, width: `${width}%` }}
                 >
                   {format(month, 'MMM')}
@@ -587,17 +587,17 @@ function RoadmapView() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : projects?.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-slate-500">
+            <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
               <p>No projects with timelines found.</p>
             </div>
           ) : (
             projects?.map((project) => (
-              <div key={project.id} className="flex border-b border-slate-100 hover:bg-slate-50/50 transition-colors group">
-                <div className="w-64 border-r border-slate-200 p-4 flex-shrink-0 flex flex-col justify-center">
-                  <span className="text-sm font-semibold text-slate-900 truncate">{project.name}</span>
+              <div key={project.id} className="flex border-b border-hairline hover:bg-subtle/50 transition-colors group">
+                <div className="w-64 border-r border-border p-4 flex-shrink-0 flex flex-col justify-center">
+                  <span className="text-sm font-semibold text-foreground truncate">{project.name}</span>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] text-slate-500">{formatPercent(project.progress_percent)}%</span>
-                    <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden max-w-[80px]">
+                    <span className="text-[10px] text-muted-foreground">{formatPercent(project.progress_percent)}%</span>
+                    <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden max-w-[80px]">
                       <div 
                         className="h-full bg-primary" 
                         style={{ width: `${project.progress_percent}%` }}
@@ -612,7 +612,7 @@ function RoadmapView() {
                     return (
                       <div 
                         key={month.toISOString()} 
-                        className="absolute top-0 bottom-0 border-l border-slate-100 h-full"
+                        className="absolute top-0 bottom-0 border-l border-hairline h-full"
                         style={{ left: `${left}%` }}
                       />
                     );
@@ -622,7 +622,7 @@ function RoadmapView() {
                   <div 
                     className={cn(
                       "absolute h-8 rounded-md border flex items-center px-3 shadow-sm transition-transform group-hover:scale-[1.01]",
-                      project.status === 'done' ? "bg-emerald-50 border-emerald-200" : "bg-primary/5 border-primary/20"
+                      project.status === 'done' ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30" : "bg-primary/5 border-primary/20"
                     )}
                     style={{ 
                       left: `${getPosition(project.start_date)}%`, 
@@ -631,7 +631,7 @@ function RoadmapView() {
                   >
                     <span className={cn(
                         "text-[10px] font-bold truncate",
-                        project.status === 'done' ? "text-emerald-700" : "text-primary"
+                        project.status === 'done' ? "text-emerald-700 dark:text-emerald-300" : "text-primary"
                     )}>
                       {project.name}
                     </span>
@@ -657,20 +657,20 @@ export default function SchedulePage() {
     }, [setTitle]);
 
     return (
-        <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+        <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
             <div className="flex-1 overflow-auto p-6 space-y-16 pb-12">
                 <section>
                     <div className="flex items-center gap-2 mb-4">
                         <GanttChart className="w-5 h-5 text-primary" />
-                        <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Project Roadmaps</h2>
+                        <h2 className="text-lg font-bold text-foreground uppercase tracking-wider">Project Roadmaps</h2>
                     </div>
                     <RoadmapView />
                 </section>
 
                 <section>
                     <div className="flex items-center gap-2 mb-4 border-t pt-12">
-                        <GanttChart className="w-5 h-5 text-purple-600" />
-                        <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Single Tasks Progression</h2>
+                        <GanttChart className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        <h2 className="text-lg font-bold text-foreground uppercase tracking-wider">Single Tasks Progression</h2>
                     </div>
                     <TaskRoadmapView />
                 </section>
@@ -678,7 +678,7 @@ export default function SchedulePage() {
                 <section>
                     <div className="flex items-center gap-2 mb-4 border-t pt-12">
                         <CalendarIcon className="w-5 h-5 text-primary" />
-                        <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Discrete Deadlines</h2>
+                        <h2 className="text-lg font-bold text-foreground uppercase tracking-wider">Discrete Deadlines</h2>
                     </div>
                     <CalendarView />
                 </section>

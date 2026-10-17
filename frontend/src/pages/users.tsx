@@ -135,22 +135,22 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         {!!pending?.length && (
-          <div className="bg-amber-50 rounded-xl border border-amber-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-amber-200">
-              <h3 className="text-sm font-bold text-amber-900">Account requests ({pending.length})</h3>
-              <p className="text-xs text-amber-800 mt-1">
+          <div className="bg-amber-50 dark:bg-amber-500/10 rounded-xl border border-amber-200 dark:border-amber-500/30 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-amber-200 dark:border-amber-500/30">
+              <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">Account requests ({pending.length})</h3>
+              <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
                 Approving activates the account and e-mails the person a temporary password.
               </p>
             </div>
-            <ul className="divide-y divide-amber-200">
+            <ul className="divide-y divide-amber-200 dark:divide-amber-500/30">
               {pending.map((req) => (
                 <li key={req.id} className="flex items-center justify-between gap-3 p-4">
                   <div className="min-w-0">
-                    <div className="font-medium text-slate-900 truncate">{req.full_name || 'No Name'}</div>
-                    <div className="text-xs text-slate-600 truncate">{req.email}</div>
+                    <div className="font-medium text-foreground truncate">{req.full_name || 'No Name'}</div>
+                    <div className="text-xs text-muted-foreground truncate">{req.email}</div>
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <Button
@@ -180,10 +180,10 @@ export default function UsersPage() {
             </ul>
           </div>
         )}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/50">
+              <TableRow className="bg-subtle/50">
                 <TableHead className="w-[300px]">User</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
@@ -192,13 +192,13 @@ export default function UsersPage() {
             </TableHeader>
             <TableBody>
               {users?.map((user) => (
-                <TableRow key={user.id} className="hover:bg-slate-50/50 transition-colors">
+                <TableRow key={user.id} className="hover:bg-subtle/50 transition-colors">
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <UserAvatar user={user} className="w-9 h-9" />
                       <div className="flex flex-col min-w-0">
-                        <span className="font-medium text-slate-900 truncate">{user.full_name || 'No Name'}</span>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <span className="font-medium text-foreground truncate">{user.full_name || 'No Name'}</span>
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <Mail className="w-3 h-3" />
                           <span className="truncate">{user.email}</span>
                         </div>
@@ -207,24 +207,24 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell>
                     {user.is_superuser ? (
-                      <Badge variant="default" className="gap-1 bg-amber-100 text-amber-700 hover:bg-amber-100 border-none">
+                      <Badge variant="default" className="gap-1 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/20 border-none">
                         <ShieldCheck className="w-3 h-3" /> Admin
                       </Badge>
                     ) : (
-                      <Badge variant="secondary" className="gap-1 bg-slate-100 text-slate-600 border-none">
+                      <Badge variant="secondary" className="gap-1 bg-muted text-fg-soft border-none">
                         <Shield className="w-3 h-3" /> Member
                       </Badge>
                     )}
                   </TableCell>
                   <TableCell>
                     {user.is_active ? (
-                      <div className="flex items-center gap-2 text-emerald-600 text-xs font-medium">
+                      <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                         Active
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                      <div className="flex items-center gap-2 text-fg-faint text-xs font-medium">
+                        <div className="w-1.5 h-1.5 rounded-full bg-fg-ghost" />
                         Inactive
                       </div>
                     )}
@@ -259,13 +259,13 @@ export default function UsersPage() {
           </Table>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-4 border-b bg-slate-50/50">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-amber-600" />
+        <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden flex flex-col">
+          <div className="p-4 border-b bg-subtle/50">
+            <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               Organizational Capacity (Super View)
             </h3>
-            <p className="text-[10px] text-slate-500 uppercase font-black mt-1">Cross-project resource allocation</p>
+            <p className="text-[10px] text-muted-foreground uppercase font-black mt-1">Cross-project resource allocation</p>
           </div>
           <div className="flex-1 min-h-[500px]">
             <ResourceTimeline 

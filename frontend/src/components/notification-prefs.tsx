@@ -51,7 +51,7 @@ export function NotificationPrefsCard() {
   };
 
   return (
-    <Card className="border-slate-200 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Bell className="w-4 h-4 text-primary" aria-hidden="true" />
@@ -60,12 +60,12 @@ export function NotificationPrefsCard() {
         <CardDescription>Choose which e-mails you get. In-app notifications always stay on.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
           <div className="flex items-center gap-2 text-sm">
             {verified ? (
-              <MailCheck className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+              <MailCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
             ) : (
-              <MailWarning className="w-4 h-4 text-amber-600" aria-hidden="true" />
+              <MailWarning className="w-4 h-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
             )}
             <span>
               {user.email} - <b>{verified ? 'verified' : 'not verified'}</b>
@@ -82,7 +82,7 @@ export function NotificationPrefsCard() {
           <div key={key} className="flex items-start justify-between gap-4">
             <div className="space-y-0.5">
               <Label htmlFor={key}>{label}</Label>
-              <p id={`${key}-hint`} className="text-xs text-slate-500">{hint}</p>
+              <p id={`${key}-hint`} className="text-xs text-muted-foreground">{hint}</p>
             </div>
             <Switch
               id={key}

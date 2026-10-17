@@ -27,7 +27,7 @@ type RequestFormValues = z.infer<typeof requestSchema>;
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50 px-4">
+    <div className="flex items-center justify-center min-h-screen bg-subtle px-4">
       <Card className="w-full max-w-md">{children}</Card>
     </div>
   );
@@ -90,7 +90,7 @@ export default function RegisterPage() {
           <CardTitle className="text-2xl font-bold">Request sent</CardTitle>
           <CardDescription>
             An administrator will review your request. Once approved, we'll e-mail a temporary password to{" "}
-            <span className="font-medium text-slate-900">{sentTo}</span>. You will choose your own password the
+            <span className="font-medium text-foreground">{sentTo}</span>. You will choose your own password the
             first time you sign in.
           </CardDescription>
         </CardHeader>

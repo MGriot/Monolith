@@ -18,13 +18,13 @@ export function UserAvatar({ user, className }: UserAvatarProps) {
 
   return (
     <div className={cn(
-      "w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200 shrink-0 shadow-sm overflow-hidden",
+      "w-8 h-8 bg-muted rounded-full flex items-center justify-center border border-border shrink-0 shadow-sm overflow-hidden",
       className
     )}>
       {initials ? (
-        <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">{initials}</span>
+        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter">{initials}</span>
       ) : (
-        <UserIcon className="w-4 h-4 text-slate-500" />
+        <UserIcon className="w-4 h-4 text-muted-foreground" />
       )}
     </div>
   )

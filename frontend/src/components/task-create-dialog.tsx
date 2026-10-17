@@ -70,20 +70,20 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl bg-white rounded-2xl">
+      <DialogContent className="sm:max-w-[800px] max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl bg-background rounded-2xl">
         <div className="p-8">
             <DialogHeader className="mb-6">
-                <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 px-1">Quick Initiative Launch</DialogTitle>
-                <DialogDescription className="text-xs font-medium text-slate-400 uppercase tracking-widest px-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-foreground px-1">Quick Initiative Launch</DialogTitle>
+                <DialogDescription className="text-xs font-medium text-fg-faint uppercase tracking-widest px-1">
                     Select a project (or Independent) and enter task details.
                 </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-6">
-                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl shadow-inner">
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1 block mb-2">Target Context</Label>
+                <div className="p-4 bg-subtle border border-hairline rounded-2xl shadow-inner">
+                    <Label className="text-[10px] font-black uppercase text-fg-faint tracking-widest px-1 block mb-2">Target Context</Label>
                     <Select onValueChange={setSelectedProjectId} value={selectedProjectId}>
-                        <SelectTrigger className="h-11 bg-white border-slate-200 rounded-xl shadow-sm">
+                        <SelectTrigger className="h-11 bg-background border-border rounded-xl shadow-sm">
                             <SelectValue placeholder={isProjectsLoading ? "Scanning projects..." : "Associate with a Project or Portfolio"} />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
@@ -98,7 +98,7 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
                 </div>
 
                 {selectedProjectId && (
-                    <div className="pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="pt-6 border-t border-hairline animate-in fade-in slide-in-from-top-2 duration-300">
                         <TaskForm 
                             onSubmit={(data) => createTaskMutation.mutate(data)}
                             onCancel={() => onOpenChange(false)}

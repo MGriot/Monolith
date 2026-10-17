@@ -322,16 +322,16 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, activeId, onAddTask, on
   return (
     <div className="flex flex-col w-80 shrink-0 h-full max-h-screen">
       <div className="flex items-center justify-between mb-4 px-2 shrink-0">
-        <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+        <h3 className="font-bold text-foreground flex items-center gap-2 text-sm">
           <div className={cn(
               "w-2 h-2 rounded-full",
               id === 'Todo' ? "bg-blue-400" :
               id === 'In Progress' ? "bg-amber-400" :
               id === 'Done' ? "bg-emerald-400" :
-              "bg-slate-300"
+              "bg-fg-ghost"
           )} />
           {title}
-          <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-black">
+          <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-black">
             {itemIds.length}
           </span>
         </h3>
@@ -339,13 +339,13 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, activeId, onAddTask, on
           {onAddTask && (
             <button 
               onClick={() => onAddTask(id)}
-              className="p-1 hover:bg-white rounded-md text-slate-400 hover:text-primary transition-all"
+              className="p-1 hover:bg-background rounded-md text-fg-faint hover:text-primary transition-all"
               title="Add Task"
             >
               <Plus className="w-4 h-4" />
             </button>
           )}
-          <MoreVertical className="w-4 h-4 text-slate-300 cursor-pointer" />
+          <MoreVertical className="w-4 h-4 text-fg-ghost cursor-pointer" />
         </div>
       </div>
       
@@ -353,7 +353,7 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, activeId, onAddTask, on
         <div 
           ref={setNodeRef}
           className={cn(
-            "flex-1 bg-slate-100/40 rounded-2xl p-2 border-2 border-dashed border-transparent transition-all duration-300 min-h-[500px] flex flex-col gap-1 overflow-y-auto scrollbar-hide",
+            "flex-1 bg-muted/40 rounded-2xl p-2 border-2 border-dashed border-transparent transition-all duration-300 min-h-[500px] flex flex-col gap-1 overflow-y-auto scrollbar-hide",
             isOver && "bg-primary/5 border-primary/20 ring-4 ring-primary/5 shadow-inner scale-[1.01]"
           )}
         >
@@ -370,7 +370,7 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, activeId, onAddTask, on
           })}
           
           {remainingCount > 0 && (
-            <div className="mt-auto text-center p-3 rounded-xl border border-dashed border-slate-200 text-[10px] font-bold text-slate-400 bg-white/50 italic uppercase tracking-widest">
+            <div className="mt-auto text-center p-3 rounded-xl border border-dashed border-border text-[10px] font-bold text-fg-faint bg-background/50 italic uppercase tracking-widest">
                 + {remainingCount} more in backlog
             </div>
           )}
@@ -408,10 +408,10 @@ function SortableTaskCard({ item, onClick }: { item: KanbanItem, onClick?: () =>
 
 function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, isDragging?: boolean, dragProps?: any, onClick?: () => void }) {
   const priorityStyles: Record<string, { border: string, badge: string }> = {
-    Low: { border: "border-l-blue-400", badge: "bg-blue-100 text-blue-700" },
-    Medium: { border: "border-l-amber-400", badge: "bg-amber-100 text-amber-700" },
-    High: { border: "border-l-orange-400", badge: "bg-orange-100 text-orange-700" },
-    Critical: { border: "border-l-red-500", badge: "bg-red-100 text-red-700" },
+    Low: { border: "border-l-blue-400", badge: "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300" },
+    Medium: { border: "border-l-amber-400", badge: "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300" },
+    High: { border: "border-l-orange-400", badge: "bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300" },
+    Critical: { border: "border-l-red-500", badge: "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300" },
   };
 
   const style = priorityStyles[item.priority] || priorityStyles.Medium;
@@ -440,7 +440,7 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
         "mb-3 shadow-sm hover:shadow-md transition-all cursor-pointer group border-l-4",
         style.border,
         isDragging && "shadow-xl border-primary/50",
-        isDone && "bg-slate-50 opacity-80 hover:opacity-100"
+        isDone && "bg-subtle opacity-80 hover:opacity-100"
       )}
       onClick={onClick}
       // Cards are the main interaction on the board: reachable and operable from the keyboard
@@ -458,12 +458,12 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-[8px] font-black text-slate-400">{item.wbs_code}</span>
+                <span className="text-[8px] font-black text-fg-faint">{item.wbs_code}</span>
                 {item.type === 'subtask' && (
                     <span className="text-[8px] font-black text-primary uppercase">Subtask</span>
                 )}
                 {item.project && (
-                  <span className="text-[8px] font-black text-slate-500 uppercase flex items-center gap-1">
+                  <span className="text-[8px] font-black text-muted-foreground uppercase flex items-center gap-1">
                     <Folder className="w-2 h-2" />
                     {item.project.name}
                   </span>
@@ -471,7 +471,7 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
             </div>
             <CardTitle className={cn(
                 "text-xs font-bold leading-snug flex items-center gap-1.5",
-                isDone ? "text-slate-500 line-through" : "text-slate-900"
+                isDone ? "text-muted-foreground line-through" : "text-foreground"
             )}>
                 {item.is_milestone && <Milestone className="w-3 h-3 text-blue-500 shrink-0" />}
                 {item.title}
@@ -480,7 +480,7 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
                 )}
             </CardTitle>
           </div>
-          <div {...dragProps} className="cursor-grab active:cursor-grabbing text-slate-300 group-hover:text-slate-400 shrink-0">
+          <div {...dragProps} className="cursor-grab active:cursor-grabbing text-fg-ghost group-hover:text-fg-faint shrink-0">
             <GripVertical className="w-3.5 h-3.5" />
           </div>
         </div>
@@ -498,7 +498,7 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
               {item.priority}
             </Badge>
             {item.topic && (
-              <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-slate-100 text-slate-500 font-bold border-none">
+              <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-muted text-muted-foreground font-bold border-none">
                 {item.topic}
               </Badge>
             )}
@@ -508,10 +508,10 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
             {item.assignees?.map((u) => (
               <div 
                 key={u.id}
-                className="inline-block h-5 w-5 rounded-full bg-white border border-slate-200 flex items-center justify-center ring-0 shadow-sm"
+                className="inline-block h-5 w-5 rounded-full bg-background border border-border flex items-center justify-center ring-0 shadow-sm"
                 title={u.full_name || u.email}
               >
-                <UserIcon className="w-2.5 h-2.5 text-slate-400" />
+                <UserIcon className="w-2.5 h-2.5 text-fg-faint" />
               </div>
             ))}
           </div>

@@ -67,12 +67,12 @@ export default function ProjectsListPage() {
   useEffect(() => {
     setActions(
       <div className="flex items-center gap-3">
-        <div className="flex items-center bg-slate-100 rounded-lg p-1 mr-2 border border-slate-200 shadow-sm">
+        <div className="flex items-center bg-muted rounded-lg p-1 mr-2 border border-border shadow-sm">
           <Button 
             variant={view === 'list' ? 'secondary' : 'ghost'} 
             size="sm" 
             onClick={() => setView('list')}
-            className={cn("h-7 px-3 text-xs font-bold gap-2", view === 'list' ? "bg-white shadow-sm" : "text-slate-500")}
+            className={cn("h-7 px-3 text-xs font-bold gap-2", view === 'list' ? "bg-background shadow-sm" : "text-muted-foreground")}
           >
             <LayoutList className="w-3.5 h-3.5" /> List
           </Button>
@@ -80,7 +80,7 @@ export default function ProjectsListPage() {
             variant={view === 'kanban' ? 'secondary' : 'ghost'} 
             size="sm" 
             onClick={() => setView('kanban')}
-            className={cn("h-7 px-3 text-xs font-bold gap-2", view === 'kanban' ? "bg-white shadow-sm" : "text-slate-500")}
+            className={cn("h-7 px-3 text-xs font-bold gap-2", view === 'kanban' ? "bg-background shadow-sm" : "text-muted-foreground")}
           >
             <Trello className="w-3.5 h-3.5" /> Kanban
           </Button>
@@ -223,13 +223,13 @@ export default function ProjectsListPage() {
   }
 
   return (
-    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
       <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
         {view === 'list' ? (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50/50">
+                <TableRow className="bg-subtle/50">
                   <TableHead className="w-[300px]">Project Name</TableHead>
                   <TableHead>Topic & Type</TableHead>
                   <TableHead>Status</TableHead>
@@ -242,7 +242,7 @@ export default function ProjectsListPage() {
               <TableBody>
                 {projects?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-slate-500">
+                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <p>No projects found. Create one to get started.</p>
                         <Button variant="outline" size="sm" onClick={() => setIsCreateDialogOpen(true)}>
@@ -253,31 +253,31 @@ export default function ProjectsListPage() {
                   </TableRow>
                 ) : (
                   projects?.map((project) => (
-                    <TableRow key={project.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => navigate(`/projects/${project.id}`)}>
+                    <TableRow key={project.id} className="hover:bg-subtle/50 transition-colors cursor-pointer group" onClick={() => navigate(`/projects/${project.id}`)}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20 shrink-0 group-hover:scale-105 transition-transform">
                             <FolderKanban className="w-4 h-4 text-primary" />
                           </div>
-                          <span className="font-semibold text-slate-900 truncate group-hover:text-primary transition-colors">{project.name}</span>
+                          <span className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{project.name}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           <div className="flex flex-wrap gap-1 max-w-[150px]">
                             {project.topics && project.topics.length > 0 ? project.topics.map(t => (
-                              <Badge key={t.id} variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-slate-100 text-slate-600 border-none">{t.name}</Badge>
-                            )) : <span className="text-xs font-medium text-slate-700">{project.topic || 'General'}</span>}
+                              <Badge key={t.id} variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-muted text-fg-soft border-none">{t.name}</Badge>
+                            )) : <span className="text-xs font-medium text-fg-body">{project.topic || 'General'}</span>}
                           </div>
                           <div className="flex flex-wrap gap-1 max-w-[150px]">
                             {project.types && project.types.length > 0 ? project.types.map(t => (
-                              <Badge key={t.id} variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-slate-200 text-slate-500">{t.name}</Badge>
-                            )) : <span className="text-[10px] text-slate-500 capitalize">{project.type || 'Standard'}</span>}
+                              <Badge key={t.id} variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-border text-muted-foreground">{t.name}</Badge>
+                            )) : <span className="text-[10px] text-muted-foreground capitalize">{project.type || 'Standard'}</span>}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="capitalize bg-slate-50">
+                        <Badge variant="outline" className="capitalize bg-subtle">
                           {project.status}
                         </Badge>
                       </TableCell>
@@ -288,14 +288,14 @@ export default function ProjectsListPage() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1.5">
-                          <div className="flex justify-between text-[10px] font-medium text-slate-500">
+                          <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
                             <span>{formatPercent(project.progress_percent)}%</span>
                           </div>
                           <Progress value={project.progress_percent} className="h-1.5" />
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <Calendar className="w-3 h-3" />
                           <span>{project.due_date ? format(parseISO(project.due_date), 'MMM d, yyyy') : 'No date'}</span>
                         </div>
@@ -303,7 +303,7 @@ export default function ProjectsListPage() {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-fg-faint" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                               <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -315,7 +315,7 @@ export default function ProjectsListPage() {
                             <DropdownMenuItem onClick={(e: React.MouseEvent) => handleArchiveProject(e, project)}>
                               <Archive className="w-4 h-4 mr-2" /> Archive
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600" onClick={(e: React.MouseEvent) => handleDeleteProject(e, project)}>
+                            <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={(e: React.MouseEvent) => handleDeleteProject(e, project)}>
                               <Trash2 className="w-4 h-4 mr-2" /> Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -354,7 +354,7 @@ export default function ProjectsListPage() {
               Delete Project
             </DialogTitle>
             <DialogDescription className="pt-2">
-              Are you sure you want to delete <span className="font-bold text-slate-900">"{projectToDelete?.name}"</span>? 
+              Are you sure you want to delete <span className="font-bold text-foreground">"{projectToDelete?.name}"</span>? 
               This will permanently remove all associated tasks, subtasks, and files. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
@@ -391,8 +391,8 @@ export default function ProjectsListPage() {
                 onClick={() => { setSelectedTemplate(null); setCreationStep('form'); }}
               >
                 <CardHeader className="p-4">
-                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-primary/10 transition-colors">
-                    <Plus className="w-5 h-5 text-slate-500 group-hover:text-primary" />
+                  <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center mb-2 group-hover:bg-primary/10 transition-colors">
+                    <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
                   </div>
                   <CardTitle className="text-base">Blank Project</CardTitle>
                   <CardDescription className="text-xs">Start from scratch with no predefined tasks.</CardDescription>

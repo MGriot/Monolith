@@ -47,11 +47,11 @@ export default function TaskCustomFields({ projectId, values, onChange }: TaskCu
     onChange(next);
   };
 
-  if (!projectId) return <p className="text-sm text-slate-400 text-center py-10">Custom fields belong to a project.</p>;
-  if (isLoading) return <p className="text-sm text-slate-400 text-center py-10">Loading…</p>;
+  if (!projectId) return <p className="text-sm text-fg-faint text-center py-10">Custom fields belong to a project.</p>;
+  if (isLoading) return <p className="text-sm text-fg-faint text-center py-10">Loading…</p>;
   if (!defs || defs.length === 0) {
     return (
-      <p className="text-sm text-slate-400 text-center py-10">
+      <p className="text-sm text-fg-faint text-center py-10">
         This project has no custom fields yet. Add them under Project Settings.
       </p>
     );
@@ -65,7 +65,7 @@ export default function TaskCustomFields({ projectId, values, onChange }: TaskCu
         const id = `cf-${def.id}`;
         return (
           <div key={def.id} className="space-y-2">
-            <Label htmlFor={id} className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-1">
+            <Label htmlFor={id} className="text-[10px] font-black uppercase text-fg-faint tracking-[0.2em] px-1">
               {def.name}
             </Label>
             {def.field_type === 'select' || def.field_type === 'user' ? (

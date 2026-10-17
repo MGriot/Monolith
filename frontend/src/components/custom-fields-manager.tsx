@@ -82,20 +82,20 @@ export default function CustomFieldsManager({ projectId }: { projectId: string }
         <CardDescription>Extra fields shown on every task of this project.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {isLoading && <Loader2 className="w-5 h-5 animate-spin text-slate-400" />}
+        {isLoading && <Loader2 className="w-5 h-5 animate-spin text-fg-faint" />}
         <div className="space-y-2">
           {defs.map((def) => {
             const isEditing = editing?.id === def.id;
             const err = editError(def);
             return (
-              <div key={def.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 space-y-2">
+              <div key={def.id} className="rounded-xl border border-hairline bg-subtle/50 p-3 space-y-2">
                 <div className="flex items-center gap-3">
                   {isEditing ? (
                     <Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className="h-9 flex-1" aria-label="Field name" />
                   ) : (
                     <span className="flex-1 font-bold text-sm">{def.name}</span>
                   )}
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-fg-faint">
                     {CUSTOM_FIELD_TYPES.find((t) => t.value === def.field_type)?.label}
                   </span>
                   {isEditing ? (
@@ -112,7 +112,7 @@ export default function CustomFieldsManager({ projectId }: { projectId: string }
                       <Button type="button" size="sm" variant="ghost" onClick={() => setEditing({ id: def.id, name: def.name, options: def.options.join(', ') })}>
                         Edit
                       </Button>
-                      <button type="button" aria-label={`Delete ${def.name}`} onClick={() => confirmDelete(def)} className="p-2 text-slate-300 hover:text-rose-500 rounded-lg">
+                      <button type="button" aria-label={`Delete ${def.name}`} onClick={() => confirmDelete(def)} className="p-2 text-fg-ghost hover:text-rose-500 rounded-lg">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </>
@@ -122,20 +122,20 @@ export default function CustomFieldsManager({ projectId }: { projectId: string }
                   (isEditing ? (
                     <div className="space-y-1">
                       <Input value={editing.options} onChange={(e) => setEditing({ ...editing, options: e.target.value })} placeholder="Options, comma separated" aria-label="Options" />
-                      <p className="text-[10px] text-slate-400">Removing an option clears it from tasks that use it.</p>
+                      <p className="text-[10px] text-fg-faint">Removing an option clears it from tasks that use it.</p>
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-500">{def.options.join(' · ')}</p>
+                    <p className="text-xs text-muted-foreground">{def.options.join(' · ')}</p>
                   ))}
                 {err && <p className="text-xs text-rose-500">{err}</p>}
               </div>
             );
           })}
-          {!isLoading && defs.length === 0 && <p className="text-sm text-slate-400">No custom fields yet.</p>}
+          {!isLoading && defs.length === 0 && <p className="text-sm text-fg-faint">No custom fields yet.</p>}
         </div>
 
         <div className="space-y-3 border-t pt-4">
-          <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500">New field</Label>
+          <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">New field</Label>
           <div className="flex gap-2">
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Field name" maxLength={100} aria-label="New field name" />
             <select

@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DEFAULT_MODEL, WEEKDAYS, WEEKDAY_LABELS, buildRule, describeRule, parseRule, type Freq, type RecurrenceModel } from '@/lib/recurrence';
 
-const selectClass = 'h-8 rounded-md border border-slate-200 bg-white px-2 text-xs font-medium';
+const selectClass = 'h-8 rounded-md border border-border bg-background px-2 text-xs font-medium';
 
 /** "Repeat" editor for a task; value is the RRULE string (or null/'' for none). Completing the task creates the next one. */
 export function RecurrenceField({ value, onChange }: { value: string | null | undefined; onChange: (rule: string | null) => void }) {
@@ -12,7 +12,7 @@ export function RecurrenceField({ value, onChange }: { value: string | null | un
 
   return (
     <div className="space-y-2" data-testid="recurrence-field">
-      <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500 tracking-tighter">
+      <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground tracking-tighter">
         <Repeat className="w-3.5 h-3.5 text-blue-500" /> Repeat
       </Label>
       <div className="flex flex-wrap items-center gap-2">
@@ -30,7 +30,7 @@ export function RecurrenceField({ value, onChange }: { value: string | null | un
         </select>
         {model && (
           <>
-            <span className="text-xs text-slate-500">every</span>
+            <span className="text-xs text-muted-foreground">every</span>
             <Input
               aria-label="Repeat every"
               type="number" min={1} max={365}
@@ -65,7 +65,7 @@ export function RecurrenceField({ value, onChange }: { value: string | null | un
             return (
               <button
                 key={d} type="button" aria-pressed={on}
-                className={`h-7 rounded-md border px-2 text-[11px] font-bold ${on ? 'border-blue-500 bg-blue-500 text-white' : 'border-slate-200 bg-white text-slate-600'}`}
+                className={`h-7 rounded-md border px-2 text-[11px] font-bold ${on ? 'border-blue-500 bg-blue-500 text-white' : 'border-border bg-background text-fg-soft'}`}
                 onClick={() => update({ byDay: on ? model.byDay.filter((x) => x !== d) : [...model.byDay, d] })}
               >
                 {WEEKDAY_LABELS[d]}
@@ -75,7 +75,7 @@ export function RecurrenceField({ value, onChange }: { value: string | null | un
         </div>
       )}
       {model && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>{describeRule(value)}. Until</span>
           <Input aria-label="Repeat until" type="date" className="h-8 w-40 text-xs" value={model.until} onChange={(e) => update({ until: e.target.value })} />
           <span>(optional) — the next copy is created when you mark the task Done.</span>

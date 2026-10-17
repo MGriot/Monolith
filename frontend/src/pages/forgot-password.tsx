@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthCard title="Forgot your password?" description="Enter your e-mail address and we will send you a reset link.">
       {done ? (
-        <p role="status" className="text-sm text-slate-700">
+        <p role="status" className="text-sm text-fg-body">
           If an account exists for <b>{email}</b>, a reset link is on its way. It is valid for a short time and works
           once. Check your spam folder if it does not arrive.
         </p>

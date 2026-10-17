@@ -83,7 +83,7 @@ export function RichDropdown({
                       <span
                         role="button"
                         tabIndex={0}
-                        className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-slate-200 p-0.5"
+                        className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-border p-0.5"
                         onMouseDown={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -142,8 +142,8 @@ export function RichDropdown({
                     <button
                       key={item.id}
                       className={cn(
-                        "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-                        selectedValues.includes(item.id) && "bg-slate-50 font-bold"
+                        "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+                        selectedValues.includes(item.id) && "bg-subtle font-bold"
                       )}
                       onClick={() => {
                         onSelect(item.id);
@@ -167,7 +167,7 @@ export function RichDropdown({
                   ))}
                   {onCreate && searchQuery && !filteredItems.find(i => i.label.toLowerCase() === searchQuery.toLowerCase()) && (
                     <button
-                        className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 text-primary font-medium border-t mt-1"
+                        className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted text-primary font-medium border-t mt-1"
                         onClick={() => {
                             onCreate(searchQuery);
                             if (!multi) setOpen(false);

@@ -36,7 +36,7 @@ export default function WhiteboardPage() {
 
     if (isLoading && !isNew) {
         return (
-            <div className="flex h-screen items-center justify-center bg-slate-50">
+            <div className="flex h-screen items-center justify-center bg-subtle">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         );
@@ -45,7 +45,7 @@ export default function WhiteboardPage() {
     if (error && !isNew) {
         toast.error("Failed to load whiteboard details");
         return (
-            <div className="flex flex-col h-screen items-center justify-center bg-slate-50 gap-4">
+            <div className="flex flex-col h-screen items-center justify-center bg-subtle gap-4">
                 <p className="text-destructive font-medium">Failed to load sketch</p>
                 <Button onClick={handleClose}>Return to Project</Button>
             </div>

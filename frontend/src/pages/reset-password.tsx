@@ -50,7 +50,7 @@ export default function ResetPasswordPage() {
     <AuthCard title="Choose a new password" description={`At least ${MIN_LENGTH} characters.`} showBackLink={!done}>
       {done ? (
         <div className="space-y-3">
-          <p role="status" className="text-sm text-slate-700">
+          <p role="status" className="text-sm text-fg-body">
             Your password was changed.
           </p>
           <Link to="/login" className="inline-block text-sm text-primary hover:underline">

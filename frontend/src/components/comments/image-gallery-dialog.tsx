@@ -58,7 +58,7 @@ export function ImageGalleryDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col gap-4">
-          <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg text-blue-800 text-xs">
+          <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg text-blue-800 dark:text-blue-300 text-xs">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
             <p>
               Showing images uploaded to this {taskId ? 'task' : ideaId ? 'idea' : 'project'} and its related items. 
@@ -67,7 +67,7 @@ export function ImageGalleryDialog({
           </div>
 
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
               <p className="text-sm">Fetching images...</p>
             </div>
@@ -77,7 +77,7 @@ export function ImageGalleryDialog({
                 {images.map((img, idx) => (
                   <button
                     key={`${img.url}-${idx}`}
-                    className="group relative aspect-square rounded-lg border border-slate-200 overflow-hidden hover:border-primary hover:ring-2 hover:ring-primary/20 transition-all text-left"
+                    className="group relative aspect-square rounded-lg border border-border overflow-hidden hover:border-primary hover:ring-2 hover:ring-primary/20 transition-all text-left"
                     onClick={() => onSelect(img.url, img.name)}
                   >
                     <img 
@@ -89,7 +89,7 @@ export function ImageGalleryDialog({
                       <p className="text-[10px] text-white font-medium truncate">{img.name}</p>
                     </div>
                     <div className="absolute top-2 right-2">
-                      <Badge variant="secondary" className="text-[8px] px-1 py-0 h-4 bg-white/90 backdrop-blur-sm border-none shadow-sm">
+                      <Badge variant="secondary" className="text-[8px] px-1 py-0 h-4 bg-background/90 backdrop-blur-sm border-none shadow-sm">
                         {img.source}
                       </Badge>
                     </div>
@@ -98,7 +98,7 @@ export function ImageGalleryDialog({
               </div>
             </ScrollArea>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-400 border-2 border-dashed rounded-xl">
+            <div className="flex flex-col items-center justify-center py-12 text-fg-faint border-2 border-dashed rounded-xl">
               <ImageIcon className="w-12 h-12 mb-2 opacity-20" />
               <p className="text-sm font-medium">No images found in this context.</p>
               <p className="text-xs">Upload some files to the {taskId ? 'task' : 'project'} first!</p>

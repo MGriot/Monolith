@@ -50,7 +50,7 @@ export default function NoteEditor({ file, onClose }: NoteEditorProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-background">
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-3 flex-1">
             <FileText className="w-5 h-5 text-primary" />
@@ -61,7 +61,7 @@ export default function NoteEditor({ file, onClose }: NoteEditorProps) {
             />
         </div>
         <div className="flex items-center gap-2">
-            <div className="flex bg-slate-100 rounded-lg p-1 mr-4">
+            <div className="flex bg-muted rounded-lg p-1 mr-4">
                 <Button 
                     variant={mode === 'edit' ? 'secondary' : 'ghost'} 
                     size="sm" 
@@ -83,7 +83,7 @@ export default function NoteEditor({ file, onClose }: NoteEditorProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-slate-50/30">
+      <div className="flex-1 overflow-auto bg-subtle/30">
         {mode === 'edit' ? (
             <div className="h-full p-4 max-w-5xl mx-auto">
                 <SimpleMDE 
@@ -98,7 +98,7 @@ export default function NoteEditor({ file, onClose }: NoteEditorProps) {
                 />
             </div>
         ) : (
-            <div className="p-8 max-w-4xl mx-auto bg-white min-h-full shadow-sm border-x border-slate-100 prose prose-slate dark:prose-invert">
+            <div className="p-8 max-w-4xl mx-auto bg-background min-h-full shadow-sm border-x border-hairline prose prose-slate dark:prose-invert">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {content}
                 </ReactMarkdown>
@@ -106,7 +106,7 @@ export default function NoteEditor({ file, onClose }: NoteEditorProps) {
         )}
       </div>
 
-      <div className="p-4 border-t flex justify-end gap-3 bg-white">
+      <div className="p-4 border-t flex justify-end gap-3 bg-background">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} disabled={updateFileMutation.isPending} className="gap-2">
               {updateFileMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}

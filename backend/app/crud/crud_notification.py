@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import update
+from sqlalchemy import func, update
 from sqlalchemy.future import select
 
 from app.crud.base import CRUDBase
@@ -33,16 +33,35 @@ class CRUDNotification(CRUDBase[Notification, NotificationCreate, NotificationUp
         return db_obj
 
     async def get_multi_by_user(
-        self, db: AsyncSession, *, user_id: UUID, skip: int = 0, limit: int = 100
+        self,
+        db: AsyncSession,
+        *,
+        user_id: UUID,
+        skip: int = 0,
+        limit: int = 100,
+        is_read: Optional[bool] = None,
+        type: Optional[str] = None,
     ) -> List[Notification]:
+        query = select(self.model).filter(self.model.user_id == user_id)
+        if is_read is not None:
+            # legacy rows may carry NULL, which means "not read"
+            query = query.filter(
+                self.model.is_read == True if is_read else self.model.is_read.is_not(True)  # noqa: E712
+            )
+        if type:
+            query = query.filter(self.model.type == type)
         result = await db.execute(
-            select(self.model)
-            .filter(self.model.user_id == user_id)
-            .order_by(self.model.created_at.desc())
-            .offset(skip)
-            .limit(limit)
+            query.order_by(self.model.created_at.desc()).offset(skip).limit(limit)
         )
         return result.scalars().all()
+
+    async def count_unread(self, db: AsyncSession, *, user_id: UUID) -> int:
+        result = await db.execute(
+            select(func.count())
+            .select_from(self.model)
+            .filter(self.model.user_id == user_id, self.model.is_read.is_not(True))
+        )
+        return int(result.scalar() or 0)
 
     async def mark_as_read(self, db: AsyncSession, *, notification_id: UUID) -> Notification:
         db_obj = await self.get(db, id=notification_id)

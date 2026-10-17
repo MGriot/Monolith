@@ -62,6 +62,8 @@ import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
 import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
 import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
+import BulkActionBar from '@/components/bulk-action-bar';
+import { EMPTY_SELECTION, type SelectionState } from '@/lib/selection';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -95,6 +97,17 @@ export default function ProjectDetailPage() {
 
   const view = useTaskView(tasks ?? []);
   const assigneeOptions = useMemo(() => collectAssignees(tasks ?? []), [tasks]);
+  const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
+  const bulkEnabled = canEdit(project?.my_role);
+  const { data: members } = useQuery({
+    queryKey: ['project-members', id],
+    queryFn: async () => (await api.get<{ user_id: string; email: string; full_name?: string | null }[]>(`/projects/${id}/members`)).data,
+    enabled: !!id && bulkEnabled,
+  });
+  const bulkAssignees = useMemo(
+    () => (members ?? []).map((m) => ({ id: m.user_id, label: m.full_name || m.email })),
+    [members],
+  );
 
   // command palette "toggle view": flip between the list overview and the board
   useEffect(() => onAppEvent(TOGGLE_VIEW_EVENT, () => setActiveTab((t) => (t === 'kanban' ? 'overview' : 'kanban'))), []);
@@ -115,13 +128,13 @@ export default function ProjectDetailPage() {
       setTitle(project.name);
       setActions(
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="capitalize px-2 py-0 h-4 text-[9px] font-black uppercase bg-slate-100 text-slate-600 border-none">{project.status}</Badge>
+          <Badge variant="secondary" className="capitalize px-2 py-0 h-4 text-[9px] font-black uppercase bg-muted text-fg-soft border-none">{project.status}</Badge>
           <div className="flex items-center gap-0.5 mr-2">
             {!project.is_archived && canAdmin(project.my_role) && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-slate-400 hover:text-amber-600 transition-colors"
+                className="h-8 w-8 text-fg-faint hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
                 onClick={() => {
                   if (confirm("Archive this project?")) {
                     archiveProjectMutation.mutate();
@@ -137,7 +150,7 @@ export default function ProjectDetailPage() {
               variant="ghost"
               size="icon"
               className={cn(
-                "h-8 w-8 text-slate-400 hover:text-primary transition-colors",
+                "h-8 w-8 text-fg-faint hover:text-primary transition-colors",
                 activeTab === 'settings' && "text-primary"
               )}
               onClick={() => setActiveTab('settings')}
@@ -388,7 +401,7 @@ export default function ProjectDetailPage() {
 
   if (isProjectLoading || isTasksLoading || isStatsLoading) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[400px] text-slate-500">
+      <div className="flex items-center justify-center h-full min-h-[400px] text-muted-foreground">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
         <p className="ml-4 text-sm">
           {isProjectLoading && "Loading project data..."}
@@ -403,7 +416,7 @@ export default function ProjectDetailPage() {
     return (
       <div className="p-8 flex flex-col items-center justify-center h-64 gap-4">
         <AlertCircle className="w-12 h-12 text-red-500" />
-        <p className="text-slate-500">Project not found or access denied.</p>
+        <p className="text-muted-foreground">Project not found or access denied.</p>
         <Button onClick={() => navigate('/projects')}>Back to Projects</Button>
       </div>
     );
@@ -421,10 +434,10 @@ export default function ProjectDetailPage() {
   };
 
   return (
-    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50">
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 bg-white">
-        <div className="px-6 py-2 border-b border-slate-100 bg-white">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 bg-background">
+        <div className="px-6 py-2 border-b border-hairline bg-background">
           <TabsList className="flex bg-transparent p-0 gap-6 h-10">
             <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs font-bold gap-2">
               <LayoutDashboard className="w-3.5 h-3.5" /> Overview
@@ -447,59 +460,59 @@ export default function ProjectDetailPage() {
           </TabsList>
         </div>
 
-        <TabsContent value="overview" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30 space-y-6">
+        <TabsContent value="overview" className="flex-1 overflow-auto m-0 p-6 bg-subtle/30 space-y-6">
           {/* Metadata Card */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="shadow-sm border-slate-200">
+            <Card className="shadow-sm border-border">
                 <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase text-slate-400">Topics</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase text-fg-faint">Topics</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="flex flex-wrap gap-1">
                         {project.topics && project.topics.length > 0 ? project.topics.map(t => (
-                            <Badge key={t.id} variant="secondary" className="text-[9px] px-1 py-0 h-4 bg-slate-100 text-slate-600 border-none" style={{ color: t.color }}>{t.name}</Badge>
+                            <Badge key={t.id} variant="secondary" className="text-[9px] px-1 py-0 h-4 bg-muted text-fg-soft border-none" style={{ color: t.color }}>{t.name}</Badge>
                         )) : (
-                            <p className="text-xs font-bold text-slate-700">General</p>
+                            <p className="text-xs font-bold text-fg-body">General</p>
                         )}
                     </div>
                 </CardContent>
             </Card>
-            <Card className="shadow-sm border-slate-200">
+            <Card className="shadow-sm border-border">
                 <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase text-slate-400">Work Types</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase text-fg-faint">Work Types</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="flex flex-wrap gap-1">
                         {project.types && project.types.length > 0 ? project.types.map(t => (
-                            <Badge key={t.id} variant="outline" className="text-[9px] px-1 py-0 h-4 border-slate-200 text-slate-500">{t.name}</Badge>
+                            <Badge key={t.id} variant="outline" className="text-[9px] px-1 py-0 h-4 border-border text-muted-foreground">{t.name}</Badge>
                         )) : (
-                            <p className="text-xs font-bold text-slate-700">Standard</p>
+                            <p className="text-xs font-bold text-fg-body">Standard</p>
                         )}
                     </div>
                 </CardContent>
             </Card>
-            <Card className="shadow-sm border-slate-200">
+            <Card className="shadow-sm border-border">
                 <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase text-slate-400">Timeline</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase text-fg-faint">Timeline</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="flex flex-col gap-1">
-                        <p className="text-[10px] text-slate-500 font-medium">Start: {project.start_date ? new Date(project.start_date).toLocaleDateString() : '-'}</p>
-                        <p className="text-[10px] text-amber-600 font-bold">Due: {project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium">Start: {project.start_date ? new Date(project.start_date).toLocaleDateString() : '-'}</p>
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">Due: {project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}</p>
                     </div>
                 </CardContent>
             </Card>
-            <Card className="shadow-sm border-slate-200">
+            <Card className="shadow-sm border-border">
                 <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase text-slate-400">Financials</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase text-fg-faint">Financials</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="space-y-1.5">
                         <div className="flex justify-between text-[10px] font-black uppercase">
-                            <span className="text-slate-400">Actual / Budget</span>
+                            <span className="text-fg-faint">Actual / Budget</span>
                             <span className={cn(
                                 "font-bold",
-                                (project.real_cost || 0) > (project.budget || 0) ? "text-red-500" : "text-emerald-600"
+                                (project.real_cost || 0) > (project.budget || 0) ? "text-red-500" : "text-emerald-600 dark:text-emerald-400"
                             )}>
                                 ${project.real_cost?.toLocaleString()} / ${project.budget?.toLocaleString()}
                             </span>
@@ -510,10 +523,10 @@ export default function ProjectDetailPage() {
             </Card>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <GanttChart className="w-4 h-4 text-slate-500" />
+          <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-hairline bg-subtle/50 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
+                <GanttChart className="w-4 h-4 text-muted-foreground" />
                 Project Timeline
               </h3>
             </div>
@@ -533,8 +546,8 @@ export default function ProjectDetailPage() {
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2 px-1">
-              <ListIcon className="w-4 h-4 text-slate-500" />
+            <h3 className="text-sm font-bold text-fg-body flex items-center gap-2 px-1">
+              <ListIcon className="w-4 h-4 text-muted-foreground" />
               Tasks & Subtasks
             </h3>
             <TaskFilterBar
@@ -553,17 +566,21 @@ export default function ProjectDetailPage() {
               onAddSubtask={handleAddSubtask}
               onReorderTask={handleReorderTask}
               onIndentTask={handleIndentTask}
+              selection={bulkEnabled ? { state: selection, onChange: setSelection } : undefined}
             />
+            {bulkEnabled && (
+              <BulkActionBar ids={[...selection.selected]} assignees={bulkAssignees} onClear={() => setSelection(EMPTY_SELECTION)} />
+            )}
           </div>
 
           <div className="flex justify-center">
-            <div className="w-full max-w-4xl bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div className="w-full max-w-4xl bg-background p-4 rounded-xl border border-border shadow-sm">
               <ProjectHeatmap stats={stats || []} />
             </div>
           </div>
         </TabsContent>
 
-        <TabsContent value="kanban" className="flex-1 overflow-hidden m-0 p-6 bg-slate-50/30">
+        <TabsContent value="kanban" className="flex-1 overflow-hidden m-0 p-6 bg-subtle/30">
           <div className="mb-4">
             <TaskFilterBar
               scope="project-tasks"
@@ -586,20 +603,20 @@ export default function ProjectDetailPage() {
           />
         </TabsContent>
 
-        <TabsContent value="team" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
+        <TabsContent value="team" className="flex-1 overflow-auto m-0 p-6 bg-subtle/30">
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+            <div className="bg-background p-6 rounded-xl border border-border shadow-sm">
+              <h3 className="text-sm font-bold text-fg-body mb-4 flex items-center gap-2">
                 <UsersIcon className="w-4 h-4 text-primary" />
                 Project Members
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {project.members?.map((member) => (
-                  <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-100">
-                    <UserAvatar user={member} className="w-10 h-10 border-white shadow-sm" />
+                  <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg bg-subtle border border-hairline">
+                    <UserAvatar user={member} className="w-10 h-10 border-background shadow-sm" />
                     <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-bold text-slate-900 truncate">{member.full_name || 'No Name'}</span>
-                      <span className="text-xs text-slate-500 truncate">{member.email}</span>
+                      <span className="text-sm font-bold text-foreground truncate">{member.full_name || 'No Name'}</span>
+                      <span className="text-xs text-muted-foreground truncate">{member.email}</span>
                     </div>
                   </div>
                 ))}
@@ -613,13 +630,13 @@ export default function ProjectDetailPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="ideas" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30 space-y-6">
+        <TabsContent value="ideas" className="flex-1 overflow-auto m-0 p-6 bg-subtle/30 space-y-6">
           <ProjectIdeas projectId={id!} onPromoteSuccess={handlePromoteSuccess} />
         </TabsContent>
 
-        <TabsContent value="library" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
+        <TabsContent value="library" className="flex-1 overflow-auto m-0 p-6 bg-subtle/30">
           <div className="max-w-4xl mx-auto space-y-6">
-            <Card className="border-slate-200 shadow-sm">
+            <Card className="border-border shadow-sm">
                 <CardHeader>
                     <CardTitle className="text-sm font-bold flex items-center gap-2">
                         <FolderIcon className="w-4 h-4 text-primary" />
@@ -634,7 +651,7 @@ export default function ProjectDetailPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="activity" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
+        <TabsContent value="activity" className="flex-1 overflow-auto m-0 p-6 bg-subtle/30">
           <div className="max-w-4xl mx-auto">
             <Card>
               <CardHeader>
@@ -651,12 +668,12 @@ export default function ProjectDetailPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="settings" className="flex-1 overflow-auto m-0 p-6 bg-slate-50/30">
+        <TabsContent value="settings" className="flex-1 overflow-auto m-0 p-6 bg-subtle/30">
           <div className="max-w-4xl mx-auto space-y-6">
             {id && <ProjectMembersCard projectId={id} canManage={canAdmin(project.my_role)} />}
 
             {!canAdmin(project.my_role) && (
-              <p role="status" className="rounded-lg border bg-white p-4 text-sm text-slate-600">
+              <p role="status" className="rounded-lg border bg-background p-4 text-sm text-fg-soft">
                 Only project admins can change the settings, custom fields and taxonomy of this project.
               </p>
             )}
@@ -751,7 +768,7 @@ export default function ProjectDetailPage() {
 
                  {editingTask.id && (
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
                         <MessageSquare className="w-4 h-4 text-primary" />
                         Task Activity
                         </h3>
@@ -761,7 +778,7 @@ export default function ProjectDetailPage() {
 
                  {id && editingTask.id && (
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
                         <Lightbulb className="w-4 h-4 text-amber-500" />
                         Linked Project Ideas
                         </h3>
@@ -774,13 +791,13 @@ export default function ProjectDetailPage() {
               </>
 
               {/* Metadata & Footer Actions */}
-              <div className="pt-6 border-t mt-6 flex flex-col gap-6 bg-slate-50/50 -mx-6 px-6 pb-6 rounded-b-xl">
+              <div className="pt-6 border-t mt-6 flex flex-col gap-6 bg-subtle/50 -mx-6 px-6 pb-6 rounded-b-xl">
                 <div className="flex flex-wrap justify-between items-end gap-4">
                   <div className="space-y-1">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight flex items-center gap-2">
+                    <div className="text-[10px] text-fg-faint font-bold uppercase tracking-tight flex items-center gap-2">
                        <Clock className="w-3 h-3" /> Created: {formatDateSafe(editingTask.created_at)}
                     </div>
-                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight flex items-center gap-2">
+                    <div className="text-[10px] text-fg-faint font-bold uppercase tracking-tight flex items-center gap-2">
                        <Clock className="w-3 h-3 text-primary/40" /> Modified: {formatDateSafe(editingTask.updated_at)}
                     </div>
                   </div>
@@ -789,7 +806,7 @@ export default function ProjectDetailPage() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="text-slate-500 hover:text-amber-600 hover:bg-amber-50 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
+                        className="text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
                         onClick={() => {
                         if (window.confirm(`Archive the task "${editingTask.title}"?`)) {
                             archiveTaskMutation.mutate(editingTask.id);
@@ -803,7 +820,7 @@ export default function ProjectDetailPage() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-400 hover:text-red-600 hover:bg-red-50 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
+                        className="text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
                         onClick={() => {
                         if (window.confirm(`Are you sure you want to delete the task "${editingTask.title}"?`)) {
                             deleteTaskMutation.mutate(editingTask.id);

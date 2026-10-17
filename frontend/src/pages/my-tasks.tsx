@@ -56,6 +56,9 @@ import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
 import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
 import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
+import BulkActionBar from '@/components/bulk-action-bar';
+import { clickSelection, EMPTY_SELECTION, headerState, pruneSelection, toggleAll, type SelectionState } from '@/lib/selection';
+import { useAuth } from '@/components/auth-provider';
 
 export default function MyTasksPage() {
   const queryClient = useQueryClient();
@@ -73,11 +76,11 @@ export default function MyTasksPage() {
           <Download className="w-4 h-4" /> Export
         </Button>
 
-        <div className="bg-slate-100 p-1 rounded-lg flex items-center h-9">
+        <div className="bg-muted p-1 rounded-lg flex items-center h-9">
           <Button 
             variant={view === 'kanban' ? 'secondary' : 'ghost'} 
             size="sm" 
-            className={view === 'kanban' ? 'bg-white shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-slate-500'}
+            className={view === 'kanban' ? 'bg-background shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-muted-foreground'}
             onClick={() => setView('kanban')}
           >
             <Trello className="w-3.5 h-3.5" /> Kanban
@@ -85,7 +88,7 @@ export default function MyTasksPage() {
           <Button 
             variant={view === 'list' ? 'secondary' : 'ghost'} 
             size="sm" 
-            className={view === 'list' ? 'bg-white shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-slate-500'}
+            className={view === 'list' ? 'bg-background shadow-sm text-xs font-bold gap-2' : 'text-xs font-bold gap-2 text-muted-foreground'}
             onClick={() => setView('list')}
           >
             <ListIcon className="w-3.5 h-3.5" /> List
@@ -114,6 +117,20 @@ export default function MyTasksPage() {
   const taskView = useTaskView(activeTasks);
   const assigneeOptions = useMemo(() => collectAssignees(activeTasks), [activeTasks]);
   const filtering = hasActiveFilters(taskView.filters);
+
+  // bulk selection (list view): rows in display order, groups included
+  const { user: me } = useAuth();
+  const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
+  const rowOrder = useMemo(() => taskView.groups.flatMap((g) => g.tasks.map((t) => t.id)), [taskView.groups]);
+  useEffect(() => {
+    setSelection((s) => pruneSelection(s, rowOrder));
+  }, [rowOrder]);
+  const bulkAssignees = useMemo(() => {
+    const opts = collectAssignees(activeTasks);
+    if (me && !opts.some((o) => o.id === me.id)) opts.unshift({ id: me.id, label: me.full_name || me.email });
+    return opts;
+  }, [activeTasks, me]);
+  const selectionHeader = headerState(selection, rowOrder);
 
   // command palette "toggle view"
   useEffect(() => onAppEvent(TOGGLE_VIEW_EVENT, () => setView((v) => (v === 'kanban' ? 'list' : 'kanban'))), []);
@@ -259,7 +276,7 @@ export default function MyTasksPage() {
   };
 
   return (
-    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-slate-50/50 pb-12">
+    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50 pb-12">
 
       <div className="flex-1 overflow-auto p-6 space-y-6">
         <TaskFilterBar
@@ -281,22 +298,32 @@ export default function MyTasksPage() {
               onSubtaskClick={handleTaskClick}
             />
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden">
               <Table>
-                <TableHeader className="bg-slate-50">
+                <TableHeader className="bg-subtle">
                   <TableRow>
-                    <TableHead className="text-[10px] font-black uppercase text-slate-500">Task</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-slate-500">Project</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-slate-500">Status</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-slate-500">Priority</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-slate-500 text-right">Due Date</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-slate-500 text-right">Actions</TableHead>
+                    <TableHead className="w-8">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
+                        aria-label="Select all tasks"
+                        checked={selectionHeader === 'all'}
+                        ref={(el) => { if (el) el.indeterminate = selectionHeader === 'some'; }}
+                        onChange={() => setSelection((s) => toggleAll(s, rowOrder))}
+                      />
+                    </TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground">Task</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground">Project</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground">Priority</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground text-right">Due Date</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {taskView.sorted.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-32 text-center text-slate-500 italic">
+                      <TableCell colSpan={7} className="h-32 text-center text-muted-foreground italic">
                         {filtering ? 'No tasks match the current filters.' : 'You have no tasks assigned to you.'}
                       </TableCell>
                     </TableRow>
@@ -304,22 +331,33 @@ export default function MyTasksPage() {
                     taskView.groups.map((group) => (
                       <Fragment key={group.key}>
                       {group.label && (
-                        <TableRow className="bg-slate-50 hover:bg-slate-50">
-                          <TableCell colSpan={6} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-slate-500">
-                            <span role="heading" aria-level={4}>{group.label} <span className="font-semibold text-slate-400">({group.tasks.length})</span></span>
+                        <TableRow className="bg-subtle hover:bg-subtle">
+                          <TableCell colSpan={7} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                            <span role="heading" aria-level={4}>{group.label} <span className="font-semibold text-fg-faint">({group.tasks.length})</span></span>
                           </TableCell>
                         </TableRow>
                       )}
                       {group.tasks.map((task) => (
                       <TableRow 
                         key={`${group.key}-${task.id}`}
-                        className="hover:bg-slate-50/50 cursor-pointer"
+                        className="hover:bg-subtle/50 cursor-pointer"
+                        data-state={selection.selected.has(task.id) ? 'selected' : undefined}
                         onClick={() => handleTaskClick(task)}
                       >
-                        <TableCell className="font-semibold text-slate-900">{task.title}</TableCell>
+                        <TableCell className="w-8" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
+                            aria-label={`Select ${task.title}`}
+                            checked={selection.selected.has(task.id)}
+                            onChange={() => undefined}
+                            onClick={(e) => setSelection((s) => clickSelection(s, rowOrder, task.id, e.shiftKey))}
+                          />
+                        </TableCell>
+                        <TableCell className="font-semibold text-foreground">{task.title}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                            <Folder className="w-3 h-3 text-slate-400" />
+                          <div className="flex items-center gap-1.5 text-xs text-fg-soft">
+                            <Folder className="w-3 h-3 text-fg-faint" />
                             {task.project?.name || 'Independent'}
                           </div>
                         </TableCell>
@@ -333,7 +371,7 @@ export default function MyTasksPage() {
                             {task.priority}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right text-xs font-bold text-slate-500">
+                        <TableCell className="text-right text-xs font-bold text-muted-foreground">
                           {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
                         </TableCell>
                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
@@ -369,11 +407,14 @@ export default function MyTasksPage() {
               </Table>
             </div>
           )}
+          {view === 'list' && (
+            <BulkActionBar ids={[...selection.selected]} assignees={bulkAssignees} onClear={() => setSelection(EMPTY_SELECTION)} />
+          )}
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+        <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden flex flex-col">
+          <div className="p-4 border-b bg-subtle/50 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
               <CheckSquare className="w-4 h-4 text-primary" />
               Schedule Overview
             </h3>
@@ -436,7 +477,7 @@ export default function MyTasksPage() {
 
                   {editingTask.id && (
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
                             <MessageSquare className="w-4 h-4 text-primary" />
                             Task Activity
                         </h3>
@@ -446,7 +487,7 @@ export default function MyTasksPage() {
 
                   {editingTask.id && (
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
                             <Lightbulb className="w-4 h-4 text-amber-500" />
                             Linked Project Ideas
                         </h3>
@@ -459,13 +500,13 @@ export default function MyTasksPage() {
                </>
 
               {/* Metadata & Footer Actions */}
-              <div className="pt-6 border-t mt-6 flex flex-col gap-6 bg-slate-50/50 -mx-6 px-6 pb-6 rounded-b-xl">
+              <div className="pt-6 border-t mt-6 flex flex-col gap-6 bg-subtle/50 -mx-6 px-6 pb-6 rounded-b-xl">
                 <div className="flex flex-wrap justify-between items-end gap-4">
                   <div className="space-y-1">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight flex items-center gap-2">
+                    <div className="text-[10px] text-fg-faint font-bold uppercase tracking-tight flex items-center gap-2">
                        <Clock className="w-3 h-3" /> Created: {formatDateSafe(editingTask.created_at)}
                     </div>
-                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight flex items-center gap-2">
+                    <div className="text-[10px] text-fg-faint font-bold uppercase tracking-tight flex items-center gap-2">
                        <Clock className="w-3 h-3 text-primary/40" /> Modified: {formatDateSafe(editingTask.updated_at)}
                     </div>
                   </div>
@@ -474,7 +515,7 @@ export default function MyTasksPage() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="text-slate-500 hover:text-amber-600 hover:bg-amber-50 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
+                        className="text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
                         onClick={() => {
                         if (window.confirm(`Archive the task "${editingTask.title}"?`)) {
                             archiveTaskMutation.mutate(editingTask.id);
@@ -488,7 +529,7 @@ export default function MyTasksPage() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-400 hover:text-red-600 hover:bg-red-50 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
+                        className="text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 gap-2 h-9 px-4 font-bold text-[11px] uppercase tracking-wider"
                         onClick={() => {
                         if (window.confirm(`Are you sure you want to delete the task "${editingTask.title}"?`)) {
                             deleteTaskMutation.mutate(editingTask.id);
