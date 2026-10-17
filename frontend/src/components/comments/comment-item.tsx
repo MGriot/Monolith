@@ -8,29 +8,18 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { 
-  MoreHorizontal, 
   Trash2, 
-  Edit2, 
-  Reply,
+  Edit2,
   Globe,
   FileText,
-  Layout,
   ExternalLink
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface CommentItemProps {
   comment: Comment;
   currentUserId?: string;
-  onReply: (parentId: string, content: string) => Promise<void>;
   onEdit: (commentId: string, content: string) => Promise<void>;
   onDelete: (commentId: string) => Promise<void>;
-  depth?: number;
   projectId?: string;
   taskId?: string;
   ideaId?: string;
@@ -39,15 +28,12 @@ interface CommentItemProps {
 export function CommentItem({ 
   comment, 
   currentUserId, 
-  onReply, 
   onEdit, 
   onDelete, 
-  depth = 0,
   projectId,
   taskId,
   ideaId
 }: CommentItemProps) {
-  const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   const isMe = currentUserId === comment.author_id;

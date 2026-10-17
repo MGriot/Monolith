@@ -3,7 +3,7 @@ import api from '@/lib/api';
 import type { Comment } from '@/types';
 import { CommentInput } from './comment-input';
 import { CommentItem } from './comment-item';
-import { Loader2, MessageSquare, ShieldAlert } from 'lucide-react';
+import { Loader2, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { useEffect, useRef } from 'react';
 
@@ -93,7 +93,6 @@ export default function CommentSection({ projectId, taskId, ideaId }: CommentSec
             key={comment.id}
             comment={comment}
             currentUserId={user?.id}
-            onReply={async (parentId, content) => {}} // Replies disabled for flat chat for now
             onEdit={async (commentId, content) => await updateMutation.mutateAsync({ id: commentId, content })}
             onDelete={async (commentId) => await deleteMutation.mutateAsync(commentId)}
             projectId={projectId}
