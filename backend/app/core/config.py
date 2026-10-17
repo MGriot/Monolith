@@ -47,6 +47,15 @@ class Settings(BaseSettings):
     APP_BASE_URL: str = "http://localhost:8080"
     EMAILS_FROM_EMAIL: str = "noreply@monolith.local"
 
+    # E-mail features: queue + retrying worker, scheduled digests/reminders, password reset / verification
+    EMAIL_ENABLED: bool = True            # false: nothing is queued or sent (mail endpoints still answer)
+    EMAIL_POLL_SECONDS: int = 5
+    EMAIL_RETRY_BASE_SECONDS: int = 60    # delay after the 1st failure, doubled each time
+    EMAIL_MAX_ATTEMPTS: int = 6
+    SCHEDULER_ENABLED: bool = True        # weekly digest (Mon 08:00 UTC) + daily deadline reminders (07:00 UTC)
+    PASSWORD_RESET_MINUTES: int = 30
+    EMAIL_VERIFY_HOURS: int = 48
+
     class Config:
         env_file = ".env"
         extra = "ignore"

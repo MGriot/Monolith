@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import asyncio
 import hmac
 import logging
 import os
@@ -65,21 +66,35 @@ app.mount("/uploads", SafeStaticFiles(directory=settings.UPLOAD_DIR), name="uplo
 
 @app.on_event("startup")
 async def on_startup():
-    from app.db.session import engine, Base
-    import app.models  # Ensure all models are loaded
+    # NOTE: never `import app.models` here: it would bind the local name `app` and shadow the FastAPI instance.
+    from app import models  # noqa: F401  (ensure all models are loaded)
     from app.db.init_db import seed_users
-    from app.core.scheduler import start_scheduler
 
     if settings.AUTO_MIGRATE:
         from app.db.migrate import upgrade_database
         await upgrade_database()
     else:
         logger.warning("AUTO_MIGRATE=false: schema is NOT managed at start-up (run `alembic upgrade head`).")
-    
+
     await seed_users()
-    # Scheduler disabled as email service was removed
-    # from app.core.scheduler import start_scheduler
-    # start_scheduler()
+
+    # Background workers: e-mail outbox delivery and scheduled jobs (digest, deadline reminders).
+    # Both are safe with several processes: the outbox uses SKIP LOCKED, the scheduler claims slots atomically.
+    app.state.background_tasks = []
+    if settings.EMAIL_ENABLED:
+        from app.core.mailer import run_outbox_worker
+        app.state.background_tasks.append(asyncio.create_task(run_outbox_worker(), name="email-outbox"))
+        if settings.SCHEDULER_ENABLED:
+            from app.core.scheduler import run_scheduler
+            app.state.background_tasks.append(asyncio.create_task(run_scheduler(), name="scheduler"))
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    tasks = getattr(app.state, "background_tasks", [])
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
 
 @app.get("/api/health")
 async def health_check():

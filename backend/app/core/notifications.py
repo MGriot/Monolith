@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import smtplib
 import ssl
@@ -55,17 +54,19 @@ email_service = EmailService()
 
 async def send_email_notification(recipient: str, subject: str, body: str, html_body: Optional[str] = None):
     """
-    Asynchronously send an email notification.
-    Uses the EmailService for actual delivery.
+    Queue an e-mail (see app/core/mailer.py). Delivery, retries and backoff happen in the outbox worker, so callers
+    (digests, reminders, critical updates) are never blocked or failed by the mail server.
     """
-    # In a production environment, this should be offloaded to a background task (e.g., Celery or FastAPI BackgroundTasks)
-    # For now, we call the synchronous service method.
+    from app.core.mailer import enqueue_raw
+    from app.db.session import AsyncSessionLocal
+
     try:
-        # smtplib is blocking: run it in a worker thread so the event loop is not stalled.
-        await asyncio.to_thread(email_service.send_email, recipient, subject, body, html_body)
+        async with AsyncSessionLocal() as db:
+            await enqueue_raw(db, to=recipient, subject=subject, text=body, html=html_body, kind="notification")
+            await db.commit()
     except Exception:
-        # Notification failures must not crash the request flow, but they must not be silent either.
-        logger.exception("Email notification to %s failed", recipient)
+        # Queueing must not crash the request flow, but it must not be silent either.
+        logger.exception("Could not queue e-mail notification to %s", recipient)
 
 async def notify_critical_update(user_email: str, title: str, message: str):
     """

@@ -1,0 +1,9 @@
+{% set subject = "[" ~ app_name ~ "] You were assigned: " ~ task_title %}Hello {{ name }},
+
+You have been assigned to the task "{{ task_title }}"{% if project_name %} in project "{{ project_name }}"{% endif %}.
+
+Open it: {{ link }}
+
+You can turn these e-mails off in Settings > Notifications.
+
+{{ app_name }}
