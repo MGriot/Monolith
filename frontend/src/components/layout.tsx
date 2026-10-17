@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { UserAvatar } from './ui/user-avatar';
 import NotificationPopover from './notification-popover';
+import { ThemeToggle } from './theme-toggle';
 import TaskCreateDialog from './task-create-dialog';
 import CommandPalette from './command-palette';
 import ShortcutSheet from './shortcut-sheet';
@@ -266,6 +267,7 @@ export default function Layout({ children }: LayoutProps) {
               </PopoverContent>
             </Popover>
 
+            <ThemeToggle />
             <NotificationPopover />
             <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block" />
             <div className="flex items-center gap-3 pl-1">

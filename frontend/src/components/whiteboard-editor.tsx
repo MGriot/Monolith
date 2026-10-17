@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 // Import Excalidraw styles - critical for correct UI rendering
 import "@excalidraw/excalidraw/index.css";
+import { useTheme } from "@/hooks/use-theme";
 
 interface WhiteboardEditorProps {
   id?: string;
@@ -35,6 +36,7 @@ export default function WhiteboardEditor({
   onClose
 }: WhiteboardEditorProps) {
   const queryClient = useQueryClient();
+  const { resolved: theme } = useTheme();
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const [title, setTitle] = useState(initialTitle);
   const [id, setId] = useState<string | undefined>(initialId);
@@ -263,7 +265,7 @@ export default function WhiteboardEditor({
           key={initialId || 'new'}
           excalidrawAPI={(api) => setExcalidrawAPI(api)}
           initialData={processedData || undefined}
-          theme="light"
+          theme={theme}
           UIOptions={{
             canvasActions: {
               loadScene: false,

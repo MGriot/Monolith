@@ -1,7 +1,7 @@
-from typing import Any, Dict, List, Optional, ForwardRef
+from typing import Any, Dict, List, Literal, Optional, ForwardRef
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict, computed_field, model_validator
 from app.core.enums import Status, Priority, DependencyType
 from app.schemas.user import User as UserSchema
 from app.schemas.metadata import Topic, WorkType
@@ -137,3 +137,50 @@ Subtask = Task
 SubtaskCreate = TaskCreate
 SubtaskUpdate = TaskUpdate
 SubtaskShortCreate = TaskShortCreate
+
+# ---- bulk actions (POST /tasks/bulk) ----------------------------------------------------------------------------
+BULK_MAX_IDS = 200
+
+
+class BulkTaskPatch(BaseModel):
+    """The only fields a bulk request may change; anything else is rejected (422)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Optional[Status] = None
+    priority: Optional[Priority] = None
+    assignee_ids: Optional[List[UUID]] = None
+
+
+class BulkTaskRequest(BaseModel):
+    """Either a `patch` (status/priority/assignees) or an `action`, never both and never neither."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ids: List[UUID]
+    patch: Optional[BulkTaskPatch] = None
+    action: Optional[Literal["archive", "restore", "delete"]] = None
+
+    @model_validator(mode="after")
+    def _check(self):
+        if not self.ids:
+            raise ValueError("ids must not be empty")
+        if len(self.ids) > BULK_MAX_IDS:
+            raise ValueError(f"at most {BULK_MAX_IDS} ids per request")
+        has_patch = self.patch is not None and bool(self.patch.model_fields_set)
+        if has_patch == (self.action is not None):
+            raise ValueError("send exactly one of `patch` (with at least one field) or `action`")
+        return self
+
+
+class BulkTaskResult(BaseModel):
+    id: UUID
+    ok: bool
+    status_code: int = 200
+    detail: Optional[str] = None
+
+
+class BulkTaskResponse(BaseModel):
+    results: List[BulkTaskResult]
+    succeeded: int
+    failed: int

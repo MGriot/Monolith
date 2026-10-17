@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "@/lib/api";
-import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useNotificationList, useNotificationMutations, useUnreadCount } from "@/hooks/use-notifications";
+import { notificationKeys } from "@/lib/notifications";
 import {
   Popover,
   PopoverContent,
@@ -20,27 +21,15 @@ import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: string;
-  link?: string;
-  is_read: boolean;
-  created_at: string;
-}
-
 export default function NotificationPopover() {
   const queryClient = useQueryClient();
   const socketRef = useRef<WebSocket | null>(null);
 
-  const { data: notifications, isLoading } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: async () => {
-      const response = await api.get('/notifications/');
-      return response.data as Notification[];
-    },
-  });
+  const [open, setOpen] = useState(false);
+  // The bell only needs a COUNT; the list is fetched when the popover is opened.
+  const { data: unreadCount = 0 } = useUnreadCount();
+  const { data: notifications, isLoading } = useNotificationList({ unreadOnly: false, type: '', limit: 20 }, open);
+  const { setRead, markAllRead } = useNotificationMutations();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -68,7 +57,7 @@ export default function NotificationPopover() {
           toast.info(message.data.title, {
             description: message.data.message,
           });
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          queryClient.invalidateQueries({ queryKey: notificationKeys.all });
         }
       } catch (e) {
         // Silently ignore non-JSON
@@ -95,27 +84,7 @@ export default function NotificationPopover() {
     };
   }, [queryClient]);
 
-  const markReadMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return api.put(`/notifications/${id}`, { is_read: true });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    },
-  });
-
-  const markAllReadMutation = useMutation({
-    mutationFn: async () => {
-      return api.post('/notifications/mark-all-as-read');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    },
-  });
-
-  const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
-
-  const getIcon = (type: string) => {
+  const getIcon = (type: string | null) => {
     switch (type) {
       case 'assignment':
         return <MessageSquare className="w-4 h-4 text-blue-500" />;
@@ -127,7 +96,7 @@ export default function NotificationPopover() {
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'} className="relative text-slate-500 hover:text-slate-900 transition-colors">
           <Bell className="w-5 h-5" />
@@ -146,8 +115,8 @@ export default function NotificationPopover() {
               variant="ghost" 
               size="sm" 
               className="h-7 text-xs px-2 gap-1.5 hover:bg-slate-200"
-              onClick={() => markAllReadMutation.mutate()}
-              disabled={markAllReadMutation.isPending}
+              onClick={() => markAllRead.mutate()}
+              disabled={markAllRead.isPending}
             >
               <CheckCheck className="w-3.5 h-3.5" />
               Mark all read
@@ -168,7 +137,7 @@ export default function NotificationPopover() {
                   "p-4 transition-colors hover:bg-slate-50 relative group",
                   !n.is_read && "bg-primary/5 hover:bg-primary/10"
                 )}
-                onClick={() => !n.is_read && markReadMutation.mutate(n.id)}
+                onClick={() => !n.is_read && setRead.mutate({ id: n.id, isRead: true })}
               >
                 {!n.is_read && (
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
@@ -216,6 +185,15 @@ export default function NotificationPopover() {
               <p className="text-xs text-slate-500 mt-1">No new notifications for you.</p>
             </div>
           )}
+        </div>
+        <div className="border-t p-2 text-center">
+          <Link
+            to="/notifications"
+            onClick={() => setOpen(false)}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Open notification centre
+          </Link>
         </div>
       </PopoverContent>
     </Popover>

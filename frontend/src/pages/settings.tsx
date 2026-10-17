@@ -20,6 +20,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useTitle } from '@/context/title-context';
 import { NotificationPrefsCard } from '@/components/notification-prefs';
+import { ThemeSegmented } from '@/components/theme-toggle';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     Dialog, 
@@ -181,6 +182,14 @@ export default function SettingsPage() {
                 </CardFooter>
               </form>
             </Card>
+          </div>
+
+          <div className="md:col-span-1 pt-4 border-t border-slate-200 mt-4">
+            <h2 className="text-sm font-semibold text-slate-900">Appearance</h2>
+            <p className="text-xs text-slate-500 mt-1">Light, dark, or follow your device.</p>
+          </div>
+          <div className="md:col-span-2 pt-4 border-t border-slate-200 mt-4">
+            <ThemeSegmented />
           </div>
 
           <div className="md:col-span-1 pt-4 border-t border-slate-200 mt-4">
