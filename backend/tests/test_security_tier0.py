@@ -16,7 +16,7 @@ from uuid import uuid4
 import pytest
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.testclient import TestClient
-from jose import jwt
+import jwt
 
 from app.api import access, deps
 from app.core import uploads
@@ -101,7 +101,7 @@ class TestAuthentication:
         assert r.status_code == 401
 
     def test_token_signed_with_other_key_is_401(self, client):
-        bad = jwt.encode({"sub": str(uuid4())}, "some-other-key", algorithm="HS256")
+        bad = jwt.encode({"sub": str(uuid4())}, "some-other-key-that-is-not-the-server-secret", algorithm="HS256")
         assert client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {bad}"}).status_code == 401
 
     def test_unknown_user_is_401(self, client, monkeypatch):

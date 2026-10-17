@@ -11,7 +11,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from jose import jwt
+import jwt
 from starlette.websockets import WebSocketDisconnect
 
 from app.api import deps
@@ -461,7 +461,7 @@ class TestWebSocketAuth:
         assert ok is not None and ok[0] == user.id
         assert run(notif_mod._authenticate_ws_token(_token(user.id, minutes=-1))) is None
         assert run(notif_mod._authenticate_ws_token("garbage")) is None
-        forged = jwt.encode({"sub": str(user.id)}, "other-key", algorithm="HS256")
+        forged = jwt.encode({"sub": str(user.id)}, "other-key-that-is-not-the-server-secret-xyz", algorithm="HS256")
         assert run(notif_mod._authenticate_ws_token(forged)) is None
 
         user.is_active = False

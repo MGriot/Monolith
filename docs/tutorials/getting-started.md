@@ -4,28 +4,31 @@ This tutorial will guide you through your first steps in Monolith, from launchin
 
 ## 1. Launch the Environment
 
-Monolith supports two primary modes of operation via Docker Compose.
+Monolith runs as a small container stack under rootless Podman or Docker. Full details are in
+[Run with Podman](../how-to/run-with-podman.md).
 
 ### Production Mode
-For a stable, pre-built experience:
 ```bash
-docker-compose up -d
+cp .env.example .env            # fill in the secrets and the first admin
+scripts/mail-bootstrap.sh       # one-time: TLS cert + mailbox for the internal mail server
+podman-compose up -d --build    # or: docker compose up -d --build
 ```
+The app is served at `http://localhost:8080` (set `HTTP_PORT` in `.env` to change it).
 
 ### Development Mode (with Hot Reload)
-To see code changes in real-time without rebuilding containers:
+Add the dev overlay to get live reloading:
 ```bash
-docker-compose up -d --build
+podman-compose -f compose.yaml -f compose.dev.yaml up -d --build
 ```
 - **Frontend:** Runs Vite on `http://localhost:5173`. Any changes to `./frontend/src` will reflect instantly via Hot Module Replacement (HMR).
 - **Backend:** Runs Uvicorn on `http://localhost:8000`. Any changes to `./backend/app` will trigger an automatic server restart.
-- **Note for Windows Users:** Hot-reload uses polling to ensure file system events are captured reliably across the Docker volume boundary.
+- **Note for Windows Users:** Hot-reload uses polling to ensure file system events are captured reliably across the volume boundary.
 
 ## 2. Log In
-Open your browser and navigate to `http://localhost:5173` (Dev) or `http://localhost:8180` (Prod).
-Log in with the default administrator credentials:
-- **Email:** `admin@admin.com`
-- **Password:** `admin123` (Initial default)
+Open `http://localhost:5173` (dev) or `http://localhost:8080` (prod).
+There are no default accounts: sign in with `FIRST_SUPERUSER_EMAIL` / `FIRST_SUPERUSER_PASSWORD` from your `.env`, then
+remove the password from `.env`. Create further users from the admin screen, or set `ALLOW_SIGNUP=true` to let people
+request an account that an administrator approves.
 
 ## 3. Configure Metadata (Admins Only)
 Before creating projects, an administrator should define global categories:

@@ -34,13 +34,17 @@ When modifying status logic, ensure that:
 We use `verbatimModuleSyntax`. Always use `import type` for type-only imports to ensure clean builds.
 
 ### 4. Database Migrations
-We use SQLAlchemy's base metadata to auto-generate tables on startup. For schema changes, update the models in `backend/app/models/`.
+Schema changes go through Alembic: update the models in `backend/app/models/`, then add a migration. See
+[Database migrations](docs/how-to/database-migrations.md).
 
 ## 🧪 Testing
 
-Before submitting a PR, please verify your changes:
-- Check for TypeScript errors: `npm run build` in the frontend.
-- Verify Docker builds: `docker-compose build`.
+Before submitting a PR, run what CI runs (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
+- Backend: `python -m pytest -q tests/<file>.py` in `backend/` for the unit-test files listed in the workflow. New test
+  files must be added to that list, or CI will not run them.
+- Dependencies: `pip-audit -r backend/requirements.txt` should report no known vulnerabilities.
+- Frontend (Node 22): `npm ci && npm run typecheck && npm test && npm run build` in `frontend/`.
+- Full stack: `podman-compose up -d --build` on a fresh database, then `scripts/live-smoke.sh`.
 
 ## 📝 Commit Messages
 
