@@ -8,3 +8,4 @@ from .crud_team import team
 from .crud_workflow import workflow
 from .crud_comment import crud_comment
 from .crud_whiteboard import whiteboard
+from . import crud_custom_field

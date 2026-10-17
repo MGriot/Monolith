@@ -1,4 +1,4 @@
-from typing import List, Optional, ForwardRef
+from typing import Any, Dict, List, Optional, ForwardRef
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, computed_field
@@ -59,6 +59,8 @@ class TaskBase(BaseModel):
     risk_impact: int = 1
     # Dynamic Checklist
     checklist: List[dict] = []
+    # Custom field values keyed by CustomFieldDef id (validated against the project's definitions)
+    custom_values: Dict[str, Any] = {}
 
 class TaskShortCreate(BaseModel):
     title: str

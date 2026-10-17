@@ -6,6 +6,7 @@ Alembic autogenerate and `metadata.create_all()` see them. The matching migratio
 from sqlalchemy import Index
 
 from app.models.associations import project_members, task_assignees, team_members
+from app.models.custom_field import CustomFieldDef
 from app.models.dependency import Dependency
 from app.models.file import File
 from app.models.folder import Folder
@@ -13,6 +14,7 @@ from app.models.idea import Idea
 from app.models.notification import Notification
 from app.models.project import Project
 from app.models.task import Task
+from app.models.time_entry import TimeEntry
 from app.models.webhook import Webhook
 from app.models.whiteboard import Whiteboard
 
@@ -63,3 +65,19 @@ for _table, _cols in (
             postgresql_using="gin",
             postgresql_ops={_col: "gin_trgm_ops"},
         )
+
+
+# --- time tracking: entries per task / per user over time; at most one running timer (ended_at IS NULL) per user
+Index("ix_time_entries_task_id", TimeEntry.task_id)
+Index("ix_time_entries_user_started", TimeEntry.user_id, TimeEntry.started_at)
+Index(
+    "uq_time_entries_one_running_per_user",
+    TimeEntry.user_id,
+    unique=True,
+    postgresql_where=TimeEntry.ended_at.is_(None),
+)
+
+# --- custom fields: definitions per project, unique names; GIN on the JSONB values for filtering by field value
+Index("ix_custom_field_defs_project_id", CustomFieldDef.project_id)
+Index("uq_custom_field_defs_project_name", CustomFieldDef.project_id, CustomFieldDef.name, unique=True)
+Index("ix_tasks_custom_values", Task.custom_values, postgresql_using="gin")

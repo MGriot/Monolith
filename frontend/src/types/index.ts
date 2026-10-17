@@ -64,6 +64,8 @@ export interface Task {
   real_cost?: number;
   // List
   checklist?: { id: string; content: string; is_done: boolean }[];
+  // Custom field values keyed by CustomFieldDef id
+  custom_values?: Record<string, string | number>;
 }
 
 // Deprecated: use Task

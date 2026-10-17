@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 ENGINE=${ENGINE:-podman}
 CONTAINER=${CONTAINER:-monolith_backend}
 export MSYS_NO_PATHCONV=1
-for f in smoke_security smoke_tasks_search; do
+for f in smoke_security smoke_tasks_search smoke_time_fields; do
   "$ENGINE" cp "backend/tests/live/$f.py" "$CONTAINER:/tmp/$f.py"
   echo "=== $f ==="
   "$ENGINE" exec "$CONTAINER" python "/tmp/$f.py"
