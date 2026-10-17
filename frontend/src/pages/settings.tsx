@@ -19,6 +19,7 @@ import {
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useTitle } from '@/context/title-context';
+import { NotificationPrefsCard } from '@/components/notification-prefs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     Dialog, 
@@ -260,7 +261,8 @@ export default function SettingsPage() {
             <h2 className="text-sm font-semibold text-slate-900">Security</h2>
             <p className="text-xs text-slate-500 mt-1">Keep your account secure by using a strong password.</p>
           </div>
-          <div className="md:col-span-2 pt-4 border-t border-slate-200 mt-4">
+          <div className="md:col-span-2 pt-4 border-t border-slate-200 mt-4 space-y-6">
+            <NotificationPrefsCard />
             <Card className="border-slate-200 shadow-sm">
               <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
                 <CardHeader>

@@ -30,6 +30,8 @@ async def _authenticate_ws_token(token: str):
     """
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        if payload.get("purpose"):
+            return None
         user_id = UUID(payload.get("sub"))
     except (JWTError, ValueError, TypeError):
         return None

@@ -13,7 +13,7 @@ from app.core.enums import Status, Priority
 @pytest.fixture
 def mock_db():
     mock = MagicMock()
-    mock.execute = AsyncMock()
+    mock.execute = AsyncMock(return_value=MagicMock())  # awaited result is a plain (sync) result object
     return mock
 
 @pytest.fixture
@@ -103,7 +103,7 @@ async def test_get_project_health_report(summary_generator, mock_db):
     assert report["done_tasks"] == 2
 
 def test_generate_project_health_html(summary_generator):
-    project = Project(name="Project Alpha", due_date=datetime.utcnow() + timedelta(days=10))
+    project = Project(name="Project Alpha", due_date=datetime.utcnow() + timedelta(days=10, hours=1))  # +1h: .days floors
     report = {"completion_rate": 75.0, "overdue_count": 0, "total_tasks": 10, "done_tasks": 7}
     
     html = summary_generator.generate_project_health_html(project, report)
@@ -126,10 +126,10 @@ async def test_dispatch_all_summaries(summary_generator, mock_db):
             MagicMock(scalar=lambda: 1), # completions
             MagicMock(scalar=lambda: 1), # new_tasks
             MagicMock(scalar=lambda: 1), # blockers
-            MagicMock(scalar_one_or_none=lambda: User(email="o@t.com")), # team owner
+            MagicMock(scalar_one_or_none=lambda: User(email="o@t.com", is_active=True, notify_email_digest=True)), # team owner
             MagicMock(scalars=lambda: MagicMock(all=lambda: [Project(id=uuid4(), name="P1", owner_id=uuid4())])), # projects
             MagicMock(scalars=lambda: MagicMock(all=lambda: [Task(status=Status.DONE)])), # tasks for project
-            MagicMock(scalar_one_or_none=lambda: User(email="po@t.com")), # project owner
+            MagicMock(scalar_one_or_none=lambda: User(email="po@t.com", is_active=True, notify_email_digest=True)), # project owner
         ]
         
         await summary_generator.dispatch_all_summaries()

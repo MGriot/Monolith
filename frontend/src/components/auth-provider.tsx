@@ -7,6 +7,9 @@ interface User {
   full_name: string;
   is_active: boolean;
   is_superuser: boolean;
+  email_verified_at?: string | null;
+  notify_email_assignments?: boolean;
+  notify_email_digest?: boolean;
 }
 
 interface AuthContextType {
@@ -14,6 +17,8 @@ interface AuthContextType {
   token: string | null;
   login: (token: string) => Promise<void>;
   logout: () => void;
+  /** Re-read the signed-in user (after changing preferences or verifying the e-mail address). */
+  refreshUser: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -65,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, refreshUser: fetchUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

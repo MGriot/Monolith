@@ -1,4 +1,5 @@
 import logging
+from html import escape as esc
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,19 +51,19 @@ class SummaryGenerator:
         overdue = [t for t in tasks if t.due_date and t.due_date < now]
         due_soon = [t for t in tasks if not t.due_date or t.due_date >= now]
 
-        html = f"<h2>Weekly Summary for {user.full_name or user.email}</h2>"
+        html = f"<h2>Weekly Summary for {esc(user.full_name or user.email)}</h2>"
         
         if overdue:
             html += "<h3>🔴 Overdue Tasks</h3><ul>"
             for t in overdue:
-                html += f"<li><b>{t.title}</b> (Due: {t.due_date.strftime('%Y-%m-%d')})</li>"
+                html += f"<li><b>{esc(t.title)}</b> (Due: {t.due_date.strftime('%Y-%m-%d')})</li>"
             html += "</ul>"
         
         if due_soon:
             html += "<h3>📅 Due Soon</h3><ul>"
             for t in due_soon:
                 due_str = t.due_date.strftime('%Y-%m-%d') if t.due_date else "No due date"
-                html += f"<li><b>{t.title}</b> (Due: {due_str})</li>"
+                html += f"<li><b>{esc(t.title)}</b> (Due: {due_str})</li>"
             html += "</ul>"
             
         if not tasks:
@@ -131,7 +132,7 @@ class SummaryGenerator:
         """
         Generate HTML for team activity summary.
         """
-        html = f"<h2>Team Activity Summary: {team.name}</h2>"
+        html = f"<h2>Team Activity Summary: {esc(team.name)}</h2>"
         html += "<ul>"
         html += f"<li><b>Completions:</b> {summary['completions']} tasks finished this week</li>"
         html += f"<li><b>New Work:</b> {summary['new_tasks']} tasks created</li>"
@@ -173,7 +174,7 @@ class SummaryGenerator:
         if report['completion_rate'] < 20 and report['total_tasks'] > 5:
             status_color = "red"
 
-        html = f"<h2>Project Health: {project.name}</h2>"
+        html = f"<h2>Project Health: {esc(project.name)}</h2>"
         html += f"<p>Overall Progress: <b>{report['completion_rate']}%</b> ({report['done_tasks']}/{report['total_tasks']} tasks done)</p>"
         html += f"<p style='color: {status_color};'>Overdue Tasks: <b>{report['overdue_count']}</b></p>"
         
@@ -191,7 +192,9 @@ class SummaryGenerator:
         logger.info("Starting weekly summary dispatch...")
         
         # 1. User Summaries
-        users_result = await self.db.execute(select(User))
+        users_result = await self.db.execute(
+            select(User).where(User.is_active == True, User.notify_email_digest == True)  # noqa: E712
+        )
         users = users_result.scalars().all()
         for user in users:
             tasks = await self.get_user_tasks_due_soon(user.id)
@@ -214,7 +217,7 @@ class SummaryGenerator:
                 # Get owner email
                 owner_result = await self.db.execute(select(User).where(User.id == team.owner_id))
                 owner = owner_result.scalar_one_or_none()
-                if owner:
+                if owner and owner.is_active and owner.notify_email_digest:
                     await send_email_notification(
                         owner.email,
                         f"[Monolith] Team Weekly Summary: {team.name}",
@@ -230,7 +233,7 @@ class SummaryGenerator:
             html = self.generate_project_health_html(project, report)
             owner_result = await self.db.execute(select(User).where(User.id == project.owner_id))
             owner = owner_result.scalar_one_or_none()
-            if owner:
+            if owner and owner.is_active and owner.notify_email_digest:
                 await send_email_notification(
                     owner.email,
                     f"[Monolith] Project Health Report: {project.name}",

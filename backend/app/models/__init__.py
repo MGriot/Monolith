@@ -13,6 +13,7 @@ from .whiteboard import Whiteboard
 from .webhook import Webhook
 from .time_entry import TimeEntry
 from .custom_field import CustomFieldDef
+from .email_outbox import EmailOutbox, JobRun
 
 from .folder import Folder
 from .file import File

@@ -138,6 +138,8 @@ async def notify_near_deadlines(db: AsyncSession):
     
     for task in tasks:
         for user in task.assignees:
+            if not (user.is_active and user.notify_email_assignments):
+                continue
             subject = f"[Monolith] Reminder: Task '{task.title}' is due soon"
             due_str = task.due_date.strftime("%Y-%m-%d %H:%M") if task.due_date else "N/A"
             deadline_str = task.deadline_at.strftime("%Y-%m-%d %H:%M") if task.deadline_at else "N/A"

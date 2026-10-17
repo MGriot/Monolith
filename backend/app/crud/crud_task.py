@@ -375,6 +375,45 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 )
             )
 
+        await self._email_assignees(db, project_id, user_ids, item_title, link)
+
+    async def _email_assignees(self, db: AsyncSession, project_id, user_ids: List[UUID], item_title: str, link: str):
+        """Queue an assignment e-mail for every assignee who is active and has not opted out."""
+        import logging
+
+        try:
+            from app.core.mailer import absolute_url, enqueue_email
+            from app.models.project import Project
+            from app.models.user import User
+
+            users = (
+                await db.execute(
+                    select(User).where(
+                        User.id.in_(user_ids), User.is_active == True, User.notify_email_assignments == True  # noqa: E712
+                    )
+                )
+            ).scalars().all()
+            if not users:
+                return
+            project_name = None
+            if project_id:
+                project_name = (await db.execute(select(Project.name).where(Project.id == project_id))).scalar()
+            for user in users:
+                await enqueue_email(
+                    db,
+                    to=user.email,
+                    kind="assignment",
+                    template="assignment",
+                    name=user.full_name or user.email,
+                    task_title=item_title,
+                    project_name=project_name,
+                    link=absolute_url(link),
+                )
+            await db.commit()
+        except Exception:  # an e-mail problem must never break assigning a task
+            logging.getLogger(__name__).exception("Could not queue assignment e-mails")
+            await db.rollback()
+
     async def update(
         self, db: AsyncSession, *, db_obj: Task, obj_in: Union[TaskUpdate, Dict[str, Any]]
     ) -> Task:

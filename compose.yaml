@@ -46,6 +46,9 @@ services:
       MCP_API_KEY: ${MCP_API_KEY:-}
       MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
       WEBHOOK_ALLOW_PRIVATE: ${WEBHOOK_ALLOW_PRIVATE:-false}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
+      EMAIL_RETRY_BASE_SECONDS: ${EMAIL_RETRY_BASE_SECONDS:-60}
+      SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-true}
     volumes:
       - uploads:/app/uploads
     depends_on:

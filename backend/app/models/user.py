@@ -1,5 +1,6 @@
 import uuid
-from sqlalchemy import Column, String, Boolean
+from sqlalchemy import Column, DateTime, String, Boolean
+from sqlalchemy.sql import expression
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.session import Base
 
@@ -12,3 +13,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean(), default=True)
     is_superuser = Column(Boolean(), default=False)
+    email_verified_at = Column(DateTime, nullable=True)
+    # Opt-outs for e-mail (in-app notifications are unaffected)
+    notify_email_assignments = Column(Boolean(), nullable=False, default=True, server_default=expression.true())
+    notify_email_digest = Column(Boolean(), nullable=False, default=True, server_default=expression.true())

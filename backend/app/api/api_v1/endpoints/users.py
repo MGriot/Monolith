@@ -7,7 +7,7 @@ from app.api import deps
 from app.core import security
 from app.core.config import settings
 from app.crud import crud_user
-from app.schemas.user import User, UserCreate, UserUpdate
+from app.schemas.user import User, UserCreate, UserMe, UserUpdate
 from app.models.user import User as UserModel
 
 router = APIRouter()
@@ -55,7 +55,7 @@ async def read_users(
     users = await crud_user.get_multi(db, skip=skip, limit=limit)
     return users
 
-@router.get("/me", response_model=User)
+@router.get("/me", response_model=UserMe)
 async def read_user_me(
     current_user: UserModel = Depends(deps.get_current_user),
 ) -> Any:
@@ -64,7 +64,7 @@ async def read_user_me(
     """
     return current_user
 
-@router.put("/me", response_model=User)
+@router.put("/me", response_model=UserMe)
 async def update_user_me(
     *,
     db: AsyncSession = Depends(deps.get_db),
@@ -72,6 +72,8 @@ async def update_user_me(
     full_name: str = Body(None),
     email: EmailStr = Body(None),
     current_password: str = Body(None),
+    notify_email_assignments: bool = Body(None),
+    notify_email_digest: bool = Body(None),
     current_user: UserModel = Depends(deps.get_current_user),
 ) -> Any:
     """
@@ -97,5 +99,10 @@ async def update_user_me(
         current_user_data.full_name = full_name
     if email_changed:
         current_user_data.email = email
+        current_user_data.email_verified_at = None  # the new address must be confirmed again
+    if notify_email_assignments is not None:
+        current_user_data.notify_email_assignments = notify_email_assignments
+    if notify_email_digest is not None:
+        current_user_data.notify_email_digest = notify_email_digest
     user = await crud_user.update(db, db_obj=current_user, obj_in=current_user_data)
     return user

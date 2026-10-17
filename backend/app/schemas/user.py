@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, EmailStr
@@ -14,6 +15,9 @@ class UserCreate(UserBase):
 
 class UserUpdate(UserBase):
     password: Optional[str] = None
+    email_verified_at: Optional[datetime] = None
+    notify_email_assignments: Optional[bool] = None
+    notify_email_digest: Optional[bool] = None
 
 class UserInDBBase(UserBase):
     id: Optional[UUID] = None
@@ -23,3 +27,10 @@ class UserInDBBase(UserBase):
 
 class User(UserInDBBase):
     pass
+
+
+class UserMe(User):
+    """The signed-in user's own view: includes verification status and e-mail preferences (not shown to teammates)."""
+    email_verified_at: Optional[datetime] = None
+    notify_email_assignments: bool = True
+    notify_email_digest: bool = True
