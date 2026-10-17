@@ -52,6 +52,7 @@ import { ProjectMembersCard } from '@/components/project-members';
 import { canAdmin, canEdit } from '@/lib/roles';
 import DataExportDialog from '@/components/data-export-dialog';
 import CustomFieldsManager from '@/components/custom-fields-manager';
+import AutomationRules from '@/components/automation-rules';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import type { Project, Task } from '@/types';
 import { useTitle } from '@/context/title-context';
@@ -277,6 +278,26 @@ export default function ProjectDetailPage() {
       toast.success("Task updated successfully");
     },
   });
+
+  // Gantt edits: the chart applies the change optimistically and rolls back / reports when these reject.
+  const rescheduleTask = async (taskId: string, dates: { start_date: string | null; due_date: string | null }) => {
+    await api.put(`/tasks/${taskId}`, dates);
+    queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+    queryClient.invalidateQueries({ queryKey: ['project', id] });
+  };
+
+  const linkTasks = async (predecessorId: string, successorId: string, type: string) => {
+    try {
+      await api.post(`/tasks/${successorId}/dependencies`, {
+        successor_id: successorId,
+        predecessor_id: predecessorId,
+        type,
+        lag_days: 0,
+      });
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+    }
+  };
 
   const [kanbanSyncKey, setKanbanSyncKey] = useState(0);
 
@@ -518,6 +539,8 @@ export default function ProjectDetailPage() {
                 initialRegions={project.gantt_regions || []}
                 onRegionsChange={(regions) => updateProjectRegionsMutation.mutate(regions)}
                 onTaskClick={handleTaskClick}
+                onTaskDatesChange={canEdit(project.my_role) ? rescheduleTask : undefined}
+                onCreateDependency={canEdit(project.my_role) ? linkTasks : undefined}
               />
             </div>
           </div>
@@ -678,6 +701,8 @@ export default function ProjectDetailPage() {
             </Card>
 
             {id && <CustomFieldsManager projectId={id} />}
+
+            {id && <AutomationRules projectId={id} />}
 
             <ScopedTaxonomyManager 
                 projectId={id}

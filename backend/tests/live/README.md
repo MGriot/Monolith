@@ -13,4 +13,5 @@ scripts/live-smoke.sh            # uses .env; add ENV_FILE=... COMPOSE=docker fo
 | `smoke_tasks_search.py` | pagination caps, 8-level task trees, dependency cycles, search scoping/escaping, dashboard summary, notifications |
 | `smoke_time_fields.py` | timers (one per user), manual entries, task totals + PERT estimate-vs-actual, timesheet scoping, 403s for non-members, custom-field definitions and value validation/cleanup |
 | `smoke_bulk.py` | bulk task actions (per-id authorization, partial failures, validation, 200-id cap) and the notification unread-count / filters / mark-unread |
+| `smoke_automations.py` | rule CRUD + role gates, validation, set_field / assign / notify (in-app + e-mail queue), status triggers, ping-pong loop termination, failure isolation, project webhook queueing and formats, the `due_soon` sweep |
 | `bench_task_tree.py` | query count / time / output equivalence of the task tree loader against the old nested-selectinload version |
