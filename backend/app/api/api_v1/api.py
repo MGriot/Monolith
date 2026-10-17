@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from app.api.api_v1.endpoints import (
     login, users, projects, tasks, subtasks, notifications, calendar, 
     dashboard, metadata, templates, teams, ideas, workflows, 
-    comments, whiteboards, search, webhooks, folders
+    comments, whiteboards, search, webhooks, folders, time_entries, custom_fields
 )
 
 api_router = APIRouter()
@@ -12,6 +12,8 @@ api_router.include_router(metadata.router, prefix="/metadata", tags=["metadata"]
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 api_router.include_router(teams.router, prefix="/teams", tags=["teams"])
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
+api_router.include_router(custom_fields.router, prefix="/projects", tags=["custom-fields"])
+api_router.include_router(time_entries.router, prefix="/time", tags=["time"])
 api_router.include_router(templates.router, prefix="/templates", tags=["templates"])
 api_router.include_router(workflows.router, prefix="/workflows", tags=["workflows"])
 api_router.include_router(whiteboards.router, prefix="/whiteboards", tags=["whiteboards"])

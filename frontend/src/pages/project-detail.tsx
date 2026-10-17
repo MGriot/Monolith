@@ -49,6 +49,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ProjectForm, { type ProjectFormValues } from '@/components/project-form';
 import DataExportDialog from '@/components/data-export-dialog';
+import CustomFieldsManager from '@/components/custom-fields-manager';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import type { Project, Task } from '@/types';
 import { useTitle } from '@/context/title-context';
@@ -642,6 +643,8 @@ export default function ProjectDetailPage() {
                     />
                 </CardContent>
             </Card>
+
+            {id && <CustomFieldsManager projectId={id} />}
 
             <ScopedTaxonomyManager 
                 projectId={id}

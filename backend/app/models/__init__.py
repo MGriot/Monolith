@@ -11,6 +11,8 @@ from .workflow import Workflow
 from .comment import Comment
 from .whiteboard import Whiteboard
 from .webhook import Webhook
+from .time_entry import TimeEntry
+from .custom_field import CustomFieldDef
 
 from .folder import Folder
 from .file import File

@@ -35,6 +35,7 @@ jobs:
           tests/test_security_tier0_followup.py
           tests/test_db_tier1.py
           tests/test_backend_tier1.py
+          tests/test_time_and_custom_fields.py
       - name: Dependencies have no known vulnerabilities
         continue-on-error: true   # advisory for now; flip to blocking once the baseline is clean
         run: pip install pip-audit && pip-audit -r backend/requirements.txt

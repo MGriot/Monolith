@@ -20,7 +20,9 @@ import {
     X,
     CheckSquare,
     AlertCircle,
-    Loader2
+    Loader2,
+    Timer,
+    SlidersHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -29,6 +31,9 @@ import { AssigneeSelector } from "@/components/assignee-selector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { addDays, differenceInDays, format, parseISO } from "date-fns";
 import DependencyManager from "./dependency-manager";
+import TaskTimeTracker from "./task-time-tracker";
+import TaskCustomFields, { useCustomFieldDefs } from "./task-custom-fields";
+import { sanitizeCustomValues, validateCustomValues, type CustomValues } from "@/lib/custom-fields";
 import type { Task, Topic, WorkType, Project } from "@/types";
 
 const subtaskSchema = z.object({
@@ -66,6 +71,7 @@ const taskSchema = z.object({
     is_done: z.boolean()
   })).optional(),
   subtasks: z.array(subtaskSchema).optional(),
+  custom_values: z.record(z.string(), z.any()).optional(),
 });
 
 export type TaskFormValues = z.infer<typeof taskSchema>;
@@ -104,6 +110,8 @@ export default function TaskForm({
     },
     enabled: !!projectId,
   });
+
+  const { data: customFieldDefs } = useCustomFieldDefs(projectId);
 
   const { data: topics, isLoading: isLoadingTopics } = useQuery({
     queryKey: ['metadata', 'topics', projectId, editingTaskId],
@@ -171,6 +179,7 @@ export default function TaskForm({
       risk_impact: 1,
       checklist: [],
       subtasks: [],
+      custom_values: taskObject?.custom_values ?? {},
       ...initialValues,
       start_date: formatDate(initialValues?.start_date),
       due_date: formatDate(initialValues?.due_date),
@@ -186,7 +195,7 @@ export default function TaskForm({
     }
 
     return vals;
-  }, [initialValues]);
+  }, [initialValues, taskObject?.custom_values]);
 
   const {
     register,
@@ -364,8 +373,15 @@ export default function TaskForm({
   };
 
   const handleFormSubmit = (data: TaskFormValues) => {
+    // Drop values whose field was deleted or that are invalid, so the API doesn't reject the whole task
+    const customDefs = customFieldDefs ?? [];
+    if (Object.keys(validateCustomValues(customDefs, data.custom_values)).length > 0) {
+      toast.error("Fix the highlighted custom fields first");
+      return;
+    }
     const cleanedData = {
       ...data,
+      ...(projectId && customFieldDefs ? { custom_values: sanitizeCustomValues(customDefs, data.custom_values) } : { custom_values: undefined }),
       parent_id: data.parent_id === "" ? null : data.parent_id,
       color: data.color === "" ? null : data.color,
       description: data.description === "" ? null : data.description,
@@ -514,7 +530,7 @@ export default function TaskForm({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-0 h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-6 scrollbar-hide">
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid grid-cols-5 w-full bg-slate-100/80 p-1 rounded-xl mb-8 border border-slate-200 shadow-sm sticky top-0 z-50 backdrop-blur-sm">
+          <TabsList className="grid grid-cols-7 w-full bg-slate-100/80 p-1 rounded-xl mb-8 border border-slate-200 shadow-sm sticky top-0 z-50 backdrop-blur-sm">
             <TabsTrigger value="general" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2">Essentials</TabsTrigger>
             <TabsTrigger value="scheduling" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2">Timeline</TabsTrigger>
             <TabsTrigger value="checklist" className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
@@ -525,6 +541,12 @@ export default function TaskForm({
             </TabsTrigger>
             <TabsTrigger value="dependencies" disabled={!editingTaskId} className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
               <LinkIcon className="w-3 h-3" /> Deps
+            </TabsTrigger>
+            <TabsTrigger value="time" disabled={!editingTaskId} className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
+              <Timer className="w-3 h-3" /> Time
+            </TabsTrigger>
+            <TabsTrigger value="fields" disabled={!projectId} className="text-[10px] font-black uppercase tracking-tight data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2 flex gap-1.5 justify-center items-center">
+              <SlidersHorizontal className="w-3 h-3" /> Fields
             </TabsTrigger>
           </TabsList>
 
@@ -1119,6 +1141,18 @@ export default function TaskForm({
                     </div>
                 )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="time" className="animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
+            {editingTaskId && <TaskTimeTracker taskId={editingTaskId} />}
+          </TabsContent>
+
+          <TabsContent value="fields" className="animate-in fade-in slide-in-from-bottom-2 duration-400 focus-visible:outline-none">
+            <TaskCustomFields
+              projectId={projectId}
+              values={(watch("custom_values") || {}) as CustomValues}
+              onChange={(values) => setValue("custom_values", values, { shouldDirty: true })}
+            />
           </TabsContent>
         </Tabs>
       </div>
