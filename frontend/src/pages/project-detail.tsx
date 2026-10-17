@@ -52,6 +52,7 @@ import { ProjectMembersCard } from '@/components/project-members';
 import { canAdmin, canEdit } from '@/lib/roles';
 import DataExportDialog from '@/components/data-export-dialog';
 import CustomFieldsManager from '@/components/custom-fields-manager';
+import AutomationRules from '@/components/automation-rules';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import type { Project, Task } from '@/types';
 import { useTitle } from '@/context/title-context';
@@ -661,6 +662,8 @@ export default function ProjectDetailPage() {
             </Card>
 
             {id && <CustomFieldsManager projectId={id} />}
+
+            {id && <AutomationRules projectId={id} />}
 
             <ScopedTaxonomyManager 
                 projectId={id}

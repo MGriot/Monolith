@@ -14,6 +14,11 @@ from app.schemas.task import TaskCreate, TaskUpdate
 from app.core.enums import Status
 from app.core.utils import clean_dict_datetimes
 from app.db.transaction import atomic, commit
+from app.core.automations import fire_task_events
+
+
+def _enum_val(v: Any) -> Any:
+    return v.value if hasattr(v, "value") else v
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     # --- tree loading -------------------------------------------------------------------------------
@@ -351,9 +356,16 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             
         if assignee_ids:
             await self.notify_assignees(db, db_obj.id, assignee_ids, db_obj.title)
-            
+
+        # Automations / project webhooks react after the task is safely written; they never fail this call.
+        task_id = db_obj.id  # read now: a rolled-back rule SAVEPOINT expires the instance
+        await fire_task_events(
+            db, task_id=task_id, project_id=db_obj.project_id, created=True,
+            new_status=_enum_val(db_obj.status), added_assignees=assignee_ids,
+        )
+
         # Refetch to get all relationships loaded
-        return await self.get(db, db_obj.id)
+        return await self.get(db, task_id)
 
     async def notify_assignees(self, db: AsyncSession, item_id: UUID, user_ids: List[UUID], item_title: str):
         # Refetch or use db_obj if available to get project_id
@@ -422,6 +434,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         # Capture IDs early to avoid lazy-loading issues during async operations
         project_id = db_obj.project_id
         old_parent_id = db_obj.parent_id
+        old_status = _enum_val(db_obj.status)
+        added_assignee_ids: List[UUID] = []
         
         if isinstance(obj_in, TaskUpdate):
             obj_data = obj_in.dict(exclude_unset=True)
@@ -493,6 +507,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             db_obj.assignees = res.scalars().all()
             
             if added_ids:
+                added_assignee_ids = added_ids
                 await self.notify_assignees(db, db_obj.id, added_ids, db_obj.title)
 
         # 6. M2M Relationships: Topics & Types
@@ -542,8 +557,14 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 await self.create(db, obj_in=st_create)
 
         await self.sync_project_from_tasks(db, project_id)
-        
-        return await self.get(db, db_obj.id)
+
+        task_id = db_obj.id  # read now: a rolled-back rule SAVEPOINT expires the instance
+        await fire_task_events(
+            db, task_id=task_id, project_id=db_obj.project_id,
+            old_status=old_status, new_status=_enum_val(db_obj.status), added_assignees=added_assignee_ids,
+        )
+
+        return await self.get(db, task_id)
 
     @atomic
     async def update_assignees(self, db: AsyncSession, *, task_id: UUID, user_ids: List[UUID]) -> Task:
@@ -564,6 +585,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         db.add(db_obj)
         await commit(db)
         await db.refresh(db_obj)
+        if added_ids:
+            task_id = db_obj.id
+            await fire_task_events(db, task_id=task_id, project_id=db_obj.project_id, added_assignees=added_ids)
+            return await self.get(db, task_id)
         return db_obj
 
     @atomic

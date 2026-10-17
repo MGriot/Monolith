@@ -81,6 +81,8 @@ async def on_startup():
     # Background workers: e-mail outbox delivery and scheduled jobs (digest, deadline reminders).
     # Both are safe with several processes: the outbox uses SKIP LOCKED, the scheduler claims slots atomically.
     app.state.background_tasks = []
+    from app.core.webhooks import run_webhook_worker
+    app.state.background_tasks.append(asyncio.create_task(run_webhook_worker(), name="webhook-outbox"))
     if settings.EMAIL_ENABLED:
         from app.core.mailer import run_outbox_worker
         app.state.background_tasks.append(asyncio.create_task(run_outbox_worker(), name="email-outbox"))

@@ -38,7 +38,13 @@ async def _weekly_digest(db: AsyncSession) -> None:
 async def _deadline_reminders(db: AsyncSession) -> None:
     from app.core.reports import notify_near_deadlines
 
-    await notify_near_deadlines(db)
+    try:
+        await notify_near_deadlines(db)
+    finally:
+        # automation rules with the `due_soon` trigger ride on the same 07:00 job (and run even if the e-mails failed)
+        from app.core.automations import run_due_soon
+
+        await run_due_soon(db)
 
 
 JOBS = (
