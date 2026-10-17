@@ -266,6 +266,26 @@ export default function ProjectDetailPage() {
     },
   });
 
+  // Gantt edits: the chart applies the change optimistically and rolls back / reports when these reject.
+  const rescheduleTask = async (taskId: string, dates: { start_date: string | null; due_date: string | null }) => {
+    await api.put(`/tasks/${taskId}`, dates);
+    queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+    queryClient.invalidateQueries({ queryKey: ['project', id] });
+  };
+
+  const linkTasks = async (predecessorId: string, successorId: string, type: string) => {
+    try {
+      await api.post(`/tasks/${successorId}/dependencies`, {
+        successor_id: successorId,
+        predecessor_id: predecessorId,
+        type,
+        lag_days: 0,
+      });
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+    }
+  };
+
   const [kanbanSyncKey, setKanbanSyncKey] = useState(0);
 
   const moveTaskMutation = useMutation({
@@ -506,6 +526,8 @@ export default function ProjectDetailPage() {
                 initialRegions={project.gantt_regions || []}
                 onRegionsChange={(regions) => updateProjectRegionsMutation.mutate(regions)}
                 onTaskClick={handleTaskClick}
+                onTaskDatesChange={canEdit(project.my_role) ? rescheduleTask : undefined}
+                onCreateDependency={canEdit(project.my_role) ? linkTasks : undefined}
               />
             </div>
           </div>
