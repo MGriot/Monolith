@@ -87,7 +87,7 @@ jobs:
           EMAILS_FROM_EMAIL=noreply@monolith.local
           EOF
       - name: Prepare mail server (certificate + mailbox)
-        run: ENV_FILE=ci.env scripts/mail-bootstrap.sh
+        run: ENV_FILE=ci.env bash scripts/mail-bootstrap.sh
       - name: Build and start
         run: |
           podman-compose --env-file ci.env -f compose.yaml up -d --build
@@ -98,7 +98,7 @@ jobs:
           podman ps -a; podman logs monolith_backend || true
           exit 1
       - name: Live checks (fresh database)
-        run: scripts/live-smoke.sh
+        run: bash scripts/live-smoke.sh
       - name: Show logs on failure
         if: failure()
         run: |
