@@ -1,91 +1,118 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Suspense, lazy } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./components/auth-provider";
 import { TitleProvider } from "./context/title-context";
 import Layout from "./components/layout";
-import LoginPage from "./pages/login";
-import RegisterPage from "./pages/register";
-import SchedulePage from "./pages/schedule";
-import ProjectDetailPage from "./pages/project-detail";
-import UsersPage from "./pages/users";
-import SettingsPage from "./pages/settings";
-import AdminMetadataPage from "./pages/admin-metadata";
-import TemplatesPage from "./pages/templates";
-import MyTasksPage from "./pages/my-tasks";
-import TeamsPage from "./pages/teams";
-import WorkflowsPage from "./pages/workflows";
-import WhiteboardPage from "./pages/whiteboard";
-import IdeasPage from "./pages/ideas";
-import UpdatesPage from "./pages/updates";
+import { ErrorBoundary } from "./components/error-boundary";
+import { PageSpinner } from "./components/page-spinner";
 
-import DashboardPage from "./pages/dashboard";
-import ProjectsListPage from "./pages/projects-list";
-import ArchivePage from "./pages/archive";
+// Route-level code splitting: Excalidraw, xlsx, mammoth, katex, ... load only with the pages that use them.
+const LoginPage = lazy(() => import("./pages/login"));
+const RegisterPage = lazy(() => import("./pages/register"));
+const DashboardPage = lazy(() => import("./pages/dashboard"));
+const UpdatesPage = lazy(() => import("./pages/updates"));
+const ProjectsListPage = lazy(() => import("./pages/projects-list"));
+const ArchivePage = lazy(() => import("./pages/archive"));
+const ProjectDetailPage = lazy(() => import("./pages/project-detail"));
+const MyTasksPage = lazy(() => import("./pages/my-tasks"));
+const IdeasPage = lazy(() => import("./pages/ideas"));
+const SchedulePage = lazy(() => import("./pages/schedule"));
+const TemplatesPage = lazy(() => import("./pages/templates"));
+const TeamsPage = lazy(() => import("./pages/teams"));
+const UsersPage = lazy(() => import("./pages/users"));
+const SettingsPage = lazy(() => import("./pages/settings"));
+const AdminMetadataPage = lazy(() => import("./pages/admin-metadata"));
+const WorkflowsPage = lazy(() => import("./pages/workflows"));
+const WhiteboardPage = lazy(() => import("./pages/whiteboard"));
 
 const queryClient = new QueryClient();
 
-const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
+/** Authenticated shell. Mounted once for all pages, so the sidebar, search and notification socket survive navigation. */
+const PrivateLayout = () => {
   const { token, isLoading } = useAuth();
-  if (isLoading) return (
-    <div className="flex flex-col items-center justify-center min-h-screen text-slate-500">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3"></div>
-      <p>Authentication is loading...</p>
-    </div>
+  const location = useLocation();
+  if (isLoading) return <PageSpinner fullScreen label="Authentication is loading..." />;
+  if (!token) return <Navigate to="/login" replace />;
+  return (
+    <TitleProvider>
+      <Layout>
+        {/* keyed by path: a crashed page recovers as soon as the user navigates elsewhere */}
+        <ErrorBoundary inline key={location.pathname}>
+          <Suspense fallback={<PageSpinner />}>
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
+      </Layout>
+    </TitleProvider>
   );
-  return token ? (<TitleProvider><Layout>{children}</Layout></TitleProvider>) : <Navigate to="/login" />;
 };
 
-const LayoutFreePrivateRoute = ({ children }: { children: React.ReactNode }) => {
+/** Authenticated but without the app chrome (full-screen whiteboard). */
+const LayoutFreePrivate = () => {
   const { token, isLoading } = useAuth();
-  if (isLoading) return (
-    <div className="flex flex-col items-center justify-center min-h-screen text-slate-500">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3"></div>
-      <p>Authentication is loading...</p>
-    </div>
-  );
-  return token ? (
-    <TitleProvider>{children}</TitleProvider>
-  ) : (
-    <Navigate to="/login" />
+  if (isLoading) return <PageSpinner fullScreen label="Authentication is loading..." />;
+  if (!token) return <Navigate to="/login" replace />;
+  return (
+    <TitleProvider>
+      <ErrorBoundary>
+        <Suspense fallback={<PageSpinner fullScreen />}>
+          <Outlet />
+        </Suspense>
+      </ErrorBoundary>
+    </TitleProvider>
   );
 };
+
+/** Hidden from the sidebar for non-admins; the API enforces this too, this just avoids dead pages. */
+const AdminOnly = () => {
+  const { user } = useAuth();
+  return user?.is_superuser ? <Outlet /> : <Navigate to="/" replace />;
+};
+
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route
-              path="/"
-              element={
-                <PrivateRoute>
-                  <DashboardPage />
-                </PrivateRoute>
-              }
-            />
-            <Route path="/updates" element={<PrivateRoute><UpdatesPage /></PrivateRoute>} />
-            <Route path="/projects" element={<PrivateRoute><ProjectsListPage /></PrivateRoute>} />
-            <Route path="/archive" element={<PrivateRoute><ArchivePage /></PrivateRoute>} />
-            <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
-            <Route path="/tasks" element={<PrivateRoute><MyTasksPage /></PrivateRoute>} />
-            <Route path="/ideas" element={<PrivateRoute><IdeasPage /></PrivateRoute>} />
-            <Route path="/schedule" element={<PrivateRoute><SchedulePage /></PrivateRoute>} />
-            <Route path="/calendar" element={<Navigate to="/schedule" replace />} />
-            <Route path="/roadmap" element={<Navigate to="/schedule" replace />} />
-            <Route path="/templates" element={<PrivateRoute><TemplatesPage /></PrivateRoute>} />
-            <Route path="/teams" element={<PrivateRoute><TeamsPage /></PrivateRoute>} />
-            <Route path="/users" element={<PrivateRoute><UsersPage /></PrivateRoute>} />
-            <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
-            <Route path="/admin/metadata" element={<PrivateRoute><AdminMetadataPage /></PrivateRoute>} />
-            <Route path="/workflows" element={<PrivateRoute><WorkflowsPage /></PrivateRoute>} />
-            <Route path="/projects/:projectId/whiteboards/:whiteboardId" element={<LayoutFreePrivateRoute><WhiteboardPage /></LayoutFreePrivateRoute>} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
+            <Suspense fallback={<PageSpinner fullScreen />}>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+
+                <Route element={<PrivateLayout />}>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/updates" element={<UpdatesPage />} />
+                  <Route path="/projects" element={<ProjectsListPage />} />
+                  <Route path="/archive" element={<ArchivePage />} />
+                  <Route path="/projects/:id" element={<ProjectDetailPage />} />
+                  <Route path="/tasks" element={<MyTasksPage />} />
+                  <Route path="/ideas" element={<IdeasPage />} />
+                  <Route path="/schedule" element={<SchedulePage />} />
+                  <Route path="/calendar" element={<Navigate to="/schedule" replace />} />
+                  <Route path="/roadmap" element={<Navigate to="/schedule" replace />} />
+                  <Route path="/templates" element={<TemplatesPage />} />
+                  <Route path="/teams" element={<TeamsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/workflows" element={<WorkflowsPage />} />
+                  <Route element={<AdminOnly />}>
+                    <Route path="/users" element={<UsersPage />} />
+                    <Route path="/admin/metadata" element={<AdminMetadataPage />} />
+                  </Route>
+                </Route>
+
+                <Route element={<LayoutFreePrivate />}>
+                  <Route path="/projects/:projectId/whiteboards/:whiteboardId" element={<WhiteboardPage />} />
+                </Route>
+
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </Router>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
