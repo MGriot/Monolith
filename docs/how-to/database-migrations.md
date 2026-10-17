@@ -7,6 +7,8 @@ The schema is managed by Alembic (`backend/migrations`). The old `metadata.creat
 | `0001` baseline | The schema exactly as `create_all()` produced it (constraint and index names identical, checked against a live database). Foreign keys are added after the tables because `projects`/`topics`/`work_types`/`tasks` reference each other. |
 | `0002` indexes | FK lookups, task tree, dependency graph, notification bell, association tables by user, and `pg_trgm` GIN indexes for the `ILIKE '%q%'` global search. |
 | `0003` time tracking + custom fields | `time_entries` (partial unique index: one running timer per user), `custom_field_defs` (unique name per project), `tasks.custom_values JSONB` + GIN index. |
+| `0005` project roles | `project_members.role` (viewer / editor / admin). |
+| `0006` automations | `automation_rules`, `automation_runs` (audit trail), `webhook_deliveries` (outgoing webhook queue). See [automations](automations.md). |
 
 ## What happens at start-up (`AUTO_MIGRATE=true`, default)
 

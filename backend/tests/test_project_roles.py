@@ -160,6 +160,8 @@ ROUTES = [
     ("GET", f"/api/v1/folders/?project_id={PID}", None, VIEWER),
     ("GET", f"/api/v1/projects/{PID}/custom-fields", None, VIEWER),
     ("GET", f"/api/v1/time/tasks/{TID}", None, VIEWER),
+    ("GET", f"/api/v1/projects/{PID}/automations", None, VIEWER),
+    ("GET", f"/api/v1/projects/{PID}/automations/{OTHER}/runs", None, VIEWER),
     # editor: work on content
     ("POST", "/api/v1/tasks/", {"title": "x", "project_id": str(PID)}, EDITOR),
     ("PUT", f"/api/v1/tasks/{TID}", {"title": "x"}, EDITOR),
@@ -187,6 +189,12 @@ ROUTES = [
     ("POST", f"/api/v1/projects/{PID}/custom-fields", {"name": "x", "field_type": "text"}, ADMIN),
     ("PUT", f"/api/v1/projects/{PID}/custom-fields/{OTHER}", {"name": "y"}, ADMIN),
     ("DELETE", f"/api/v1/projects/{PID}/custom-fields/{OTHER}", None, ADMIN),
+    ("POST", f"/api/v1/projects/{PID}/automations",
+     {"name": "x", "trigger": "task_created", "actions": [{"type": "set_field", "field": "priority", "value": "High"}]}, ADMIN),
+    ("PUT", f"/api/v1/projects/{PID}/automations/{OTHER}", {"enabled": False}, ADMIN),
+    ("DELETE", f"/api/v1/projects/{PID}/automations/{OTHER}", None, ADMIN),
+    ("GET", f"/api/v1/webhooks/?project_id={PID}", None, ADMIN),
+    ("POST", "/api/v1/webhooks/", {"name": "x", "url": "https://hooks.example.com/x", "project_id": str(PID)}, ADMIN),
 ]
 
 

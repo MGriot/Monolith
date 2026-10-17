@@ -581,23 +581,26 @@ class TestLifecycle:
         monkeypatch.setattr(init_db, "seed_users", AsyncMock())
         monkeypatch.setattr(mailer, "run_outbox_worker", lambda: forever("outbox"))
         monkeypatch.setattr(scheduler, "run_scheduler", lambda: forever("scheduler"))
+        from app.core import webhooks
+
+        monkeypatch.setattr(webhooks, "run_webhook_worker", lambda: forever("webhook"))
 
     def test_workers_start_with_the_app_and_stop_with_it(self, patched, monkeypatch):
         monkeypatch.setattr(settings, "EMAIL_ENABLED", True)
         monkeypatch.setattr(settings, "SCHEDULER_ENABLED", True)
         with TestClient(app) as client:
             assert client.get("/api/health").status_code == 200
-            assert len(app.state.background_tasks) == 2
-        assert sorted(self.events) == ["outbox started", "outbox stopped", "scheduler started", "scheduler stopped"]
+            assert len(app.state.background_tasks) == 3
+        assert sorted(self.events) == [
+            "outbox started", "outbox stopped", "scheduler started", "scheduler stopped", "webhook started", "webhook stopped"]
 
     def test_scheduler_can_be_switched_off_separately(self, patched, monkeypatch):
         monkeypatch.setattr(settings, "EMAIL_ENABLED", True)
         monkeypatch.setattr(settings, "SCHEDULER_ENABLED", False)
         with TestClient(app):
-            assert [t.get_name() for t in app.state.background_tasks] == ["email-outbox"]
+            assert [t.get_name() for t in app.state.background_tasks] == ["webhook-outbox", "email-outbox"]
 
     def test_nothing_runs_when_email_is_disabled(self, patched, monkeypatch):
         monkeypatch.setattr(settings, "EMAIL_ENABLED", False)
         with TestClient(app):
-            assert app.state.background_tasks == []
-        assert self.events == []
+            assert [t.get_name() for t in app.state.background_tasks] == ["webhook-outbox"]  # webhooks need no mail server

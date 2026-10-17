@@ -264,7 +264,7 @@ def test_folder_upload_checks_access_before_touching_the_file(client, as_user, d
 def test_webhook_test_requires_ownership(client, as_user, monkeypatch):
     from app.api.api_v1.endpoints import webhooks
 
-    hook = SimpleNamespace(id=ID, owner_id=uuid4(), provider="generic", url="http://x", name="n")
+    hook = SimpleNamespace(id=ID, owner_id=uuid4(), provider="generic", url="http://x", name="n", project_id=None)
     monkeypatch.setattr(webhooks.crud_webhook.webhook, "get", AsyncMock(return_value=hook))
     sent = AsyncMock(return_value=True)
     monkeypatch.setattr(webhooks.webhook_service, "send_generic_notification", sent)
