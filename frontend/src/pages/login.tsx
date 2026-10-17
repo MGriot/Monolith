@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,6 +28,11 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  // Only offer links that can work: the server says whether sign-up is open and whether e-mail is on.
+  const [features, setFeatures] = useState({ allow_signup: false, email_enabled: true });
+  useEffect(() => {
+    api.get("/auth/config").then((r) => setFeatures(r.data)).catch(() => {});
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -102,12 +107,21 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
-          <div className="text-sm text-muted-foreground text-center">
-            Don't have an account?{" "}
-            <Link to="/register" className="text-primary hover:underline">
-              Register
-            </Link>
-          </div>
+          {features.email_enabled && (
+            <div className="text-sm text-center">
+              <Link to="/forgot-password" className="text-primary hover:underline">
+                Forgot your password?
+              </Link>
+            </div>
+          )}
+          {features.allow_signup && (
+            <div className="text-sm text-muted-foreground text-center">
+              Don't have an account?{" "}
+              <Link to="/register" className="text-primary hover:underline">
+                Register
+              </Link>
+            </div>
+          )}
         </CardFooter>
       </Card>
     </div>

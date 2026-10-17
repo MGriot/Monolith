@@ -10,6 +10,9 @@ import { PageSpinner } from "./components/page-spinner";
 // Route-level code splitting: Excalidraw, xlsx, mammoth, katex, ... load only with the pages that use them.
 const LoginPage = lazy(() => import("./pages/login"));
 const RegisterPage = lazy(() => import("./pages/register"));
+const ForgotPasswordPage = lazy(() => import("./pages/forgot-password"));
+const ResetPasswordPage = lazy(() => import("./pages/reset-password"));
+const VerifyEmailPage = lazy(() => import("./pages/verify-email"));
 const DashboardPage = lazy(() => import("./pages/dashboard"));
 const UpdatesPage = lazy(() => import("./pages/updates"));
 const ProjectsListPage = lazy(() => import("./pages/projects-list"));
@@ -80,6 +83,9 @@ function App() {
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
 
                 <Route element={<PrivateLayout />}>
                   <Route path="/" element={<DashboardPage />} />
