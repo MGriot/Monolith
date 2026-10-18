@@ -76,11 +76,11 @@ export default function CommentSection({ projectId, taskId, ideaId }: CommentSec
       <div className="px-4 py-3 border-b bg-background flex items-center justify-between">
           <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-fg-body">Project Communication</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-body">Project Communication</h3>
           </div>
           <div className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-fg-faint uppercase">Live Chat</span>
+              <span className="text-[11px] font-bold text-fg-faint uppercase">Live Chat</span>
           </div>
       </div>
 
@@ -104,8 +104,8 @@ export default function CommentSection({ projectId, taskId, ideaId }: CommentSec
             <div className="flex flex-col items-center justify-center h-full text-center space-y-2 opacity-30 grayscale">
                 <MessageSquare className="w-12 h-12 text-fg-ghost" />
                 <div>
-                    <p className="text-sm font-black uppercase tracking-tighter">No Messages</p>
-                    <p className="text-[10px] font-bold">Start the communication flow below.</p>
+                    <p className="text-sm font-semibold uppercase tracking-tight">No Messages</p>
+                    <p className="text-[11px] font-bold">Start the communication flow below.</p>
                 </div>
             </div>
         )}

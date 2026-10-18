@@ -6,6 +6,7 @@ import { TitleProvider } from "./context/title-context";
 import Layout from "./components/layout";
 import { ErrorBoundary } from "./components/error-boundary";
 import { PageSpinner } from "./components/page-spinner";
+import { ConfirmHost } from "./components/confirm-host";
 
 // Route-level code splitting: Excalidraw, xlsx, mammoth, katex, ... load only with the pages that use them.
 const LoginPage = lazy(() => import("./pages/login"));
@@ -121,6 +122,7 @@ function App() {
               </Routes>
             </Suspense>
           </Router>
+          <ConfirmHost />
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

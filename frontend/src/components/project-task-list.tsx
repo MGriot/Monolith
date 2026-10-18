@@ -134,11 +134,11 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             </Button>
           )}
         </TableCell>
-        <TableCell className="text-[10px] font-black text-fg-faint py-2">
+        <TableCell className="text-[11px] font-semibold text-fg-faint py-2">
           <div className="flex items-center gap-1.5">
             {task.wbs_code}
             {critical && (
-              <span className="rounded bg-red-500/10 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-red-600 dark:text-red-400" title="On the critical path">
+              <span className="rounded bg-red-500/10 px-1 py-px text-[11px] font-bold uppercase tracking-wide text-red-600 dark:text-red-400" title="On the critical path">
                 Critical
               </span>
             )}
@@ -218,12 +218,12 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
           {(task.topics && task.topics.length > 0) ? (
             <div className="flex flex-wrap gap-1 justify-center">
               {task.topics.map(t => (
-                <Badge key={t.id} variant="secondary" className="text-[9px] font-bold bg-muted border-none px-1.5" style={{ color: t.color }}>{t.name}</Badge>
+                <Badge key={t.id} variant="secondary" className="text-[11px] font-bold bg-muted border-none px-1.5" style={{ color: t.color }}>{t.name}</Badge>
               ))}
             </div>
           ) : (
             (task.topic_ref?.name || task.topic) && (
-              <Badge variant="secondary" className="text-[9px] font-bold bg-muted text-fg-soft border-none px-1.5" style={{ color: task.topic_ref?.color }}>
+              <Badge variant="secondary" className="text-[11px] font-bold bg-muted text-fg-soft border-none px-1.5" style={{ color: task.topic_ref?.color }}>
                 {task.topic_ref?.name || task.topic}
               </Badge>
             )
@@ -233,12 +233,12 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
           {(task.types && task.types.length > 0) ? (
             <div className="flex flex-wrap gap-1 justify-center">
               {task.types.map(t => (
-                <Badge key={t.id} variant="outline" className="text-[9px] font-bold px-1.5 h-5">{t.name}</Badge>
+                <Badge key={t.id} variant="outline" className="text-[11px] font-bold px-1.5 h-5">{t.name}</Badge>
               ))}
             </div>
           ) : (
             (task.type_ref?.name || task.type) && (
-              <Badge variant="outline" className="text-[9px] font-bold px-1.5 h-5">
+              <Badge variant="outline" className="text-[11px] font-bold px-1.5 h-5">
                 {task.type_ref?.name || task.type}
               </Badge>
             )
@@ -246,7 +246,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
         </TableCell>
         <TableCell className="py-2 text-center">
           <Badge variant="outline" className={cn(
-            "capitalize text-[9px] font-bold px-1.5 h-5",
+            "capitalize text-[11px] font-bold px-1.5 h-5",
             getStatusColors(task.status).bg,
             getStatusColors(task.status).text,
             getStatusColors(task.status).border
@@ -254,7 +254,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
         </TableCell>
         <TableCell className="py-2 text-center">
           <Badge variant="outline" className={cn(
-            "capitalize text-[9px] font-bold px-1.5 h-5",
+            "capitalize text-[11px] font-bold px-1.5 h-5",
             getPriorityColors(task.priority).bg,
             getPriorityColors(task.priority).text,
             getPriorityColors(task.priority).border
@@ -273,45 +273,45 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
                 <UserIcon className="w-2.5 h-2.5 text-muted-foreground" />
               </div>
             )) : (
-              <span className="text-[10px] text-fg-faint italic">Unassigned</span>
+              <span className="text-[11px] text-fg-faint italic">Unassigned</span>
             )}
           </div>
         </TableCell>
         <TableCell className="py-2 text-center">
             {task.checklist && task.checklist.length > 0 ? (
-                <Badge variant="secondary" className="text-[9px] font-black bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-500/20">
+                <Badge variant="secondary" className="text-[11px] font-semibold bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-500/20">
                     {task.checklist.filter(i => i.is_done).length}/{task.checklist.length}
                 </Badge>
             ) : <span className="text-fg-ghost">-</span>}
         </TableCell>
         <TableCell className="py-2 text-center">
             <span className={cn(
-                "text-[10px] font-bold",
+                "text-[11px] font-bold",
                 (task.real_cost || 0) > (task.budget || 0) ? "text-red-500" : "text-fg-body"
             )}>
                 {task.real_cost ? `$${task.real_cost.toLocaleString()}` : '-'}
             </span>
         </TableCell>
         <TableCell className="py-2 text-center">
-          <span className="text-[10px] font-black text-muted-foreground">{duration > 0 ? `${duration}d` : '-'}</span>
+          <span className="text-[11px] font-semibold text-muted-foreground">{duration > 0 ? `${duration}d` : '-'}</span>
         </TableCell>
         <TableCell className="py-2">
-          <span className="text-[10px] font-medium text-muted-foreground">
+          <span className="text-[11px] font-medium text-muted-foreground">
             {task.start_date ? new Date(task.start_date).toLocaleDateString() : '-'}
           </span>
         </TableCell>
         <TableCell className="py-2">
-          <span className="text-[10px] font-medium text-muted-foreground">
+          <span className="text-[11px] font-medium text-muted-foreground">
             {task.completed_at ? new Date(task.completed_at).toLocaleDateString() : '-'}
           </span>
         </TableCell>
         <TableCell className="text-right py-2">
           <div className="flex flex-col items-end">
-            <span className={cn("font-bold text-muted-foreground", level === 0 ? "text-[11px]" : "text-[10px]")}>
+            <span className={cn("font-bold text-muted-foreground", level === 0 ? "text-[11px]" : "text-[11px]")}>
               {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
             </span>
             {task.deadline_at && (
-              <span className="text-[9px] font-black text-red-500 flex items-center gap-0.5">
+              <span className="text-[11px] font-semibold text-red-500 flex items-center gap-0.5">
                 <AlertTriangle className="w-2.5 h-2.5" />
                 {new Date(task.deadline_at).toLocaleDateString()}
               </span>
@@ -383,20 +383,20 @@ export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, 
               </TableHead>
             )}
             <TableHead className="w-10"></TableHead>
-            <TableHead className="w-16 text-[10px] font-black uppercase tracking-widest text-muted-foreground">WBS</TableHead>
-            <TableHead className="min-w-[200px] text-[10px] font-black uppercase tracking-widest text-muted-foreground">Task</TableHead>
+            <TableHead className="w-16 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">WBS</TableHead>
+            <TableHead className="min-w-[200px] text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Task</TableHead>
             <TableHead className="w-10"></TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Topic</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Type</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Status</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Priority</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Assignees</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">List</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Cost ($)</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Days</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Start</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Concluded</TableHead>
-            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Due / Deadline</TableHead>
+            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Topic</TableHead>
+            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Type</TableHead>
+            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Status</TableHead>
+            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Priority</TableHead>
+            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Assignees</TableHead>
+            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">List</TableHead>
+            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Cost ($)</TableHead>
+            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Days</TableHead>
+            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Start</TableHead>
+            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Concluded</TableHead>
+            <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Due / Deadline</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -411,7 +411,7 @@ export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, 
               <Fragment key={group.key}>
                 {group.label && (
                   <TableRow className="bg-subtle hover:bg-subtle">
-                    <TableCell colSpan={colCount} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                    <TableCell colSpan={colCount} className="py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       <span role="heading" aria-level={4}>{group.label} <span className="font-semibold text-fg-faint">({group.tasks.length})</span></span>
                     </TableCell>
                   </TableRow>

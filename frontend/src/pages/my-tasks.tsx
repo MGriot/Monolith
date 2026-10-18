@@ -47,6 +47,7 @@ import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
 import BulkActionBar from '@/components/bulk-action-bar';
 import { clickSelection, EMPTY_SELECTION, headerState, pruneSelection, toggleAll, type SelectionState } from '@/lib/selection';
 import { useAuth } from '@/components/auth-provider';
+import { confirmDialog } from '@/lib/confirm';
 
 export default function MyTasksPage() {
   const queryClient = useQueryClient();
@@ -289,12 +290,12 @@ export default function MyTasksPage() {
                         onChange={() => setSelection((s) => toggleAll(s, rowOrder))}
                       />
                     </TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground">Task</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground">Project</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground">Priority</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground text-right">Due Date</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-muted-foreground text-right">Actions</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Task</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Project</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Priority</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground text-right">Due Date</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -309,7 +310,7 @@ export default function MyTasksPage() {
                       <Fragment key={group.key}>
                       {group.label && (
                         <TableRow className="bg-subtle hover:bg-subtle">
-                          <TableCell colSpan={7} className="py-1.5 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                          <TableCell colSpan={7} className="py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                             <span role="heading" aria-level={4}>{group.label} <span className="font-semibold text-fg-faint">({group.tasks.length})</span></span>
                           </TableCell>
                         </TableRow>
@@ -339,12 +340,12 @@ export default function MyTasksPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="capitalize text-[10px] font-bold">
+                          <Badge variant="outline" className="capitalize text-[11px] font-bold">
                             {task.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={task.priority === 'High' || task.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[10px] font-black">
+                          <Badge variant={task.priority === 'High' || task.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[11px] font-semibold">
                             {task.priority}
                           </Badge>
                         </TableCell>
@@ -365,9 +366,9 @@ export default function MyTasksPage() {
                               <DropdownMenuItem 
                                 className="text-destructive"
                                 onClick={() => {
-                                  if (confirm("Delete this task?")) {
+                                  void confirmDialog({ title: "Delete this task?", confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) {
                                     deleteTaskMutation.mutate(task.id);
-                                  }
+                                  } });
                                 }}
                               >
                                 <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete

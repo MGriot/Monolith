@@ -65,7 +65,7 @@ export default function TaskCustomFields({ projectId, values, onChange }: TaskCu
         const id = `cf-${def.id}`;
         return (
           <div key={def.id} className="space-y-2">
-            <Label htmlFor={id} className="text-[10px] font-black uppercase text-fg-faint tracking-[0.2em] px-1">
+            <Label htmlFor={id} className="text-[11px] font-semibold uppercase text-fg-faint tracking-[0.2em] px-1">
               {def.name}
             </Label>
             {def.field_type === 'select' || def.field_type === 'user' ? (

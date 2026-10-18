@@ -32,7 +32,7 @@ export default function MarkdownRenderer({ content, className }: MarkdownRendere
                   >
                     {props.children}
                   </span>
-                  <Tooltip id={id} className="z-50 !bg-slate-900 !text-[10px] !font-bold !px-2 !py-1 !rounded-md !opacity-100" />
+                  <Tooltip id={id} className="z-50 !bg-slate-900 !text-[11px] !font-bold !px-2 !py-1 !rounded-md !opacity-100" />
                 </>
               );
             }

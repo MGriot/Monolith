@@ -65,7 +65,7 @@ export default function NoteEditor({ file, onClose }: NoteEditorProps) {
                 <Button 
                     variant={mode === 'edit' ? 'secondary' : 'ghost'} 
                     size="sm" 
-                    className="h-7 px-3 text-[10px] font-black uppercase gap-1.5"
+                    className="h-7 px-3 text-[11px] font-semibold uppercase gap-1.5"
                     onClick={() => setMode('edit')}
                 >
                     <Pencil className="w-3 h-3" /> Edit
@@ -73,7 +73,7 @@ export default function NoteEditor({ file, onClose }: NoteEditorProps) {
                 <Button 
                     variant={mode === 'preview' ? 'secondary' : 'ghost'} 
                     size="sm" 
-                    className="h-7 px-3 text-[10px] font-black uppercase gap-1.5"
+                    className="h-7 px-3 text-[11px] font-semibold uppercase gap-1.5"
                     onClick={() => setMode('preview')}
                 >
                     <Eye className="w-3 h-3" /> Preview

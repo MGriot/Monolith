@@ -20,6 +20,7 @@ export function taskExtraTabs(task: Task, projectId?: string): TaskFormTab[] {
       value: 'files',
       label: 'Files',
       icon: <Paperclip className="h-3.5 w-3.5" />,
+      badge: task.attachments?.length || undefined,
       content: <AttachmentManager taskId={task.id} projectId={projectId} attachments={task.attachments || []} />,
     },
     {

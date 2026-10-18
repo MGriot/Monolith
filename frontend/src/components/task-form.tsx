@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef, type ReactNode } from "react";
-import { useForm, useFieldArray, type UseFormRegisterReturn } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,11 +16,9 @@ import {
     Link as LinkIcon,
     Plus,
     Sparkles,
-    Database,
     X,
     CheckSquare,
     AlertCircle,
-    Loader2,
     Timer,
     SlidersHorizontal,
     Repeat
@@ -29,9 +27,14 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
 import { AssigneeSelector } from "@/components/assignee-selector";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { addDays, differenceInDays, format, parseISO } from "date-fns";
 import DependencyManager from "./dependency-manager";
+import { EntityEditor, EditorTitle, RailGroup, RiskCostPanel, type EditorTab } from "@/components/entity-editor";
+import { Section } from "@/components/ui/section";
+import { Field, selectClass } from "@/components/ui/field";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ColorSwatchPicker } from "@/components/ui/color-swatch-picker";
 import TaskTimeTracker from "./task-time-tracker";
 import TaskCustomFields, { useCustomFieldDefs } from "./task-custom-fields";
 import { RecurrenceField } from "./recurrence-field";
@@ -95,12 +98,7 @@ interface TaskFormProps {
   submitLabel?: string;
 }
 
-export interface TaskFormTab {
-  value: string;
-  label: string;
-  icon?: ReactNode;
-  content: ReactNode;
-}
+export type TaskFormTab = EditorTab;
 
 /**
  * Two-pane task editor meant to fill a DialogContent (see TaskDialog): title, description and
@@ -539,40 +537,350 @@ export default function TaskForm({
 
   const availableParents = getAvailableParents();
 
-  const colorPresets = [
-    { name: "Blue", value: "#3b82f6" },
-    { name: "Indigo", value: "#6366f1" },
-    { name: "Purple", value: "#a855f7" },
-    { name: "Rose", value: "#f43f5e" },
-    { name: "Orange", value: "#f97316" },
-    { name: "Amber", value: "#f59e0b" },
-    { name: "Emerald", value: "#10b981" },
-    { name: "Slate", value: "#64748b" },
-  ];
-
-  const tabTriggerClass = "relative h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2.5 text-xs font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none";
   const checklist = watch("checklist") || [];
-  const budget = watch("budget") || 0;
-  const realCost = watch("real_cost") || 0;
+  const dependencyCount = (taskObject?.blocked_by?.length || 0) + (taskObject?.blocking?.length || 0);
 
-  return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="flex min-h-0 flex-1 flex-col">
-      {/* Mobile: one scrolling column (title, properties, tabs). md+: title and tabs on the left, properties rail on the right, each scrolling on its own. */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto md:grid-cols-[minmax(0,1fr)_20rem] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
-        <div className="space-y-3 px-6 pb-3 pt-5 md:col-start-1 md:row-start-1">
-          <div>
-            <Label htmlFor="title" className="sr-only">Title</Label>
-            <Input
-              id="title"
-              placeholder="Task title"
-              autoComplete="off"
-              className="h-auto border-0 bg-transparent px-0 py-1 text-xl font-semibold shadow-none placeholder:text-fg-ghost focus-visible:ring-0"
-              {...register("title")}
-            />
-            {errors.title && (
-              <p className="mt-1 text-xs font-medium text-red-500">{errors.title.message}</p>
+  const tabs: EditorTab[] = [
+    {
+      value: "scheduling",
+      label: "Timeline",
+      icon: <CalendarDays className="h-3.5 w-3.5" />,
+      content: (
+        <>
+          <Section
+            icon={<CalendarDays className="h-4 w-4" />}
+            title="Schedule"
+            actions={
+              <div className="flex items-center gap-2">
+                {taskObject?.subtasks && taskObject.subtasks.length > 0 && (
+                  <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={handleSyncFromChildren}>
+                    <Plus className="h-3.5 w-3.5" /> Roll-up dates
+                  </Button>
+                )}
+                <Tabs value={planningMode} onValueChange={(v) => setPlanningMode(v as "dates" | "duration")}>
+                  <TabsList className="h-8">
+                    <TabsTrigger value="dates" className="h-6 px-3 text-xs">Dates</TabsTrigger>
+                    <TabsTrigger value="duration" className="h-6 px-3 text-xs">Duration</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            }
+          >
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Start date" htmlFor="start_date">
+                <Input id="start_date" type="date" className="h-9" {...register("start_date")} />
+              </Field>
+              <Field label="Duration (days)" htmlFor="duration_days">
+                <Input
+                  id="duration_days"
+                  type="number"
+                  className={cn("h-9", planningMode === "dates" && "border-dashed bg-muted text-fg-faint")}
+                  value={durationDays}
+                  onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
+                  disabled={planningMode === "dates"}
+                />
+              </Field>
+              <Field label="Due date" htmlFor="due_date">
+                <Input
+                  id="due_date"
+                  type="date"
+                  className={cn("h-9", planningMode === "duration" && "border-dashed bg-muted text-fg-faint")}
+                  {...register("due_date")}
+                  disabled={planningMode === "duration"}
+                />
+              </Field>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Hard deadline" htmlFor="deadline_at" hint="Late if not done by this day">
+                <Input id="deadline_at" type="date" className="h-9" {...register("deadline_at")} />
+              </Field>
+              <Field label="Actually completed" htmlFor="completed_at">
+                <Input id="completed_at" type="date" className="h-9" {...register("completed_at")} />
+              </Field>
+            </div>
+          </Section>
+
+          <Section icon={<Repeat className="h-4 w-4" />} title="Repeat">
+            <RecurrenceField value={watch("recurrence_rule")} onChange={(rule) => setValue("recurrence_rule", rule, { shouldDirty: true })} />
+          </Section>
+
+          <Section
+            icon={<Calculator className="h-4 w-4" />}
+            title="PERT estimate"
+            description="Weighted from optimistic, most likely and pessimistic durations."
+            actions={
+              <div className="flex items-center gap-3">
+                <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={handleSuggestPERT}>
+                  <Sparkles className="h-3.5 w-3.5 text-review" /> Suggest
+                </Button>
+                <div className="text-right leading-none">
+                  <div className="text-[11px] text-muted-foreground">Expected</div>
+                  <div className="text-base font-semibold tabular-nums">{expectedDuration}<span className="ml-0.5 text-xs font-normal text-muted-foreground">d</span></div>
+                </div>
+              </div>
+            }
+          >
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Optimistic" htmlFor="optimistic_days">
+                <Input id="optimistic_days" type="number" className="h-9" {...register("optimistic_days", { valueAsNumber: true })} />
+              </Field>
+              <Field label="Most likely" htmlFor="normal_days">
+                <Input id="normal_days" type="number" className="h-9" {...register("normal_days", { valueAsNumber: true })} />
+              </Field>
+              <Field label="Pessimistic" htmlFor="pessimistic_days">
+                <Input id="pessimistic_days" type="number" className="h-9" {...register("pessimistic_days", { valueAsNumber: true })} />
+              </Field>
+            </div>
+          </Section>
+        </>
+      ),
+    },
+    {
+      value: "checklist",
+      label: "Checklist",
+      icon: <CheckSquare className="h-3.5 w-3.5" />,
+      badge: checklist.length > 0 ? `${checklist.filter(c => c.is_done).length}/${checklist.length}` : undefined,
+      content: (
+        <Section
+          icon={<CheckSquare className="h-4 w-4" />}
+          title="Checklist"
+          actions={
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => {
+                const newId = Math.random().toString(36).substring(2, 9);
+                setValue("checklist", [...checklist, { id: newId, text: "", is_done: false }]);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" /> Add item
+            </Button>
+          }
+        >
+          <div className="space-y-1.5">
+            {checklist.map((item, index) => (
+              <div key={item.id} className="group flex items-center gap-3 rounded-md border bg-background px-3 py-1.5">
+                <input
+                  type="checkbox"
+                  aria-label={`Done: ${item.text || 'item'}`}
+                  checked={item.is_done}
+                  onChange={(e) => {
+                    const current = [...checklist];
+                    current[index].is_done = e.target.checked;
+                    setValue("checklist", current);
+                  }}
+                  className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
+                />
+                <Input
+                  className={cn(
+                    "h-8 flex-1 border-none bg-transparent px-0 text-sm shadow-none focus-visible:ring-0",
+                    item.is_done && "text-fg-faint line-through"
+                  )}
+                  placeholder="Describe the step..."
+                  value={item.text}
+                  onChange={(e) => {
+                    const current = [...checklist];
+                    current[index].text = e.target.value;
+                    setValue("checklist", current);
+                  }}
+                />
+                <button
+                  type="button"
+                  aria-label="Remove item"
+                  onClick={() => setValue("checklist", checklist.filter((_, i) => i !== index))}
+                  className="rounded p-1 text-fg-ghost opacity-0 transition-opacity hover:bg-danger-soft hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            {checklist.length === 0 && (
+              <EmptyState icon={<CheckSquare />} title="No checklist items" text="Break the task into smaller steps to track progress." />
             )}
           </div>
+        </Section>
+      ),
+    },
+    {
+      value: "risk",
+      label: "Risk & cost",
+      icon: <AlertCircle className="h-3.5 w-3.5" />,
+      content: (
+        <RiskCostPanel
+          probability={watch("risk_probability")}
+          impact={watch("risk_impact")}
+          budget={watch("budget") || 0}
+          realCost={watch("real_cost") || 0}
+          fields={{
+            probability: register("risk_probability", { valueAsNumber: true }),
+            impact: register("risk_impact", { valueAsNumber: true }),
+            budget: register("budget", { valueAsNumber: true }),
+            realCost: register("real_cost", { valueAsNumber: true }),
+          }}
+        />
+      ),
+    },
+    {
+      value: "dependencies",
+      label: "Dependencies",
+      icon: <LinkIcon className="h-3.5 w-3.5" />,
+      badge: dependencyCount || undefined,
+      disabled: !editingTaskId,
+      disabledReason: "Save the task first",
+      content: (
+        <Section icon={<LinkIcon className="h-4 w-4" />} title="Dependencies" description="Tasks this one waits for, and tasks waiting for it.">
+          {editingTaskId && taskObject ? (
+            <DependencyManager
+              item={taskObject}
+              allPossibleBlockers={(() => {
+                const flat: Task[] = [];
+                const recurse = (list: Task[], prefix = "") => {
+                  list.forEach(t => {
+                    const title = prefix ? `${prefix} > ${t.title}` : t.title;
+                    flat.push({ ...t, title });
+                    if (t.subtasks) recurse(t.subtasks, title);
+                  });
+                };
+                recurse(allTasks || []);
+                return flat;
+              })()}
+            />
+          ) : (
+            <EmptyState icon={<LinkIcon />} title="Save the task first" text="Dependencies can be added once the task exists." />
+          )}
+        </Section>
+      ),
+    },
+    {
+      value: "time",
+      label: "Time",
+      icon: <Timer className="h-3.5 w-3.5" />,
+      disabled: !editingTaskId,
+      disabledReason: "Save the task first",
+      content: editingTaskId ? <TaskTimeTracker taskId={editingTaskId} /> : null,
+    },
+    {
+      value: "fields",
+      label: "Fields",
+      icon: <SlidersHorizontal className="h-3.5 w-3.5" />,
+      disabled: !projectId,
+      disabledReason: "Only for tasks in a project",
+      content: (
+        <TaskCustomFields
+          projectId={projectId}
+          values={(watch("custom_values") || {}) as CustomValues}
+          onChange={(values) => setValue("custom_values", values, { shouldDirty: true })}
+        />
+      ),
+    },
+    ...(extraTabs || []),
+  ];
+
+  const rail = (
+    <>
+      <RailGroup title="Properties">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Status" htmlFor="status">
+            <select id="status" className={selectClass} {...register("status")}>
+              <option value="Backlog">Backlog</option>
+              <option value="Todo">Todo</option>
+              <option value="In Progress">In Progress</option>
+              <option value="On hold">On Hold</option>
+              <option value="Review">Review</option>
+              <option value="Done">Done</option>
+            </select>
+          </Field>
+          <Field label="Priority" htmlFor="priority">
+            <select id="priority" className={selectClass} {...register("priority")}>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </Field>
+        </div>
+        <Field label="Parent (WBS)" htmlFor="parent_id">
+          <select
+            id="parent_id"
+            className={selectClass}
+            value={selectedParentId || ""}
+            onChange={(e) => setValue("parent_id", e.target.value || null)}
+          >
+            <option value="">None (root task)</option>
+            {availableParents.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <div className="flex items-center justify-between rounded-md border bg-background px-3 py-2">
+          <Label htmlFor="is_milestone" className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+            <Milestone className="h-4 w-4 text-info" />
+            Milestone
+          </Label>
+          <Switch
+            id="is_milestone"
+            checked={watch("is_milestone")}
+            onCheckedChange={(checked) => setValue("is_milestone", checked)}
+          />
+        </div>
+      </RailGroup>
+
+      <RailGroup title="People">
+        <AssigneeSelector
+          label="Assignees"
+          selectedValues={selectedAssignees}
+          onSelect={(id) => toggleItem("assignee_ids", id)}
+          onRemove={(id) => removeItem("assignee_ids", id)}
+          placeholder="Assign someone"
+        />
+      </RailGroup>
+
+      <RailGroup title="Classification">
+        <Field label="Topics">
+          <RichDropdown
+            items={topicItems}
+            selectedValues={selectedTopicIds}
+            onSelect={(id) => toggleItem("topic_ids", id)}
+            onRemove={(id) => removeItem("topic_ids", id)}
+            onCreate={projectId ? (name) => createTopicMutation.mutate(name) : undefined}
+            multi={true}
+            isLoading={isLoadingTopics}
+            placeholder="Add topics..."
+            searchPlaceholder="Search topics..."
+          />
+        </Field>
+        <Field label="Work type">
+          <RichDropdown
+            items={typeItems}
+            selectedValues={selectedTypeIds}
+            onSelect={(id) => toggleItem("type_ids", id)}
+            onRemove={(id) => removeItem("type_ids", id)}
+            onCreate={projectId ? (name) => createWorkTypeMutation.mutate(name) : undefined}
+            multi={true}
+            isLoading={isLoadingTypes}
+            placeholder="Add types..."
+            searchPlaceholder="Search types..."
+          />
+        </Field>
+      </RailGroup>
+
+      <RailGroup title="Appearance">
+        <Field label="Gantt colour">
+          <ColorSwatchPicker value={selectedColor} onChange={(c) => setValue("color", c)} size="sm" />
+        </Field>
+      </RailGroup>
+    </>
+  );
+
+  return (
+    <EntityEditor
+      onSubmit={handleSubmit(handleFormSubmit)}
+      main={
+        <>
+          <EditorTitle id="title" placeholder="Task title" registration={register("title")} error={errors.title?.message} />
           <div>
             <Label htmlFor="description" className="sr-only">Description</Label>
             <Textarea
@@ -583,466 +891,15 @@ export default function TaskForm({
               {...register("description")}
             />
           </div>
-        </div>
-
-        {/* Properties rail */}
-        <aside className="space-y-4 border-y bg-subtle/40 px-5 py-4 md:col-start-2 md:row-span-2 md:row-start-1 md:overflow-y-auto md:border-y-0 md:border-l md:py-5">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Status" htmlFor="status">
-              <select id="status" className={selectClass} {...register("status")}>
-                <option value="Backlog">Backlog</option>
-                <option value="Todo">Todo</option>
-                <option value="In Progress">In Progress</option>
-                <option value="On hold">On Hold</option>
-                <option value="Review">Review</option>
-                <option value="Done">Done</option>
-              </select>
-            </Field>
-            <Field label="Priority" htmlFor="priority">
-              <select id="priority" className={selectClass} {...register("priority")}>
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-                <option value="Critical">Critical</option>
-              </select>
-            </Field>
-          </div>
-
-          <Field label="Assignees">
-            <AssigneeSelector
-              selectedValues={selectedAssignees}
-              onSelect={(id) => toggleItem("assignee_ids", id)}
-              onRemove={(id) => removeItem("assignee_ids", id)}
-              placeholder="Nobody assigned"
-            />
-          </Field>
-
-          <Field label="Topics">
-            <RichDropdown
-              items={topicItems}
-              selectedValues={selectedTopicIds}
-              onSelect={(id) => toggleItem("topic_ids", id)}
-              onRemove={(id) => removeItem("topic_ids", id)}
-              onCreate={projectId ? (name) => createTopicMutation.mutate(name) : undefined}
-              multi={true}
-              isLoading={isLoadingTopics}
-              placeholder="Add topics..."
-              searchPlaceholder="Search topics..."
-            />
-          </Field>
-
-          <Field label="Type">
-            <RichDropdown
-              items={typeItems}
-              selectedValues={selectedTypeIds}
-              onSelect={(id) => toggleItem("type_ids", id)}
-              onRemove={(id) => removeItem("type_ids", id)}
-              onCreate={projectId ? (name) => createWorkTypeMutation.mutate(name) : undefined}
-              multi={true}
-              isLoading={isLoadingTypes}
-              placeholder="Add types..."
-              searchPlaceholder="Search types..."
-            />
-          </Field>
-
-          <Field label="Parent (WBS)" htmlFor="parent_id">
-            <select
-              id="parent_id"
-              className={selectClass}
-              value={selectedParentId || ""}
-              onChange={(e) => setValue("parent_id", e.target.value || null)}
-            >
-              <option value="">None (root task)</option>
-              {availableParents.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.wbs_code ? `${p.wbs_code} ` : ""}{"  ".repeat(p.level)}{p.title}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Gantt colour">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {colorPresets.map((cp) => (
-                <button
-                  key={cp.value}
-                  type="button"
-                  className={cn(
-                    "h-6 w-6 rounded-full border-2 transition-transform hover:scale-110",
-                    selectedColor === cp.value ? "border-foreground ring-2 ring-background" : "border-transparent"
-                  )}
-                  style={{ backgroundColor: cp.value }}
-                  onClick={() => setValue("color", cp.value)}
-                  title={cp.name}
-                  aria-label={`Colour ${cp.name}`}
-                  aria-pressed={selectedColor === cp.value}
-                />
-              ))}
-              <button
-                type="button"
-                className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-full border-2 border-dashed border-fg-ghost transition-colors hover:border-muted-foreground",
-                  !colorPresets.find(cp => cp.value === selectedColor) && selectedColor ? "border-solid border-foreground" : ""
-                )}
-                style={!colorPresets.find(cp => cp.value === selectedColor) && selectedColor ? { backgroundColor: selectedColor } : undefined}
-                onClick={() => document.getElementById('custom-color-picker')?.click()}
-                title="Custom colour"
-                aria-label="Custom colour"
-              >
-                {!(selectedColor && !colorPresets.find(cp => cp.value === selectedColor)) && <Plus className="h-3 w-3 text-fg-faint" />}
-              </button>
-              <input
-                type="color"
-                id="custom-color-picker"
-                className="sr-only"
-                value={selectedColor || "#ffffff"}
-                onChange={(e) => setValue("color", e.target.value)}
-              />
-            </div>
-          </Field>
-
-          <div className="flex items-center justify-between rounded-md border bg-background px-3 py-2">
-            <Label htmlFor="is_milestone" className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-              <Milestone className="h-4 w-4 text-blue-500" />
-              Milestone
-            </Label>
-            <Switch
-              id="is_milestone"
-              checked={watch("is_milestone")}
-              onCheckedChange={(checked) => setValue("is_milestone", checked)}
-            />
-          </div>
-        </aside>
-
-        {/* Tabbed sections */}
-        <Tabs defaultValue="scheduling" className="flex min-h-0 flex-col md:col-start-1 md:row-start-2">
-          <div className="shrink-0 border-b px-6">
-            <TabsList className="scrollbar-hide h-auto w-full justify-start gap-0.5 overflow-x-auto rounded-none bg-transparent p-0">
-              <TabsTrigger value="scheduling" className={tabTriggerClass}>
-                <CalendarDays className="h-3.5 w-3.5" /> Timeline
-              </TabsTrigger>
-              <TabsTrigger value="checklist" className={tabTriggerClass}>
-                <CheckSquare className="h-3.5 w-3.5" /> Checklist
-                {checklist.length > 0 && (
-                  <span className="rounded-full bg-muted px-1.5 text-[10px] tabular-nums">
-                    {checklist.filter(c => c.is_done).length}/{checklist.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="risk" className={tabTriggerClass}>
-                <AlertCircle className="h-3.5 w-3.5" /> Risk & cost
-              </TabsTrigger>
-              <TabsTrigger value="dependencies" disabled={!editingTaskId} title={!editingTaskId ? "Save the task first" : undefined} className={tabTriggerClass}>
-                <LinkIcon className="h-3.5 w-3.5" /> Dependencies
-              </TabsTrigger>
-              <TabsTrigger value="time" disabled={!editingTaskId} title={!editingTaskId ? "Save the task first" : undefined} className={tabTriggerClass}>
-                <Timer className="h-3.5 w-3.5" /> Time
-              </TabsTrigger>
-              <TabsTrigger value="fields" disabled={!projectId} title={!projectId ? "Only for tasks in a project" : undefined} className={tabTriggerClass}>
-                <SlidersHorizontal className="h-3.5 w-3.5" /> Fields
-              </TabsTrigger>
-              {extraTabs?.map(tab => (
-                <TabsTrigger key={tab.value} value={tab.value} className={tabTriggerClass}>
-                  {tab.icon} {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
-
-          <div className="px-6 py-5 md:min-h-0 md:flex-1 md:overflow-y-auto">
-            <TabsContent value="scheduling" className="mt-0 space-y-5">
-              <Section
-                icon={<CalendarDays className="h-4 w-4" />}
-                title="Schedule"
-                actions={
-                  <div className="flex items-center gap-2">
-                    {taskObject?.subtasks && taskObject.subtasks.length > 0 && (
-                      <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={handleSyncFromChildren}>
-                        <Plus className="h-3.5 w-3.5" /> Roll-up dates
-                      </Button>
-                    )}
-                    <Tabs value={planningMode} onValueChange={(v: any) => setPlanningMode(v)}>
-                      <TabsList className="h-8">
-                        <TabsTrigger value="dates" className="h-6 px-3 text-xs">Dates</TabsTrigger>
-                        <TabsTrigger value="duration" className="h-6 px-3 text-xs">Duration</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-                }
-              >
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <Field label="Start date" htmlFor="start_date">
-                    <Input id="start_date" type="date" className="h-9" {...register("start_date")} />
-                  </Field>
-                  <Field label="Duration (days)" htmlFor="duration_days">
-                    <Input
-                      id="duration_days"
-                      type="number"
-                      className={cn("h-9", planningMode === "dates" && "border-dashed bg-muted text-fg-faint")}
-                      value={durationDays}
-                      onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
-                      disabled={planningMode === "dates"}
-                    />
-                  </Field>
-                  <Field label="Due date" htmlFor="due_date">
-                    <Input
-                      id="due_date"
-                      type="date"
-                      className={cn("h-9", planningMode === "duration" && "border-dashed bg-muted text-fg-faint")}
-                      {...register("due_date")}
-                      disabled={planningMode === "duration"}
-                    />
-                  </Field>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Hard deadline" htmlFor="deadline_at" hint="Late if not done by this day">
-                    <Input id="deadline_at" type="date" className="h-9" {...register("deadline_at")} />
-                  </Field>
-                  <Field label="Actually completed" htmlFor="completed_at">
-                    <Input id="completed_at" type="date" className="h-9" {...register("completed_at")} />
-                  </Field>
-                </div>
-              </Section>
-
-              <Section icon={<Repeat className="h-4 w-4" />} title="Repeat">
-                <RecurrenceField value={watch("recurrence_rule")} onChange={(rule) => setValue("recurrence_rule", rule, { shouldDirty: true })} />
-              </Section>
-
-              <Section
-                icon={<Calculator className="h-4 w-4" />}
-                title="PERT estimate"
-                description="Weighted from optimistic, most likely and pessimistic durations."
-                actions={
-                  <div className="flex items-center gap-3">
-                    <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={handleSuggestPERT}>
-                      <Sparkles className="h-3.5 w-3.5 text-indigo-500" /> Suggest
-                    </Button>
-                    <div className="text-right leading-none">
-                      <div className="text-[10px] text-muted-foreground">Expected</div>
-                      <div className="text-base font-semibold tabular-nums">{expectedDuration}<span className="ml-0.5 text-xs font-normal text-muted-foreground">d</span></div>
-                    </div>
-                  </div>
-                }
-              >
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <Field label="Optimistic" htmlFor="optimistic_days">
-                    <Input id="optimistic_days" type="number" className="h-9" {...register("optimistic_days", { valueAsNumber: true })} />
-                  </Field>
-                  <Field label="Most likely" htmlFor="normal_days">
-                    <Input id="normal_days" type="number" className="h-9" {...register("normal_days", { valueAsNumber: true })} />
-                  </Field>
-                  <Field label="Pessimistic" htmlFor="pessimistic_days">
-                    <Input id="pessimistic_days" type="number" className="h-9" {...register("pessimistic_days", { valueAsNumber: true })} />
-                  </Field>
-                </div>
-              </Section>
-            </TabsContent>
-
-            <TabsContent value="checklist" className="mt-0">
-              <Section
-                icon={<CheckSquare className="h-4 w-4" />}
-                title="Checklist"
-                actions={
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="h-8 gap-1.5 text-xs"
-                    onClick={() => {
-                      const newId = Math.random().toString(36).substring(2, 9);
-                      setValue("checklist", [...checklist, { id: newId, text: "", is_done: false }]);
-                    }}
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Add item
-                  </Button>
-                }
-              >
-                <div className="space-y-1.5">
-                  {checklist.map((item, index) => (
-                    <div key={item.id} className="group flex items-center gap-3 rounded-md border bg-background px-3 py-1.5">
-                      <input
-                        type="checkbox"
-                        aria-label={`Done: ${item.text || 'item'}`}
-                        checked={item.is_done}
-                        onChange={(e) => {
-                          const current = [...checklist];
-                          current[index].is_done = e.target.checked;
-                          setValue("checklist", current);
-                        }}
-                        className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
-                      />
-                      <Input
-                        className={cn(
-                          "h-8 flex-1 border-none bg-transparent px-0 text-sm shadow-none focus-visible:ring-0",
-                          item.is_done && "text-fg-faint line-through"
-                        )}
-                        placeholder="Describe the step..."
-                        value={item.text}
-                        onChange={(e) => {
-                          const current = [...checklist];
-                          current[index].text = e.target.value;
-                          setValue("checklist", current);
-                        }}
-                      />
-                      <button
-                        type="button"
-                        aria-label="Remove item"
-                        onClick={() => setValue("checklist", checklist.filter((_, i) => i !== index))}
-                        className="rounded p-1 text-fg-ghost opacity-0 transition-opacity hover:bg-rose-50 hover:text-rose-500 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:bg-rose-500/10"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                  {checklist.length === 0 && (
-                    <EmptyState icon={<CheckSquare className="h-6 w-6" />} title="No checklist items" text="Break the task into smaller steps to track progress." />
-                  )}
-                </div>
-              </Section>
-            </TabsContent>
-
-            <TabsContent value="risk" className="mt-0">
-              <div className="grid gap-5 lg:grid-cols-2">
-                <Section icon={<AlertCircle className="h-4 w-4 text-amber-500" />} title="Risk" description="Probability × impact">
-                  <div className="space-y-4">
-                    <RangeField label="Probability" value={watch("risk_probability")} registration={register("risk_probability", { valueAsNumber: true })} />
-                    <RangeField label="Impact" value={watch("risk_impact")} registration={register("risk_impact", { valueAsNumber: true })} />
-                  </div>
-                  <div className="flex items-center justify-between rounded-md bg-amber-500/10 px-3 py-2 text-amber-800 dark:text-amber-200">
-                    <span className="text-xs font-medium">Exposure score</span>
-                    <span className="text-lg font-semibold tabular-nums">{(watch("risk_probability") || 0) * (watch("risk_impact") || 0)}</span>
-                  </div>
-                </Section>
-
-                <Section icon={<Database className="h-4 w-4 text-blue-500" />} title="Cost">
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                    <Field label="Planned budget ($)" htmlFor="budget">
-                      <Input id="budget" type="number" step="0.01" className="h-9" {...register("budget", { valueAsNumber: true })} />
-                    </Field>
-                    <Field label="Actual cost ($)" htmlFor="real_cost">
-                      <Input id="real_cost" type="number" step="0.01" className="h-9" {...register("real_cost", { valueAsNumber: true })} />
-                    </Field>
-                  </div>
-                  <div className={cn(
-                    "flex items-center justify-between rounded-md px-3 py-2",
-                    realCost > budget ? "bg-rose-500/10 text-rose-700 dark:text-rose-300" : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                  )}>
-                    <span className="text-xs font-medium">Variance</span>
-                    <span className="text-lg font-semibold tabular-nums">
-                      {budget - realCost >= 0 ? "+" : "-"}${Math.abs(budget - realCost).toLocaleString()}
-                    </span>
-                  </div>
-                </Section>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="dependencies" className="mt-0">
-              <Section icon={<LinkIcon className="h-4 w-4" />} title="Dependencies" description="Tasks this one waits for, and tasks waiting for it.">
-                {editingTaskId && taskObject ? (
-                  <DependencyManager
-                    item={taskObject}
-                    allPossibleBlockers={(() => {
-                      const flat: any[] = [];
-                      const recurse = (list: Task[], prefix = "") => {
-                        list.forEach(t => {
-                          const title = prefix ? `${prefix} > ${t.title}` : t.title;
-                          flat.push({ ...t, title });
-                          if (t.subtasks) recurse(t.subtasks, title);
-                        });
-                      };
-                      recurse(allTasks || []);
-                      return flat;
-                    })()}
-                  />
-                ) : (
-                  <EmptyState icon={<LinkIcon className="h-6 w-6" />} title="Save the task first" text="Dependencies can be added once the task exists." />
-                )}
-              </Section>
-            </TabsContent>
-
-            <TabsContent value="time" className="mt-0">
-              {editingTaskId && <TaskTimeTracker taskId={editingTaskId} />}
-            </TabsContent>
-
-            <TabsContent value="fields" className="mt-0">
-              <TaskCustomFields
-                projectId={projectId}
-                values={(watch("custom_values") || {}) as CustomValues}
-                onChange={(values) => setValue("custom_values", values, { shouldDirty: true })}
-              />
-            </TabsContent>
-
-            {extraTabs?.map(tab => (
-              <TabsContent key={tab.value} value={tab.value} className="mt-0">
-                {tab.content}
-              </TabsContent>
-            ))}
-          </div>
-        </Tabs>
-      </div>
-
-      <div className="flex shrink-0 flex-col-reverse gap-3 border-t bg-subtle/40 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">{footerStart}</div>
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isLoading} className="min-w-[120px]">
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (submitLabel ?? (editingTaskId ? "Save changes" : "Create task"))}
-          </Button>
-        </div>
-      </div>
-    </form>
-  );
-}
-
-const selectClass = "flex h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm shadow-sm ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
-
-function Field({ label, htmlFor, hint, children }: { label: string; htmlFor?: string; hint?: string; children: ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{label}</Label>
-      {children}
-      {hint && <p className="text-[11px] text-fg-faint">{hint}</p>}
-    </div>
-  );
-}
-
-function Section({ icon, title, description, actions, children }: { icon?: ReactNode; title: string; description?: string; actions?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="space-y-4 rounded-lg border bg-background p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-2.5">
-          {icon && <div className="mt-0.5 text-muted-foreground">{icon}</div>}
-          <div>
-            <h4 className="text-sm font-semibold leading-tight">{title}</h4>
-            {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
-          </div>
-        </div>
-        {actions}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function RangeField({ label, value, registration }: { label: string; value: number | undefined; registration: UseFormRegisterReturn }) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
-        <span className="text-xs font-semibold tabular-nums">{value} / 5</span>
-      </div>
-      <input type="range" min="1" max="5" aria-label={label} className="w-full cursor-pointer accent-amber-500" {...registration} />
-    </div>
-  );
-}
-
-function EmptyState({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
-  return (
-    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center text-muted-foreground">
-      <div className="text-fg-ghost">{icon}</div>
-      <p className="text-sm font-medium">{title}</p>
-      <p className="text-xs text-fg-faint">{text}</p>
-    </div>
+        </>
+      }
+      rail={rail}
+      tabs={tabs}
+      defaultTab="scheduling"
+      footerStart={footerStart}
+      onCancel={onCancel}
+      submitLabel={submitLabel ?? (editingTaskId ? "Save changes" : "Create task")}
+      isSubmitting={isLoading}
+    />
   );
 }

@@ -37,6 +37,7 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import CommentSection from '@/components/comments/comment-section';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { confirmDialog } from '@/lib/confirm';
 
 interface ProjectIdeasProps {
   projectId?: string;
@@ -260,7 +261,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                     onClick={(e) => handleVote(e, idea.id)}
                 >
                     <ThumbsUp className={cn("w-3.5 h-3.5", idea.has_voted && "fill-current")} />
-                    <span className="text-[10px] font-black">{idea.vote_count}</span>
+                    <span className="text-[11px] font-semibold">{idea.vote_count}</span>
                 </Button>
                 <Button 
                     variant="ghost" 
@@ -272,13 +273,13 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                     onClick={(e) => handleDownvote(e, idea.id)}
                 >
                     <ThumbsDown className={cn("w-3.5 h-3.5", idea.has_downvoted && "fill-current")} />
-                    <span className="text-[10px] font-black">{idea.downvote_count}</span>
+                    <span className="text-[11px] font-semibold">{idea.downvote_count}</span>
                 </Button>
             </div>
 
             <CardHeader className="pb-3 cursor-pointer" onClick={() => openDetailDialog(idea)}>
               <div className="flex justify-between items-start gap-2 mb-2 pr-12">
-                <Badge variant="outline" className={cn("text-[10px] uppercase font-black px-1.5 py-0 h-4", getStatusColor(idea.status))}>
+                <Badge variant="outline" className={cn("text-[11px] uppercase font-semibold px-1.5 py-0 h-4", getStatusColor(idea.status))}>
                   {idea.status}
                 </Badge>
               </div>
@@ -289,11 +290,11 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
             </CardHeader>
             <CardContent className="flex-1 pb-3 cursor-pointer" onClick={() => openDetailDialog(idea)}>
               <div className="flex items-center justify-between mt-auto">
-                  <div className="flex items-center gap-2 text-[10px] text-fg-faint font-medium">
+                  <div className="flex items-center gap-2 text-[11px] text-fg-faint font-medium">
                     <UserAvatar user={idea.author} className="w-5 h-5" />
                     <span className="truncate max-w-[120px]">By {idea.author?.full_name || 'Anonymous'}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-[10px] text-fg-faint">
+                  <div className="flex items-center gap-1 text-[11px] text-fg-faint">
                       <MessageSquare className="w-3 h-3" />
                       {idea.comment_count}
                   </div>
@@ -307,7 +308,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                         Promoted
                     </div>
                     {idea.promoted_project_id && (
-                        <Button variant="ghost" size="sm" className="w-full text-[9px] h-6 text-primary font-bold" onClick={() => navigate(`/projects/${idea.promoted_project_id}`)}>
+                        <Button variant="ghost" size="sm" className="w-full text-[11px] h-6 text-primary font-bold" onClick={() => navigate(`/projects/${idea.promoted_project_id}`)}>
                             View Project <ArrowUpRight className="w-2.5 h-2.5 ml-1" />
                         </Button>
                     )}
@@ -315,7 +316,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
               ) : (
                 <div className="flex w-full gap-2">
                     <Button 
-                        className="flex-1 text-[10px] font-black uppercase gap-1.5 h-9" 
+                        className="flex-1 text-[11px] font-semibold uppercase gap-1.5 h-9" 
                         variant="outline"
                         onClick={(e) => {
                             e.stopPropagation();
@@ -327,7 +328,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                         Task
                     </Button>
                     <Button 
-                        className="flex-1 text-[10px] font-black uppercase gap-1.5 h-9 bg-primary/5 border-primary/20 text-primary hover:bg-primary/10" 
+                        className="flex-1 text-[11px] font-semibold uppercase gap-1.5 h-9 bg-primary/5 border-primary/20 text-primary hover:bg-primary/10" 
                         variant="outline"
                         onClick={(e) => {
                             e.stopPropagation();
@@ -453,7 +454,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                             type="button"
                             variant={editIdeaData.status === s ? 'default' : 'outline'}
                             size="sm"
-                            className="text-[10px] h-7 px-3 font-bold"
+                            className="text-[11px] h-7 px-3 font-bold"
                             onClick={() => setEditIdeaData({ ...editIdeaData, status: s })}
                           >
                               {s}
@@ -481,7 +482,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                 <DialogHeader className="p-6 pb-2">
                     <div className="flex justify-between items-start pr-6">
                         <div className="flex gap-2 mb-2">
-                            <Badge className={cn("text-[10px] uppercase font-black px-1.5 py-0 h-4", getStatusColor(selectedIdea.status))}>
+                            <Badge className={cn("text-[11px] uppercase font-semibold px-1.5 py-0 h-4", getStatusColor(selectedIdea.status))}>
                                 {selectedIdea.status}
                             </Badge>
                             <div className="flex bg-muted/50 rounded-full p-0.5">
@@ -489,7 +490,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                                     variant="ghost" 
                                     size="sm" 
                                     className={cn(
-                                        "h-6 px-2 rounded-full text-[10px] font-black uppercase gap-1",
+                                        "h-6 px-2 rounded-full text-[11px] font-semibold uppercase gap-1",
                                         selectedIdea.has_voted ? "bg-background text-emerald-600 dark:text-emerald-400 shadow-sm" : "text-fg-faint"
                                     )}
                                     onClick={(e) => handleVote(e, selectedIdea.id)}
@@ -501,7 +502,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                                     variant="ghost" 
                                     size="sm" 
                                     className={cn(
-                                        "h-6 px-2 rounded-full text-[10px] font-black uppercase gap-1",
+                                        "h-6 px-2 rounded-full text-[11px] font-semibold uppercase gap-1",
                                         selectedIdea.has_downvoted ? "bg-background text-rose-600 dark:text-rose-400 shadow-sm" : "text-fg-faint"
                                     )}
                                     onClick={(e) => handleDownvote(e, selectedIdea.id)}
@@ -527,7 +528,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                                 size="icon" 
                                 className="h-8 w-8 text-fg-faint hover:text-rose-600 dark:hover:text-rose-400"
                                 onClick={() => {
-                                    if (confirm('Permanently delete this idea?')) deleteIdeaMutation.mutate(selectedIdea.id);
+                                    void confirmDialog({ title: 'Permanently delete this idea?', confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) { deleteIdeaMutation.mutate(selectedIdea.id); } });
                                 }}
                             >
                                 <Trash2 className="w-4 h-4" />
@@ -551,7 +552,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                     </div>
 
                     <div className="space-y-4">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-fg-faint flex items-center gap-2 mb-4">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-fg-faint flex items-center gap-2 mb-4">
                             <MessageSquare className="w-3.5 h-3.5" />
                             Idea Activity & Discussions
                         </h4>
@@ -568,7 +569,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                                 <Button 
                                     variant="ghost" 
                                     size="sm" 
-                                    className="h-8 text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 gap-1.5"
+                                    className="h-8 text-[11px] font-semibold uppercase text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 gap-1.5"
                                     onClick={() => updateIdeaMutation.mutate({ status: 'Approved' })}
                                     disabled={updateIdeaMutation.isPending}
                                 >
@@ -577,7 +578,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                                 <Button 
                                     variant="ghost" 
                                     size="sm" 
-                                    className="h-8 text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 gap-1.5"
+                                    className="h-8 text-[11px] font-semibold uppercase text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 gap-1.5"
                                     onClick={() => updateIdeaMutation.mutate({ status: 'Rejected' })}
                                     disabled={updateIdeaMutation.isPending}
                                 >
@@ -588,7 +589,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                             <Button 
                                 variant="outline"
                                 size="sm" 
-                                className="h-8 gap-2 text-[10px] font-black uppercase px-4 border-border"
+                                className="h-8 gap-2 text-[11px] font-semibold uppercase px-4 border-border"
                                 onClick={() => promoteIdeaMutation.mutate(selectedIdea.id)}
                                 disabled={promoteIdeaMutation.isPending}
                             >
@@ -597,7 +598,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                             </Button>
                             <Button 
                                 size="sm" 
-                                className="h-8 gap-2 text-[10px] font-black uppercase px-4 shadow-md shadow-primary/10"
+                                className="h-8 gap-2 text-[11px] font-semibold uppercase px-4 shadow-md shadow-primary/10"
                                 onClick={() => promoteToProjectMutation.mutate(selectedIdea.id)}
                                 disabled={promoteToProjectMutation.isPending}
                             >

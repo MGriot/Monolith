@@ -45,6 +45,7 @@ import {
   type RuleRun,
   type Trigger,
 } from '@/lib/automations';
+import { confirmDialog } from '@/lib/confirm';
 
 interface Member {
   user_id: string;
@@ -136,7 +137,7 @@ export default function AutomationRules({ projectId }: { projectId: string }) {
               <button
                 type="button"
                 aria-label={`Delete ${rule.name}`}
-                onClick={() => window.confirm(`Delete the rule “${rule.name}” and its history?`) && remove.mutate(rule.id)}
+                onClick={() => void confirmDialog({ title: `Delete the rule “${rule.name}” and its history?`, confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) remove.mutate(rule.id); })}
                 className="p-2 text-fg-ghost hover:text-rose-500 rounded-lg"
               >
                 <Trash2 className="w-4 h-4" />
@@ -146,7 +147,7 @@ export default function AutomationRules({ projectId }: { projectId: string }) {
             <button
               type="button"
               onClick={() => setOpenRuns(openRuns === rule.id ? null : rule.id)}
-              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-fg-faint hover:text-fg-soft"
+              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-fg-faint hover:text-fg-soft"
               aria-expanded={openRuns === rule.id}
             >
               {openRuns === rule.id ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />} Run history
@@ -241,7 +242,7 @@ function RuleForm({ draft, onChange, members, webhooks, saving, isNew, onSave, o
       </div>
 
       <section className="space-y-2">
-        <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">When</Label>
+        <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">When</Label>
         <select value={draft.trigger} onChange={(e) => onChange(changeTrigger(draft, e.target.value as Trigger))} className={`${selectClass} w-full`} aria-label="Trigger">
           {TRIGGERS.map((t) => (
             <option key={t.value} value={t.value}>
@@ -252,7 +253,7 @@ function RuleForm({ draft, onChange, members, webhooks, saving, isNew, onSave, o
       </section>
 
       <section className="space-y-2">
-        <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Only if (all must match)</Label>
+        <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Only if (all must match)</Label>
         {draft.conditions.map((c, i) => (
           <div key={i} className="flex flex-wrap items-center gap-2">
             <select value={c.field} onChange={(e) => setCondition(i, changeConditionField(c, e.target.value as Condition['field']))} className={selectClass} aria-label="Condition field">
@@ -281,7 +282,7 @@ function RuleForm({ draft, onChange, members, webhooks, saving, isNew, onSave, o
       </section>
 
       <section className="space-y-2">
-        <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Then</Label>
+        <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Then</Label>
         {draft.actions.map((a, i) => (
           <div key={i} className="flex flex-wrap items-start gap-2 rounded-lg bg-subtle p-2">
             <select value={a.type} onChange={(e) => setAction(i, blankAction(e.target.value as Action['type']))} className={selectClass} aria-label="Action type">
@@ -414,7 +415,7 @@ function ActionFields({ a, onChange, person, webhooks }: { a: Action; onChange: 
         </label>
       </div>
       <Input value={a.message} onChange={(e) => onChange({ ...a, message: e.target.value })} maxLength={500} placeholder="Message" aria-label="Notification message" />
-      <p className="text-[10px] text-fg-faint">Placeholders: {MESSAGE_PLACEHOLDERS.join(' ')}</p>
+      <p className="text-[11px] text-fg-faint">Placeholders: {MESSAGE_PLACEHOLDERS.join(' ')}</p>
     </div>
   );
 }
@@ -446,7 +447,7 @@ function ProjectWebhooks({ projectId, hooks, loading }: { projectId: string; hoo
 
   return (
     <div className="space-y-3 border-t pt-4">
-      <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Project webhooks</Label>
+      <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Project webhooks</Label>
       <p className="text-xs text-muted-foreground">
         Every active webhook receives this project&apos;s events: task created, status changed, assigned and completed. Rules can also call one on demand.
       </p>
@@ -458,7 +459,7 @@ function ProjectWebhooks({ projectId, hooks, loading }: { projectId: string; hoo
           <Button type="button" size="sm" variant="ghost" disabled={test.isPending} onClick={() => test.mutate(h.id)}>
             Test
           </Button>
-          <button type="button" aria-label={`Delete webhook ${h.name}`} className="p-2 text-fg-ghost hover:text-rose-500" onClick={() => window.confirm(`Delete the webhook “${h.name}”?`) && remove.mutate(h.id)}>
+          <button type="button" aria-label={`Delete webhook ${h.name}`} className="p-2 text-fg-ghost hover:text-rose-500" onClick={() => void confirmDialog({ title: `Delete the webhook “${h.name}”?`, confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) remove.mutate(h.id); })}>
             <Trash2 className="w-4 h-4" />
           </button>
         </div>

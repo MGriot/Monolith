@@ -158,11 +158,11 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
                   
                   {editingDepId !== d.predecessor_id ? (
                     <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 bg-subtle text-muted-foreground border-border">
+                      <Badge variant="outline" className="text-[11px] px-1 py-0 h-3.5 bg-subtle text-muted-foreground border-border">
                         {d.type}
                       </Badge>
                       {d.lag_days !== 0 && (
-                        <span className="text-[10px] text-fg-faint">
+                        <span className="text-[11px] text-fg-faint">
                           Lag: {d.lag_days > 0 ? `+${d.lag_days}` : d.lag_days}d
                         </span>
                       )}
@@ -170,9 +170,9 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
                   ) : (
                     <div className="grid grid-cols-2 gap-2 mt-2">
                       <div className="space-y-1">
-                        <Label className="text-[8px] uppercase font-black text-fg-faint">Type</Label>
+                        <Label className="text-[11px] uppercase font-semibold text-fg-faint">Type</Label>
                         <Select value={editType} onValueChange={(v: any) => setEditType(v)}>
-                          <SelectTrigger className="h-7 text-[10px]">
+                          <SelectTrigger className="h-7 text-[11px]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -184,12 +184,12 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
                         </Select>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[8px] uppercase font-black text-fg-faint">Lag</Label>
+                        <Label className="text-[11px] uppercase font-semibold text-fg-faint">Lag</Label>
                         <Input 
                           type="number" 
                           value={editLagDays} 
                           onChange={(e) => setEditLagDays(parseInt(e.target.value) || 0)} 
-                          className="h-7 text-[10px]"
+                          className="h-7 text-[11px]"
                         />
                       </div>
                     </div>
@@ -277,7 +277,7 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
                 ) : (
                   <div className="flex flex-col items-center justify-center py-4 text-fg-faint gap-1">
                     <AlertCircle className="w-4 h-4" />
-                    <span className="text-[10px]">No other items available</span>
+                    <span className="text-[11px]">No other items available</span>
                   </div>
                 )}
               </div>
@@ -292,7 +292,7 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
                 </div>
                 <button 
                   onClick={() => setSelectedBlockerId(null)}
-                  className="text-[10px] text-fg-faint hover:text-fg-soft underline"
+                  className="text-[11px] text-fg-faint hover:text-fg-soft underline"
                 >
                   Change
                 </button>
@@ -301,12 +301,12 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-1">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase">Type</label>
+                    <label className="text-[11px] font-semibold text-muted-foreground uppercase">Type</label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <button type="button"><Info className="w-2.5 h-2.5 text-fg-faint" /></button>
                       </PopoverTrigger>
-                      <PopoverContent side="top" className="w-64 p-2 text-[10px]">
+                      <PopoverContent side="top" className="w-64 p-2 text-[11px]">
                         <div className="space-y-1">
                           {Object.entries(typeDescriptions).map(([k, v]) => (
                             <div key={k}><span className="font-bold">{k}:</span> {v}</div>
@@ -329,7 +329,7 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase">Lag (Days)</label>
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase">Lag (Days)</label>
                   <Input 
                     type="number" 
                     value={lagDays}
@@ -361,7 +361,7 @@ export default function DependencyManager({ item, allPossibleBlockers }: Depende
       )}
       
       {(addMutation.isPending || removeMutation.isPending || updateMutation.isPending) && (
-        <div className="flex items-center gap-2 text-[10px] text-fg-faint">
+        <div className="flex items-center gap-2 text-[11px] text-fg-faint">
           <Loader2 className="w-3 h-3 animate-spin" />
           Syncing dependencies...
         </div>

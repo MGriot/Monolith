@@ -107,10 +107,10 @@ export default function TaskTimeTracker({ taskId }: { taskId: string }) {
               <Timer className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-3xl font-black tabular-nums text-foreground leading-none" aria-live="off">
+              <div className="text-3xl font-semibold tabular-nums text-foreground leading-none" aria-live="off">
                 {runningHere && running ? formatClock(elapsedSeconds(running.started_at, now)) : '0:00:00'}
               </div>
-              <p className="text-[10px] text-fg-faint mt-1 uppercase font-black">
+              <p className="text-[11px] text-fg-faint mt-1 uppercase font-semibold">
                 {running && !runningHere ? 'A timer is running on another task' : runningHere ? 'Timer running' : 'Timer stopped'}
               </p>
             </div>
@@ -132,8 +132,8 @@ export default function TaskTimeTracker({ taskId }: { taskId: string }) {
 
       <div className="p-6 rounded-[2rem] border border-border bg-background shadow-md space-y-3">
         <div className="flex items-baseline justify-between">
-          <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Logged</Label>
-          <span className="text-lg font-black tabular-nums text-foreground">{formatDuration(total)}</span>
+          <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Logged</Label>
+          <span className="text-lg font-semibold tabular-nums text-foreground">{formatDuration(total)}</span>
         </div>
         {summary && summary.estimate_hours > 0 ? (
           <div className="space-y-1.5">
@@ -154,7 +154,7 @@ export default function TaskTimeTracker({ taskId }: { taskId: string }) {
       </div>
 
       <div className="p-6 rounded-[2rem] border border-border bg-background shadow-md space-y-3">
-        <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Add time manually</Label>
+        <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Add time manually</Label>
         <div className="flex gap-2">
           <Input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="1h 30m, 90m, 1:30" className="w-40" aria-label="Duration" />
           <Input value={manualNote} onChange={(e) => setManualNote(e.target.value)} placeholder="Note (optional)" maxLength={1000} />
@@ -177,7 +177,7 @@ export default function TaskTimeTracker({ taskId }: { taskId: string }) {
               <span className="text-muted-foreground text-xs w-36 shrink-0">{parseServerDate(entry.started_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
               <span className="flex-1 truncate text-fg-soft">{entry.note || <span className="text-fg-ghost">—</span>}</span>
               <span className="text-xs text-fg-faint truncate max-w-28">{entry.user?.full_name || entry.user?.email}</span>
-              {!entry.ended_at && <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400">running</span>}
+              {!entry.ended_at && <span className="text-[11px] font-semibold uppercase text-emerald-600 dark:text-emerald-400">running</span>}
               {mine && entry.ended_at && (
                 <button
                   type="button"

@@ -40,6 +40,26 @@ export default {
   				DEFAULT: 'hsl(var(--destructive) / <alpha-value>)',
   				foreground: 'hsl(var(--destructive-foreground) / <alpha-value>)'
   			},
+  			info: {
+  				DEFAULT: 'hsl(var(--info) / <alpha-value>)',
+  				soft: 'hsl(var(--info-soft) / <alpha-value>)'
+  			},
+  			success: {
+  				DEFAULT: 'hsl(var(--success) / <alpha-value>)',
+  				soft: 'hsl(var(--success-soft) / <alpha-value>)'
+  			},
+  			warning: {
+  				DEFAULT: 'hsl(var(--warning) / <alpha-value>)',
+  				soft: 'hsl(var(--warning-soft) / <alpha-value>)'
+  			},
+  			danger: {
+  				DEFAULT: 'hsl(var(--danger) / <alpha-value>)',
+  				soft: 'hsl(var(--danger-soft) / <alpha-value>)'
+  			},
+  			review: {
+  				DEFAULT: 'hsl(var(--review) / <alpha-value>)',
+  				soft: 'hsl(var(--review-soft) / <alpha-value>)'
+  			},
   			subtle: 'hsl(var(--subtle) / <alpha-value>)',
   			hairline: 'hsl(var(--hairline) / <alpha-value>)',
   			fg: {

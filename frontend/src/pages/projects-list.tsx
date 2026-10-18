@@ -36,6 +36,7 @@ import {
   Calendar,
   AlertCircle,
   Plus,
+  ArrowLeft,
   Trash2,
   Loader2,
   MoreHorizontal,
@@ -53,6 +54,7 @@ import ProjectKanban from '@/components/project-kanban';
 import type { Project as ProjectType, ProjectTemplate } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { fromDateInput } from "@/lib/dates";
+import { confirmDialog } from '@/lib/confirm';
 
 export default function ProjectsListPage() {
   const navigate = useNavigate();
@@ -126,7 +128,7 @@ export default function ProjectsListPage() {
     mutationFn: async (values: ProjectFormValues) => {
       const formattedValues = {
         ...values,
-        tags: values.tags ? values.tags.split(',').map(t => t.trim()) : [],
+        tags: values.tags || [],
         start_date: fromDateInput(values.start_date),
         due_date: fromDateInput(values.due_date),
       };
@@ -202,9 +204,9 @@ export default function ProjectsListPage() {
 
   const handleArchiveProject = (e: React.MouseEvent, project: ProjectType) => {
       e.stopPropagation();
-      if(confirm(`Archive project "${project.name}"?`)) {
+      void confirmDialog({ title: `Archive “${project.name}”?`, description: 'You can restore it from the Archive page.', confirmLabel: 'Archive' }).then((ok) => { if (ok) {
           archiveProjectMutation.mutate(project.id);
-      }
+      } });
   };
 
   if (isLoading) {
@@ -268,13 +270,13 @@ export default function ProjectsListPage() {
                         <div className="flex flex-col gap-1">
                           <div className="flex flex-wrap gap-1 max-w-[150px]">
                             {project.topics && project.topics.length > 0 ? project.topics.map(t => (
-                              <Badge key={t.id} variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-muted text-fg-soft border-none">{t.name}</Badge>
+                              <Badge key={t.id} variant="secondary" className="text-[11px] px-1 py-0 h-3.5 bg-muted text-fg-soft border-none">{t.name}</Badge>
                             )) : <span className="text-xs font-medium text-fg-body">{project.topic || 'General'}</span>}
                           </div>
                           <div className="flex flex-wrap gap-1 max-w-[150px]">
                             {project.types && project.types.length > 0 ? project.types.map(t => (
-                              <Badge key={t.id} variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-border text-muted-foreground">{t.name}</Badge>
-                            )) : <span className="text-[10px] text-muted-foreground capitalize">{project.type || 'Standard'}</span>}
+                              <Badge key={t.id} variant="outline" className="text-[11px] px-1 py-0 h-3.5 border-border text-muted-foreground">{t.name}</Badge>
+                            )) : <span className="text-[11px] text-muted-foreground capitalize">{project.type || 'Standard'}</span>}
                           </div>
                         </div>
                       </TableCell>
@@ -284,13 +286,13 @@ export default function ProjectsListPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={project.priority === 'High' || project.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[10px] font-black uppercase">
+                        <Badge variant={project.priority === 'High' || project.priority === 'Critical' ? 'destructive' : 'secondary'} className="text-[11px] font-semibold uppercase">
                           {project.priority || 'Medium'}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1.5">
-                          <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
+                          <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
                             <span>{formatPercent(project.progress_percent)}%</span>
                           </div>
                           <Progress value={project.progress_percent} className="h-1.5" />
@@ -378,16 +380,18 @@ export default function ProjectsListPage() {
       </Dialog>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { setIsCreateDialogOpen(open); if (!open) setCreationStep('type'); }}>
-        <DialogContent size={creationStep === 'type' ? 'lg' : 'md'}>
-          <DialogHeader>
-            <DialogTitle>{creationStep === 'type' ? 'Select Project Type' : 'Project Details'}</DialogTitle>
-            <DialogDescription>
-              {creationStep === 'type' ? 'Choose a template or start with a blank project.' : 'Enter the project details to get started.'}
+        <DialogContent size={creationStep === 'type' ? 'lg' : '2xl'} className={creationStep === 'type' ? undefined : 'h-[90vh] md:h-[85vh]'}>
+          <DialogHeader className={creationStep === 'type' ? undefined : 'pb-3'}>
+            <DialogTitle>New project</DialogTitle>
+            <DialogDescription className={creationStep === 'type' ? undefined : 'text-xs'}>
+              {creationStep === 'type'
+                ? 'Start from a template or a blank project.'
+                : selectedTemplate ? `From template: ${selectedTemplate.name}` : 'Blank project'}
             </DialogDescription>
           </DialogHeader>
-        <DialogBody>
 
           {creationStep === 'type' ? (
+          <DialogBody>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Card 
                 className="cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group"
@@ -418,18 +422,23 @@ export default function ProjectsListPage() {
                 </Card>
               ))}
             </div>
+          </DialogBody>
           ) : (
-            <ProjectForm 
-              onSubmit={handleCreateSubmit} 
-              onCancel={() => setCreationStep('type')} 
+            <ProjectForm
+              onSubmit={handleCreateSubmit}
+              onCancel={() => setIsCreateDialogOpen(false)}
               isLoading={createProjectMutation.isPending}
+              footerStart={
+                <Button type="button" variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={() => setCreationStep('type')}>
+                  <ArrowLeft className="h-3.5 w-3.5" /> Templates
+                </Button>
+              }
               initialValues={selectedTemplate ? {
                 name: selectedTemplate.name,
                 description: selectedTemplate.description,
-              } : {}}
+              } : undefined}
             />
           )}
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </div>

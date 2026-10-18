@@ -1,22 +1,20 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
+import { differenceInCalendarDays, parseISO } from "date-fns";
+import { AlertCircle, CalendarDays } from "lucide-react";
 import api from "@/lib/api";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { RichDropdown, type RichDropdownItem } from "@/components/ui/rich-dropdown";
 import { AssigneeSelector } from "@/components/assignee-selector";
+import { Section } from "@/components/ui/section";
+import { Field, selectClass } from "@/components/ui/field";
+import { TagInput } from "@/components/ui/tag-input";
+import { EntityEditor, EditorTitle, RailGroup, RiskCostPanel, type EditorTab } from "@/components/entity-editor";
 import type { Topic, WorkType, Project } from "@/types";
 import { toDateInputValue } from "@/lib/dates";
 
@@ -29,7 +27,7 @@ const projectSchema = z.object({
   priority: z.string().min(1, "Priority is required"),
   start_date: z.string().optional().nullable(),
   due_date: z.string().optional().nullable(),
-  tags: z.string().optional(),
+  tags: z.array(z.string()).optional(),
   member_ids: z.array(z.string()).optional(),
   budget: z.number().optional(),
   real_cost: z.number().optional(),
@@ -45,58 +43,54 @@ interface ProjectFormProps {
   onCancel: () => void;
   isLoading?: boolean;
   projectId?: string;
+  /** dialog: inside a 2xl DialogContent; page: inline in project settings, with a save bar while dirty */
+  variant?: "dialog" | "page";
+  footerStart?: ReactNode;
+  submitLabel?: string;
 }
 
+/** Two-pane project editor, built on the same EntityEditor as the task editor. */
 export default function ProjectForm({
   initialValues,
   onSubmit,
   onCancel,
   isLoading,
-  projectId
+  projectId,
+  variant = "dialog",
+  footerStart,
+  submitLabel,
 }: ProjectFormProps) {
   const { data: topics, isLoading: topicsLoading } = useQuery({
     queryKey: ['metadata', 'topics', projectId],
     queryFn: async () => (await api.get('/metadata/topics', {
       params: { project_id: projectId, include_global: true }
-    })).data,
+    })).data as Topic[],
   });
 
   const { data: workTypes, isLoading: typesLoading } = useQuery({
     queryKey: ['metadata', 'work-types', projectId],
     queryFn: async () => (await api.get('/metadata/work-types', {
       params: { project_id: projectId, include_global: true }
-    })).data,
+    })).data as WorkType[],
   });
 
-  const processedInitialValues = useMemo(() => {
-    if (!initialValues) return { 
-        status: "Todo", 
-        priority: "Medium",
-        name: "", 
-        topic_ids: [], 
-        type_ids: [], 
-        member_ids: [],
-        budget: 0,
-        real_cost: 0,
-        risk_probability: 1,
-        risk_impact: 1
-    };
-    
+  const processedInitialValues: ProjectFormValues = useMemo(() => {
+    const v = initialValues || {};
     return {
-        ...initialValues,
-        status: initialValues.status || "Todo",
-        priority: initialValues.priority || "Medium",
-        name: initialValues.name || "",
-        topic_ids: initialValues.topic_ids || initialValues.topics?.map(t => t.id) || [],
-        type_ids: initialValues.type_ids || initialValues.types?.map(t => t.id) || [],
-        member_ids: initialValues.member_ids || initialValues.members?.map(m => m.id) || [],
-        start_date: toDateInputValue(initialValues.start_date),
-        due_date: toDateInputValue(initialValues.due_date),
-        tags: Array.isArray(initialValues.tags) ? initialValues.tags.join(', ') : initialValues.tags || "",
-        budget: initialValues.budget || 0,
-        real_cost: initialValues.real_cost || 0,
-        risk_probability: initialValues.risk_probability || 1,
-        risk_impact: initialValues.risk_impact || 1,
+      name: v.name || "",
+      description: v.description || "",
+      status: v.status || "Todo",
+      priority: v.priority || "Medium",
+      topic_ids: v.topic_ids || v.topics?.map(t => t.id) || [],
+      type_ids: v.type_ids || v.types?.map(t => t.id) || [],
+      member_ids: v.member_ids || v.members?.map(m => m.id) || [],
+      start_date: toDateInputValue(v.start_date),
+      due_date: toDateInputValue(v.due_date),
+      tags: Array.isArray(v.tags) ? v.tags : [],
+      budget: v.budget || 0,
+      real_cost: v.real_cost || 0,
+      risk_probability: v.risk_probability || 1,
+      risk_impact: v.risk_impact || 1,
     };
   }, [initialValues]);
 
@@ -105,220 +99,203 @@ export default function ProjectForm({
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
+    reset,
+    formState: { errors, isDirty },
   } = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
-    defaultValues: processedInitialValues as any,
+    defaultValues: processedInitialValues,
   });
 
-  const statusValue = watch("status");
+  // On the settings page the project refetches after a save: take the saved values as the new clean state.
+  const snapshot = JSON.stringify(processedInitialValues);
+  useEffect(() => {
+    if (variant === "page") reset(JSON.parse(snapshot));
+  }, [snapshot, variant, reset]);
+
   const selectedTopicIds = watch("topic_ids") || [];
   const selectedTypeIds = watch("type_ids") || [];
   const selectedMemberIds = watch("member_ids") || [];
+  const startDate = watch("start_date");
+  const dueDate = watch("due_date");
 
   const toggleItem = (field: "topic_ids" | "type_ids" | "member_ids", id: string) => {
-    const current = [...(watch(field) || [])];
-    const index = current.indexOf(id);
-    if (index > -1) {
-      current.splice(index, 1);
-    } else {
-      current.push(id);
-    }
-    setValue(field, current);
+    const current = watch(field) || [];
+    setValue(field, current.includes(id) ? current.filter(x => x !== id) : [...current, id], { shouldDirty: true });
   };
 
   const removeItem = (field: "topic_ids" | "type_ids" | "member_ids", id: string) => {
-    const current = [...(watch(field) || [])];
-    const filtered = current.filter(item => item !== id);
-    setValue(field, filtered);
+    setValue(field, (watch(field) || []).filter(item => item !== id), { shouldDirty: true });
   };
 
-  // Transformation for RichDropdown
-  const topicItems: RichDropdownItem[] = useMemo(() => 
-    topics?.map((t: Topic) => ({ id: t.id, label: t.name, color: t.color })) || []
+  const topicItems: RichDropdownItem[] = useMemo(() =>
+    topics?.map((t) => ({ id: t.id, label: t.name, color: t.color })) || []
   , [topics]);
 
-  const typeItems: RichDropdownItem[] = useMemo(() => 
-    workTypes?.map((t: WorkType) => ({ id: t.id, label: t.name, color: t.color })) || []
+  const typeItems: RichDropdownItem[] = useMemo(() =>
+    workTypes?.map((t) => ({ id: t.id, label: t.name, color: t.color })) || []
   , [workTypes]);
 
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="name">Project Name</Label>
-        <Input id="name" {...register("name")} placeholder="e.g. Website Redesign" />
-        {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
-      </div>
+  const spanDays = useMemo(() => {
+    if (!startDate || !dueDate) return null;
+    const d = differenceInCalendarDays(parseISO(dueDate), parseISO(startDate));
+    return isNaN(d) ? null : d + 1;
+  }, [startDate, dueDate]);
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Topics</Label>
-          <RichDropdown 
+  const tabs: EditorTab[] = [
+    {
+      value: "timeline",
+      label: "Timeline",
+      icon: <CalendarDays className="h-3.5 w-3.5" />,
+      content: (
+        <Section
+          icon={<CalendarDays className="h-4 w-4" />}
+          title="Schedule"
+          description="Tasks without their own dates fall back to this window."
+          actions={spanDays !== null && (
+            <div className="text-right leading-none">
+              <div className="text-[11px] text-muted-foreground">Span</div>
+              <div className={spanDays < 1 ? "text-base font-semibold tabular-nums text-danger" : "text-base font-semibold tabular-nums"}>
+                {spanDays}<span className="ml-0.5 text-xs font-normal text-muted-foreground">d</span>
+              </div>
+            </div>
+          )}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Start date" htmlFor="project_start_date">
+              <Input id="project_start_date" type="date" className="h-9" {...register("start_date")} />
+            </Field>
+            <Field
+              label="Due date"
+              htmlFor="project_due_date"
+              error={spanDays !== null && spanDays < 1 ? "Due date is before the start date" : undefined}
+            >
+              <Input id="project_due_date" type="date" className="h-9" {...register("due_date")} />
+            </Field>
+          </div>
+        </Section>
+      ),
+    },
+    {
+      value: "risk",
+      label: "Budget & risk",
+      icon: <AlertCircle className="h-3.5 w-3.5" />,
+      content: (
+        <RiskCostPanel
+          idPrefix="project_"
+          probability={watch("risk_probability")}
+          impact={watch("risk_impact")}
+          budget={watch("budget") || 0}
+          realCost={watch("real_cost") || 0}
+          fields={{
+            probability: register("risk_probability", { valueAsNumber: true }),
+            impact: register("risk_impact", { valueAsNumber: true }),
+            budget: register("budget", { valueAsNumber: true }),
+            realCost: register("real_cost", { valueAsNumber: true }),
+          }}
+        />
+      ),
+    },
+  ];
+
+  const rail = (
+    <>
+      <RailGroup title="Properties">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Status" htmlFor="project_status">
+            <select id="project_status" className={selectClass} {...register("status")}>
+              <option value="Backlog">Backlog</option>
+              <option value="Todo">Todo</option>
+              <option value="In Progress">In Progress</option>
+              <option value="On hold">On Hold</option>
+              <option value="Review">Review</option>
+              <option value="Done">Done</option>
+            </select>
+          </Field>
+          <Field label="Priority" htmlFor="project_priority">
+            <select id="project_priority" className={selectClass} {...register("priority")}>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </Field>
+        </div>
+      </RailGroup>
+
+      <RailGroup title="People">
+        <AssigneeSelector
+          label="Members"
+          selectedValues={selectedMemberIds}
+          onSelect={(id) => toggleItem("member_ids", id)}
+          onRemove={(id) => removeItem("member_ids", id)}
+          placeholder="Add members"
+        />
+        <p className="text-[11px] text-fg-faint">Members can open this project and see all of its tasks.</p>
+      </RailGroup>
+
+      <RailGroup title="Classification">
+        <Field label="Topics">
+          <RichDropdown
             items={topicItems}
             selectedValues={selectedTopicIds}
             onSelect={(id) => toggleItem("topic_ids", id)}
             onRemove={(id) => removeItem("topic_ids", id)}
             multi={true}
             isLoading={topicsLoading}
-            placeholder="Select topics..."
+            placeholder="Add topics..."
+            searchPlaceholder="Search topics..."
           />
-        </div>
-        <div className="space-y-2">
-          <Label>Types</Label>
-          <RichDropdown 
+        </Field>
+        <Field label="Work types">
+          <RichDropdown
             items={typeItems}
             selectedValues={selectedTypeIds}
             onSelect={(id) => toggleItem("type_ids", id)}
             onRemove={(id) => removeItem("type_ids", id)}
             multi={true}
             isLoading={typesLoading}
-            placeholder="Select types..."
+            placeholder="Add types..."
+            searchPlaceholder="Search types..."
           />
-        </div>
-      </div>
+        </Field>
+        <Field label="Tags" htmlFor="project_tags" hint="Enter or comma adds a tag">
+          <TagInput
+            id="project_tags"
+            value={watch("tags") || []}
+            onChange={(tags) => setValue("tags", tags, { shouldDirty: true })}
+            placeholder="critical, web…"
+          />
+        </Field>
+      </RailGroup>
+    </>
+  );
 
-      <div className="space-y-2">
-        <AssigneeSelector 
-            label="Project Members (Access Control)"
-            selectedValues={selectedMemberIds}
-            onSelect={(id) => toggleItem("member_ids", id)}
-            onRemove={(id) => removeItem("member_ids", id)}
-            placeholder="Assign members..."
-        />
-        <p className="text-[10px] text-muted-foreground">Members selected here will have full visibility and access to this project.</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select
-            onValueChange={(value: string) => setValue("status", value)}
-            defaultValue={statusValue}
-          >
-            <SelectTrigger className="h-10">
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Backlog">Backlog</SelectItem>
-              <SelectItem value="Todo">Todo</SelectItem>
-              <SelectItem value="In Progress">In Progress</SelectItem>
-              <SelectItem value="On hold">On Hold</SelectItem>
-              <SelectItem value="Review">Review</SelectItem>
-              <SelectItem value="Done">Done</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="priority">Priority</Label>
-          <Select
-            onValueChange={(value: string) => setValue("priority", value)}
-            defaultValue={watch("priority")}
-          >
-            <SelectTrigger className="h-10">
-              <SelectValue placeholder="Select priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Low">Low</SelectItem>
-              <SelectItem value="Medium">Medium</SelectItem>
-              <SelectItem value="High">High</SelectItem>
-              <SelectItem value="Critical">Critical</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="p-4 rounded-xl border border-amber-100 dark:border-amber-500/20 bg-amber-50/30 space-y-4">
-          <h4 className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 flex items-center gap-1.5 tracking-widest">
-              Risk Management
-          </h4>
-          <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                      <Label className="text-[10px] text-muted-foreground uppercase font-bold">Probability (1-5)</Label>
-                      <span className="text-[10px] font-black bg-background px-2 py-0.5 rounded border">{watch("risk_probability")}</span>
-                  </div>
-                  <input 
-                      type="range" 
-                      min="1" max="5" 
-                      className="w-full h-1.5 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
-                      {...register("risk_probability", { valueAsNumber: true })}
-                  />
-              </div>
-              <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                      <Label className="text-[10px] text-muted-foreground uppercase font-bold">Impact (1-5)</Label>
-                      <span className="text-[10px] font-black bg-background px-2 py-0.5 rounded border">{watch("risk_impact")}</span>
-                  </div>
-                  <input 
-                      type="range" 
-                      min="1" max="5" 
-                      className="w-full h-1.5 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
-                      {...register("risk_impact", { valueAsNumber: true })}
-                  />
-              </div>
+  return (
+    <EntityEditor
+      variant={variant}
+      isDirty={isDirty}
+      onSubmit={handleSubmit(onSubmit)}
+      main={
+        <>
+          <EditorTitle id="name" placeholder="Project name" registration={register("name")} error={errors.name?.message} />
+          <div>
+            <Label htmlFor="project_description" className="sr-only">Description</Label>
+            <Textarea
+              id="project_description"
+              rows={3}
+              className="max-h-48 min-h-[72px] resize-y text-sm leading-relaxed"
+              placeholder="Goals, scope and context (Markdown supported)..."
+              {...register("description")}
+            />
           </div>
-      </div>
-
-      <div className="p-4 rounded-xl border border-blue-100 dark:border-blue-500/20 bg-blue-50/30 space-y-4">
-          <h4 className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 flex items-center gap-1.5 tracking-widest">
-              Financial Strategy
-          </h4>
-          <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                  <Label className="text-[10px] text-muted-foreground uppercase font-bold">Total Budget ($)</Label>
-                  <Input 
-                      type="number" 
-                      step="0.01"
-                      {...register("budget", { valueAsNumber: true })}
-                      className="h-9 bg-background"
-                  />
-              </div>
-              <div className="space-y-1.5">
-                  <Label className="text-[10px] text-muted-foreground uppercase font-bold">Actual Expenditure ($)</Label>
-                  <Input 
-                      type="number" 
-                      step="0.01"
-                      {...register("real_cost", { valueAsNumber: true })}
-                      className="h-9 bg-background"
-                  />
-              </div>
-          </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="start_date">Start Date</Label>
-          <Input id="start_date" type="date" {...register("start_date")} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="due_date">Due Date</Label>
-          <Input id="due_date" type="date" {...register("due_date")} />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description (Markdown supported)</Label>
-        <Textarea
-          id="description"
-          {...register("description")}
-          placeholder="Describe the project goals..."
-          className="min-h-[100px]"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="tags">Tags (comma separated)</Label>
-        <Input id="tags" {...register("tags")} placeholder="e.g. critical, web, internal" />
-      </div>
-
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : "Save Project"}
-        </Button>
-      </div>
-    </form>
+        </>
+      }
+      rail={rail}
+      tabs={tabs}
+      footerStart={footerStart}
+      onCancel={variant === "page" ? () => reset(processedInitialValues) : onCancel}
+      submitLabel={submitLabel ?? (variant === "page" ? "Save changes" : "Create project")}
+      isSubmitting={isLoading}
+    />
   );
 }

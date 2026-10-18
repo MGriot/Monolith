@@ -1,41 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Edit2, Tag, Briefcase, Loader2, Globe, Lock } from 'lucide-react';
+import { Briefcase, Search, Tag } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import type { Topic, WorkType } from '@/types';
+import api from '@/lib/api';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { PageBody, PageHeader } from '@/components/ui/page-header';
+import { selectClass } from '@/components/ui/field';
+import { TaxonomyPanel, type TaxonomyItem } from '@/components/taxonomy-list';
 import { useTitle } from '@/context/title-context';
+import { confirmDialog } from '@/lib/confirm';
+import { filterTaxonomy, groupTaxonomy, type TaxonomyScope } from '@/lib/taxonomy';
+import { nextPresetColor } from '@/constants/colors';
+import { cn } from '@/lib/utils';
+import type { Project, Topic, WorkType } from '@/types';
 
+type Kind = 'topics' | 'work-types';
+
+const errorText = (err: unknown, fallback: string) =>
+  (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || fallback;
+
+/** Topics and work types for every scope on one page: no tabs, inline editing. */
 export default function AdminMetadataPage() {
   const queryClient = useQueryClient();
   const { setTitle } = useTitle();
-  
-  // State
-  const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
-  const [editingWorkType, setEditingWorkType] = useState<WorkType | null>(null);
-  
-  // Create Form State
-  const [newTopicName, setNewTopicName] = useState('');
-  const [newTopicColor, setNewTopicColor] = useState('#64748b');
-  const [newTypeName, setNewTypeName] = useState('');
-  const [newTypeColor, setNewTypeColor] = useState('#64748b');
+  const [search, setSearch] = useState('');
+  const [scope, setScope] = useState<TaxonomyScope>('all');
+  const [showInactive, setShowInactive] = useState(false);
 
   useEffect(() => {
-    setTitle("Taxonomy Management");
+    setTitle('Metadata');
     return () => setTitle(null);
   }, [setTitle]);
 
-  // Queries
   const { data: topics, isLoading: topicsLoading } = useQuery<Topic[]>({
     queryKey: ['metadata', 'topics', 'all'],
     queryFn: async () => (await api.get('/metadata/topics?all_scopes=true')).data,
@@ -46,449 +44,141 @@ export default function AdminMetadataPage() {
     queryFn: async () => (await api.get('/metadata/work-types?all_scopes=true')).data,
   });
 
-  // Mutations
-  const createTopicMutation = useMutation({
-    mutationFn: (data: Partial<Topic>) => api.post('/metadata/topics', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metadata', 'topics'] });
-      setNewTopicName('');
-      toast.success('Topic created');
-    },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to create topic')
+  const { data: projects } = useQuery<Project[]>({
+    queryKey: ['projects'],
+    queryFn: async () => (await api.get('/projects/')).data,
   });
 
-  const updateTopicMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<Topic> }) => api.put(`/metadata/topics/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metadata', 'topics'] });
-      setEditingTopic(null);
-      toast.success('Topic updated');
+  const projectNames = useMemo(() => new Map((projects || []).map(p => [p.id, p.name])), [projects]);
+
+  const invalidate = (kind: Kind) => queryClient.invalidateQueries({ queryKey: ['metadata', kind] });
+
+  const create = useMutation({
+    mutationFn: ({ kind, name, color }: { kind: Kind; name: string; color: string }) =>
+      api.post(`/metadata/${kind}`, { name, color }),
+    onSuccess: (_, { kind, name }) => {
+      invalidate(kind);
+      toast.success(`Added “${name}”`);
     },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to update topic')
+    onError: (err) => toast.error(errorText(err, 'Could not add it')),
   });
 
-  const deleteTopicMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/metadata/topics/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metadata', 'topics'] });
-      toast.success('Topic deleted');
+  const update = useMutation({
+    mutationFn: ({ kind, item, patch }: { kind: Kind; item: TaxonomyItem; patch: Partial<TaxonomyItem> }) =>
+      api.put(`/metadata/${kind}/${item.id}`, {
+        name: item.name,
+        color: item.color,
+        is_active: item.is_active,
+        project_id: item.project_id,
+        task_id: item.task_id,
+        ...patch,
+      }),
+    // Optimistic: rows update as you type / toggle, and roll back if the server refuses.
+    onMutate: async ({ kind, item, patch }) => {
+      const key = ['metadata', kind, 'all'];
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<TaxonomyItem[]>(key);
+      queryClient.setQueryData<TaxonomyItem[]>(key, (old) => old?.map(i => (i.id === item.id ? { ...i, ...patch } : i)));
+      return { previous, key };
     },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to delete topic')
+    onError: (err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(ctx.key, ctx.previous);
+      toast.error(errorText(err, 'Could not save the change'));
+    },
+    onSuccess: (_, { kind, item, patch }) => {
+      if (patch.is_active !== undefined) {
+        toast.success(`${item.name} ${patch.is_active ? 'activated' : 'deactivated'}`, {
+          action: { label: 'Undo', onClick: () => update.mutate({ kind, item: { ...item, ...patch }, patch: { is_active: !patch.is_active } }) },
+        });
+      }
+    },
+    onSettled: (_, __, { kind }) => invalidate(kind),
   });
 
-  const createTypeMutation = useMutation({
-    mutationFn: (data: Partial<WorkType>) => api.post('/metadata/work-types', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metadata', 'work-types'] });
-      setNewTypeName('');
-      setNewTypeColor('#64748b');
-      toast.success('Work Type created');
+  const remove = useMutation({
+    mutationFn: ({ kind, item }: { kind: Kind; item: TaxonomyItem }) => api.delete(`/metadata/${kind}/${item.id}`),
+    onSuccess: (_, { kind, item }) => {
+      invalidate(kind);
+      toast.success(`Deleted “${item.name}”`);
     },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to create work type')
+    onError: (err) => toast.error(errorText(err, 'Could not delete it')),
   });
 
-  const updateTypeMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<WorkType> }) => api.put(`/metadata/work-types/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metadata', 'work-types'] });
-      setEditingWorkType(null);
-      toast.success('Work Type updated');
-    },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to update work type')
-  });
-
-  const deleteTypeMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/metadata/work-types/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metadata', 'work-types'] });
-      toast.success('Work Type deleted');
-    },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to delete work type')
-  });
-
-  const handleUpdateTopic = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingTopic) return;
-    updateTopicMutation.mutate({ 
-      id: editingTopic.id, 
-      data: { 
-        name: editingTopic.name, 
-        color: editingTopic.color,
-        is_active: editingTopic.is_active,
-        project_id: editingTopic.project_id,
-        task_id: editingTopic.task_id
-      } 
-    });
+  const askDelete = (kind: Kind, item: TaxonomyItem) => {
+    void confirmDialog({
+      title: `Delete “${item.name}”?`,
+      description: 'Projects and tasks that use it lose this label. This cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    }).then((ok) => { if (ok) remove.mutate({ kind, item }); });
   };
 
-  const handleUpdateWorkType = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingWorkType) return;
-    updateTypeMutation.mutate({ 
-      id: editingWorkType.id, 
-      data: { 
-        name: editingWorkType.name, 
-        color: editingWorkType.color,
-        is_active: editingWorkType.is_active,
-        project_id: editingWorkType.project_id,
-        task_id: editingWorkType.task_id
-      } 
-    });
-  };
+  const filter = { search, scope, showInactive };
+  const topicGroups = groupTaxonomy(filterTaxonomy(topics || [], filter), projectNames);
+  const typeGroups = groupTaxonomy(filterTaxonomy(workTypes || [], filter), projectNames);
+  const filtered = search.trim() !== '' || scope !== 'all';
 
-  const ScopeBadge = ({ item }: { item: Topic | WorkType }) => {
-    if (!item.project_id && !item.task_id) {
-      return (
-        <Badge variant="outline" className="gap-1 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30">
-          <Globe className="w-3 h-3" />
-          Global
-        </Badge>
-      );
-    }
-    if (item.task_id) {
-      return (
-        <Badge variant="outline" className="gap-1 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30">
-          <Lock className="w-3 h-3" />
-          Task
-        </Badge>
-      );
-    }
+  const panel = (kind: Kind) => {
+    const isTopics = kind === 'topics';
+    const all = (isTopics ? topics : workTypes) || [];
+    const groups = isTopics ? topicGroups : typeGroups;
+    const shown = groups.reduce((n, g) => n + g.items.length, 0);
     return (
-      <Badge variant="outline" className="gap-1 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30">
-        <Lock className="w-3 h-3" />
-        Project
-      </Badge>
+      <TaxonomyPanel
+        title={isTopics ? 'Topics' : 'Work types'}
+        noun={isTopics ? 'topic' : 'work type'}
+        icon={isTopics ? <Tag /> : <Briefcase />}
+        groups={groups}
+        total={filtered || !showInactive ? shown : all.length}
+        isLoading={isTopics ? topicsLoading : typesLoading}
+        suggestedColor={nextPresetColor(all.filter(i => !i.project_id && !i.task_id).map(i => i.color))}
+        onCreate={(name, color) => create.mutateAsync({ kind, name, color })}
+        onUpdate={(item, patch) => update.mutate({ kind, item, patch })}
+        onDelete={(item) => askDelete(kind, item)}
+        emptyText={filtered ? 'Nothing matches the filter.' : `No ${isTopics ? 'topics' : 'work types'} yet. Add the first one above.`}
+      />
     );
   };
 
   return (
-    <div className="h-full flex flex-col space-y-0 overflow-hidden bg-subtle/50">
-      <div className="flex-1 overflow-auto p-6 space-y-8 pb-12">
-        <Tabs defaultValue="topics" className="w-full">
-          <TabsList className="mb-8">
-            <TabsTrigger value="topics" className="gap-2">
-              <Tag className="w-4 h-4" />
-              Topics
-            </TabsTrigger>
-            <TabsTrigger value="work-types" className="gap-2">
-              <Briefcase className="w-4 h-4" />
-              Work Types
-            </TabsTrigger>
-          </TabsList>
+    <PageBody className="max-w-6xl">
+      <PageHeader
+        title="Metadata"
+        description="Topics and work types label projects and tasks. Global ones are available in every project."
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-faint" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter by name"
+              aria-label="Filter topics and work types by name"
+              className="h-9 pl-9"
+            />
+          </div>
+          <select
+            aria-label="Scope"
+            value={scope}
+            onChange={(e) => setScope(e.target.value as TaxonomyScope)}
+            className={cn(selectClass, 'w-auto min-w-[9rem]')}
+          >
+            <option value="all">All scopes</option>
+            <option value="global">Global</option>
+            <option value="project">Project</option>
+            <option value="task">Single task</option>
+          </select>
+          <div className="flex items-center gap-2">
+            <Switch id="show-inactive" checked={showInactive} onCheckedChange={setShowInactive} />
+            <Label htmlFor="show-inactive" className="text-sm font-normal text-fg-soft">Show inactive</Label>
+          </div>
+        </div>
+      </PageHeader>
 
-          <TabsContent value="topics">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card className="md:col-span-1 h-fit shadow-sm border-border">
-                <CardHeader>
-                  <CardTitle className="text-lg">Add New Global Topic</CardTitle>
-                  <CardDescription>Create a new category label visible everywhere.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">Name</Label>
-                    <Input
-                      placeholder="e.g. Backend"
-                      value={newTopicName}
-                      onChange={(e) => setNewTopicName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">Color</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        className="w-12 h-10 p-1 cursor-pointer"
-                        value={newTopicColor}
-                        onChange={(e) => setNewTopicColor(e.target.value)}
-                      />
-                      <Input
-                        value={newTopicColor}
-                        onChange={(e) => setNewTopicColor(e.target.value)}
-                        placeholder="#64748b"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    className="w-full gap-2"
-                    onClick={() => createTopicMutation.mutate({ name: newTopicName, color: newTopicColor })}
-                    disabled={!newTopicName || createTopicMutation.isPending}
-                  >
-                    {createTopicMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    Create Global Topic
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="md:col-span-2 shadow-sm border-border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-subtle/50">
-                      <TableHead className="w-12">Color</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Scope</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {topicsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-12">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-fg-faint" />
-                        </TableCell>
-                      </TableRow>
-                    ) : topics?.map((topic) => (
-                      <TableRow key={topic.id} className="hover:bg-subtle/50 transition-colors">
-                        <TableCell>
-                          <div
-                            className="w-6 h-6 rounded-full border border-border shadow-sm"
-                            style={{ backgroundColor: topic.color }}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium text-foreground">{topic.name}</TableCell>
-                        <TableCell>
-                          <ScopeBadge item={topic} />
-                        </TableCell>
-                        <TableCell>
-                          <span className={cn(
-                            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                            topic.is_active ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground"
-                          )}>
-                            {topic.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setEditingTopic(topic)}>
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-fg-faint hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this topic?')) deleteTopicMutation.mutate(topic.id);
-                              }}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="work-types">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card className="md:col-span-1 h-fit shadow-sm border-border">
-                <CardHeader>
-                  <CardTitle className="text-lg">Add New Global Work Type</CardTitle>
-                  <CardDescription>Define a type of activity visible everywhere.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">Name</Label>
-                    <Input
-                      placeholder="e.g. Development"
-                      value={newTypeName}
-                      onChange={(e) => setNewTypeName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">Color</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        className="w-12 h-10 p-1 cursor-pointer"
-                        value={newTypeColor}
-                        onChange={(e) => setNewTypeColor(e.target.value)}
-                      />
-                      <Input
-                        value={newTypeColor}
-                        onChange={(e) => setNewTypeColor(e.target.value)}
-                        placeholder="#64748b"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    className="w-full gap-2"
-                    onClick={() => createTypeMutation.mutate({ name: newTypeName, color: newTypeColor })}
-                    disabled={!newTypeName || createTypeMutation.isPending}
-                  >
-                    {createTypeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    Create Global Work Type
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="md:col-span-2 shadow-sm border-border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-subtle/50">
-                      <TableHead className="w-12">Color</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Scope</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {typesLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-12">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-fg-faint" />
-                        </TableCell>
-                      </TableRow>
-                    ) : workTypes?.map((type) => (
-                      <TableRow key={type.id} className="hover:bg-subtle/50 transition-colors">
-                        <TableCell>
-                          <div
-                            className="w-6 h-6 rounded-full border border-border shadow-sm"
-                            style={{ backgroundColor: type.color }}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium text-foreground">{type.name}</TableCell>
-                        <TableCell>
-                          <ScopeBadge item={type} />
-                        </TableCell>
-                        <TableCell>
-                          <span className={cn(
-                            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                            type.is_active ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground"
-                          )}>
-                            {type.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setEditingWorkType(type)}>
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-fg-faint hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this work type?')) deleteTypeMutation.mutate(type.id);
-                              }}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+      <div className="grid items-start gap-6 xl:grid-cols-2">
+        {panel('topics')}
+        {panel('work-types')}
       </div>
-
-      {/* Edit Topic Dialog */}
-      <Dialog open={!!editingTopic} onOpenChange={(open) => !open && setEditingTopic(null)}>
-        <DialogContent size="md">
-          <DialogHeader>
-            <DialogTitle>Edit Topic</DialogTitle>
-            <DialogDescription>Modify topic details.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleUpdateTopic} className="flex min-h-0 flex-1 flex-col">
-            <DialogBody className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground">Name</Label>
-              <Input 
-                value={editingTopic?.name || ''} 
-                onChange={(e) => setEditingTopic(prev => prev ? ({...prev, name: e.target.value}) : null)} 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground">Color</Label>
-              <div className="flex gap-2">
-                <Input 
-                  type="color" 
-                  className="w-12 h-10 p-1 cursor-pointer"
-                  value={editingTopic?.color || '#000000'} 
-                  onChange={(e) => setEditingTopic(prev => prev ? ({...prev, color: e.target.value}) : null)} 
-                />
-                <Input 
-                  value={editingTopic?.color || ''} 
-                  onChange={(e) => setEditingTopic(prev => prev ? ({...prev, color: e.target.value}) : null)} 
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-between py-2 border-t border-b">
-              <Label className="text-sm font-medium">Active Status</Label>
-              <Switch 
-                checked={editingTopic?.is_active || false} 
-                onCheckedChange={(checked) => setEditingTopic(prev => prev ? ({...prev, is_active: checked}) : null)} 
-              />
-            </div>
-            </DialogBody>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditingTopic(null)}>Cancel</Button>
-              <Button type="submit" disabled={updateTopicMutation.isPending}>
-                {updateTopicMutation.isPending && <Loader2 className="w-3 h-3 animate-spin mr-2" />}
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Work Type Dialog */}
-      <Dialog open={!!editingWorkType} onOpenChange={(open) => !open && setEditingWorkType(null)}>
-        <DialogContent size="md">
-          <DialogHeader>
-            <DialogTitle>Edit Work Type</DialogTitle>
-            <DialogDescription>Modify work type details.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleUpdateWorkType} className="flex min-h-0 flex-1 flex-col">
-            <DialogBody className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground">Name</Label>
-              <Input 
-                value={editingWorkType?.name || ''} 
-                onChange={(e) => setEditingWorkType(prev => prev ? ({...prev, name: e.target.value}) : null)} 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground">Color</Label>
-              <div className="flex gap-2">
-                <Input 
-                  type="color" 
-                  className="w-12 h-10 p-1 cursor-pointer"
-                  value={editingWorkType?.color || '#000000'} 
-                  onChange={(e) => setEditingWorkType(prev => prev ? ({...prev, color: e.target.value}) : null)} 
-                />
-                <Input 
-                  value={editingWorkType?.color || ''} 
-                  onChange={(e) => setEditingWorkType(prev => prev ? ({...prev, color: e.target.value}) : null)} 
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-between py-2 border-t border-b">
-              <Label className="text-sm font-medium">Active Status</Label>
-              <Switch 
-                checked={editingWorkType?.is_active || false} 
-                onCheckedChange={(checked) => setEditingWorkType(prev => prev ? ({...prev, is_active: checked}) : null)} 
-              />
-            </div>
-            </DialogBody>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditingWorkType(null)}>Cancel</Button>
-              <Button type="submit" disabled={updateTypeMutation.isPending}>
-                {updateTypeMutation.isPending && <Loader2 className="w-3 h-3 animate-spin mr-2" />}
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+    </PageBody>
   );
 }

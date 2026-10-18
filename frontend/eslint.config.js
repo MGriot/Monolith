@@ -19,5 +19,12 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Design system: no black weights or sub-11px text (docs/ui-redesign-plan.md, type scale). Warn while old screens migrate.
+      'no-restricted-syntax': ['warn',
+        { selector: 'Literal[value=/font-black|text-.(8|9|10)px/]', message: 'Use the type scale: no font-black, no text below 11px (Eyebrow for small labels).' },
+        { selector: 'TemplateElement[value.raw=/font-black|text-.(8|9|10)px/]', message: 'Use the type scale: no font-black, no text below 11px (Eyebrow for small labels).' },
+      ],
+    },
   },
 ])

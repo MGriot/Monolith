@@ -131,7 +131,7 @@ export default function FilePreviewDialog({ url, onClose }: FilePreviewDialogPro
               <DialogTitle className="text-sm font-bold truncate max-w-[300px]">
                 {fileName}
               </DialogTitle>
-              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
+              <p className="text-[11px] text-muted-foreground uppercase font-semibold tracking-wide">
                 {fileExtension} Preview
               </p>
             </div>

@@ -1,6 +1,7 @@
 import { Archive, Loader2, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useBulkTasks, type BulkRequest } from '@/hooks/use-bulk-tasks';
+import { confirmDialog } from '@/lib/confirm';
 
 const STATUSES = ['Backlog', 'Todo', 'In Progress', 'On hold', 'Review', 'Done'];
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
@@ -90,7 +91,7 @@ export default function BulkActionBar({ ids, assignees, onClear }: Props) {
         className="h-8 gap-1.5"
         disabled={bulk.isPending}
         onClick={() => {
-          if (window.confirm(`Archive ${n} task${n === 1 ? '' : 's'}?`)) run({ action: 'archive' });
+          void confirmDialog({ title: `Archive ${n} task${n === 1 ? '' : 's'}?`, confirmLabel: 'Archive' }).then((ok) => { if (ok) { run({ action: 'archive' }); } });
         }}
       >
         <Archive className="w-3.5 h-3.5" aria-hidden /> Archive
@@ -101,7 +102,7 @@ export default function BulkActionBar({ ids, assignees, onClear }: Props) {
         className="h-8 gap-1.5 text-destructive hover:text-destructive"
         disabled={bulk.isPending}
         onClick={() => {
-          if (window.confirm(`Permanently delete ${n} task${n === 1 ? '' : 's'}? This cannot be undone.`)) run({ action: 'delete' });
+          void confirmDialog({ title: `Permanently delete ${n} task${n === 1 ? '' : 's'}?`, description: 'This cannot be undone.', confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) { run({ action: 'delete' }); } });
         }}
       >
         <Trash2 className="w-3.5 h-3.5" aria-hidden /> Delete

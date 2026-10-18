@@ -22,6 +22,8 @@ class FolderCreate(FolderBase):
 class FolderUpdate(BaseModel):
     name: Optional[str] = None
     type: Optional[FolderType] = None
+    # Move under another folder; an explicit null moves it to the top level.
+    parent_id: Optional[UUID] = None
 
 class Folder(FolderBase):
     id: UUID

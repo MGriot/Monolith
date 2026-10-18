@@ -131,7 +131,7 @@ export default function Layout({ children }: LayoutProps) {
       )}>
         <div className="p-6 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">M</div>
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-semibold shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">M</div>
             <h1 className="text-xl font-bold text-foreground tracking-tight text-nowrap">Monolith</h1>
           </Link>
           <Button 
@@ -210,7 +210,7 @@ export default function Layout({ children }: LayoutProps) {
              >
                <Search className="h-4 w-4" aria-hidden />
                <span className="flex-1 truncate">Search projects, tasks, ideas...</span>
-               <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold text-fg-faint">Ctrl K</kbd>
+               <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-[11px] font-semibold text-fg-faint">Ctrl K</kbd>
              </button>
              <Button
                variant="ghost"
@@ -273,7 +273,7 @@ export default function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-3 pl-1">
               <div className="text-right hidden md:block">
                 <p className="text-[11px] font-bold text-foreground leading-none">{user?.full_name || 'User'}</p>
-                <p className="text-[9px] text-muted-foreground leading-none mt-1">{user?.email}</p>
+                <p className="text-[11px] text-muted-foreground leading-none mt-1">{user?.email}</p>
               </div>
               <UserAvatar user={user} className="w-8 h-8" />
             </div>

@@ -939,7 +939,7 @@ export default function ProjectGantt({
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleZoom('in')} disabled={zoomLevel === 'day'}>
               <ZoomIn className="w-4 h-4" />
             </Button>
-            <span className="text-[10px] font-black uppercase w-16 text-center text-muted-foreground">{ZOOM_CONFIG[zoomLevel].label}</span>
+            <span className="text-[10px] font-semibold uppercase w-16 text-center text-muted-foreground">{ZOOM_CONFIG[zoomLevel].label}</span>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleZoom('out')} disabled={zoomLevel === 'year'}>
               <ZoomOut className="w-4 h-4" />
             </Button>
@@ -1000,7 +1000,7 @@ export default function ProjectGantt({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-72 p-3 flex flex-col gap-2" align="end">
-              <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Status (Theme)</span>
+              <span className="text-[10px] font-semibold text-fg-faint uppercase tracking-wide px-1">Status (Theme)</span>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-sm bg-fg-faint/20 border border-fg-faint" />
@@ -1029,7 +1029,7 @@ export default function ProjectGantt({
               </div>
 
               <div className="my-1 border-t border-hairline" />
-              <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Priority (Border)</span>
+              <span className="text-[10px] font-semibold text-fg-faint uppercase tracking-wide px-1">Priority (Border)</span>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-sm bg-background border-2 border-blue-600" />
@@ -1050,7 +1050,7 @@ export default function ProjectGantt({
               </div>
 
               <div className="my-1 border-t border-hairline" />
-              <span className="text-[10px] font-black text-fg-faint uppercase tracking-widest px-1">Indicators</span>
+              <span className="text-[10px] font-semibold text-fg-faint uppercase tracking-wide px-1">Indicators</span>
               <div className="grid grid-cols-1 gap-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-2 rounded-sm border relative overflow-hidden" style={{ backgroundColor: '#cbd5e122', borderColor: '#94a3b8' }}>
@@ -1105,7 +1105,7 @@ export default function ProjectGantt({
                   key={col.id}
                   style={{ width: `${col.width}px` }}
                   className={cn(
-                    "border-r border-border p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest shrink-0 flex items-center box-border",
+                    "border-r border-border p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wide shrink-0 flex items-center box-border",
                     ['wbs', 'duration', 'status', 'priority', 'start_date', 'end_date'].includes(col.id) ? "justify-center text-center" : "justify-start"
                   )}
                 >
@@ -1230,7 +1230,7 @@ export default function ProjectGantt({
                     style={{ left: `${startX}px`, width: `${width}px`, backgroundColor: region.color }}
                   >
                     <span
-                      className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap"
+                      className="text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
                       style={{
                         color: region.text_color || '#000',
                         transform: `rotate(${region.label_rotation ?? -90}deg)`,
@@ -1520,7 +1520,7 @@ export default function ProjectGantt({
                   style={{ left: `${todayPx}px` }}
                   className="absolute top-0 bottom-0 w-0.5 bg-red-500 pointer-events-none"
                 >
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm w-max">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-sm w-max">
                     TODAY
                   </div>
                 </div>
@@ -1701,7 +1701,7 @@ export default function ProjectGantt({
                             <div className={cn("absolute right-0 top-0 w-0.5 h-3", summaryBarColor(showCriticalPath && isCriticalTask(item)))} style={{ transform: 'translateY(-2px)' }} />
                           </div>
                         </div>
-                        <span className="absolute px-2 text-[9px] font-black uppercase text-muted-foreground truncate pointer-events-none" style={{
+                        <span className="absolute px-2 text-[9px] font-semibold uppercase text-muted-foreground truncate pointer-events-none" style={{
                             left: `${getPositionPx(item.start_date!)}px`,
                             top: '8px'
                         }}>

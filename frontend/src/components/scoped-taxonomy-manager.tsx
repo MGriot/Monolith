@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Edit2, Tag, Briefcase, Loader2, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Topic, WorkType } from '@/types';
+import { confirmDialog } from '@/lib/confirm';
 
 interface ScopedTaxonomyManagerProps {
   projectId?: string;
@@ -150,7 +151,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
         </div>
         <div className="bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 p-3 rounded-lg border border-blue-100 dark:border-blue-500/20 max-w-xs flex gap-2">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
-            <p className="text-[10px] leading-tight">Project-scoped labels are only visible within this project and won't clutter the global list.</p>
+            <p className="text-[11px] leading-tight">Project-scoped labels are only visible within this project and won't clutter the global list.</p>
         </div>
       </div>
 
@@ -174,7 +175,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
               </CardHeader>
               <CardContent className="p-4 pt-0 space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground">Name</Label>
+                  <Label className="text-[11px] font-semibold uppercase text-muted-foreground">Name</Label>
                   <Input
                     placeholder="e.g. Phase 1"
                     className="h-8 text-xs"
@@ -183,7 +184,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground">Color</Label>
+                  <Label className="text-[11px] font-semibold uppercase text-muted-foreground">Color</Label>
                   <div className="flex gap-2">
                     <Input
                       type="color"
@@ -216,8 +217,8 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
                 <TableHeader className="bg-subtle">
                   <TableRow>
                     <TableHead className="w-12"></TableHead>
-                    <TableHead className="text-[10px] font-black uppercase">Name</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-right">Actions</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase">Name</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -252,7 +253,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
                             size="icon"
                             className="h-7 w-7 text-red-400 hover:text-red-600 dark:hover:text-red-400"
                             onClick={() => {
-                              if (window.confirm('Delete this scoped topic?')) deleteTopicMutation.mutate(topic.id);
+                              void confirmDialog({ title: 'Delete this scoped topic?', confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) { deleteTopicMutation.mutate(topic.id); } });
                             }}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -275,7 +276,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
               </CardHeader>
               <CardContent className="p-4 pt-0 space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground">Name</Label>
+                  <Label className="text-[11px] font-semibold uppercase text-muted-foreground">Name</Label>
                   <Input
                     placeholder="e.g. Lab Testing"
                     className="h-8 text-xs"
@@ -284,7 +285,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground">Color</Label>
+                  <Label className="text-[11px] font-semibold uppercase text-muted-foreground">Color</Label>
                   <div className="flex gap-2">
                     <Input
                       type="color"
@@ -317,8 +318,8 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
                 <TableHeader className="bg-subtle">
                   <TableRow>
                     <TableHead className="w-12"></TableHead>
-                    <TableHead className="text-[10px] font-black uppercase">Name</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-right">Actions</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase">Name</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -353,7 +354,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
                             size="icon"
                             className="h-7 w-7 text-red-400 hover:text-red-600 dark:hover:text-red-400"
                             onClick={() => {
-                              if (window.confirm('Delete this scoped work type?')) deleteTypeMutation.mutate(type.id);
+                              void confirmDialog({ title: 'Delete this scoped work type?', confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) { deleteTypeMutation.mutate(type.id); } });
                             }}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -378,7 +379,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
           <form onSubmit={handleUpdateTopic} className="flex min-h-0 flex-1 flex-col">
             <DialogBody className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-black text-fg-faint">Name</Label>
+              <Label className="text-[11px] uppercase font-semibold text-fg-faint">Name</Label>
               <Input 
                 className="h-8 text-xs"
                 value={editingTopic?.name || ''} 
@@ -386,7 +387,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-black text-fg-faint">Color</Label>
+              <Label className="text-[11px] uppercase font-semibold text-fg-faint">Color</Label>
               <div className="flex gap-2">
                 <Input 
                   type="color" 
@@ -422,7 +423,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
           <form onSubmit={handleUpdateWorkType} className="flex min-h-0 flex-1 flex-col">
             <DialogBody className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-black text-fg-faint">Name</Label>
+              <Label className="text-[11px] uppercase font-semibold text-fg-faint">Name</Label>
               <Input 
                 className="h-8 text-xs"
                 value={editingWorkType?.name || ''} 
@@ -430,7 +431,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-black text-fg-faint">Color</Label>
+              <Label className="text-[11px] uppercase font-semibold text-fg-faint">Color</Label>
               <div className="flex gap-2">
                 <Input 
                   type="color" 

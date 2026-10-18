@@ -76,7 +76,7 @@ export function RichDropdown({
                     <Badge
                       key={item.id}
                       variant="secondary"
-                      className="text-[10px] font-bold gap-1 pr-1"
+                      className="text-[11px] font-bold gap-1 pr-1"
                       style={item.color ? { borderLeft: `3px solid ${item.color}` } : {}}
                     >
                       {item.label}

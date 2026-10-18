@@ -15,6 +15,7 @@ import {
   type CustomFieldDef,
   type CustomFieldType,
 } from '@/lib/custom-fields';
+import { confirmDialog } from '@/lib/confirm';
 
 const errorMessage = (e: any, fallback: string) => e?.response?.data?.detail || fallback;
 
@@ -72,7 +73,7 @@ export default function CustomFieldsManager({ projectId }: { projectId: string }
       : null;
 
   const confirmDelete = (def: CustomFieldDef) => {
-    if (window.confirm(`Delete the field “${def.name}”? Its values are removed from every task.`)) remove.mutate(def.id);
+    void confirmDialog({ title: `Delete the field “${def.name}”?`, description: 'Its values are removed from every task.', confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) { remove.mutate(def.id); } });
   };
 
   return (
@@ -95,7 +96,7 @@ export default function CustomFieldsManager({ projectId }: { projectId: string }
                   ) : (
                     <span className="flex-1 font-bold text-sm">{def.name}</span>
                   )}
-                  <span className="text-[10px] font-black uppercase tracking-widest text-fg-faint">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-fg-faint">
                     {CUSTOM_FIELD_TYPES.find((t) => t.value === def.field_type)?.label}
                   </span>
                   {isEditing ? (
@@ -122,7 +123,7 @@ export default function CustomFieldsManager({ projectId }: { projectId: string }
                   (isEditing ? (
                     <div className="space-y-1">
                       <Input value={editing.options} onChange={(e) => setEditing({ ...editing, options: e.target.value })} placeholder="Options, comma separated" aria-label="Options" />
-                      <p className="text-[10px] text-fg-faint">Removing an option clears it from tasks that use it.</p>
+                      <p className="text-[11px] text-fg-faint">Removing an option clears it from tasks that use it.</p>
                     </div>
                   ) : (
                     <p className="text-xs text-muted-foreground">{def.options.join(' · ')}</p>
@@ -135,7 +136,7 @@ export default function CustomFieldsManager({ projectId }: { projectId: string }
         </div>
 
         <div className="space-y-3 border-t pt-4">
-          <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">New field</Label>
+          <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">New field</Label>
           <div className="flex gap-2">
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Field name" maxLength={100} aria-label="New field name" />
             <select

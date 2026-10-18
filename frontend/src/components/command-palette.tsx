@@ -135,14 +135,14 @@ export default function CommandPalette({ open, onOpenChange, onCreateTask, onSho
             onChange={(e) => { setQuery(e.target.value); setActive(0); }}
             onKeyDown={onKeyDown}
           />
-          <kbd className="rounded border border-border px-1.5 py-0.5 text-[10px] font-semibold text-fg-faint">Esc</kbd>
+          <kbd className="rounded border border-border px-1.5 py-0.5 text-[11px] font-semibold text-fg-faint">Esc</kbd>
         </div>
 
         <div ref={listRef} id="palette-listbox" role="listbox" aria-label="Results" className="max-h-80 overflow-y-auto p-2">
           {items.map((cmd, i) => (
             <Fragment key={cmd.id}>
               {(i === 0 || items[i - 1].section !== cmd.section) && (
-                <div role="presentation" className="px-2 pb-1 pt-2 text-[10px] font-black uppercase tracking-widest text-fg-faint">
+                <div role="presentation" className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-fg-faint">
                   {cmd.section}
                 </div>
               )}
@@ -159,7 +159,7 @@ export default function CommandPalette({ open, onOpenChange, onCreateTask, onSho
               >
                 <span className="flex-1 truncate">{cmd.title}</span>
                 {cmd.hint && (
-                  <span className="rounded border border-border px-1.5 text-[10px] font-semibold uppercase text-fg-faint">{cmd.hint}</span>
+                  <span className="rounded border border-border px-1.5 text-[11px] font-semibold uppercase text-fg-faint">{cmd.hint}</span>
                 )}
                 {i === activeIndex && <ArrowRight className="h-3 w-3 text-fg-faint" aria-hidden />}
               </div>
@@ -171,7 +171,7 @@ export default function CommandPalette({ open, onOpenChange, onCreateTask, onSho
             </div>
           )}
         </div>
-        <div className="border-t border-hairline px-3 py-1.5 text-[10px] text-fg-faint" role="status" aria-live="polite">
+        <div className="border-t border-hairline px-3 py-1.5 text-[11px] text-fg-faint" role="status" aria-live="polite">
           {searching ? 'Searching projects and tasks...' : 'Type 2+ characters to search projects, tasks and ideas'}
         </div>
       </DialogContent>

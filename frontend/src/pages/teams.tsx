@@ -24,6 +24,7 @@ import type { User } from '@/types';
 import { Switch } from '@/components/ui/switch';
 import { AssigneeSelector } from '@/components/assignee-selector';
 import { useTitle } from '@/context/title-context';
+import { confirmDialog } from '@/lib/confirm';
 
 interface Team {
   id: string;
@@ -171,7 +172,7 @@ export default function TeamsPage() {
               const canManage = canManageTeam(team);
               
               return (
-                <Card key={team.id} className="group hover:border-primary/30 transition-all border-border shadow-sm flex flex-col relative">
+                <Card key={team.id} className="group hover:border-primary/30 transition-all flex flex-col relative">
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col gap-2">
@@ -180,13 +181,13 @@ export default function TeamsPage() {
                         </div>
                         <div className="flex gap-1 flex-wrap">
                           {isOwner && (
-                              <Badge variant="secondary" className="w-fit text-[8px] font-black uppercase bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20 px-1 py-0 h-4">
+                              <Badge variant="secondary" className="w-fit text-[11px] font-semibold uppercase bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20 px-1 py-0 h-4">
                               <ShieldCheck className="w-2.5 h-2.5 mr-1" />
                               Owner
                               </Badge>
                           )}
                           {team.is_public && (
-                              <Badge variant="outline" className="w-fit text-[8px] font-black uppercase bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20 px-1 py-0 h-4">
+                              <Badge variant="outline" className="w-fit text-[11px] font-semibold uppercase bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20 px-1 py-0 h-4">
                                   <Globe className="w-2.5 h-2.5 mr-1" />
                                   Public
                               </Badge>
@@ -197,7 +198,7 @@ export default function TeamsPage() {
                         <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary" onClick={() => handleEdit(team)}>
                           <Edit2 className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" onClick={() => { if(confirm('Delete team?')) deleteMutation.mutate(team.id)}}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" onClick={() => { void confirmDialog({ title: 'Delete team?', confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) { deleteMutation.mutate(team.id); } });}}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
@@ -210,19 +211,19 @@ export default function TeamsPage() {
                   </CardHeader>
                   <CardContent className="flex-1">
                     <div className="space-y-3">
-                      <p className="text-[10px] font-black uppercase text-fg-faint tracking-widest">Team Members ({team.members.length})</p>
+                      <p className="text-[11px] font-semibold uppercase text-fg-faint tracking-wide">Team Members ({team.members.length})</p>
                       <div className="flex flex-wrap gap-2">
                         {team.members.slice(0, 6).map((member) => (
                           <div 
                             key={member.id} 
-                            className="w-7 h-7 rounded-full bg-muted border border-border flex items-center justify-center text-[10px] font-bold text-fg-soft shadow-sm"
+                            className="w-7 h-7 rounded-full bg-muted border border-border flex items-center justify-center text-[11px] font-bold text-fg-soft shadow-sm"
                             title={member.full_name || member.email}
                           >
                             {member.full_name ? member.full_name.charAt(0) : member.email.charAt(0).toUpperCase()}
                           </div>
                         ))}
                         {team.members.length > 6 && (
-                          <div className="w-7 h-7 rounded-full bg-subtle border border-border border-dashed flex items-center justify-center text-[10px] font-bold text-fg-faint">
+                          <div className="w-7 h-7 rounded-full bg-subtle border border-border border-dashed flex items-center justify-center text-[11px] font-bold text-fg-faint">
                             +{team.members.length - 6}
                           </div>
                         )}
@@ -233,7 +234,7 @@ export default function TeamsPage() {
                     </div>
                   </CardContent>
                   <CardFooter className="border-t bg-subtle/50 p-3 flex justify-between items-center">
-                    <span className="text-[10px] text-fg-faint font-medium italic">Created {new Date(team.created_at).toLocaleDateString()}</span>
+                    <span className="text-[11px] text-fg-faint font-medium italic">Created {new Date(team.created_at).toLocaleDateString()}</span>
                     <div className="flex -space-x-2 overflow-hidden">
                       {team.shared_with?.slice(0, 3).map((u) => (
                           <div key={u.id} className="w-5 h-5 rounded-full bg-background border border-border flex items-center justify-center text-[7px] font-bold" title={`Property shared with ${u.full_name}`}>
@@ -285,7 +286,7 @@ export default function TeamsPage() {
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                         <Label className="text-sm">Make Public</Label>
-                        <p className="text-[10px] text-muted-foreground">Visible to all users, but only you can edit.</p>
+                        <p className="text-[11px] text-muted-foreground">Visible to all users, but only you can edit.</p>
                     </div>
                     <Switch checked={isPublic} onCheckedChange={setIsPublic} />
                 </div>
@@ -297,7 +298,7 @@ export default function TeamsPage() {
                         onRemove={(id) => setSharedWithIds(sharedWithIds.filter(uid => uid !== id))}
                         placeholder="Select users to share property with..."
                     />
-                    <p className="text-[10px] text-muted-foreground">Shared users can also manage members and details.</p>
+                    <p className="text-[11px] text-muted-foreground">Shared users can also manage members and details.</p>
                 </div>
             </div>
 
@@ -328,7 +329,7 @@ export default function TeamsPage() {
                         <span className={cn("text-xs font-bold truncate", isSelected ? "text-foreground" : "text-fg-soft")}>
                           {u.full_name || 'No Name'}
                         </span>
-                        <div className="flex items-center gap-1 text-[10px] text-fg-faint truncate font-medium">
+                        <div className="flex items-center gap-1 text-[11px] text-fg-faint truncate font-medium">
                           <Mail className="w-2.5 h-2.5" />
                           {u.email}
                         </div>
