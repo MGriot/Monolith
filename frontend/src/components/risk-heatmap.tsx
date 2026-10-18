@@ -39,7 +39,7 @@ export default function RiskHeatmap({ items }: RiskHeatmapProps) {
     <div className="flex flex-col h-full gap-4">
       <div className="flex-1 grid grid-cols-[30px_1fr] grid-rows-[1fr_30px] gap-2">
         {/* Y-Axis Label */}
-        <div className="flex flex-col justify-between text-[8px] font-black uppercase text-fg-faint py-2">
+        <div className="flex flex-col justify-between text-[8px] font-semibold uppercase text-fg-faint py-2">
           <span>High</span>
           <div className="-rotate-90 origin-center whitespace-nowrap">Probability</div>
           <span>Low</span>
@@ -59,7 +59,7 @@ export default function RiskHeatmap({ items }: RiskHeatmapProps) {
                       getCellColor(prob, impact)
                   )}
                 >
-                  <div className="text-[10px] font-black text-white/40 select-none">
+                  <div className="text-[10px] font-semibold text-white/40 select-none">
                       {prob}x{impact}
                   </div>
                   
@@ -75,7 +75,7 @@ export default function RiskHeatmap({ items }: RiskHeatmapProps) {
                           />
                       ))}
                       {cellItems.length > 4 && (
-                          <span className="text-[8px] font-black text-white">+{cellItems.length - 4}</span>
+                          <span className="text-[8px] font-semibold text-white">+{cellItems.length - 4}</span>
                       )}
                   </div>
                 </div>
@@ -88,7 +88,7 @@ export default function RiskHeatmap({ items }: RiskHeatmapProps) {
         <div></div>
 
         {/* X-Axis Label */}
-        <div className="flex justify-between text-[8px] font-black uppercase text-fg-faint px-2">
+        <div className="flex justify-between text-[8px] font-semibold uppercase text-fg-faint px-2">
           <span>Low</span>
           <div className="text-center">Impact / Severity</div>
           <span>Critical</span>

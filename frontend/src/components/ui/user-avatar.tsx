@@ -18,11 +18,12 @@ export function UserAvatar({ user, className }: UserAvatarProps) {
 
   return (
     <div className={cn(
-      "w-8 h-8 bg-muted rounded-full flex items-center justify-center border border-border shrink-0 shadow-sm overflow-hidden",
+      "w-8 h-8 bg-muted rounded-full flex items-center justify-center border border-border shrink-0 overflow-hidden",
       className
     )}>
       {initials ? (
-        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter">{initials}</span>
+        // initials stay small so they fit the smallest (20px) avatars
+        <span className="text-[0.65rem] font-semibold uppercase leading-none text-muted-foreground">{initials}</span>
       ) : (
         <UserIcon className="w-4 h-4 text-muted-foreground" />
       )}

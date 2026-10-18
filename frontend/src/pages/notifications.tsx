@@ -4,7 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Bell, CheckCheck, Circle, CircleDot, ExternalLink, Info, MessageSquare, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { NotificationPrefsCard } from '@/components/notification-prefs';
+import { NotificationPrefsGroup } from '@/components/notification-prefs';
 import { useTitle } from '@/context/title-context';
 import { useNotificationList, useNotificationMutations, useUnreadCount } from '@/hooks/use-notifications';
 import { cn } from '@/lib/utils';
@@ -181,7 +181,7 @@ export default function NotificationsPage() {
               E-mail preferences
             </h2>
           </div>
-          <NotificationPrefsCard />
+          <NotificationPrefsGroup />
         </section>
       </div>
     </div>

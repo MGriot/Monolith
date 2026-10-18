@@ -23,6 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { AssigneeSelector } from '@/components/assignee-selector';
 import { useAuth } from '@/components/auth-provider';
 import { useTitle } from '@/context/title-context';
+import { confirmDialog } from '@/lib/confirm';
 
 // Helper to parse indented text into hierarchical tasks
 const parseTasks = (text: string) => {
@@ -215,7 +216,7 @@ export default function TemplatesPage() {
               const canEdit = isOwner || user?.is_superuser;
               
               return (
-                <Card key={template.id} className="group hover:border-primary/30 transition-all border-border shadow-sm relative flex flex-col">
+                <Card key={template.id} className="group hover:border-primary/30 transition-all relative flex flex-col">
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div className="space-y-1">
@@ -234,7 +235,7 @@ export default function TemplatesPage() {
                   </CardHeader>
                   <CardContent className="flex-1">
                     <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase text-fg-faint tracking-widest">Predefined Tasks ({template.tasks_json.length})</p>
+                      <p className="text-[11px] font-semibold uppercase text-fg-faint tracking-wide">Predefined Tasks ({template.tasks_json.length})</p>
                       <div className="space-y-1">
                         {template.tasks_json.slice(0, 5).map((task: any, idx: number) => (
                           <div key={idx} className="text-xs text-fg-soft flex items-center gap-2">
@@ -243,7 +244,7 @@ export default function TemplatesPage() {
                           </div>
                         ))}
                         {template.tasks_json.length > 5 && (
-                          <p className="text-[10px] text-fg-faint italic">+ {template.tasks_json.length - 5} more tasks</p>
+                          <p className="text-[11px] text-fg-faint italic">+ {template.tasks_json.length - 5} more tasks</p>
                         )}
                       </div>
                     </div>
@@ -251,12 +252,12 @@ export default function TemplatesPage() {
                   <CardFooter className="border-t bg-subtle/50 flex justify-between items-center p-3">
                     <div className="flex -space-x-2 overflow-hidden">
                       {template.shared_with?.slice(0, 3).map((u) => (
-                          <div key={u.id} className="w-6 h-6 rounded-full bg-background border border-border flex items-center justify-center text-[8px] font-bold" title={`Shared with ${u.full_name}`}>
+                          <div key={u.id} className="w-6 h-6 rounded-full bg-background border border-border flex items-center justify-center text-[11px] font-bold" title={`Shared with ${u.full_name}`}>
                               {u.full_name?.charAt(0) || 'U'}
                           </div>
                       ))}
                       {template.shared_with && template.shared_with.length > 3 && (
-                          <div className="w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center text-[8px] font-bold text-muted-foreground">
+                          <div className="w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center text-[11px] font-bold text-muted-foreground">
                               +{template.shared_with.length - 3}
                           </div>
                       )}
@@ -268,7 +269,7 @@ export default function TemplatesPage() {
                                   <Edit2 className="w-3.5 h-3.5" />
                               </Button>
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" onClick={() => {
-                                  if (confirm('Delete this template?')) deleteMutation.mutate(template.id);
+                                  void confirmDialog({ title: 'Delete this template?', confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) { deleteMutation.mutate(template.id); } });
                               }}>
                                   <Trash2 className="w-3.5 h-3.5" />
                               </Button>
@@ -318,7 +319,7 @@ export default function TemplatesPage() {
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                         <Label className="text-sm">Make Public</Label>
-                        <p className="text-[10px] text-muted-foreground">Visible to all users, but only you can edit.</p>
+                        <p className="text-[11px] text-muted-foreground">Visible to all users, but only you can edit.</p>
                     </div>
                     <Switch checked={isPublic} onCheckedChange={setIsPublic} />
                 </div>
@@ -330,7 +331,7 @@ export default function TemplatesPage() {
                         onRemove={(id) => setSharedWithIds(sharedWithIds.filter(uid => uid !== id))}
                         placeholder="Select users to share with..."
                     />
-                    <p className="text-[10px] text-muted-foreground">Shared users can also modify this template.</p>
+                    <p className="text-[11px] text-muted-foreground">Shared users can also modify this template.</p>
                 </div>
             </div>
             

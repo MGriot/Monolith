@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.associations import file_topics
 
 class File(Base):
     __tablename__ = "files"
@@ -25,3 +26,4 @@ class File(Base):
     # Relationships
     folder = relationship("Folder", back_populates="files")
     owner = relationship("User", backref="files")
+    topics = relationship("Topic", secondary=file_topics, lazy="selectin")

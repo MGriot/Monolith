@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
+import { confirmDialog } from '@/lib/confirm';
 
 interface ProjectLibraryProps {
     projectId: string;
@@ -89,13 +90,13 @@ export default function ProjectLibrary({ projectId }: ProjectLibraryProps) {
                                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(wb)}>
                                             <Edit3 className="w-3.5 h-3.5" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => { if (confirm('Delete this sketch?')) deleteMutation.mutate(wb.id); }}>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => { void confirmDialog({ title: 'Delete this sketch?', confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) { deleteMutation.mutate(wb.id); } }); }}>
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </Button>
                                     </div>
                                 </div>
                                 <CardTitle className="text-sm font-bold mt-2 truncate">{wb.title}</CardTitle>
-                                <CardDescription className="text-[10px]">
+                                <CardDescription className="text-[11px]">
                                     Updated {format(parseISO(wb.updated_at), 'MMM d, yyyy')}
                                 </CardDescription>
                             </CardHeader>
@@ -109,7 +110,7 @@ export default function ProjectLibrary({ projectId }: ProjectLibraryProps) {
                                 </div>
                             </CardContent>
                             <CardFooter className="p-3 bg-subtle/50 border-t border-hairline">
-                                <Button variant="ghost" className="w-full h-7 text-[10px] font-bold" onClick={() => handleEdit(wb)}>
+                                <Button variant="ghost" className="w-full h-7 text-[11px] font-bold" onClick={() => handleEdit(wb)}>
                                     Open Editor
                                 </Button>
                             </CardFooter>

@@ -218,10 +218,10 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
   const todayPx = getPositionPx(new Date());
 
   return (
-    <div className="flex flex-col bg-background rounded-xl border border-border shadow-sm overflow-hidden">
+    <div className="flex flex-col bg-card rounded-xl border border-border overflow-hidden">
       <div className="p-4 border-b flex items-center justify-between bg-subtle/50">
         <div className="flex items-center gap-4">
-          <h3 className="text-sm font-bold text-fg-body flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-fg-body flex items-center gap-2">
             <UserIcon className="w-4 h-4 text-primary" />
             {title}
           </h3>
@@ -229,7 +229,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleZoom('in')} disabled={zoomLevel === 'day'}>
               <ZoomIn className="w-4 h-4" />
             </Button>
-            <span className="text-[9px] font-black uppercase w-12 text-center text-muted-foreground">{zoomLevel}</span>
+            <span className="text-[9px] font-semibold uppercase w-12 text-center text-muted-foreground">{zoomLevel}</span>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleZoom('out')} disabled={zoomLevel === 'year'}>
               <ZoomOut className="w-4 h-4" />
             </Button>
@@ -245,7 +245,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
         <div style={{ width: `${containerWidth + 200}px` }} className="relative min-w-full bg-background">
           {/* Header */}
           <div className="flex border-b border-border bg-subtle/30 sticky top-0 z-20">
-            <div className="w-48 border-r border-border p-3 flex-shrink-0 font-bold text-[10px] text-muted-foreground uppercase tracking-widest bg-subtle/50 sticky left-0 z-30">
+            <div className="w-48 border-r border-border p-3 flex-shrink-0 font-bold text-[10px] text-muted-foreground uppercase tracking-wide bg-subtle/50 sticky left-0 z-30">
               Person
             </div>
             <div className="flex-1 relative h-10 flex items-center">
@@ -331,14 +331,14 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
                         title={`${task.title} (${task.project?.name || 'Task'})`}
                       >
                         {!isM && (
-                          <span className="text-[8px] font-black text-white truncate whitespace-nowrap">
+                          <span className="text-[8px] font-semibold text-white truncate whitespace-nowrap">
                             {task.title}
                           </span>
                         )}
                         
                         {/* Hover detail tooltip-like */}
                         <div className="absolute hidden group-hover/bar:flex bottom-full mb-1 left-0 bg-slate-900 text-white p-2 rounded text-[9px] z-50 whitespace-nowrap pointer-events-none">
-                           <p className="font-black">{task.title}</p>
+                           <p className="font-semibold">{task.title}</p>
                            <p className="opacity-70 flex items-center gap-1"><Folder className="w-2.5 h-2.5" /> {task.project?.name}</p>
                            <p className="opacity-70">{format(parseISO(task.start_date!), 'MMM d')} - {format(parseISO(getEffectiveEndDate(task)!), 'MMM d')}</p>
                         </div>

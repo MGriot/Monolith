@@ -88,10 +88,10 @@ export function ImageGalleryDialog({
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <p className="text-[10px] text-white font-medium truncate">{img.name}</p>
+                      <p className="text-[11px] text-white font-medium truncate">{img.name}</p>
                     </div>
                     <div className="absolute top-2 right-2">
-                      <Badge variant="secondary" className="text-[8px] px-1 py-0 h-4 bg-background/90 backdrop-blur-sm border-none shadow-sm">
+                      <Badge variant="secondary" className="text-[11px] px-1 py-0 h-4 bg-background/90 backdrop-blur-sm border-none shadow-sm">
                         {img.source}
                       </Badge>
                     </div>

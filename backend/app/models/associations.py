@@ -95,3 +95,12 @@ idea_downvotes = Table(
     Column("idea_id", UUID(as_uuid=True), ForeignKey("ideas.id", ondelete="CASCADE"), primary_key=True),
     Column("user_id", UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
 )
+
+
+# Topics used as tags on File Hub files; rows go with either side.
+file_topics = Table(
+    "file_topics",
+    Base.metadata,
+    Column("file_id", UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), primary_key=True),
+    Column("topic_id", UUID(as_uuid=True), ForeignKey("topics.id", ondelete="CASCADE"), primary_key=True),
+)

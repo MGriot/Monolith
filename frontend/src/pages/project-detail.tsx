@@ -13,7 +13,7 @@ import ProjectTaskList from '@/components/project-task-list';
 import ResourceTimeline from '@/components/resource-timeline';
 import ProjectIdeas from '@/components/project-ideas';
 import CommentSection from '@/components/comments/comment-section';
-import FolderTree from '@/components/folder-tree';
+import FileHub from '@/components/file-hub/file-hub';
 import FilePreviewDialog from '@/components/file-preview-dialog';
 import TaskForm from '@/components/task-form';
 import TaskDialog, { TaskFooterMeta } from '@/components/task-dialog';
@@ -56,6 +56,7 @@ import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
 import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
 import BulkActionBar from '@/components/bulk-action-bar';
 import { EMPTY_SELECTION, type SelectionState } from '@/lib/selection';
+import { confirmDialog } from '@/lib/confirm';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -122,7 +123,7 @@ export default function ProjectDetailPage() {
       setTitle(project.name);
       setActions(
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="capitalize px-2 py-0 h-4 text-[9px] font-black uppercase bg-muted text-fg-soft border-none">{project.status}</Badge>
+          <Badge variant="secondary" className="capitalize px-2 py-0 h-4 text-[11px] font-semibold uppercase bg-muted text-fg-soft border-none">{project.status}</Badge>
           <div className="flex items-center gap-0.5 mr-2">
             {!project.is_archived && canAdmin(project.my_role) && (
               <Button
@@ -130,9 +131,9 @@ export default function ProjectDetailPage() {
                 size="icon"
                 className="h-8 w-8 text-fg-faint hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
                 onClick={() => {
-                  if (confirm("Archive this project?")) {
+                  void confirmDialog({ title: "Archive this project?", confirmLabel: 'Archive' }).then((ok) => { if (ok) {
                     archiveProjectMutation.mutate();
-                  }
+                  } });
                 }}
                 disabled={archiveProjectMutation.isPending}
                 title="Archive Project"
@@ -157,7 +158,7 @@ export default function ProjectDetailPage() {
             variant="outline" 
             size="sm" 
             onClick={() => setIsExportDialogOpen(true)} 
-            className="h-9 gap-2 text-[10px] font-black uppercase"
+            className="h-9 gap-2 text-[11px] font-semibold uppercase"
           >
             <Download className="w-3.5 h-3.5" /> Export
           </Button>
@@ -205,7 +206,7 @@ export default function ProjectDetailPage() {
     mutationFn: async (values: ProjectFormValues) => {
       const formattedValues = {
         ...values,
-        tags: values.tags ? values.tags.split(',').map(t => t.trim()) : [],
+        tags: values.tags || [],
         start_date: fromDateInput(values.start_date),
         due_date: fromDateInput(values.due_date),
         topic_ids: values.topic_ids || [],
@@ -446,52 +447,52 @@ export default function ProjectDetailPage() {
         <TabsContent value="overview" className="flex-1 overflow-auto m-0 p-6 bg-subtle/30 space-y-6">
           {/* Metadata Card */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="shadow-sm border-border">
+            <Card className="border-border">
                 <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase text-fg-faint">Topics</CardTitle>
+                    <CardTitle className="text-[11px] font-semibold uppercase text-fg-faint">Topics</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="flex flex-wrap gap-1">
                         {project.topics && project.topics.length > 0 ? project.topics.map(t => (
-                            <Badge key={t.id} variant="secondary" className="text-[9px] px-1 py-0 h-4 bg-muted text-fg-soft border-none" style={{ color: t.color }}>{t.name}</Badge>
+                            <Badge key={t.id} variant="secondary" className="text-[11px] px-1 py-0 h-4 bg-muted text-fg-soft border-none" style={{ color: t.color }}>{t.name}</Badge>
                         )) : (
                             <p className="text-xs font-bold text-fg-body">General</p>
                         )}
                     </div>
                 </CardContent>
             </Card>
-            <Card className="shadow-sm border-border">
+            <Card className="border-border">
                 <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase text-fg-faint">Work Types</CardTitle>
+                    <CardTitle className="text-[11px] font-semibold uppercase text-fg-faint">Work Types</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="flex flex-wrap gap-1">
                         {project.types && project.types.length > 0 ? project.types.map(t => (
-                            <Badge key={t.id} variant="outline" className="text-[9px] px-1 py-0 h-4 border-border text-muted-foreground">{t.name}</Badge>
+                            <Badge key={t.id} variant="outline" className="text-[11px] px-1 py-0 h-4 border-border text-muted-foreground">{t.name}</Badge>
                         )) : (
                             <p className="text-xs font-bold text-fg-body">Standard</p>
                         )}
                     </div>
                 </CardContent>
             </Card>
-            <Card className="shadow-sm border-border">
+            <Card className="border-border">
                 <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase text-fg-faint">Timeline</CardTitle>
+                    <CardTitle className="text-[11px] font-semibold uppercase text-fg-faint">Timeline</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="flex flex-col gap-1">
-                        <p className="text-[10px] text-muted-foreground font-medium">Start: {project.start_date ? new Date(project.start_date).toLocaleDateString() : '-'}</p>
-                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">Due: {project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}</p>
+                        <p className="text-[11px] text-muted-foreground font-medium">Start: {project.start_date ? new Date(project.start_date).toLocaleDateString() : '-'}</p>
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold">Due: {project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}</p>
                     </div>
                 </CardContent>
             </Card>
-            <Card className="shadow-sm border-border">
+            <Card className="border-border">
                 <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase text-fg-faint">Financials</CardTitle>
+                    <CardTitle className="text-[11px] font-semibold uppercase text-fg-faint">Financials</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="space-y-1.5">
-                        <div className="flex justify-between text-[10px] font-black uppercase">
+                        <div className="flex justify-between text-[11px] font-semibold uppercase">
                             <span className="text-fg-faint">Actual / Budget</span>
                             <span className={cn(
                                 "font-bold",
@@ -620,21 +621,8 @@ export default function ProjectDetailPage() {
           <ProjectIdeas projectId={id!} onPromoteSuccess={handlePromoteSuccess} />
         </TabsContent>
 
-        <TabsContent value="library" className="flex-1 overflow-auto m-0 p-6 bg-subtle/30">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <Card className="border-border shadow-sm">
-                <CardHeader>
-                    <CardTitle className="text-sm font-bold flex items-center gap-2">
-                        <FolderIcon className="w-4 h-4 text-primary" />
-                        Project File Hub
-                    </CardTitle>
-                    <CardDescription className="text-[10px]">Manage project documents, media, and technical notes.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <FolderTree projectId={id} onFileClick={(file) => setPreviewUrl(file.url)} />
-                </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="library" className="flex-1 overflow-hidden m-0 p-3 sm:p-4 lg:p-6 bg-subtle/30">
+          {id && <FileHub projectId={id} onOpenFile={(file) => setPreviewUrl(file.url)} />}
         </TabsContent>
 
         <TabsContent value="activity" className="flex-1 overflow-auto m-0 p-6 bg-subtle/30">
@@ -655,7 +643,30 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="settings" className="flex-1 overflow-auto m-0 p-6 bg-subtle/30">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-5xl mx-auto space-y-8">
+            {canAdmin(project.my_role) && (
+              <section className="space-y-3">
+                <div>
+                  <h2 className="text-base font-semibold">Project details</h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">Name, schedule, people, classification, budget and risk.</p>
+                </div>
+                <ProjectForm
+                  variant="page"
+                  projectId={id}
+                  initialValues={{
+                    ...project,
+                    tags: project.tags || [],
+                    topic_ids: project.topic_ids || project.topics?.map(t => t.id) || [],
+                    type_ids: project.type_ids || project.types?.map(t => t.id) || [],
+                    member_ids: project.members?.map(m => m.id) || []
+                  }}
+                  onSubmit={(data) => updateProjectMutation.mutate(data)}
+                  onCancel={() => setActiveTab("overview")}
+                  isLoading={updateProjectMutation.isPending}
+                />
+              </section>
+            )}
+
             {id && <ProjectMembersCard projectId={id} canManage={canAdmin(project.my_role)} />}
 
             {!canAdmin(project.my_role) && (
@@ -664,27 +675,6 @@ export default function ProjectDetailPage() {
               </p>
             )}
             {canAdmin(project.my_role) && (<>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Project Settings</CardTitle>
-                    <CardDescription>General project information and metadata.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ProjectForm
-                        projectId={id}
-                        initialValues={{
-                            ...project,
-                            tags: project.tags || [],
-                            topic_ids: project.topic_ids || project.topics?.map(t => t.id) || [],
-                            type_ids: project.type_ids || project.types?.map(t => t.id) || [],
-                            member_ids: project.members?.map(m => m.id) || []
-                        }}
-                        onSubmit={(data) => updateProjectMutation.mutate(data)}
-                        onCancel={() => setActiveTab("overview")}
-                        isLoading={updateProjectMutation.isPending}
-                    />
-                </CardContent>
-            </Card>
 
             {id && <CustomFieldsManager projectId={id} />}
 

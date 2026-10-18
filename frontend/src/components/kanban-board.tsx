@@ -331,7 +331,7 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, activeId, onAddTask, on
               "bg-fg-ghost"
           )} />
           {title}
-          <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-black">
+          <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-semibold">
             {itemIds.length}
           </span>
         </h3>
@@ -370,7 +370,7 @@ function KanbanColumn({ id, title, itemIds, kanbanItems, activeId, onAddTask, on
           })}
           
           {remainingCount > 0 && (
-            <div className="mt-auto text-center p-3 rounded-xl border border-dashed border-border text-[10px] font-bold text-fg-faint bg-background/50 italic uppercase tracking-widest">
+            <div className="mt-auto text-center p-3 rounded-xl border border-dashed border-border text-[11px] font-bold text-fg-faint bg-background/50 italic uppercase tracking-wide">
                 + {remainingCount} more in backlog
             </div>
           )}
@@ -458,12 +458,12 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-[8px] font-black text-fg-faint">{item.wbs_code}</span>
+                <span className="text-[11px] font-semibold text-fg-faint">{item.wbs_code}</span>
                 {item.type === 'subtask' && (
-                    <span className="text-[8px] font-black text-primary uppercase">Subtask</span>
+                    <span className="text-[11px] font-semibold text-primary uppercase">Subtask</span>
                 )}
                 {item.project && (
-                  <span className="text-[8px] font-black text-muted-foreground uppercase flex items-center gap-1">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
                     <Folder className="w-2 h-2" />
                     {item.project.name}
                   </span>
@@ -486,7 +486,7 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
         </div>
         
         {item.deadline_at && (
-            <div className="flex items-center gap-1 text-[9px] font-black text-red-500">
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-red-500">
                 <AlertTriangle className="w-2.5 h-2.5" />
                 {new Date(item.deadline_at).toLocaleDateString()}
             </div>
@@ -494,11 +494,11 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
 
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-wrap gap-1.5">
-            <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 capitalize border-none font-black", style.badge)}>
+            <Badge variant="outline" className={cn("text-[11px] px-1.5 py-0 capitalize border-none font-semibold", style.badge)}>
               {item.priority}
             </Badge>
             {item.topic && (
-              <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-muted text-muted-foreground font-bold border-none">
+              <Badge variant="secondary" className="text-[11px] px-1.5 py-0 bg-muted text-muted-foreground font-bold border-none">
                 {item.topic}
               </Badge>
             )}

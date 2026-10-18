@@ -201,10 +201,10 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                     setIsEditorOpen(true);
                 }}
               >
-                <p className="text-[10px] font-bold text-fg-body truncate">
+                <p className="text-[11px] font-bold text-fg-body truncate">
                   {wb.title}
                 </p>
-                <p className="text-[8px] text-blue-600 dark:text-blue-400 font-black uppercase tracking-tight">Project Whiteboard</p>
+                <p className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold uppercase tracking-tight">Project Whiteboard</p>
               </div>
 
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -260,10 +260,10 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                     else if (canPreview) setPreviewUrl(String(url));
                 }}
               >
-                <p className="text-[10px] font-bold text-fg-body truncate">
+                <p className="text-[11px] font-bold text-fg-body truncate">
                   {getFileName(String(url))}
                 </p>
-                <p className="text-[8px] text-fg-faint font-black uppercase tracking-tight">
+                <p className="text-[11px] text-fg-faint font-semibold uppercase tracking-tight">
                     {isExternal ? "External Link" : (canPreview ? "Click to preview" : "File Attachment")}
                 </p>
               </div>
@@ -305,7 +305,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
       {attachments.length === 0 && (taskWhiteboards?.length || 0) === 0 && !isUploading && (
         <div className="text-center py-8 bg-subtle/50 rounded-2xl border border-dashed border-border">
              <Paperclip className="w-8 h-8 text-border mx-auto mb-2" />
-             <p className="text-[10px] font-bold text-fg-faint uppercase tracking-widest">No resources attached</p>
+             <p className="text-[11px] font-bold text-fg-faint uppercase tracking-wide">No resources attached</p>
         </div>
       )}
 
@@ -328,7 +328,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                           </div>
                           <div>
                               <p className="text-xs font-bold text-foreground">Upload Image or File</p>
-                              <p className="text-[10px] text-muted-foreground">From your computer</p>
+                              <p className="text-[11px] text-muted-foreground">From your computer</p>
                           </div>
                           <input type="file" id="file-upload-decision" className="hidden" onChange={handleFileChange} />
                       </button>
@@ -342,7 +342,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                           </div>
                           <div>
                               <p className="text-xs font-bold text-foreground">Project Whiteboard</p>
-                              <p className="text-[10px] text-muted-foreground">Link an existing drawing board</p>
+                              <p className="text-[11px] text-muted-foreground">Link an existing drawing board</p>
                           </div>
                       </button>
 
@@ -355,7 +355,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                           </div>
                           <div>
                               <p className="text-xs font-bold text-foreground">External Link</p>
-                              <p className="text-[10px] text-muted-foreground">Web URL, document, or site</p>
+                              <p className="text-[11px] text-muted-foreground">Web URL, document, or site</p>
                           </div>
                       </button>
                   </div>
@@ -364,7 +364,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
               {contentMode === "link" && (
                   <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-fg-faint">Website or Resource URL</Label>
+                        <Label className="text-[11px] font-semibold uppercase text-fg-faint">Website or Resource URL</Label>
                         <Input 
                             placeholder="https://example.com" 
                             value={externalLink}
@@ -381,7 +381,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
 
               {contentMode === "whiteboard" && (
                   <div className="space-y-4">
-                      <Label className="text-[10px] font-black uppercase text-fg-faint">Select Project Whiteboard</Label>
+                      <Label className="text-[11px] font-semibold uppercase text-fg-faint">Select Project Whiteboard</Label>
                       <div className="max-h-[200px] overflow-y-auto space-y-1 pr-2">
                           {projectWhiteboards?.length === 0 && <p className="text-xs text-fg-faint text-center py-4">No whiteboards in project.</p>}
                           {projectWhiteboards?.map((wb: any) => (

@@ -42,7 +42,7 @@ function MultiSelect({ label, options, selected, onChange }: MultiProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs font-semibold">
           {label}
-          {selected.length > 0 && <span className="rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">{selected.length}</span>}
+          {selected.length > 0 && <span className="rounded-full bg-primary px-1.5 text-[11px] text-primary-foreground">{selected.length}</span>}
           <ChevronDown className="h-3 w-3 opacity-60" aria-hidden />
         </Button>
       </DropdownMenuTrigger>

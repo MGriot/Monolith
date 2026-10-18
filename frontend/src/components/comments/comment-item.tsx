@@ -61,10 +61,10 @@ export function CommentItem({
       )}>
         {/* Header: Author & Time */}
         <div className="flex items-center gap-2 px-1">
-          <span className="text-[10px] font-black uppercase text-fg-faint tracking-tight">
+          <span className="text-[11px] font-semibold uppercase text-fg-faint tracking-tight">
             {isMe ? 'You' : (comment.author?.full_name || 'Guest')}
           </span>
-          <span className="text-[9px] text-fg-ghost font-bold">
+          <span className="text-[11px] text-fg-ghost font-bold">
             {format(new Date(comment.created_at), 'HH:mm')}
           </span>
         </div>
@@ -122,8 +122,8 @@ export function CommentItem({
                                       <FileText className="h-4 w-4 text-muted-foreground" />
                                   </div>
                                   <div className="min-w-0">
-                                      <p className="text-[10px] font-bold truncate tracking-tight">{url.split('/').pop()}</p>
-                                      <p className="text-[8px] uppercase font-black opacity-60">File Attachment</p>
+                                      <p className="text-[11px] font-bold truncate tracking-tight">{url.split('/').pop()}</p>
+                                      <p className="text-[11px] uppercase font-semibold opacity-60">File Attachment</p>
                                   </div>
                               </a>
                           )}
@@ -158,7 +158,7 @@ export function CommentItem({
                       className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-hairline bg-background text-fg-soft hover:border-primary/30 transition-all group/link shadow-sm"
                     >
                         <Globe className="h-3 w-3 text-fg-ghost group-hover/link:text-primary" />
-                        <span className="text-[10px] font-bold truncate max-w-[150px]">{link.replace(/^https?:\/\//, '')}</span>
+                        <span className="text-[11px] font-bold truncate max-w-[150px]">{link.replace(/^https?:\/\//, '')}</span>
                         <ExternalLink className="h-2.5 w-2.5 text-border ml-auto" />
                     </a>
                 ))}

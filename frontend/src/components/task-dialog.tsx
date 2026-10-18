@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { Task } from '@/types';
+import { confirmDialog } from '@/lib/confirm';
 
 interface TaskDialogProps {
   open: boolean;
@@ -66,7 +67,7 @@ export function TaskFooterMeta({ task, onArchive, onDelete, archiving, deleting 
           size="sm"
           className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-500/10 dark:hover:text-amber-400"
           onClick={() => {
-            if (window.confirm(`Archive the task "${task.title}"?`)) onArchive();
+            void confirmDialog({ title: `Archive the task “${task.title}”?`, description: 'You can restore it from the Archive page.', confirmLabel: 'Archive' }).then((ok) => { if (ok) { onArchive(); } });
           }}
           disabled={archiving}
         >
@@ -79,7 +80,7 @@ export function TaskFooterMeta({ task, onArchive, onDelete, archiving, deleting 
           size="sm"
           className="h-8 gap-1.5 px-2.5 text-xs text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
           onClick={() => {
-            if (window.confirm(`Are you sure you want to delete the task "${task.title}"?`)) onDelete();
+            void confirmDialog({ title: `Delete the task “${task.title}”?`, description: 'This cannot be undone.', confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) { onDelete(); } });
           }}
           disabled={deleting}
         >

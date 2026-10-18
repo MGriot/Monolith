@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { isProjectRole, PROJECT_ROLES, ROLE_HINTS, ROLE_LABELS, type ProjectRole } from '@/lib/roles';
+import { confirmDialog } from '@/lib/confirm';
 
 interface Member {
   user_id: string;
@@ -130,7 +131,7 @@ export function ProjectMembersCard({ projectId, canManage }: { projectId: string
                     size="icon"
                     aria-label={`Remove ${m.full_name || m.email} from the project`}
                     disabled={remove.isPending}
-                    onClick={() => confirm(`Remove ${m.full_name || m.email} from this project?`) && remove.mutate(m.user_id)}
+                    onClick={() => void confirmDialog({ title: `Remove ${m.full_name || m.email} from this project?`, confirmLabel: 'Remove', tone: 'danger' }).then((ok) => { if (ok) remove.mutate(m.user_id); })}
                   >
                     <Trash2 className="w-4 h-4" aria-hidden="true" />
                   </Button>

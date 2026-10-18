@@ -166,7 +166,7 @@ function KanbanColumn({ id, title, projects, onProjectClick }: { id: string, tit
               id === 'done' ? "bg-emerald-400" : "bg-fg-ghost"
           )} />
           {title}
-          <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-black">
+          <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-semibold">
             {projects.length}
           </span>
         </h3>
@@ -184,7 +184,7 @@ function KanbanColumn({ id, title, projects, onProjectClick }: { id: string, tit
             <SortableProjectCard key={p.id} project={p} onClick={() => onProjectClick(p)} />
           ))}
           {projects.length === 0 && !isOver && (
-            <div className="flex-1 flex flex-col items-center justify-center text-fg-ghost gap-2 opacity-50 py-10 font-black uppercase text-[10px]">
+            <div className="flex-1 flex flex-col items-center justify-center text-fg-ghost gap-2 opacity-50 py-10 font-semibold uppercase text-[11px]">
                 Empty Zone
             </div>
           )}
@@ -219,7 +219,7 @@ function ProjectCard({ project, isDragging, dragProps, onClick }: { project: Pro
             <h4 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">{project.name}</h4>
             <div className="flex flex-wrap gap-1 mt-1.5">
                 {project.topics?.map(t => (
-                    <Badge key={t.id} variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-muted text-fg-soft border-none uppercase font-black">{t.name}</Badge>
+                    <Badge key={t.id} variant="secondary" className="text-[11px] px-1 py-0 h-3.5 bg-muted text-fg-soft border-none uppercase font-semibold">{t.name}</Badge>
                 ))}
             </div>
           </div>
@@ -229,14 +229,14 @@ function ProjectCard({ project, isDragging, dragProps, onClick }: { project: Pro
         </div>
 
         <div className="space-y-1.5">
-            <div className="flex justify-between text-[10px] font-black uppercase text-fg-faint tracking-tighter">
+            <div className="flex justify-between text-[11px] font-semibold uppercase text-fg-faint tracking-tight">
                 <span>Progress</span>
                 <span className="text-foreground">{formatPercent(project.progress_percent)}%</span>
             </div>
             <Progress value={project.progress_percent} className="h-1.5" />
         </div>
 
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold border-t pt-3 mt-1 border-hairline">
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground font-bold border-t pt-3 mt-1 border-hairline">
             <div className="flex items-center gap-1.5">
                 <Calendar className="w-3 h-3 text-fg-ghost" />
                 {project.due_date ? format(parseISO(project.due_date), 'MMM d, yyyy') : 'No Date'}

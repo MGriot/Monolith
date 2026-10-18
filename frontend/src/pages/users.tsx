@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import ResourceTimeline from '@/components/resource-timeline';
 import { useTitle } from '@/context/title-context';
 import { UserAvatar } from '@/components/ui/user-avatar';
+import { confirmDialog } from '@/lib/confirm';
 
 interface User {
   id: string;
@@ -108,9 +109,9 @@ export default function UsersPage() {
           variant="outline" 
           size="sm"
           onClick={() => {
-              if (confirm("Run auto-archive? This will archive all DONE projects older than 7 days.")) {
+              void confirmDialog({ title: "Run auto-archive?", description: "Archives every Done project older than 7 days.", confirmLabel: 'Run' }).then((ok) => { if (ok) {
                   autoArchiveMutation.mutate();
-              }
+              } });
           }}
           disabled={autoArchiveMutation.isPending}
           className="gap-2 h-9"
@@ -167,9 +168,9 @@ export default function UsersPage() {
                       className="h-8 gap-1.5 text-xs"
                       disabled={decideMutation.isPending}
                       onClick={() => {
-                        if (confirm(`Reject the request from ${req.email}?`)) {
+                        void confirmDialog({ title: `Reject the request from ${req.email}?`, confirmLabel: 'Reject', tone: 'danger' }).then((ok) => { if (ok) {
                           decideMutation.mutate({ userId: req.id, action: 'reject' });
-                        }
+                        } });
                       }}
                     >
                       <X className="w-3 h-3" /> Reject
@@ -265,7 +266,7 @@ export default function UsersPage() {
               <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               Organizational Capacity (Super View)
             </h3>
-            <p className="text-[10px] text-muted-foreground uppercase font-black mt-1">Cross-project resource allocation</p>
+            <p className="text-[11px] text-muted-foreground uppercase font-semibold mt-1">Cross-project resource allocation</p>
           </div>
           <div className="flex-1 min-h-[500px]">
             <ResourceTimeline 

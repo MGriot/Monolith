@@ -101,7 +101,7 @@ export default function NotificationPopover() {
         <Button variant="ghost" size="icon" aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'} className="relative text-muted-foreground hover:text-foreground transition-colors">
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground ring-2 ring-background animate-in zoom-in duration-300">
+            <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground ring-2 ring-background animate-in zoom-in duration-300">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -154,7 +154,7 @@ export default function NotificationPopover() {
                       )}>
                         {n.title}
                       </p>
-                      <span className="text-[10px] text-fg-faint whitespace-nowrap flex items-center gap-1">
+                      <span className="text-[11px] text-fg-faint whitespace-nowrap flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                       </span>
@@ -165,7 +165,7 @@ export default function NotificationPopover() {
                     {n.link && (
                       <Link 
                         to={n.link}
-                        className="inline-flex items-center gap-1 text-[10px] text-primary font-medium hover:underline mt-1"
+                        className="inline-flex items-center gap-1 text-[11px] text-primary font-medium hover:underline mt-1"
                         onClick={(e) => e.stopPropagation()}
                       >
                         View Details

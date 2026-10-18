@@ -32,6 +32,17 @@
     --fg-faint: 215 20.2% 65.1%;    /* slate-400 */
     --fg-ghost: 212.7 26.8% 83.9%;  /* slate-300 */
     --radius: 0.5rem;
+    /* Semantic colours: strong hue + a soft background for chips, banners and drop targets */
+    --info: 221 83% 53%;
+    --info-soft: 214 100% 97%;
+    --success: 160 84% 30%;
+    --success-soft: 152 76% 95%;
+    --warning: 32 95% 40%;
+    --warning-soft: 48 100% 95%;
+    --danger: 0 72% 51%;
+    --danger-soft: 0 86% 97%;
+    --review: 262 70% 55%;
+    --review-soft: 270 100% 98%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -66,6 +77,16 @@
     --fg-soft: 213 27% 75%;
     --fg-faint: 215 16% 50%;
     --fg-ghost: 215 19% 38%;
+    --info: 217 91% 68%;
+    --info-soft: 220 50% 14%;
+    --success: 158 64% 52%;
+    --success-soft: 160 45% 11%;
+    --warning: 40 90% 60%;
+    --warning-soft: 38 45% 11%;
+    --danger: 0 84% 70%;
+    --danger-soft: 0 40% 13%;
+    --review: 262 83% 76%;
+    --review-soft: 262 35% 15%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;

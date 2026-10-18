@@ -22,7 +22,7 @@ export default function ShortcutSheet({ open, onOpenChange }: ShortcutSheetProps
               <span className="flex items-center gap-1">
                 {s.keys.map((k, i) => (
                   <span key={i} className="flex items-center gap-1">
-                    {i > 0 && <span className="text-[10px] text-fg-faint">then</span>}
+                    {i > 0 && <span className="text-[11px] text-fg-faint">then</span>}
                     <kbd className="rounded border border-border bg-subtle px-1.5 py-0.5 text-xs font-semibold text-fg-soft">{k}</kbd>
                   </span>
                 ))}

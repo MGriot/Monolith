@@ -75,7 +75,7 @@ export default function UpdatesPage() {
 
         <div className="grid gap-6 md:grid-cols-3">
           {/* New Tasks */}
-          <Card className="border-border shadow-sm">
+          <Card className="border-border">
             <CardHeader className="bg-subtle/50 border-b">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -99,7 +99,7 @@ export default function UpdatesPage() {
                       <p className="text-xs font-bold text-foreground group-hover:text-blue-700 dark:group-hover:text-blue-300 line-clamp-1">{task.title}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <Clock className="w-3 h-3 text-fg-faint" />
-                        <span className="text-[10px] text-muted-foreground">{format(parseISO(task.created_at), 'MMM d, h:mm a')}</span>
+                        <span className="text-[11px] text-muted-foreground">{format(parseISO(task.created_at), 'MMM d, h:mm a')}</span>
                       </div>
                     </Link>
                   ))
@@ -109,7 +109,7 @@ export default function UpdatesPage() {
           </Card>
 
           {/* Completed Tasks */}
-          <Card className="border-border shadow-sm">
+          <Card className="border-border">
             <CardHeader className="bg-subtle/50 border-b">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -133,7 +133,7 @@ export default function UpdatesPage() {
                       <p className="text-xs font-bold text-foreground group-hover:text-emerald-700 dark:group-hover:text-emerald-300 line-clamp-1">{task.title}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                        <span className="text-[10px] text-muted-foreground">{format(parseISO(task.completed_at), 'MMM d, h:mm a')}</span>
+                        <span className="text-[11px] text-muted-foreground">{format(parseISO(task.completed_at), 'MMM d, h:mm a')}</span>
                       </div>
                     </Link>
                   ))
@@ -143,7 +143,7 @@ export default function UpdatesPage() {
           </Card>
 
           {/* Upcoming Deadlines */}
-          <Card className="border-border shadow-sm">
+          <Card className="border-border">
             <CardHeader className="bg-subtle/50 border-b">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -167,7 +167,7 @@ export default function UpdatesPage() {
                       <p className="text-xs font-bold text-foreground group-hover:text-amber-700 dark:group-hover:text-amber-300 line-clamp-1">{task.title}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <Calendar className="w-3 h-3 text-amber-500" />
-                        <span className="text-[10px] text-fg-soft font-bold">Due {format(parseISO(task.due_date), 'MMM d, h:mm a')}</span>
+                        <span className="text-[11px] text-fg-soft font-bold">Due {format(parseISO(task.due_date), 'MMM d, h:mm a')}</span>
                       </div>
                     </Link>
                   ))

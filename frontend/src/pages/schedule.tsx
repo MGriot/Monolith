@@ -142,7 +142,7 @@ function TaskRoadmapView() {
               return (
                 <div 
                   key={month.toISOString()} 
-                  className="absolute border-l border-border h-full flex items-center justify-center text-[10px] font-bold text-fg-faint uppercase tracking-tighter"
+                  className="absolute border-l border-border h-full flex items-center justify-center text-[11px] font-bold text-fg-faint uppercase tracking-tight"
                   style={{ left: `${left}%`, width: `${width}%` }}
                 >
                   {format(month, 'MMM')}
@@ -167,7 +167,7 @@ function TaskRoadmapView() {
               <div key={task.id} className="flex border-b border-hairline hover:bg-subtle/50 transition-colors group">
                 <div className="w-64 border-r border-border p-4 flex-shrink-0 flex flex-col justify-center">
                   <span className="text-sm font-semibold text-foreground truncate">{task.title}</span>
-                  <span className="text-[10px] text-fg-faint truncate">{task.project_name || 'Individual Task'}</span>
+                  <span className="text-[11px] text-fg-faint truncate">{task.project_name || 'Individual Task'}</span>
                 </div>
                 <div className="flex-1 relative h-16 py-4 px-0">
                   {/* Grid lines */}
@@ -192,7 +192,7 @@ function TaskRoadmapView() {
                       width: `${getWidth(task.start_date!, task.due_date)}%` 
                     }}
                   >
-                    <span className="text-[10px] font-bold truncate text-purple-700 dark:text-purple-300">
+                    <span className="text-[11px] font-bold truncate text-purple-700 dark:text-purple-300">
                       {task.title}
                     </span>
                   </div>
@@ -210,7 +210,7 @@ function MoveToDate({ value, onMove }: { value: string; onMove: (day: string) =>
   const [draft, setDraft] = useState(value);
   return (
     <div className="flex items-end gap-2">
-      <label className="flex-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <label className="flex-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         Move to
         <input
           type="date"
@@ -366,7 +366,7 @@ function CalendarView() {
             }}
             onDragEnd={() => { setDragId(null); setDropDay(null); }}
             className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded border truncate",
+              "text-[11px] px-1.5 py-0.5 rounded border truncate",
               movable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
               view !== 'month' && "text-xs py-1",
               dragId === item.id && "opacity-40",
@@ -382,8 +382,8 @@ function CalendarView() {
         <PopoverContent className="w-64 p-4">
           <div className="space-y-2">
             <div className="flex justify-between items-start">
-              <Badge variant="outline" className="capitalize text-[10px]">{item.item_type}</Badge>
-              <Badge className="text-[10px]">{item.status}</Badge>
+              <Badge variant="outline" className="capitalize text-[11px]">{item.item_type}</Badge>
+              <Badge className="text-[11px]">{item.status}</Badge>
             </div>
             <h4 className="font-bold text-sm text-foreground">{item.title}</h4>
             <p className="text-xs text-muted-foreground">
@@ -458,7 +458,7 @@ function CalendarView() {
                 {dayItems.length > maxVisible && (
                   <button
                     type="button"
-                    className="text-[10px] text-fg-faint pl-1 font-medium hover:text-fg-soft"
+                    className="text-[11px] text-fg-faint pl-1 font-medium hover:text-fg-soft"
                     onClick={() => { setAnchor(day); setView('day'); }}
                   >
                     + {dayItems.length - maxVisible} more
@@ -570,7 +570,7 @@ function RoadmapView() {
               return (
                 <div 
                   key={month.toISOString()} 
-                  className="absolute border-l border-border h-full flex items-center justify-center text-[10px] font-bold text-fg-faint uppercase tracking-tighter"
+                  className="absolute border-l border-border h-full flex items-center justify-center text-[11px] font-bold text-fg-faint uppercase tracking-tight"
                   style={{ left: `${left}%`, width: `${width}%` }}
                 >
                   {format(month, 'MMM')}
@@ -596,7 +596,7 @@ function RoadmapView() {
                 <div className="w-64 border-r border-border p-4 flex-shrink-0 flex flex-col justify-center">
                   <span className="text-sm font-semibold text-foreground truncate">{project.name}</span>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] text-muted-foreground">{formatPercent(project.progress_percent)}%</span>
+                    <span className="text-[11px] text-muted-foreground">{formatPercent(project.progress_percent)}%</span>
                     <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden max-w-[80px]">
                       <div 
                         className="h-full bg-primary" 
@@ -630,7 +630,7 @@ function RoadmapView() {
                     }}
                   >
                     <span className={cn(
-                        "text-[10px] font-bold truncate",
+                        "text-[11px] font-bold truncate",
                         project.status === 'done' ? "text-emerald-700 dark:text-emerald-300" : "text-primary"
                     )}>
                       {project.name}

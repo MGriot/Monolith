@@ -169,7 +169,7 @@ export default function ArchivePage() {
                         <TableCell>
                           <div className="flex flex-wrap gap-1 max-w-[150px]">
                               {project.topics && project.topics.length > 0 ? project.topics.map(t => (
-                                <Badge key={t.id} variant="secondary" className="text-[8px] px-1 py-0 h-3.5 bg-muted text-fg-soft border-none">{t.name}</Badge>
+                                <Badge key={t.id} variant="secondary" className="text-[11px] px-1 py-0 h-3.5 bg-muted text-fg-soft border-none">{t.name}</Badge>
                               )) : <span className="text-xs text-fg-faint">None</span>}
                           </div>
                         </TableCell>
@@ -180,7 +180,7 @@ export default function ArchivePage() {
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1.5 opacity-70">
-                            <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
+                            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
                               <span>{formatPercent(project.progress_percent)}%</span>
                             </div>
                             <Progress value={project.progress_percent} className="h-1.5" />
