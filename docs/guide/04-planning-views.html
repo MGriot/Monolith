@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planning views · Monolith Guide</title>
+<meta name="description" content="Gantt, Kanban, My tasks, the master schedule, the dashboard, workload, heatmap and risk views in Monolith.">
+<link rel="icon" href="assets/monolith.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/guide.css">
+<script src="assets/guide.js" defer></script>
+</head>
+<body style="--chapter: '4.'">
+<!-- BEGIN:topbar -->
+<header class="topbar"><div class="topbar-in"><a class="brand" href="index.html"><img src="assets/monolith.svg" alt="" width="22" height="22">Monolith Guide</a><nav class="chapters" aria-label="Chapters"><a href="index.html">Overview</a><a href="01-getting-started.html"><b>1</b>Getting started</a><a href="02-concepts.html"><b>2</b>Concepts</a><a href="03-projects-and-tasks.html"><b>3</b>Projects &amp; tasks</a><a href="04-planning-views.html" aria-current="page"><b>4</b>Planning views</a><a href="05-collaboration.html"><b>5</b>Collaboration</a><a href="06-tracking.html"><b>6</b>Tracking</a><a href="07-automation.html"><b>7</b>Automation</a><a href="08-administration.html"><b>8</b>Administration</a><a href="09-mcp.html"><b>9</b>MCP</a><a href="10-api-reference.html"><b>10</b>API reference</a><a href="11-troubleshooting.html"><b>11</b>Troubleshooting</a></nav><button type="button" class="theme-btn">Dark mode</button></div></header>
+<!-- END:topbar -->
+<div class="shell">
+<nav class="toc" aria-label="On this page">
+<!-- BEGIN:toc -->
+<span class="eyebrow">On this page</span>
+<a href="#gantt">Gantt chart</a>
+<a href="#kanban">Kanban board</a>
+<a href="#my-tasks">My tasks</a>
+<a href="#schedule">Schedule</a>
+<a href="#dashboard">Dashboard</a>
+<a href="#workload">Workload and resources</a>
+<a href="#health">Heatmap, risk and portfolio health</a>
+<!-- END:toc -->
+</nav>
+<main class="doc">
+  <header class="prose">
+    <span class="eyebrow">Chapter 4</span>
+    <h1>Planning views</h1>
+    <p class="lede">The same tasks, seen the way each question needs: a timeline for "when", a board for "what's next", a schedule
+      across projects, and a dashboard for "how are we doing".</p>
+  </header>
+
+  <section id="gantt">
+    <span class="eyebrow">Timeline</span>
+    <h2>Gantt chart</h2>
+    <figure class="shot"><img src="../img/gantt.png" alt="Project Gantt with dependency arrows and a red today line" loading="lazy"><figcaption>The Gantt on a project's <span class="ui">Overview</span> tab.</figcaption></figure>
+    <h3>Reading the chart</h3>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Element</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>Bar fill</td><td>Status colour; the solid part is progress (Done 100%, In Progress 50%…), the pale track the planned span.</td></tr>
+        <tr><td>Bar border</td><td>Priority (red Critical, orange High, blue Low). Priority never colours lines.</td></tr>
+        <tr><td>Diamond</td><td>Milestone, or a task with zero duration.</td></tr>
+        <tr><td>Grey extension + purple line</td><td>The buffer up to the task's hard deadline, and the deadline itself.</td></tr>
+        <tr><td>Emerald line with caps</td><td>Actual completion date: finished before or after plan.</td></tr>
+        <tr><td>Blue arrows</td><td>Dependencies, routed through the gutters between rows.</td></tr>
+        <tr><td>Amber arrows</td><td>Conflicts: a successor starts before its predecessor allows (lag included).</td></tr>
+        <tr><td>Dashed grey lines</td><td>Parent–child structure.</td></tr>
+        <tr><td>Red line</td><td>Today.</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Working in it</h3>
+    <ul class="prose">
+      <li><b>Zoom</b>: Days, Weeks, Months, Quarters, Years.</li>
+      <li><b>Drag</b> a bar to move it, drag its ends to change start or due; the change applies at once and rolls back with a message if the server refuses it (for example a dependency conflict or a missing role).</li>
+      <li><b>Critical path</b> toggle: critical bars get a red ring, critical links glow, everything else dims. The same toggle highlights critical rows in the task table (<a href="02-concepts.html#scheduling">2.5</a>).</li>
+      <li><b>Reference zones</b>: shaded date ranges for freezes, holidays or releases, saved with the project.</li>
+      <li><b>Export PNG</b> saves a high-resolution image of the visible chart.</li>
+    </ul>
+  </section>
+
+  <section id="kanban">
+    <span class="eyebrow">Flow</span>
+    <h2>Kanban board</h2>
+    <figure class="shot"><img src="../img/kanban.png" alt="Kanban board with status columns, filters and saved views" loading="lazy"><figcaption>Project <span class="ui">Kanban</span> tab; <span class="ui">Tasks</span> › board shows the same for your own tasks.</figcaption></figure>
+    <p class="prose">Columns are the six statuses. Dragging a card between columns changes its status (and fires the roll-up and automations); dragging within a column sets the manual order. Filters from the filter bar apply; sorting and grouping do not, the board is always by status in manual order. Each column shows its first cards and expands on demand.</p>
+  </section>
+
+  <section id="my-tasks">
+    <span class="eyebrow">Personal</span>
+    <h2>My tasks</h2>
+    <p class="prose"><span class="ui">Tasks</span> in the sidebar lists everything assigned to you across projects, as a list or a board, with the same filters, saved views and bulk actions as the project task table. Shortcut: <kbd>g</kbd> <kbd>t</kbd>.</p>
+  </section>
+
+  <section id="schedule">
+    <span class="eyebrow">Portfolio</span>
+    <h2>Schedule</h2>
+    <figure class="shot"><img src="../img/schedule.png" alt="Yearly master schedule with every project as a bar" loading="lazy"><figcaption><span class="ui">Schedule</span>: every project you can see on one yearly roadmap.</figcaption></figure>
+    <p class="prose">Three layers: <b>Project Roadmaps</b> (one bar per project), <b>Discrete Deadlines</b> (hard deadlines and milestones) and <b>Single Tasks Progression</b>. Step through years with the arrows, or switch to the <span class="ui">Calendar view</span> for a month grid of dated tasks.</p>
+  </section>
+
+  <section id="dashboard">
+    <span class="eyebrow">Overview</span>
+    <h2>Dashboard</h2>
+    <figure class="shot"><img src="../img/dashboard-dark.png" alt="Dashboard in dark mode with KPI tiles and charts" loading="lazy"><figcaption>The dashboard in dark mode.</figcaption></figure>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Widget</th><th>Shows</th></tr></thead>
+      <tbody>
+        <tr><td>KPI tiles</td><td>Active projects, open tasks, completion and on-hold work.</td></tr>
+        <tr><td><span class="ui">Due this week</span></td><td>Deadlines in the next 7 days.</td></tr>
+        <tr><td><span class="ui">Status distribution</span></td><td>Open work by status.</td></tr>
+        <tr><td><span class="ui">Team capacity</span> / <span class="ui">Team workload</span></td><td>Planned hours per person over the next 14 days; people over capacity are flagged.</td></tr>
+        <tr><td><span class="ui">Risk exposure</span></td><td>Probability × impact of open projects and tasks.</td></tr>
+        <tr><td><span class="ui">Activity</span> / <span class="ui">Completions</span></td><td>Tasks completed per day over the last 12 months, and what was recently completed.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose"><span class="ui">Updates</span> in the sidebar is the feed of recent changes across your projects.</p>
+  </section>
+
+  <section id="workload">
+    <span class="eyebrow">People</span>
+    <h2>Workload and resources</h2>
+    <p class="prose">A project's <span class="ui">Team Workload</span> tab shows the team schedule: each member's assigned tasks over time, so overlaps and gaps are visible before they hurt. The dashboard's workload widget aggregates the same data across projects (<code>GET /dashboard/team-workload?days=</code>, MCP <code>get_team_workload</code>). Allocation is expressed through assignees, estimates and, if you need explicit percentages, a number custom field such as “Allocation %” (as in the sample project, <a href="09-mcp.html#sample">9.5</a>).</p>
+  </section>
+
+  <section id="health">
+    <span class="eyebrow">Signals</span>
+    <h2>Heatmap, risk and portfolio health</h2>
+    <ul class="prose">
+      <li><b>Activity heatmap</b> on a project's <span class="ui">Overview</span>: contributions per day over a rolling 12 months.</li>
+      <li><b>Risk matrix</b>: projects and tasks placed by risk probability × impact (1–5 each).</li>
+      <li><b>Portfolio health</b> (<code>GET /projects/portfolio/health</code>, MCP <code>get_portfolio_health</code>): per active project a 0–100 score that loses 5 points per overdue task, 20 when on hold, 15 when the plan ends after the hard deadline and 40 when the deadline has been missed; plus a risk level and a <code>deadline_status</code>.</li>
+    </ul>
+  </section>
+
+<!-- BEGIN:pager -->
+<nav class="pager" aria-label="Chapters"><a class="prev" href="03-projects-and-tasks.html"><span>Previous</span>3. Projects &amp; tasks</a><a class="next" href="05-collaboration.html"><span>Next</span>5. Collaboration</a></nav>
+<!-- END:pager -->
+</main>
+</div>
+</body>
+</html>

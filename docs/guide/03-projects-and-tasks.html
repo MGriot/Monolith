@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projects &amp; tasks · Monolith Guide</title>
+<meta name="description" content="Create and run projects and tasks in Monolith: every field of the editors, templates, archive, filters, saved views, bulk actions and keyboard shortcuts.">
+<link rel="icon" href="assets/monolith.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/guide.css">
+<script src="assets/guide.js" defer></script>
+</head>
+<body style="--chapter: '3.'">
+<!-- BEGIN:topbar -->
+<header class="topbar"><div class="topbar-in"><a class="brand" href="index.html"><img src="assets/monolith.svg" alt="" width="22" height="22">Monolith Guide</a><nav class="chapters" aria-label="Chapters"><a href="index.html">Overview</a><a href="01-getting-started.html"><b>1</b>Getting started</a><a href="02-concepts.html"><b>2</b>Concepts</a><a href="03-projects-and-tasks.html" aria-current="page"><b>3</b>Projects &amp; tasks</a><a href="04-planning-views.html"><b>4</b>Planning views</a><a href="05-collaboration.html"><b>5</b>Collaboration</a><a href="06-tracking.html"><b>6</b>Tracking</a><a href="07-automation.html"><b>7</b>Automation</a><a href="08-administration.html"><b>8</b>Administration</a><a href="09-mcp.html"><b>9</b>MCP</a><a href="10-api-reference.html"><b>10</b>API reference</a><a href="11-troubleshooting.html"><b>11</b>Troubleshooting</a></nav><button type="button" class="theme-btn">Dark mode</button></div></header>
+<!-- END:topbar -->
+<div class="shell">
+<nav class="toc" aria-label="On this page">
+<!-- BEGIN:toc -->
+<span class="eyebrow">On this page</span>
+<a href="#create-project">Create a project</a>
+<a href="#project-page">The project page</a>
+<a href="#members">Members and roles</a>
+<a href="#tasks">Create and edit tasks</a>
+<a href="#find">Filters, saved views, search and shortcuts</a>
+<a href="#bulk">Bulk actions</a>
+<a href="#archive">Archive, restore and delete</a>
+<!-- END:toc -->
+</nav>
+<main class="doc">
+  <header class="prose">
+    <span class="eyebrow">Chapter 3</span>
+    <h1>Projects &amp; tasks</h1>
+    <p class="lede">The everyday work: creating projects with full metadata, building the task tree, editing tasks in the two-pane editor,
+      and finding, filtering and changing many tasks at once.</p>
+  </header>
+
+  <section id="create-project">
+    <span class="eyebrow">Projects</span>
+    <h2>Create a project</h2>
+    <ol class="steps">
+      <li><div>Open <span class="ui">Projects</span> and choose <span class="ui">New project</span> (or press <kbd>Ctrl</kbd> + <kbd>K</kbd> and type “new project”).</div></li>
+      <li><div>Pick a <b>template</b> to copy its task tree and taxonomy presets, or start blank (<a href="07-automation.html#templates">7.3</a>).</div></li>
+      <li><div>Fill the editor. The left pane holds the name and description, the right rail status, priority, topics, work types, members and tags; the <span class="ui">Timeline</span> and <span class="ui">Budget &amp; risk</span> tabs hold dates and money.</div></li>
+      <li><div><span class="ui">Create</span>. You are the owner and an admin; members you picked join as editors (change roles later, <a href="#members">3.3</a>).</div></li>
+    </ol>
+    <h3>Project fields</h3>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Field</th><th>Where</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Name, description</td><td>main pane</td><td>Description is Markdown.</td></tr>
+        <tr><td>Status, priority</td><td>rail</td><td>Status of a project is set by hand; progress comes from its tasks.</td></tr>
+        <tr><td>Topics, work types, tags</td><td>rail</td><td>Managed lists plus free tags (<a href="02-concepts.html#taxonomy-model">2.6</a>).</td></tr>
+        <tr><td>Members</td><td>rail</td><td>People with access; roles are set in <span class="ui">Project Settings</span>.</td></tr>
+        <tr><td>Start date, due date</td><td><span class="ui">Timeline</span> tab</td><td>The planned window; tasks without dates fall back to it. The span in days is shown live.</td></tr>
+        <tr><td>Hard deadline</td><td><span class="ui">Timeline</span> tab</td><td>The date that must not slip (<code>deadline_at</code>). The editor warns when the due date lies after it.</td></tr>
+        <tr><td>Budget, real cost</td><td><span class="ui">Budget &amp; risk</span> tab</td><td>Planned versus actual; the variance shows on the project overview.</td></tr>
+        <tr><td>Risk probability, impact</td><td><span class="ui">Budget &amp; risk</span> tab</td><td>1–5 each; places the project on the risk matrix.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="project-page">
+    <span class="eyebrow">Projects</span>
+    <h2>The project page</h2>
+    <p class="prose">The header shows the project's name, status and progress, with <span class="ui">Project Settings</span> (gear) and <span class="ui">Archive Project</span> buttons for admins. Below it, tabs:</p>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Tab</th><th>What it is for</th></tr></thead>
+      <tbody>
+        <tr><td><span class="ui">Overview</span></td><td>Cards for topics, work types, the <b>timeline</b> (start, due and the hard-deadline line: amber when at risk, red when overdue) and financials; the Gantt (<a href="04-planning-views.html#gantt">4.1</a>); the task table with WBS codes, filters, grouping, the critical-path highlight and bulk selection; the activity heatmap.</td></tr>
+        <tr><td><span class="ui">Kanban</span></td><td>The board by status (<a href="04-planning-views.html#kanban">4.2</a>).</td></tr>
+        <tr><td><span class="ui">Team Workload</span></td><td>The team schedule: who works on what over time (<a href="04-planning-views.html#workload">4.5</a>).</td></tr>
+        <tr><td><span class="ui">Activity</span></td><td>The project's comment thread (<a href="05-collaboration.html#comments">5.1</a>).</td></tr>
+        <tr><td><span class="ui">Ideas</span></td><td>Ideas proposed for this project (<a href="05-collaboration.html#ideas">5.2</a>).</td></tr>
+        <tr><td><span class="ui">File Hub</span></td><td>Folders, files, notes and sketches (<a href="05-collaboration.html#file-hub">5.4</a>).</td></tr>
+        <tr><td><span class="ui">Project Settings</span></td><td>Project details form, members and roles, custom fields, automations and webhooks, scoped topics and work types.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="members">
+    <span class="eyebrow">Projects</span>
+    <h2>Members and roles</h2>
+    <p class="prose">In <span class="ui">Project Settings</span> (or from a sketch's <span class="ui">Share</span> dialog), project admins pick an existing user and a role: viewer, editor or admin. The owner always stays admin; roles change instantly. See <a href="02-concepts.html#roles">2.4</a> for what each role may do.</p>
+  </section>
+
+  <section id="tasks">
+    <span class="eyebrow">Tasks</span>
+    <h2>Create and edit tasks</h2>
+    <p class="prose">Use <span class="ui">Add task</span> on the project page, <kbd>c</kbd> anywhere, or the <span class="ui">+</span> on a task row to add a child. Clicking a task opens the two-pane editor: content on the left, the properties rail on the right, tabs for schedule, budget and risk, checklist, time, files and comments.</p>
+    <h3>Task fields</h3>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Title, description, colour</td><td>Description is Markdown.</td></tr>
+        <tr><td>Status, priority</td><td>Status of summary tasks follows their children (<a href="02-concepts.html#status">2.3</a>).</td></tr>
+        <tr><td>Milestone</td><td>Shows as a diamond on the Gantt; usually zero duration.</td></tr>
+        <tr><td>Parent</td><td>Move a task anywhere in the same project's tree.</td></tr>
+        <tr><td>Assignees</td><td>Several people; they get a notification and, if they opted in, an e-mail.</td></tr>
+        <tr><td>Start, due, duration, hard deadline</td><td>Two of start/due/duration determine the third. The deadline tightens the critical path.</td></tr>
+        <tr><td>Optimistic / normal / pessimistic days</td><td>PERT estimate; feeds expected duration and estimate-versus-actual.</td></tr>
+        <tr><td>Dependencies</td><td>Predecessors with type and lag (<a href="02-concepts.html#scheduling">2.5</a>).</td></tr>
+        <tr><td>Budget, real cost, risk probability and impact</td><td>Same meaning as on projects.</td></tr>
+        <tr><td>Checklist</td><td>Items with done state; resets on each recurrence.</td></tr>
+        <tr><td>Repeat</td><td>Recurrence rule (<a href="06-tracking.html#recurring">6.3</a>).</td></tr>
+        <tr><td>Custom fields</td><td>The project's fields (<a href="06-tracking.html#custom-fields">6.2</a>).</td></tr>
+        <tr><td>Topics, work types, tags</td><td>As on projects.</td></tr>
+        <tr><td>Attachments, sketches</td><td>Upload files or link and draw sketches (<a href="05-collaboration.html#sketches">5.3</a>).</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout tip"><b>Tip</b><p>Drag rows in the list or cards on the board to reorder them manually (<code>sort_index</code>); the order is shared by everyone.</p></div>
+  </section>
+
+  <section id="find">
+    <span class="eyebrow">Finding work</span>
+    <h2>Filters, saved views, search and shortcuts</h2>
+    <h3>Filter bar</h3>
+    <p class="prose">The project task list, the project board and <span class="ui">My tasks</span> share one filter bar: text, status, priority and assignee (including “Unassigned”). Parents stay visible when a child matches. Sort (manual, due date, priority, status, title, created) and group (status, priority, assignee) apply to lists.</p>
+    <p class="prose">The state lives in the URL (<code>?q=api&amp;status=Todo,In%20Progress&amp;sort=due&amp;group=assignee</code>), so a link shows exactly what you see. <span class="ui">Views</span> › <span class="ui">Save current view…</span> keeps named views in this browser.</p>
+    <h3>Command palette</h3>
+    <p class="prose"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>K</kbd> opens actions (new task, new project, toggle list/board), navigation to every page, and live search over projects, tasks and ideas (2+ characters).</p>
+    <h3>Keyboard shortcuts</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>Keys</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>?</kbd></td><td>Shortcut sheet</td></tr>
+        <tr><td><kbd>c</kbd></td><td>Create a task</td></tr>
+        <tr><td><kbd>g</kbd> then <kbd>p</kbd> / <kbd>t</kbd> / <kbd>d</kbd></td><td>Go to projects / my tasks / dashboard</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>Command palette</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose small muted">Single-key shortcuts are ignored while typing, inside menus and dialogs, and with Ctrl/Cmd/Alt held.</p>
+  </section>
+
+  <section id="bulk">
+    <span class="eyebrow">Many at once</span>
+    <h2>Bulk actions</h2>
+    <p class="prose">Select rows with the checkboxes (<kbd>Shift</kbd>-click selects a range) and the action bar appears: set status, priority or assignees, or archive, restore or delete. Each task is authorised on its own; the result reports which succeeded. Up to 200 tasks per request (<code>POST /api/v1/tasks/bulk</code>, MCP <code>bulk_update_tasks</code>).</p>
+  </section>
+
+  <section id="archive">
+    <span class="eyebrow">Lifecycle</span>
+    <h2>Archive, restore and delete</h2>
+    <ul class="prose">
+      <li><b>Archive</b> hides a project or task from lists, boards and search but keeps everything. Archived items are on <span class="ui">Archive</span>; restore them there.</li>
+      <li>Administrators can auto-archive projects that have been Done for a number of days (<code>POST /projects/auto-archive</code>).</li>
+      <li><b>Delete</b> is permanent and removes children, comments, time entries, files and sketches with the item.</li>
+    </ul>
+    <div class="callout danger"><b>Danger</b><p>Deleting a project cannot be undone. Prefer archiving; only the owner or an administrator can delete.</p></div>
+  </section>
+
+<!-- BEGIN:pager -->
+<nav class="pager" aria-label="Chapters"><a class="prev" href="02-concepts.html"><span>Previous</span>2. Concepts</a><a class="next" href="04-planning-views.html"><span>Next</span>4. Planning views</a></nav>
+<!-- END:pager -->
+</main>
+</div>
+</body>
+</html>

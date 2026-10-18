@@ -1,7 +1,7 @@
 """Tier-1 database work: migration chain integrity and in-memory task tree assembly (no database needed).
 
 The SQL side (recursive CTE, baseline == models, index usage, stamp/upgrade of a legacy database) is verified
-against a live PostgreSQL by scripts documented in docs/how-to/database-migrations.md.
+against a live PostgreSQL by scripts documented in docs/guide/08-administration.html#migrations.
 """
 import os
 from datetime import datetime, timedelta
@@ -107,3 +107,48 @@ class TestTreeAssembly:
         y = Task(id=uuid4(), parent_id=root.id, sort_index=0, created_at=datetime(2025, 1, 1))
         CRUDTask._attach_children({t.id: t for t in (root, x, y)})
         assert len(root.subtasks) == 2
+
+
+
+def test_task_dependencies_are_deleted_with_their_tasks():
+    """Deleting a project or task with dependencies used to fail: the ORM nulled the NOT NULL dependency FKs."""
+    from sqlalchemy import inspect as sa_inspect
+    from app.models.task import Task
+
+    rels = sa_inspect(Task).relationships
+    for name in ("blocked_by", "blocking"):
+        assert rels[name].cascade.delete and rels[name].cascade.delete_orphan, name
+        assert rels[name].passive_deletes, name
+
+
+def test_project_children_are_deleted_not_orphaned():
+    """Deleting a project must delete (not null out) its sketches, comments, folders and project webhooks."""
+    from sqlalchemy import inspect as sa_inspect
+    from app.models.project import Project
+    from app.models.task import Task
+
+    project = sa_inspect(Project).relationships
+    for name in ("whiteboards", "threaded_comments", "folders", "webhooks", "tasks", "ideas"):
+        assert project[name].cascade.delete, name
+    task = sa_inspect(Task).relationships
+    for name in ("threaded_comments", "folders"):
+        assert task[name].cascade.delete and task[name].passive_deletes, name
+    assert not task["whiteboards"].cascade.delete  # a task's sketches stay in the project
+
+
+def test_reconcile_dates_respects_what_was_sent():
+    from datetime import datetime
+    from app.crud.crud_task import reconcile_dates
+
+    d = lambda x: datetime(2026, 11, x)
+    # start and due together (Gantt resize, MCP update): both kept, duration follows
+    out = reconcile_dates({"start_date": d(2), "due_date": d(20)}, d(1), d(5), 5)
+    assert out == {"start_date": d(2), "due_date": d(20), "duration_days": 19}
+    # start alone keeps the length
+    assert reconcile_dates({"start_date": d(10)}, d(1), d(5), 5)["due_date"] == d(14)
+    # due alone changes the length
+    assert reconcile_dates({"due_date": d(9)}, d(1), d(5), 5)["duration_days"] == 9
+    # duration wins over a due date sent with it
+    assert reconcile_dates({"duration_days": 3, "due_date": d(30)}, d(1), d(5), 5)["due_date"] == d(3)
+    # explicit nulls just clear
+    assert reconcile_dates({"due_date": None}, d(1), d(5), 5) == {"due_date": None}

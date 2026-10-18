@@ -31,7 +31,7 @@ export interface HubFolder {
   files: HubFile[];
 }
 
-export type FileKind = 'image' | 'pdf' | 'doc' | 'sheet' | 'slides' | 'note' | 'archive' | 'media' | 'other';
+export type FileKind = 'image' | 'pdf' | 'doc' | 'sheet' | 'slides' | 'note' | 'sketch' | 'archive' | 'media' | 'other';
 
 export const KIND_LABELS: Record<FileKind, string> = {
   image: 'Images',
@@ -40,6 +40,7 @@ export const KIND_LABELS: Record<FileKind, string> = {
   sheet: 'Spreadsheets',
   slides: 'Presentations',
   note: 'Notes',
+  sketch: 'Sketch files',
   archive: 'Archives',
   media: 'Audio & video',
   other: 'Other',
@@ -52,6 +53,7 @@ const KIND_BY_EXT: Record<string, FileKind> = {
   xls: 'sheet', xlsx: 'sheet', ods: 'sheet', csv: 'sheet',
   ppt: 'slides', pptx: 'slides', odp: 'slides', key: 'slides',
   md: 'note',
+  excalidraw: 'sketch',
   zip: 'archive', rar: 'archive', '7z': 'archive', tar: 'archive', gz: 'archive',
   mp3: 'media', wav: 'media', m4a: 'media', ogg: 'media', mp4: 'media', mov: 'media', webm: 'media', mkv: 'media',
 };

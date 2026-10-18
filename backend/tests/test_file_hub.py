@@ -145,3 +145,24 @@ def test_only_the_owner_deletes_a_file(client, user, db, monkeypatch):
     db.get = AsyncMock(return_value=SimpleNamespace(id=A, folder_id=B, owner_id=uuid4(), url="/uploads/x.png"))
     monkeypatch.setattr(folders, "require_folder_access", AsyncMock(return_value=SimpleNamespace(id=B)))
     assert client.delete(f"/api/v1/folders/files/{A}").status_code == 403
+
+
+# --------------------------------------------------------------------------- notes
+def test_create_note_keeps_the_text_it_was_given(monkeypatch):
+    import asyncio
+
+    added = []
+    db = MagicMock()
+    db.add = added.append
+    db.commit = AsyncMock()
+    monkeypatch.setattr(folders, "require_folder_access", AsyncMock())
+    monkeypatch.setattr(folders, "_load_file", AsyncMock(side_effect=lambda _db, _id: added[0]))
+    user = SimpleNamespace(id=uuid4())
+
+    note = asyncio.run(folders.create_note(db=db, folder_id=uuid4(), current_user=user,
+                                           note_in=FileUpdate(name="Runbook.md", content="# Cut-over\nStep 1")))
+    assert note.content == "# Cut-over\nStep 1" and note.name == "Runbook.md"
+
+    added.clear()
+    blank = asyncio.run(folders.create_note(db=db, folder_id=uuid4(), current_user=user, note_in=FileUpdate()))
+    assert blank.content.startswith("# New Note")

@@ -56,6 +56,7 @@ describe('fileKind and formatBytes', () => {
     expect(fileKind({ name: 'hero.PNG', url: '/x' })).toBe('image');
     expect(fileKind({ name: 'Untitled', url: 'note://internal' })).toBe('note');
     expect(fileKind({ name: 'a', extension: '.xlsx', url: '/x' })).toBe('sheet');
+    expect(fileKind({ name: 'Architecture.excalidraw', url: '/uploads/x.excalidraw' })).toBe('sketch');
     expect(fileKind({ name: 'mystery', url: '/x' })).toBe('other');
   });
 

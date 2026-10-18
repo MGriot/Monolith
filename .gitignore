@@ -16,3 +16,6 @@ mailserver*/
 
 # local agent tooling state (contains credentials), never commit
 .agent/
+
+# sketch previews written when the backend runs outside a container
+backend/uploads/previews/

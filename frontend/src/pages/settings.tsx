@@ -11,6 +11,7 @@ import { useTitle } from '@/context/title-context';
 import { EmailVerificationStatus, NotificationPrefsGroup } from '@/components/notification-prefs';
 import { ThemeSegmented } from '@/components/theme-toggle';
 import { CalendarFeedGroup } from '@/components/calendar-feed-card';
+import { McpTokensGroup } from '@/components/mcp-tokens-card';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -58,6 +59,7 @@ const SECTIONS = [
   { id: 'notifications', label: 'Notifications' },
   { id: 'calendar', label: 'Calendar feed' },
   { id: 'integrations', label: 'Integrations' },
+  { id: 'mcp', label: 'MCP access' },
   { id: 'security', label: 'Security' },
 ] as const;
 
@@ -335,6 +337,10 @@ export default function SettingsPage() {
                 <Plus className="h-4 w-4" /> Add webhook
               </button>
             </SettingsGroup>
+          </SettingsSection>
+
+          <SettingsSection id="mcp" title="MCP access" description="Let AI assistants (Claude, IDE agents) work in Monolith as you, over the Model Context Protocol. They get exactly your project roles.">
+            <McpTokensGroup />
           </SettingsSection>
 
           <SettingsSection id="security" title="Security">

@@ -4,7 +4,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Download, ExternalLink, FileText, Loader2, Table as TableIcon, Mail, AlertTriangle } from "lucide-react";
+import { Download, ExternalLink, FileText, Loader2, Table as TableIcon, Mail, AlertTriangle, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
@@ -12,14 +12,22 @@ import mammoth from 'mammoth';
 import Papa from 'papaparse';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import api from '@/lib/api';
+import { ExcalidrawScenePreview, parseScene } from '@/components/sketch-thumbnail';
 
 interface FilePreviewDialogProps {
   url: string | null;
   onClose: () => void;
+  /** Enables "Open as sketch" for .excalidraw files (imports the scene as a project whiteboard). */
+  projectId?: string;
 }
 
-export default function FilePreviewDialog({ url, onClose }: FilePreviewDialogProps) {
+export default function FilePreviewDialog({ url, onClose, projectId }: FilePreviewDialogProps) {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
   const [previewContent, setPreviewContent] = useState<{ type: 'html' | 'md' | 'text', data: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +44,12 @@ export default function FilePreviewDialog({ url, onClose }: FilePreviewDialogPro
 
     if (isImage || isPdf) {
         setIsLoading(true);
+        return;
+    }
+    if (fileExtension === "excalidraw") {
+        setPreviewContent(null);
+        setError(null);
+        setIsLoading(false);
         return;
     }
 
@@ -116,6 +130,27 @@ export default function FilePreviewDialog({ url, onClose }: FilePreviewDialogPro
   const fileExtension = url.split(".").pop()?.toLowerCase();
   const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(fileExtension || "");
   const isPdf = fileExtension === "pdf";
+  const isSketch = fileExtension === "excalidraw";
+
+  const openAsSketch = async () => {
+    if (!projectId) return;
+    setImporting(true);
+    try {
+      const scene = parseScene(await (await fetch(url)).json());
+      if (!scene) throw new Error('not a scene');
+      const title = decodeURIComponent(fileName).replace(/\.excalidraw$/i, '') || 'Imported sketch';
+      const { data } = await api.post('/whiteboards/', {
+        title, project_id: projectId,
+        data: { type: 'excalidraw', version: 2, source: window.location.origin, elements: scene.elements, files: scene.files },
+      });
+      onClose();
+      navigate(`/projects/${projectId}/whiteboards/${data.id}`);
+    } catch {
+      toast.error('This file is not a valid Excalidraw scene');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   return (
     <Dialog open={!!url} onOpenChange={(open) => !open && onClose()}>
@@ -137,6 +172,12 @@ export default function FilePreviewDialog({ url, onClose }: FilePreviewDialogPro
             </div>
           </div>
           <div className="flex items-center gap-2 mr-8">
+            {isSketch && projectId && (
+              <Button size="sm" className="h-8 gap-2" disabled={importing} onClick={openAsSketch}>
+                <PenTool className="w-3.5 h-3.5" />
+                Open as sketch
+              </Button>
+            )}
             <Button variant="outline" size="sm" asChild className="h-8 gap-2">
               <a href={url} download={fileName}>
                 <Download className="w-3.5 h-3.5" />
@@ -175,6 +216,10 @@ export default function FilePreviewDialog({ url, onClose }: FilePreviewDialogPro
                 className="max-w-full max-h-full object-contain shadow-2xl bg-background rounded-lg"
                 onLoad={() => setIsLoading(false)}
                 />
+            </div>
+          ) : isSketch ? (
+            <div className="w-full h-full p-6">
+              <ExcalidrawScenePreview url={url} className="h-full w-full shadow-2xl" />
             </div>
           ) : isPdf ? (
             <iframe

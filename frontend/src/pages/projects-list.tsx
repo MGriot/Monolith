@@ -131,6 +131,7 @@ export default function ProjectsListPage() {
         tags: values.tags || [],
         start_date: fromDateInput(values.start_date),
         due_date: fromDateInput(values.due_date),
+        deadline_at: fromDateInput(values.deadline_at),
       };
 
       const projectResponse = await api.post('/projects/', formattedValues);

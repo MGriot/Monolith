@@ -1,0 +1,135 @@
+{
+  "project": {
+    "name": "Helios — Customer Data Platform Migration",
+    "description": "Move every customer-data workload from the on-premise Oracle warehouse and the nightly batch ETL to a cloud customer data platform (CDP) with streaming ingestion, a governed semantic layer and self-service analytics.\n\n**Why:** the warehouse licence ends on 31 March 2027, nightly loads miss the 06:00 SLA two days in five, and marketing waits a week for new segments.\n\n**Success criteria**\n- 100% of the 42 source systems ingested, reconciled to the cent against the warehouse for two consecutive month-ends\n- Segment build time under 15 minutes, data freshness under 5 minutes for the 8 streaming sources\n- GDPR erasure requests executed end to end in under 24 hours\n- Warehouse decommissioned and licence returned before the hard deadline",
+    "status": "In Progress",
+    "priority": "High",
+    "start_date": "2026-09-01",
+    "due_date": "2027-03-12",
+    "deadline_at": "2027-03-31",
+    "budget": 480000,
+    "real_cost": 312500,
+    "risk_probability": 3,
+    "risk_impact": 4,
+    "tags": ["cdp", "migration", "gdpr", "streaming", "fy27-okr"]
+  },
+  "topics": [
+    {"name": "Ingestion", "color": "#1971c2"},
+    {"name": "Data quality", "color": "#2f9e44"},
+    {"name": "Security & privacy", "color": "#e03131"},
+    {"name": "Analytics", "color": "#6741d9"}
+  ],
+  "work_types": [
+    {"name": "Engineering", "color": "#0c8599"},
+    {"name": "Analysis", "color": "#f08c00"},
+    {"name": "Change management", "color": "#c2255c"}
+  ],
+  "custom_fields": [
+    {"key": "allocation", "name": "Allocation %", "field_type": "number"},
+    {"key": "cost_centre", "name": "Cost centre", "field_type": "text"},
+    {"key": "work_package", "name": "Work package", "field_type": "select", "options": ["WP1 Discovery", "WP2 Platform", "WP3 Migration", "WP4 Adoption", "WP5 Decommission"]}
+  ],
+  "phases": [
+    {
+      "key": "p1", "title": "Discovery & design", "status": "Done", "priority": "High", "work_package": "WP1 Discovery",
+      "start_date": "2026-09-01", "due_date": "2026-10-02", "budget": 62000, "real_cost": 58400, "topics": ["Analytics"],
+      "tasks": [
+        {"key": "t11", "title": "Inventory the 42 source systems and owners", "status": "Done", "assignee": "lead", "pert": [4, 6, 9], "budget": 9000, "real_cost": 8100, "allocation": 100, "work_type": "Analysis",
+         "checklist": ["Export Oracle schema catalogue", "Interview the 9 system owners", "Classify PII columns"], "done_checks": 3},
+        {"key": "t12", "title": "Target architecture and tool selection", "status": "Done", "assignee": "m1", "pert": [5, 8, 12], "budget": 18000, "real_cost": 19800, "allocation": 80, "work_type": "Engineering", "after": ["t11"]},
+        {"key": "t13", "title": "Data protection impact assessment (DPIA)", "status": "Done", "assignee": "m2", "pert": [4, 5, 8], "budget": 7000, "real_cost": 6400, "allocation": 50, "topics": ["Security & privacy"], "work_type": "Analysis", "after": ["t11"]},
+        {"key": "g1", "title": "Gate 1 — architecture sign-off", "status": "Done", "milestone": true, "assignee": "lead", "after": ["t12", "t13"], "deadline_at": "2026-10-02"}
+      ]
+    },
+    {
+      "key": "p2", "title": "Platform foundation", "status": "In Progress", "priority": "Critical", "work_package": "WP2 Platform",
+      "start_date": "2026-10-05", "due_date": "2026-11-27", "budget": 138000, "real_cost": 121300, "topics": ["Ingestion"],
+      "tasks": [
+        {"key": "t21", "title": "Provision landing zone (network, IAM, KMS) with Terraform", "status": "Done", "assignee": "m1", "pert": [6, 8, 11], "budget": 24000, "real_cost": 26900, "allocation": 100, "work_type": "Engineering", "after": ["g1"]},
+        {"key": "t22", "title": "Streaming ingestion: Debezium CDC for the 8 OLTP sources", "status": "In Progress", "assignee": "m1", "pert": [10, 14, 21], "budget": 42000, "real_cost": 31000, "allocation": 100, "work_type": "Engineering", "after": ["t21"],
+         "checklist": ["Kafka Connect cluster", "Debezium for billing DB", "Debezium for CRM", "Schema registry with compatibility rules", "Lag alerting < 5 min"], "done_checks": 3},
+        {"key": "t23", "title": "Batch ingestion for the 34 file and API sources", "status": "In Progress", "assignee": "m3", "pert": [8, 12, 18], "budget": 36000, "real_cost": 22000, "allocation": 75, "work_type": "Engineering", "after": ["t21"], "lag_days": 2, "dependency_type": "SS"},
+        {"key": "t24", "title": "Data-quality rules and reconciliation framework", "status": "Todo", "assignee": "m2", "pert": [6, 9, 14], "budget": 21000, "real_cost": 0, "allocation": 60, "topics": ["Data quality"], "work_type": "Engineering", "after": ["t22"],
+         "risk": [3, 4]},
+        {"key": "t25", "title": "Field-level encryption and consent propagation", "status": "Review", "assignee": "m2", "pert": [4, 6, 9], "budget": 15000, "real_cost": 12400, "allocation": 40, "topics": ["Security & privacy"], "work_type": "Engineering", "after": ["t21"]},
+        {"key": "g2", "title": "Gate 2 — platform ready for migration waves", "status": "Todo", "milestone": true, "assignee": "lead", "after": ["t22", "t23", "t24", "t25"], "deadline_at": "2026-11-27"}
+      ]
+    },
+    {
+      "key": "p3", "title": "Migration waves", "status": "Todo", "priority": "High", "work_package": "WP3 Migration",
+      "start_date": "2026-11-30", "due_date": "2027-02-05", "budget": 168000, "real_cost": 0, "topics": ["Ingestion", "Data quality"],
+      "tasks": [
+        {"key": "t31", "title": "Wave 1 — billing and payments (12 sources)", "status": "Todo", "assignee": "m1", "pert": [10, 14, 20], "budget": 52000, "allocation": 100, "work_type": "Engineering", "after": ["g2"], "risk": [3, 4]},
+        {"key": "t32", "title": "Wave 2 — CRM, support and marketing (18 sources)", "status": "Todo", "assignee": "m3", "pert": [12, 16, 24], "budget": 61000, "allocation": 100, "work_type": "Engineering", "after": ["t31"], "lag_days": -3},
+        {"key": "t33", "title": "Wave 3 — product telemetry and long tail (12 sources)", "status": "Todo", "assignee": "m3", "pert": [8, 11, 16], "budget": 38000, "allocation": 80, "work_type": "Engineering", "after": ["t32"]},
+        {"key": "t34", "title": "Month-end parallel run and reconciliation sign-off", "status": "Todo", "assignee": "m2", "pert": [5, 7, 10], "budget": 17000, "allocation": 60, "topics": ["Data quality"], "work_type": "Analysis", "after": ["t33"], "deadline_at": "2027-02-05",
+         "checklist": ["December month-end reconciled", "January month-end reconciled", "Variance report signed by Finance"]}
+      ]
+    },
+    {
+      "key": "p4", "title": "Adoption & enablement", "status": "Todo", "priority": "Medium", "work_package": "WP4 Adoption",
+      "start_date": "2026-12-14", "due_date": "2027-02-26", "budget": 58000, "real_cost": 0, "topics": ["Analytics"],
+      "tasks": [
+        {"key": "t41", "title": "Semantic layer: customer 360, revenue and engagement models", "status": "Todo", "assignee": "m3", "pert": [8, 12, 17], "budget": 26000, "allocation": 50, "work_type": "Engineering", "after": ["t31"], "dependency_type": "SS", "lag_days": 5},
+        {"key": "t42", "title": "Rebuild the 27 marketing segments self-service", "status": "Todo", "assignee": "m2", "pert": [6, 9, 13], "budget": 14000, "allocation": 40, "work_type": "Analysis", "after": ["t41"]},
+        {"key": "t43", "title": "Training: 6 sessions for analysts and marketers", "status": "Todo", "assignee": "lead", "pert": [4, 5, 7], "budget": 9000, "allocation": 30, "work_type": "Change management", "after": ["t42"]},
+        {"key": "t44", "title": "Weekly steering status report", "status": "Todo", "assignee": "lead", "pert": [0, 1, 1], "budget": 0, "allocation": 10, "work_type": "Change management", "recurrence_rule": "FREQ=WEEKLY;BYDAY=FR", "start_date": "2026-10-23", "due_date": "2026-10-23"}
+      ]
+    },
+    {
+      "key": "p5", "title": "Decommission & close", "status": "Todo", "priority": "Critical", "work_package": "WP5 Decommission",
+      "start_date": "2027-02-08", "due_date": "2027-03-12", "budget": 54000, "real_cost": 0, "topics": ["Security & privacy"],
+      "tasks": [
+        {"key": "t51", "title": "Cut over BI and downstream consumers", "status": "Todo", "assignee": "m1", "pert": [4, 6, 9], "budget": 18000, "allocation": 100, "work_type": "Engineering", "after": ["t34", "t42"]},
+        {"key": "t52", "title": "Archive warehouse data under the retention policy", "status": "Todo", "assignee": "m2", "pert": [3, 5, 8], "budget": 12000, "allocation": 50, "topics": ["Security & privacy"], "work_type": "Engineering", "after": ["t51"]},
+        {"key": "t53", "title": "Decommission Oracle warehouse and return licence", "status": "Todo", "assignee": "m1", "pert": [3, 4, 6], "budget": 16000, "allocation": 60, "work_type": "Engineering", "after": ["t52"], "deadline_at": "2027-03-31", "risk": [2, 5]},
+        {"key": "g3", "title": "Gate 3 — project closure and benefits review", "status": "Todo", "milestone": true, "assignee": "lead", "after": ["t53", "t43"], "deadline_at": "2027-03-31"}
+      ]
+    }
+  ],
+  "time_entries": [
+    {"task": "t11", "start": "2026-09-02T08:30:00", "hours": 6.5, "note": "Schema catalogue export and first owner interviews"},
+    {"task": "t12", "start": "2026-09-14T09:00:00", "hours": 7, "note": "Vendor comparison workshop"},
+    {"task": "t21", "start": "2026-10-07T09:00:00", "hours": 5, "note": "Terraform modules for VPC and KMS"},
+    {"task": "t22", "start": "2026-10-15T13:00:00", "hours": 4, "note": "Debezium connector for the billing database"},
+    {"task": "t25", "start": "2026-10-16T10:00:00", "hours": 3.5, "note": "Envelope encryption for email and phone columns"}
+  ],
+  "comments": [
+    {"on": "project", "content": "Kick-off done. The licence end date (31 March) is immovable, so the deadline is fixed; scope is what flexes. Gate reviews every phase."},
+    {"on": "t22", "content": "CRM connector hits the 5-minute lag target in staging; billing still at ~9 minutes under month-end load.", "reply": "Let's try increasing the snapshot fetch size and partitioning the topic by account id before adding brokers."},
+    {"on": "t24", "content": "Finance needs reconciliation to the cent on revenue tables. Proposing tolerance zero on amounts, 0.1% on row counts for telemetry."}
+  ],
+  "idea": {
+    "title": "Expose consent status as a real-time API for the web team",
+    "description": "Since consent now propagates through the CDP within minutes, the website could read it directly instead of keeping its own copy. Removes one GDPR risk and a nightly sync."
+  },
+  "whiteboard": {
+    "title": "Helios target architecture",
+    "description": "Sources → ingestion → CDP layers → consumers. Drawn by the MCP sample script.",
+    "elements": [
+      {"type": "text", "x": 20, "y": -50, "text": "Helios — target data flow", "fontSize": 28},
+      {"type": "rectangle", "id": "src", "x": 0, "y": 40, "width": 200, "height": 90, "backgroundColor": "#ffec99", "label": "42 sources\nOLTP · files · APIs"},
+      {"type": "rectangle", "id": "cdc", "x": 300, "y": 0, "width": 200, "height": 70, "backgroundColor": "#a5d8ff", "label": "Debezium CDC\n(8 streams)"},
+      {"type": "rectangle", "id": "batch", "x": 300, "y": 110, "width": 200, "height": 70, "backgroundColor": "#a5d8ff", "label": "Batch loaders\n(34 sources)"},
+      {"type": "rectangle", "id": "raw", "x": 600, "y": 40, "width": 180, "height": 90, "backgroundColor": "#b2f2bb", "label": "Raw zone\n(encrypted PII)"},
+      {"type": "diamond", "id": "dq", "x": 830, "y": 35, "width": 140, "height": 100, "backgroundColor": "#ffc9c9", "label": "DQ gate"},
+      {"type": "rectangle", "id": "sem", "x": 1020, "y": 40, "width": 200, "height": 90, "backgroundColor": "#d0bfff", "label": "Semantic layer\ncustomer 360"},
+      {"type": "ellipse", "id": "bi", "x": 1300, "y": -10, "width": 170, "height": 80, "backgroundColor": "#99e9f2", "label": "BI & reports"},
+      {"type": "ellipse", "id": "seg", "x": 1300, "y": 100, "width": 170, "height": 80, "backgroundColor": "#99e9f2", "label": "Segments"},
+      {"type": "arrow", "x": 200, "y": 70, "points": [[0, 0], [100, -35]]},
+      {"type": "arrow", "x": 200, "y": 100, "points": [[0, 0], [100, 45]]},
+      {"type": "arrow", "x": 500, "y": 35, "points": [[0, 0], [100, 40]]},
+      {"type": "arrow", "x": 500, "y": 145, "points": [[0, 0], [100, -45]]},
+      {"type": "arrow", "x": 780, "y": 85, "points": [[0, 0], [50, 0]]},
+      {"type": "arrow", "x": 970, "y": 85, "points": [[0, 0], [50, 0]]},
+      {"type": "arrow", "x": 1220, "y": 70, "points": [[0, 0], [80, -40]]},
+      {"type": "arrow", "x": 1220, "y": 100, "points": [[0, 0], [80, 40]]},
+      {"type": "text", "x": 600, "y": 200, "text": "Erasure requests flow back through every zone (< 24 h)", "fontSize": 16, "strokeColor": "#e03131"}
+    ]
+  },
+  "runbook": {
+    "folder": "Runbooks",
+    "name": "Cut-over runbook.md",
+    "content": "# Helios cut-over runbook\n\n## T-7 days\n- Freeze schema changes on the 12 billing sources\n- Confirm reconciliation report for the last month-end is green\n\n## T-1 day\n- Pause nightly ETL after the final load\n- Snapshot the warehouse (retention: 10 years)\n\n## Cut-over (Saturday 06:00)\n1. Switch BI connections to the semantic layer\n2. Run smoke dashboards (revenue, churn, active customers)\n3. Compare totals with the snapshot; tolerance 0 on amounts\n\n## Roll-back\nRe-point BI to the warehouse snapshot; the CDP keeps ingesting so no data is lost.\n"
+  }
+}

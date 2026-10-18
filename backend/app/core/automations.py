@@ -1,7 +1,7 @@
 """Automation rules: "when <trigger> and <conditions> then <actions>" per project, plus the project webhooks.
 
 Flow: `crud_task` calls `fire_task_events()` at the end of create / update / update_assignees, inside the request's
-unit of work (see docs/how-to/transactions.md). For each event:
+unit of work (see docs/guide/02-concepts.html#architecture). For each event:
 
   1. the project's active webhooks get a row in the `webhook_deliveries` queue (sent by a worker after the commit);
   2. every enabled rule of the project with that trigger whose conditions match runs its actions inside a SAVEPOINT,

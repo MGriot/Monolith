@@ -60,6 +60,15 @@ def calculate_cpm(tasks: List[Task]):
         for pred_id, dep_type, lag in links:
             successors_of[pred_id].append((tid, dep_type, lag))
 
+    # Summary tasks (they have subtasks and no links of their own) are not activities: their window is just the
+    # envelope of their children. Left in the network they would start at their planned date while the children are
+    # pulled forward by their links, and a summary alone would look like the longest chain. They take their result
+    # from their children instead (critical if any child is, slack = the smallest child slack).
+    summary_ids: Set[UUID] = {
+        tid for tid, t in all_tasks.items() if t.subtasks and not preds_of[tid] and not successors_of[tid]
+    }
+    network = [tid for tid in all_tasks if tid not in summary_ids]
+
     # Project start baseline
     project_start = min(
         (t.start_date for t in all_tasks.values() if t.start_date),
@@ -125,11 +134,11 @@ def calculate_cpm(tasks: List[Task]):
         solving_forward.remove(tid)
         return ef[tid]
 
-    for tid in all_tasks:
+    for tid in network:
         resolve_forward(tid)
 
     # 3. Backward Pass: Calculate Latest Finish (LF) and Latest Start (LS)
-    project_finish = max(ef.values())
+    project_finish = max(ef.values()) if ef else project_start
 
     ls: Dict[UUID, datetime] = {}
     lf: Dict[UUID, datetime] = {}
@@ -175,15 +184,29 @@ def calculate_cpm(tasks: List[Task]):
         solving_backward.remove(tid)
         return ls[tid]
 
-    for tid in all_tasks:
+    for tid in network:
         resolve_backward(tid)
 
     # 4. Results: Calculate Slack/Float and Mark Critical Path
-    for tid, task in all_tasks.items():
+    for tid in network:
+        task = all_tasks[tid]
         # Slack = LS - ES
         task.slack_days = (ls[tid] - es[tid]).days
 
         # A task is critical if it has zero or negative slack
         task.is_critical = task.slack_days <= 0
+
+    def summarize(task: Task):
+        slacks = []
+        for child in task.subtasks or []:
+            if child.id in summary_ids:
+                summarize(child)
+            if child.slack_days is not None:
+                slacks.append(child.slack_days)
+        task.slack_days = min(slacks) if slacks else None
+        task.is_critical = bool(slacks) and task.slack_days <= 0
+
+    for tid in summary_ids:
+        summarize(all_tasks[tid])
 
     return tasks

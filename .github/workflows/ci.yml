@@ -46,6 +46,13 @@ jobs:
           tests/test_recurrence_ics.py
           tests/test_registration_approval.py
           tests/test_cpm.py
+          tests/test_file_hub.py
+          tests/test_mcp_registry.py
+          tests/test_mcp_tokens.py
+          tests/test_whiteboard_rooms.py
+          tests/test_whiteboard_previews.py
+      - name: Generated guide sections are up to date
+        run: python scripts/docs/gen_reference.py --check
       - name: Dependencies have no known vulnerabilities
         continue-on-error: true   # advisory for now; flip to blocking once the baseline is clean
         run: pip install pip-audit && pip-audit -r backend/requirements.txt
@@ -87,7 +94,6 @@ jobs:
           FIRST_SUPERUSER_EMAIL=admin@example.com
           FIRST_SUPERUSER_PASSWORD=$(openssl rand -hex 12)
           ALLOW_SIGNUP=false
-          MCP_API_KEY=$(openssl rand -hex 16)
           HTTP_PORT=8080
           APP_BASE_URL=http://localhost:8080
           MAIL_DOMAIN=monolith.local

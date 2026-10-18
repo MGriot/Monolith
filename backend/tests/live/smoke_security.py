@@ -10,7 +10,6 @@ import httpx
 BASE = os.environ.get("BASE", "http://proxy")
 ADMIN_EMAIL = os.environ["FIRST_SUPERUSER_EMAIL"]
 ADMIN_PW = os.environ["FIRST_SUPERUSER_PASSWORD"]
-MCP_KEY = os.environ.get("MCP_API_KEY", "")
 
 results = []
 
@@ -192,7 +191,12 @@ check("webhook to internal hostname rejected", r.status_code == 400, f"{r.status
 
 # ---- /mcp
 r = c.get("/mcp/sse")
-check("/mcp without key is 401", r.status_code == 401, r.status_code)
+check("/mcp without a token is 401", r.status_code == 401, r.status_code)
+r = c.get("/mcp/sse", headers=auth("mono_mcp_not-a-real-token"))
+check("/mcp with an unknown token is 401", r.status_code == 401, r.status_code)
+r = c.post("/api/v1/users/me/mcp-tokens", headers=A, json={"name": "smoke"})
+check("personal MCP token minted", r.status_code == 201 and r.json().get("token", "").startswith("mono_mcp_"), r.status_code)
+MCP_KEY = r.json().get("token", "") if r.status_code == 201 else ""
 r = c.get("/mcp/sse", headers={**auth(MCP_KEY), "Host": "evil.example"}, timeout=5)
 check("/mcp rejects an unexpected Host header (DNS rebinding)", r.status_code in (400, 421), r.status_code)
 try:
@@ -200,6 +204,11 @@ try:
         check("/mcp with key opens the SSE stream", resp.status_code == 200 and "text/event-stream" in resp.headers.get("content-type", ""), f"{resp.status_code} {resp.headers.get('content-type')}")
 except httpx.ReadTimeout:
     check("/mcp with key opens the SSE stream", True)
+token_id = next((t["id"] for t in c.get("/api/v1/users/me/mcp-tokens", headers=A).json() if t["name"] == "smoke"), None)
+r = c.delete(f"/api/v1/users/me/mcp-tokens/{token_id}", headers=A)
+check("MCP token revoked", r.status_code == 204, r.status_code)
+r = c.get("/mcp/sse", headers={**auth(MCP_KEY), "Host": "localhost:8080"}, timeout=5)
+check("/mcp with a revoked token is 401", r.status_code == 401, r.status_code)
 
 # ---- websocket via proxy
 try:

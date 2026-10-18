@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting · Monolith Guide</title>
+<meta name="description" content="Monolith's security model, common problems and their fixes, health checks and backups.">
+<link rel="icon" href="assets/monolith.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/guide.css">
+<script src="assets/guide.js" defer></script>
+</head>
+<body style="--chapter: '11.'">
+<!-- BEGIN:topbar -->
+<header class="topbar"><div class="topbar-in"><a class="brand" href="index.html"><img src="assets/monolith.svg" alt="" width="22" height="22">Monolith Guide</a><nav class="chapters" aria-label="Chapters"><a href="index.html">Overview</a><a href="01-getting-started.html"><b>1</b>Getting started</a><a href="02-concepts.html"><b>2</b>Concepts</a><a href="03-projects-and-tasks.html"><b>3</b>Projects &amp; tasks</a><a href="04-planning-views.html"><b>4</b>Planning views</a><a href="05-collaboration.html"><b>5</b>Collaboration</a><a href="06-tracking.html"><b>6</b>Tracking</a><a href="07-automation.html"><b>7</b>Automation</a><a href="08-administration.html"><b>8</b>Administration</a><a href="09-mcp.html"><b>9</b>MCP</a><a href="10-api-reference.html"><b>10</b>API reference</a><a href="11-troubleshooting.html" aria-current="page"><b>11</b>Troubleshooting</a></nav><button type="button" class="theme-btn">Dark mode</button></div></header>
+<!-- END:topbar -->
+<div class="shell">
+<nav class="toc" aria-label="On this page">
+<!-- BEGIN:toc -->
+<span class="eyebrow">On this page</span>
+<a href="#security">Security model</a>
+<a href="#problems">Common problems</a>
+<a href="#checks">Health checks</a>
+<a href="#backup">Backup and restore</a>
+<!-- END:toc -->
+</nav>
+<main class="doc">
+  <header class="prose">
+    <span class="eyebrow">Chapter 11</span>
+    <h1>Troubleshooting &amp; security</h1>
+    <p class="lede">What protects the data, what to check first when something is off, and how to keep a copy of everything.</p>
+  </header>
+
+  <section id="security">
+    <span class="eyebrow">Model</span>
+    <h2>Security model</h2>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Area</th><th>Protection</th></tr></thead>
+      <tbody>
+        <tr><td>Accounts</td><td>bcrypt hashes; no default accounts; sign-up off by default and approved by an administrator; login throttling; temporary passwords must be changed.</td></tr>
+        <tr><td>Tokens</td><td>Login JWTs signed with <code>SECRET_KEY</code>; reset and verification tokens are single-purpose and refused as login tokens; reset links die when the password changes.</td></tr>
+        <tr><td>Authorization</td><td>One layer (<code>app/api/access.py</code>) for REST, websockets and MCP; roles read on every request; an endpoint matrix test fails when a route lacks a guard.</td></tr>
+        <tr><td>MCP</td><td>Personal tokens stored as SHA-256, optional expiry, revocable, re-checked per call; DNS-rebinding protection on the Host header.</td></tr>
+        <tr><td>Uploads</td><td>Random names, size limit, executable types refused, <code>nosniff</code>, SVG forced to download with a sandbox CSP; sketch previews are validated PNGs or server-rendered SVG with escaped text.</td></tr>
+        <tr><td>Outbound</td><td>Webhooks refuse private and metadata addresses at save and send time, no redirects.</td></tr>
+        <tr><td>Network</td><td>Only the proxy is published; database and mail server are internal; rootless containers, non-root backend user.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="problems">
+    <span class="eyebrow">Fixes</span>
+    <h2>Common problems</h2>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Symptom</th><th>Cause and fix</th></tr></thead>
+      <tbody>
+        <tr><td>Cannot sign in with <code>admin@admin.com</code></td><td>There are no default accounts. Use <code>FIRST_SUPERUSER_EMAIL</code>; if it was never created, set both <code>FIRST_SUPERUSER_*</code> values and restart the backend.</td></tr>
+        <tr><td>Login answers 429</td><td>Too many failed attempts for that account or address; wait <code>LOGIN_WINDOW_SECONDS</code>.</td></tr>
+        <tr><td>“E-mail is disabled” when approving a user</td><td>Approval mails a temporary password; enable mail (<code>EMAIL_ENABLED=true</code>) or create the account through the API.</td></tr>
+        <tr><td>Mails stay <code>pending</code>, log shows <code>535 authentication failed</code></td><td>The mailbox password differs from <code>SMTP_PASSWORD</code>; re-run <code>scripts/mail-bootstrap.sh</code>.</td></tr>
+        <tr><td>Mail container restarts after two minutes</td><td>No mailbox exists; run <code>scripts/mail-bootstrap.sh</code> before the first start.</td></tr>
+        <tr><td>MCP client gets 401</td><td>Missing, mistyped, revoked or expired token, or a deactivated account. Check <span class="ui">Settings</span> › <span class="ui">MCP access</span>: <i>Last used</i> stays empty when the token never reached the server.</td></tr>
+        <tr><td>MCP client gets 400 or 421</td><td>The Host header is not allowed; add the name to <code>MCP_ALLOWED_HOSTS</code>.</td></tr>
+        <tr><td>MCP tool returns <code>Permission denied</code></td><td>The token owner lacks the role in that project; an admin changes it in <span class="ui">Project Settings</span>.</td></tr>
+        <tr><td>Sketch shows <span class="ui">Offline</span></td><td>The websocket cannot connect: check that the proxy forwards upgrades for <code>/api/</code> (the bundled nginx does) and that your session has not expired (sign in again).</td></tr>
+        <tr><td>Others do not see my sketch edits</td><td>New sketches go live after the first <span class="ui">Create</span>. Viewers cannot draw. Several backend workers or replicas split rooms; run one.</td></tr>
+        <tr><td>Sketch thumbnail is an icon</td><td>The sketch was never saved with content, or its preview file was removed; open and save it once.</td></tr>
+        <tr><td>Webhook test fails with 400</td><td>The URL resolves to a private address; set <code>WEBHOOK_ALLOW_PRIVATE=true</code> for self-hosted chat.</td></tr>
+        <tr><td>“Users need a normal e-mail domain”</td><td>Special-use domains such as <code>.local</code> are refused in user addresses (<a href="01-getting-started.html#configuration">1.3</a>).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="checks">
+    <span class="eyebrow">Diagnose</span>
+    <h2>Health checks</h2>
+    <pre class="code">podman ps                                           <span class="c"># all (healthy)?</span>
+curl -s http://localhost:8080/api/health            <span class="c"># {"status":"healthy",...}</span>
+podman logs --tail 100 monolith_backend             <span class="c"># start-up, migrations, worker errors</span>
+podman exec monolith_backend alembic -c /app/alembic.ini current
+podman exec monolith_mail setup email list
+curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer $MONOLITH_MCP_TOKEN" -H "Host: localhost:8080" --max-time 3 http://localhost:8080/mcp/sse</pre>
+  </section>
+
+  <section id="backup">
+    <span class="eyebrow">Data</span>
+    <h2>Backup and restore</h2>
+    <p class="prose">Two things hold state: the database and the <code>uploads</code> volume (files and sketch previews).</p>
+    <pre class="code"><span class="c"># back up</span>
+podman exec monolith_db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB"' &gt; monolith.dump
+podman run --rm -v monolith_uploads:/data -v "$PWD":/backup docker.io/library/alpine tar czf /backup/uploads.tgz -C /data .
+
+<span class="c"># restore into a stopped backend</span>
+podman exec -i monolith_db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists' &lt; monolith.dump
+podman run --rm -v monolith_uploads:/data -v "$PWD":/backup docker.io/library/alpine tar xzf /backup/uploads.tgz -C /data</pre>
+    <div class="callout warn"><b>Careful</b><p>Keep <code>SECRET_KEY</code> with the backup: without it every session and pending reset link is invalid (people simply sign in again). MCP tokens survive, since only their hashes are stored.</p></div>
+  </section>
+
+<!-- BEGIN:pager -->
+<nav class="pager" aria-label="Chapters"><a class="prev" href="10-api-reference.html"><span>Previous</span>10. API reference</a></nav>
+<!-- END:pager -->
+</main>
+</div>
+</body>
+</html>

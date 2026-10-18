@@ -20,6 +20,37 @@ from app.core.automations import fire_task_events
 def _enum_val(v: Any) -> Any:
     return v.value if hasattr(v, "value") else v
 
+def reconcile_dates(obj_data: dict, start0, due0, dur0) -> dict:
+    """Keep start, due and duration_days consistent for an update, in place (dur=1 means the same day).
+
+    Whatever the caller sent wins: duration (with start) moves the due date; start AND due together set the
+    duration; start alone keeps the duration and moves the due date; due alone sets the duration.
+    Key presence matters, not truthiness: an explicit null just clears that field.
+    """
+    from datetime import timedelta
+
+    start = obj_data["start_date"] if "start_date" in obj_data else start0
+    due = obj_data["due_date"] if "due_date" in obj_data else due0
+    dur = obj_data["duration_days"] if "duration_days" in obj_data else dur0
+    sent = obj_data.keys()
+
+    if "duration_days" in sent:
+        if start and dur and dur > 0:
+            obj_data["due_date"] = start + timedelta(days=dur - 1)
+    elif "start_date" in sent and "due_date" in sent:
+        if start and due:
+            obj_data["duration_days"] = (due - start).days + 1
+    elif "start_date" in sent:
+        if start and dur and dur > 0:
+            obj_data["due_date"] = start + timedelta(days=dur - 1)
+        elif start and due:
+            obj_data["duration_days"] = (due - start).days + 1
+    elif "due_date" in sent:
+        if start and due:
+            obj_data["duration_days"] = (due - start).days + 1
+    return obj_data
+
+
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     # --- tree loading -------------------------------------------------------------------------------
     # The old implementation hand-nested selectinload() four levels deep: ~30 queries for 155 tasks, and a
@@ -145,11 +176,9 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
 
         # 2. Date aggregation
         start_dates = [t.start_date for t in all_tasks if t.start_date]
-        due_dates = [t.due_date for t in all_tasks if t.due_date]
-        deadline_dates = [t.deadline_at for t in all_tasks if t.deadline_at]
-        
-        # end_date fallback logic: use due_date or deadline_at
-        effective_end_dates = due_dates + deadline_dates
+        # A task ends at its planned due date; its hard deadline only stands in when it has none. Counting every
+        # deadline would make the project's planned finish equal its latest deadline and hide deadline risk.
+        effective_end_dates = [t.due_date or t.deadline_at for t in all_tasks if t.due_date or t.deadline_at]
         
         new_start_date = min(start_dates) if start_dates else None
         new_due_date = max(effective_end_dates) if effective_end_dates else None
@@ -453,29 +482,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         obj_data = clean_dict_datetimes(obj_data)
         
         # 2. Bidirectional Date/Duration logic
-        from datetime import timedelta
-        # `.get(key, default)` would return None for an explicit null, so test for key presence.
-        start = obj_data["start_date"] if "start_date" in obj_data else db_obj.start_date
-        due = obj_data["due_date"] if "due_date" in obj_data else db_obj.due_date
-        dur = obj_data["duration_days"] if "duration_days" in obj_data else db_obj.duration_days
-
-        # Detect what changed to decide calculation priority (explicit nulls just clear the field)
-        changed = list(obj_data.keys())
-
-        if "duration_days" in changed:
-            # If duration changed, update due date (dur=1 means same day)
-            if start and dur and dur > 0:
-                obj_data["due_date"] = start + timedelta(days=dur - 1)
-        elif "start_date" in changed:
-            # If start changed, either update due (if dur exists) or dur (if due exists)
-            if start and dur and dur > 0:
-                obj_data["due_date"] = start + timedelta(days=dur - 1)
-            elif start and due:
-                obj_data["duration_days"] = (due - start).days + 1
-        elif "due_date" in changed:
-            # If due changed, update duration
-            if start and due:
-                obj_data["duration_days"] = (due - start).days + 1
+        reconcile_dates(obj_data, db_obj.start_date, db_obj.due_date, db_obj.duration_days)
 
         # 3. Status logic: check blockers ONLY if moving TO Done
         if obj_data.get("status") == Status.DONE and db_obj.status != Status.DONE:

@@ -82,6 +82,8 @@ export interface Project {
   progress_percent: number;
   start_date: string;
   due_date: string;
+  /** Hard deadline; due_date is the planned finish */
+  deadline_at?: string | null;
   topic: string | null;
   type: string | null;
   topic_id?: string | null;
