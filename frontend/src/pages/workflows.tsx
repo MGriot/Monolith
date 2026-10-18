@@ -390,8 +390,8 @@ export default function WorkflowsPage() {
             </div>
 
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col p-0">
-                    <DialogHeader className="px-6 pt-6 pb-2">
+                <DialogContent size="xl">
+                    <DialogHeader>
                         <DialogTitle>{editingWorkflow ? 'Edit SOP' : 'Create New SOP'}</DialogTitle>
                         <DialogDescription>
                             Define Visibility, Sharing, and Markdown Content.
@@ -467,7 +467,7 @@ export default function WorkflowsPage() {
                         </div>
                     </div>
 
-                    <DialogFooter className="px-6 py-4 bg-subtle border-t flex items-center justify-between">
+                    <DialogFooter className="sm:justify-between">
                         <p className="text-[10px] text-fg-faint font-medium">Auto-saves are not enabled. Ensure you save your changes.</p>
                         <div className="flex gap-2">
                             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>

@@ -125,7 +125,7 @@ async def calculate_critical_path(project_id: str) -> str:
                 output.append(f"- [{t.wbs_code}] {t.title} (ES: {t.start_date.date() if t.start_date else 'N/A'})")
 
             output.append(f"\nNON-CRITICAL TASKS ({len(non_critical)}):")
-            for t in sorted(non_critical, key=lambda x: x.slack_days, reverse=True):
+            for t in sorted(non_critical, key=lambda x: x.slack_days or 0, reverse=True):
                 output.append(f"- [{t.wbs_code}] {t.title} (Slack: {t.slack_days} days)")
 
             return "\n".join(output)

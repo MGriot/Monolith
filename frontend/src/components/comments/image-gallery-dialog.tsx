@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -49,13 +50,14 @@ export function ImageGalleryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ImageIcon className="w-5 h-5 text-primary" />
             Available Images
           </DialogTitle>
         </DialogHeader>
+      <DialogBody className="flex flex-col">
 
         <div className="flex-1 overflow-hidden flex flex-col gap-4">
           <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg text-blue-800 dark:text-blue-300 text-xs">
@@ -105,6 +107,7 @@ export function ImageGalleryDialog({
             </div>
           )}
         </div>
+      </DialogBody>
       </DialogContent>
     </Dialog>
   );

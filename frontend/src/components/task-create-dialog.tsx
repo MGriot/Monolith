@@ -2,13 +2,6 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -17,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import TaskForm, { type TaskFormValues } from '@/components/task-form';
+import TaskDialog from '@/components/task-dialog';
 import type { Project } from '@/types';
 import { toast } from 'sonner';
 import { fromDateInput } from "@/lib/dates";
@@ -69,47 +63,43 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl bg-background rounded-2xl">
-        <div className="p-8">
-            <DialogHeader className="mb-6">
-                <DialogTitle className="text-xl font-bold tracking-tight text-foreground px-1">Quick Initiative Launch</DialogTitle>
-                <DialogDescription className="text-xs font-medium text-fg-faint uppercase tracking-widest px-1">
-                    Select a project (or Independent) and enter task details.
-                </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-6">
-                <div className="p-4 bg-subtle border border-hairline rounded-2xl shadow-inner">
-                    <Label className="text-[10px] font-black uppercase text-fg-faint tracking-widest px-1 block mb-2">Target Context</Label>
-                    <Select onValueChange={setSelectedProjectId} value={selectedProjectId}>
-                        <SelectTrigger className="h-11 bg-background border-border rounded-xl shadow-sm">
-                            <SelectValue placeholder={isProjectsLoading ? "Scanning projects..." : "Associate with a Project or Portfolio"} />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                            <SelectItem value="none" className="font-bold">🌍 Independent Action (Global)</SelectItem>
-                            {projects?.map((project) => (
-                                <SelectItem key={project.id} value={project.id}>
-                                    📦 {project.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {selectedProjectId && (
-                    <div className="pt-6 border-t border-hairline animate-in fade-in slide-in-from-top-2 duration-300">
-                        <TaskForm 
-                            onSubmit={(data) => createTaskMutation.mutate(data)}
-                            onCancel={() => onOpenChange(false)}
-                            isLoading={createTaskMutation.isPending}
-                            projectId={selectedProjectId === "none" ? undefined : selectedProjectId}
-                        />
-                    </div>
-                )}
-            </div>
+    <TaskDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="New task"
+      subtitle="Pick a project (or Independent), then fill in the task."
+      headerExtra={
+        <div className="flex items-center gap-3 pt-2">
+          <Label htmlFor="task-create-project" className="shrink-0 text-xs font-medium text-muted-foreground">Project</Label>
+          <Select onValueChange={setSelectedProjectId} value={selectedProjectId}>
+            <SelectTrigger id="task-create-project" className="h-9 max-w-sm">
+              <SelectValue placeholder={isProjectsLoading ? "Loading projects..." : "Choose a project"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Independent task (no project)</SelectItem>
+              {projects?.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      </DialogContent>
-    </Dialog>
+      }
+    >
+      {selectedProjectId ? (
+        <TaskForm
+          key={selectedProjectId}
+          onSubmit={(data) => createTaskMutation.mutate(data)}
+          onCancel={() => onOpenChange(false)}
+          isLoading={createTaskMutation.isPending}
+          projectId={selectedProjectId === "none" ? undefined : selectedProjectId}
+        />
+      ) : (
+        <div className="flex flex-1 items-center justify-center px-6 text-sm text-muted-foreground">
+          Choose a project above to start.
+        </div>
+      )}
+    </TaskDialog>
   );
 }

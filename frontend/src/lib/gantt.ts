@@ -74,6 +74,15 @@ export function keyboardAdjust(
 /** The API uses 'Critical'/'High'/..., older code compared lowercase. Compare through this. */
 export const normalizePriority = (p: string | null | undefined): string => (p || '').trim().toLowerCase();
 
+/**
+ * On the critical path only when the backend's CPM says so. `slack_days` is not consulted:
+ * endpoints that skip CPM leave it unset, and 0 used to be its default.
+ */
+export const isCriticalTask = (t: { is_critical?: boolean | null } | null | undefined): boolean => t?.is_critical === true;
+
+/** Empty days kept before the first and after the last task, per zoom level. */
+export const VIEW_BUFFER_DAYS = { day: 2, week: 2, month: 3, quarter: 7, year: 14 } as const;
+
 /** Dependencies as edges, merging the rich `blocked_by` list with the bare `blocked_by_ids` (treated as FS, no lag). */
 export function collectDependencies(
   items: { id: string; blocked_by?: { predecessor_id: string; type?: string; lag_days?: number }[] | null; blocked_by_ids?: string[] | null }[],

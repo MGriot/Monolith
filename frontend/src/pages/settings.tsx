@@ -23,13 +23,14 @@ import { NotificationPrefsCard } from '@/components/notification-prefs';
 import { ThemeSegmented } from '@/components/theme-toggle';
 import { CalendarFeedCard } from '@/components/calendar-feed-card';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-    Dialog, 
-    DialogContent, 
-    DialogHeader, 
-    DialogTitle, 
-    DialogDescription,
-    DialogFooter 
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
 
@@ -316,12 +317,13 @@ export default function SettingsPage() {
       </div>
 
       <Dialog open={isWebhookDialogOpen} onOpenChange={setIsWebhookDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent size="md">
             <DialogHeader>
                 <DialogTitle>Add Webhook</DialogTitle>
                 <DialogDescription>Configure a Slack or Discord incoming webhook.</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <DialogBody>
+            <div className="space-y-4">
                 <div className="space-y-2">
                     <Label className="text-xs font-black uppercase tracking-widest text-fg-faint">Hook Name</Label>
                     <Input 
@@ -355,6 +357,7 @@ export default function SettingsPage() {
                     </div>
                 </div>
             </div>
+            </DialogBody>
             <DialogFooter>
                 <Button variant="ghost" size="sm" onClick={() => setIsWebhookDialogOpen(false)}>Cancel</Button>
                 <Button 

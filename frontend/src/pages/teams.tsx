@@ -11,6 +11,7 @@ import { Plus, Trash2, Edit2, Users, Loader2, Mail, Check, ShieldCheck, Globe, L
 import { toast } from 'sonner';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -257,14 +258,15 @@ export default function TeamsPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>{editingTeam ? 'Edit Team' : 'Create Team'}</DialogTitle>
             <DialogDescription>
               Define Identity, Membership, and Access.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
+          <DialogBody>
+          <div className="space-y-6">
             <div className="space-y-4 border-b pb-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Team Name</Label>
@@ -337,6 +339,7 @@ export default function TeamsPage() {
               </div>
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>

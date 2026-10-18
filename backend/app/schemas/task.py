@@ -44,7 +44,7 @@ class TaskBase(BaseModel):
     sort_index: Optional[int] = 0
     wbs_code: Optional[str] = None
     is_critical: Optional[bool] = False
-    slack_days: Optional[int] = 0
+    slack_days: Optional[int] = None  # only set when CPM ran
     is_archived: bool = False
     archived_at: Optional[datetime] = None
     # PERT Estimation Fields

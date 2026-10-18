@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import type { ProjectTemplate, Topic, WorkType } from '@/types';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -290,14 +291,15 @@ export default function TemplatesPage() {
       </div>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>{editingTemplate ? 'Edit Template' : 'Create Project Template'}</DialogTitle>
             <DialogDescription>
               Define structure, whitelist, and visibility.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
+          <DialogBody>
+          <div className="space-y-6">
             <div className="space-y-4 border-b pb-6">
                 <div className="space-y-2">
                     <Label htmlFor="name">Template Name</Label>
@@ -370,6 +372,7 @@ export default function TemplatesPage() {
               />
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>

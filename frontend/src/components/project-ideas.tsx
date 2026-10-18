@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -359,14 +360,15 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>Propose New Idea</DialogTitle>
             <DialogDescription>
               Share a new concept or feature request.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCreateIdea} className="space-y-4 py-4">
+          <form onSubmit={handleCreateIdea} className="flex min-h-0 flex-1 flex-col">
+            <DialogBody className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Title</Label>
               <Input
@@ -405,7 +407,8 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                 rows={4}
               />
             </div>
-            <DialogFooter className="pt-4">
+            </DialogBody>
+            <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={createIdeaMutation.isPending}>
                 {createIdeaMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit Idea'}
@@ -417,13 +420,14 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>Edit Idea</DialogTitle>
             <DialogDescription>Modify the idea details or status.</DialogDescription>
           </DialogHeader>
           {selectedIdea && (
-              <form onSubmit={handleUpdateIdea} className="space-y-4 py-4">
+              <form onSubmit={handleUpdateIdea} className="flex min-h-0 flex-1 flex-col">
+                <DialogBody className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Title</Label>
                   <Input
@@ -457,7 +461,8 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                       ))}
                   </div>
                 </div>
-                <DialogFooter className="pt-4">
+                </DialogBody>
+                <DialogFooter>
                   <Button type="button" variant="ghost" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
                   <Button type="submit" disabled={updateIdeaMutation.isPending}>
                     {updateIdeaMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
@@ -470,7 +475,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
 
       {/* Detail & Comments Dialog */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-hidden flex flex-col p-0">
+        <DialogContent size="lg">
           {selectedIdea && (
               <>
                 <DialogHeader className="p-6 pb-2">

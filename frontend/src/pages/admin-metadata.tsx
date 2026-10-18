@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -392,12 +392,13 @@ export default function AdminMetadataPage() {
 
       {/* Edit Topic Dialog */}
       <Dialog open={!!editingTopic} onOpenChange={(open) => !open && setEditingTopic(null)}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>Edit Topic</DialogTitle>
             <DialogDescription>Modify topic details.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdateTopic} className="space-y-4">
+          <form onSubmit={handleUpdateTopic} className="flex min-h-0 flex-1 flex-col">
+            <DialogBody className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase text-muted-foreground">Name</Label>
               <Input 
@@ -427,7 +428,8 @@ export default function AdminMetadataPage() {
                 onCheckedChange={(checked) => setEditingTopic(prev => prev ? ({...prev, is_active: checked}) : null)} 
               />
             </div>
-            <DialogFooter className="pt-2">
+            </DialogBody>
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditingTopic(null)}>Cancel</Button>
               <Button type="submit" disabled={updateTopicMutation.isPending}>
                 {updateTopicMutation.isPending && <Loader2 className="w-3 h-3 animate-spin mr-2" />}
@@ -440,12 +442,13 @@ export default function AdminMetadataPage() {
 
       {/* Edit Work Type Dialog */}
       <Dialog open={!!editingWorkType} onOpenChange={(open) => !open && setEditingWorkType(null)}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>Edit Work Type</DialogTitle>
             <DialogDescription>Modify work type details.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdateWorkType} className="space-y-4">
+          <form onSubmit={handleUpdateWorkType} className="flex min-h-0 flex-1 flex-col">
+            <DialogBody className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase text-muted-foreground">Name</Label>
               <Input 
@@ -475,7 +478,8 @@ export default function AdminMetadataPage() {
                 onCheckedChange={(checked) => setEditingWorkType(prev => prev ? ({...prev, is_active: checked}) : null)} 
               />
             </div>
-            <DialogFooter className="pt-2">
+            </DialogBody>
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditingWorkType(null)}>Cancel</Button>
               <Button type="submit" disabled={updateTypeMutation.isPending}>
                 {updateTypeMutation.isPending && <Loader2 className="w-3 h-3 animate-spin mr-2" />}

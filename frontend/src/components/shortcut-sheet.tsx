@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SHORTCUT_LIST } from '@/lib/shortcuts';
 
 interface ShortcutSheetProps {
@@ -9,14 +9,15 @@ interface ShortcutSheetProps {
 export default function ShortcutSheet({ open, onOpenChange }: ShortcutSheetProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Keyboard shortcuts</DialogTitle>
           <DialogDescription>Single-key shortcuts are disabled while you are typing in a field.</DialogDescription>
         </DialogHeader>
+      <DialogBody>
         <ul className="divide-y divide-hairline">
           {SHORTCUT_LIST.map((s) => (
-            <li key={s.label} className="flex items-center justify-between py-2 text-sm">
+            <li key={s.label} className="flex items-center justify-between text-sm">
               <span className="text-fg-body">{s.label}</span>
               <span className="flex items-center gap-1">
                 {s.keys.map((k, i) => (
@@ -29,6 +30,7 @@ export default function ShortcutSheet({ open, onOpenChange }: ShortcutSheetProps
             </li>
           ))}
         </ul>
+      </DialogBody>
       </DialogContent>
     </Dialog>
   );
