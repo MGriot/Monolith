@@ -1,17 +1,26 @@
 from playwright.sync_api import sync_playwright
+import os
+
+# Settings come from the environment, never from this file:
+#   BASE_URL (default http://localhost:5173), MONOLITH_EMAIL, MONOLITH_PASSWORD
+BASE = os.environ.get("BASE_URL", "http://localhost:5173").rstrip("/")
+EMAIL = os.environ.get("MONOLITH_EMAIL", "")
+PASSWORD = os.environ.get("MONOLITH_PASSWORD", "")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+os.makedirs(OUT, exist_ok=True)
 
 def run():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
         try:
-            page.goto('http://localhost:5173/login')
+            page.goto(BASE + '/login')
             page.wait_for_load_state('networkidle')
             
             print("--- Page Content Snapshot ---")
             print(page.content()[:2000]) # Print first 2k chars
             
-            page.screenshot(path='login_page.png', full_page=True)
+            page.screenshot(path=os.path.join(OUT, 'login_page.png'), full_page=True)
             print("Screenshot saved as login_page.png")
             
             # Check for key elements

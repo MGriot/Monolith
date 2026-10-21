@@ -58,7 +58,7 @@ export function CommentInput({
       spellChecker: false,
       placeholder: placeholder,
       status: false,
-      minHeight: "100px",
+      minHeight: "72px", // compact: the conversation above gets the room
       uploadImage: true,
       imageUploadFunction: handleImageUpload,
       imageAccept: "image/png, image/jpeg, image/gif, image/webp",

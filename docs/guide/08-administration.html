@@ -49,6 +49,7 @@
       <li>Deactivated accounts (<code>is_active=false</code>) stop working at once, including their login tokens, MCP tokens and calendar link.</li>
     </ul>
     <div class="callout warn"><b>Careful</b><p>Login attempts are throttled: after <code>LOGIN_MAX_FAILURES</code> failures (5) in <code>LOGIN_WINDOW_SECONDS</code> (15 min) the account answers 429 for a while; other accounts are unaffected.</p></div>
+    <figure class="shot"><img src="../img/guide/team-members.webp" alt="Team Members page listing accounts, roles and status" loading="lazy" width="1440" height="900"><figcaption><span class="ui">Team Members</span> (administrators only).</figcaption></figure>
   </section>
 
   <section id="taxonomy">
@@ -99,6 +100,7 @@
         <tr><td><code>0010</code></td><td>Project hard deadline (<code>projects.deadline_at</code>)</td></tr>
         <tr><td><code>0011</code></td><td>Personal MCP tokens (<code>mcp_tokens</code>, hashed)</td></tr>
         <tr><td><code>0012</code></td><td>Sketch previews moved from base64 in the database to files under <code>uploads/previews</code></td></tr>
+        <tr><td><code>0013</code></td><td>Task change log (<code>activity_events</code>): who changed what, per project</td></tr>
       </tbody>
     </table></div>
     <pre class="code">podman exec monolith_backend alembic -c /app/alembic.ini current

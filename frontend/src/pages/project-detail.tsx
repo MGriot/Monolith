@@ -634,12 +634,19 @@ export default function ProjectDetailPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-primary" />
-                  Project Activity
+                  Project activity
                 </CardTitle>
-                <CardDescription>Universal threaded discussion and change logs for this project.</CardDescription>
+                <CardDescription>The project's discussion, and every change to its tasks with who made it.</CardDescription>
               </CardHeader>
               <CardContent>
-                <CommentSection projectId={id} />
+                <CommentSection
+                  projectId={id}
+                  onOpenTask={(taskId) => {
+                    setEditingTaskId(taskId);
+                    setParentTaskId(null);
+                    setIsTaskDialogOpen(true);
+                  }}
+                />
               </CardContent>
             </Card>
           </div>

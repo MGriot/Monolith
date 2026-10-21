@@ -62,8 +62,9 @@
       <li><b>Drag</b> a bar to move it, drag its ends to change start or due; the change applies at once and rolls back with a message if the server refuses it (for example a dependency conflict or a missing role).</li>
       <li><b>Critical path</b> toggle: critical bars get a red ring, critical links glow, everything else dims. The same toggle highlights critical rows in the task table (<a href="02-concepts.html#scheduling">2.5</a>).</li>
       <li><b>Reference zones</b>: shaded date ranges for freezes, holidays or releases, saved with the project.</li>
-      <li><b>Export PNG</b> saves a high-resolution image of the visible chart.</li>
+      <li><b>PNG</b> saves the <em>whole</em> chart as an image, including the rows and months scrolled out of view (2× resolution for normal charts, 1× for very large ones). A large chart can take up to a minute to prepare; a notice shows the progress. The <span class="ui">Team Workload</span> timeline exports the same way.</li>
     </ul>
+    <figure class="shot"><img src="../img/guide/gantt-export.webp" alt="Exported Gantt image showing the whole timeline" loading="lazy" width="1440" height="900"><figcaption>What <span class="ui">PNG</span> saves: the whole chart, including the months scrolled out of view.</figcaption></figure>
   </section>
 
   <section id="kanban">
@@ -71,6 +72,7 @@
     <h2>Kanban board</h2>
     <figure class="shot"><img src="../img/kanban.png" alt="Kanban board with status columns, filters and saved views" loading="lazy"><figcaption>Project <span class="ui">Kanban</span> tab; <span class="ui">Tasks</span> › board shows the same for your own tasks.</figcaption></figure>
     <p class="prose">Columns are the six statuses. Dragging a card between columns changes its status (and fires the roll-up and automations); dragging within a column sets the manual order. Filters from the filter bar apply; sorting and grouping do not, the board is always by status in manual order. Each column shows its first cards and expands on demand.</p>
+    <figure class="shot"><img src="../img/guide/project-kanban.webp" alt="Project Kanban with status columns" loading="lazy" width="1440" height="900"></figure>
   </section>
 
   <section id="my-tasks">

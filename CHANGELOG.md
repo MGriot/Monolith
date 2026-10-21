@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Task change log**: every task change (create, edit, status, assignment, archive, delete, dependencies) is recorded
+  as a plain sentence with who made it, through the app, the API or MCP; automation and roll-up changes are labelled.
+  Shown with the discussion in the project and task Activity tabs (filter All / Comments / Changes);
+  `GET /projects/{id}/activity`, `GET /tasks/{id}/activity`, MCP `get_project_activity` / `get_task_activity`. Migration 0013.
+- 17 new screenshots in the HTML guide and a new "Activity and change log" section.
 - **MCP server rewrite**: 110 typed tools, 5 resources and 2 prompts covering projects, members, tasks, dependencies and the
   critical path, time, custom fields, automations, comments, ideas, sketches, File Hub, teams, taxonomy, templates, SOPs,
   webhooks, notifications, dashboards and search. Tools call the REST handlers, so permissions, validation and side effects
@@ -46,6 +51,13 @@ All notable changes to this project will be documented in this file.
   `admin@admin.com` / `test@example.com`.
 
 ### Fixed
+- Gantt and team-timeline PNG export now include the whole chart, not just the visible part, with a progress notice.
+- Projects list and Kanban: topic and work-type chips no longer overlap; long lists collapse into "+N".
+- Task editor: the tab row wraps instead of hiding the last tabs (Ideas).
+- Comments: the hidden edit/delete buttons could be clicked by accident and left the editor open; they are now inert
+  until hover/focus, the editor is lighter, errors are reported, replies render threaded.
+- Notes created through the API or MCP kept placeholder text instead of their content.
+- The task editor's topic and work-type pickers missed the project's own scoped entries.
 - CI: the `pip-audit` step no longer fails, and the stray `.agent` gitlink that broke checkout cleanup
   (`git` exit code 128) is gone. `.agent/` is now ignored.
 - CI now runs the registration-approval tests.

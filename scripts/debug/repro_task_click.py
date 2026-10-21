@@ -1,5 +1,14 @@
 from playwright.sync_api import sync_playwright
 import time
+import os
+
+# Settings come from the environment, never from this file:
+#   BASE_URL (default http://localhost:5173), MONOLITH_EMAIL, MONOLITH_PASSWORD
+BASE = os.environ.get("BASE_URL", "http://localhost:5173").rstrip("/")
+EMAIL = os.environ.get("MONOLITH_EMAIL", "")
+PASSWORD = os.environ.get("MONOLITH_PASSWORD", "")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+os.makedirs(OUT, exist_ok=True)
 
 def run():
     with sync_playwright() as p:
@@ -12,32 +21,32 @@ def run():
 
         try:
             print("Logging in...")
-            page.goto('http://localhost:5173/login')
-            page.fill('id=email', 'admin@admin.com')
-            page.fill('id=password', 'admin123')
+            page.goto(BASE + '/login')
+            page.fill('id=email', EMAIL)
+            page.fill('id=password', PASSWORD)
             page.click('button[type="submit"]')
             
             time.sleep(5)
             print(f"Current URL after login attempt: {page.url}")
             
             # Go to projects
-            page.goto('http://localhost:5173/projects')
+            page.goto(BASE + '/projects')
             time.sleep(5)
             print(f"Projects Page URL: {page.url}")
             
             # Take screenshot of projects page
-            page.screenshot(path='projects_debug.png')
+            page.screenshot(path=os.path.join(OUT, 'projects_debug.png'))
             
             # Find the first project link
             project_link = page.locator('a[href^="/projects/"]').first
             if project_link.count() > 0:
                 project_url = project_link.get_attribute('href')
                 print(f"Navigating to project: {project_url}")
-                page.goto(f"http://localhost:5173{project_url}")
+                page.goto(f"{BASE}{project_url}")
                 time.sleep(5)
                 
                 # Take a screenshot of the project page
-                page.screenshot(path='project_page.png')
+                page.screenshot(path=os.path.join(OUT, 'project_page.png'))
                 
                 # Find a task row to click. Based on the HTML, it has class 'group' and is a 'tr'
                 # Let's try to click by text if possible, or just the first row
@@ -51,7 +60,7 @@ def run():
                     for log in logs:
                         print(log)
                         
-                    page.screenshot(path='task_dialog_debug.png')
+                    page.screenshot(path=os.path.join(OUT, 'task_dialog_debug.png'))
                     print("Screenshot of task dialog saved as task_dialog_debug.png")
                     
                     # Check if DialogContent is visible
@@ -63,7 +72,7 @@ def run():
                     print("No tasks found in project. Creating one...")
                     page.click('button:has-text("Add Task")')
                     time.sleep(5)
-                    page.screenshot(path='create_task_dialog_debug.png')
+                    page.screenshot(path=os.path.join(OUT, 'create_task_dialog_debug.png'))
                     print("Screenshot of create task dialog saved as create_task_dialog_debug.png")
                     print(f"Create Dialog visible: {page.locator('[role="dialog"]').is_visible()}")
                     for log in logs:

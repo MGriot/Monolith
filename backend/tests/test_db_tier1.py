@@ -152,3 +152,31 @@ def test_reconcile_dates_respects_what_was_sent():
     assert reconcile_dates({"duration_days": 3, "due_date": d(30)}, d(1), d(5), 5)["due_date"] == d(3)
     # explicit nulls just clear
     assert reconcile_dates({"due_date": None}, d(1), d(5), 5) == {"due_date": None}
+
+
+def test_task_scoped_taxonomy_includes_the_projects_own_entries():
+    """The task editor asks for (project, task): it must see project-level topics/types, not only task-level ones."""
+    from uuid import uuid4
+    from app.crud.crud_metadata import topic, work_type
+    from sqlalchemy.dialects import postgresql
+
+    captured = []
+
+    class FakeDb:
+        async def execute(self, stmt):
+            captured.append(str(stmt.compile(dialect=postgresql.dialect())))
+
+            class R:
+                def scalars(self):
+                    return self
+
+                def all(self):
+                    return []
+            return R()
+
+    import asyncio
+    for crud in (topic, work_type):
+        captured.clear()
+        asyncio.run(crud.get_multi_scoped(FakeDb(), project_id=uuid4(), task_id=uuid4(), include_global=False))
+        sql = captured[0]
+        assert "task_id IS NULL" in sql and "task_id = " in sql, sql

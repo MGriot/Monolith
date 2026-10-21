@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import Field
 
+from app.api.api_v1.endpoints import activity as activity_api
 from app.api.api_v1.endpoints import tasks as tasks_api
 from app.core.enums import DependencyType
 from app.mcp.context import build, call
@@ -159,3 +160,9 @@ async def get_critical_path(project_id: UUID) -> dict[str, Any]:
         ],
         "slack": slack,
     }
+
+
+@mcp.tool()
+async def get_task_activity(task_id: UUID, limit: Annotated[int, Field(ge=1, le=500)] = 50) -> list[dict[str, Any]]:
+    """One task's change log, newest first (status changes, edits, assignments, dependencies, with who did them)."""
+    return await call(activity_api.read_task_activity, task_id=task_id, limit=limit, before=None)

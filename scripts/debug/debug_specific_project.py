@@ -1,5 +1,14 @@
 from playwright.sync_api import sync_playwright
 import time
+import os
+
+# Settings come from the environment, never from this file:
+#   BASE_URL (default http://localhost:5173), MONOLITH_EMAIL, MONOLITH_PASSWORD
+BASE = os.environ.get("BASE_URL", "http://localhost:5173").rstrip("/")
+EMAIL = os.environ.get("MONOLITH_EMAIL", "")
+PASSWORD = os.environ.get("MONOLITH_PASSWORD", "")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+os.makedirs(OUT, exist_ok=True)
 
 def run():
     with sync_playwright() as p:
@@ -13,14 +22,14 @@ def run():
 
         try:
             print("Logging in...")
-            page.goto('http://localhost:5173/login')
-            page.fill('id=email', 'admin@admin.com')
-            page.fill('id=password', 'admin123')
+            page.goto(BASE + '/login')
+            page.fill('id=email', EMAIL)
+            page.fill('id=password', PASSWORD)
             page.click('button[type="submit"]')
             
             time.sleep(3)
             
-            project_url = 'http://localhost:5173/projects/7b012d55-86bc-4376-8c4d-e7336f86875e'
+            project_url = BASE + '/projects/' + os.environ["PROJECT_ID"]
             print(f"Navigating to specific project: {project_url}")
             page.goto(project_url)
             time.sleep(5)
@@ -43,7 +52,7 @@ def run():
                     print(log)
                 
                 # Take a screenshot to see the 'blank page' state
-                page.screenshot(path='task_click_error.png', full_page=True)
+                page.screenshot(path=os.path.join(OUT, 'task_click_error.png'), full_page=True)
                 print("Screenshot saved as task_click_error.png")
                 
                 # Inspect the dialog content

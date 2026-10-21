@@ -21,7 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { TaxonomyChips } from '@/components/taxonomy-chips';
 import { GripVertical, Calendar, ArrowRight } from 'lucide-react';
 import { cn, formatPercent } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -217,11 +217,7 @@ function ProjectCard({ project, isDragging, dragProps, onClick }: { project: Pro
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h4 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">{project.name}</h4>
-            <div className="flex flex-wrap gap-1 mt-1.5">
-                {project.topics?.map(t => (
-                    <Badge key={t.id} variant="secondary" className="text-[11px] px-1 py-0 h-3.5 bg-muted text-fg-soft border-none uppercase font-semibold">{t.name}</Badge>
-                ))}
-            </div>
+            <TaxonomyChips topics={project.topics} types={project.types} max={3} className="mt-1.5" />
           </div>
           <div {...dragProps} className="cursor-grab active:cursor-grabbing text-fg-ghost group-hover:text-fg-faint shrink-0 p-1">
             <GripVertical className="w-4 h-4" />

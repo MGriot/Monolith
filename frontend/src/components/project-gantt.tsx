@@ -20,7 +20,7 @@ import {
   subDays,
   addDays
 } from 'date-fns';
-import { toPng } from 'html-to-image';
+import { exportFullElement } from '@/lib/export-image';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -388,22 +388,16 @@ export default function ProjectGantt({
   const exportGantt = async () => {
     if (!ganttRef.current) return;
     setIsExporting(true);
+    let toastId: string | number | undefined;
     try {
-      const dataUrl = await toPng(ganttRef.current, {
-        backgroundColor: '#ffffff',
-        pixelRatio: 3,
-        style: { overflow: 'visible' }
-      });
-      const link = document.createElement('a');
-      link.download = `gantt-export-${format(new Date(), 'yyyy-MM-dd')}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success('Gantt exported as high-DPI PNG');
+      // The inner element has the chart's full width; the ref is only its scrolling window.
+      const chart = (ganttRef.current.firstElementChild as HTMLElement | null) ?? ganttRef.current;
+      toastId = toast.loading('Preparing the whole Gantt as an image…');
+      const { width, height } = await exportFullElement(chart, `gantt-export-${format(new Date(), 'yyyy-MM-dd')}.png`);
+      toast.success(`Gantt exported (${width} × ${height} px, including the parts out of view)`, { id: toastId });
     } catch (err) {
       console.error(err);
-      toast.error('Failed to export Gantt');
+      toast.error('Failed to export Gantt', { id: toastId });
     } finally {
       setIsExporting(false);
     }

@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TaxonomyChips } from '@/components/taxonomy-chips';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -236,7 +237,7 @@ export default function ProjectsListPage() {
               <TableHeader>
                 <TableRow className="bg-subtle/50">
                   <TableHead className="w-[300px]">Project Name</TableHead>
-                  <TableHead>Topic & Type</TableHead>
+                  <TableHead className="whitespace-nowrap">Topic & type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead className="w-[200px]">Progress</TableHead>
@@ -247,7 +248,7 @@ export default function ProjectsListPage() {
               <TableBody>
                 {projects?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <p>No projects found. Create one to get started.</p>
                         <Button variant="outline" size="sm" onClick={() => setIsCreateDialogOpen(true)}>
@@ -268,18 +269,12 @@ export default function ProjectsListPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <div className="flex flex-wrap gap-1 max-w-[150px]">
-                            {project.topics && project.topics.length > 0 ? project.topics.map(t => (
-                              <Badge key={t.id} variant="secondary" className="text-[11px] px-1 py-0 h-3.5 bg-muted text-fg-soft border-none">{t.name}</Badge>
-                            )) : <span className="text-xs font-medium text-fg-body">{project.topic || 'General'}</span>}
-                          </div>
-                          <div className="flex flex-wrap gap-1 max-w-[150px]">
-                            {project.types && project.types.length > 0 ? project.types.map(t => (
-                              <Badge key={t.id} variant="outline" className="text-[11px] px-1 py-0 h-3.5 border-border text-muted-foreground">{t.name}</Badge>
-                            )) : <span className="text-[11px] text-muted-foreground capitalize">{project.type || 'Standard'}</span>}
-                          </div>
-                        </div>
+                        <TaxonomyChips
+                          topics={project.topics}
+                          types={project.types}
+                          fallback={[project.topic || 'General', project.type || 'Standard'].join(' · ')}
+                          className="min-w-[10rem] max-w-[16rem]"
+                        />
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize bg-subtle">

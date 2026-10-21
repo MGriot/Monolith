@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from app.api import deps
 from app.api.access import EDITOR, has_task_access, require_project_access, require_task_access
+from app.core import activity
 from app.core.uploads import save_upload
 from app.crud import crud_task, crud_project, crud_dependency, crud_custom_field
 from app.schemas.task import (
@@ -426,6 +427,13 @@ async def upload_task_attachment(
     task_obj = await crud_task.task.update(db=db, db_obj=task_obj, obj_in={"attachments": attachments})
     return task_obj
 
+async def _titles(db: AsyncSession, *ids: UUID) -> dict:
+    from app.models.task import Task as TaskModel
+
+    rows = await db.execute(select(TaskModel.id, TaskModel.title).where(TaskModel.id.in_(ids)))
+    return {r.id: r.title for r in rows}
+
+
 @router.post("/{task_id}/dependencies", response_model=Dependency)
 async def create_task_dependency(
     task_id: UUID,
@@ -447,9 +455,16 @@ async def create_task_dependency(
          
     try:
         dep = await crud_dependency.dependency.create(db, obj_in=dependency_in)
-        return dep
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    titles = await _titles(db, task_obj.id, predecessor.id)
+    kind = getattr(dependency_in.type, "value", dependency_in.type)
+    lag = f", {dependency_in.lag_days:+d} d" if dependency_in.lag_days else ""
+    activity.record(db, project_id=task_obj.project_id, task_id=task_obj.id, task_title=titles.get(task_obj.id),
+                    kind="dependency_added",
+                    summary=f"made it depend on “{titles.get(predecessor.id, 'a task')}” ({kind}{lag})",
+                    changes={"predecessor": [None, str(predecessor.id)]})
+    return dep
 
 @router.delete("/{task_id}/dependencies/{predecessor_id}", response_model=List[Dependency])
 async def delete_task_dependency(
@@ -461,7 +476,7 @@ async def delete_task_dependency(
     """
     Remove a dependency from a task.
     """
-    await require_task_access(db, task_id, current_user, write=True)
+    task_obj = await require_task_access(db, task_id, current_user, write=True)
     result = await db.execute(
         select(DependencyModel).filter(
             and_(
@@ -475,6 +490,11 @@ async def delete_task_dependency(
         raise HTTPException(status_code=404, detail="Dependency not found")
         
     await crud_dependency.dependency.remove(db, id=dep.id)
+    titles = await _titles(db, task_id, predecessor_id)
+    activity.record(db, project_id=task_obj.project_id, task_id=task_id, task_title=titles.get(task_id),
+                    kind="dependency_removed",
+                    summary=f"no longer depends on “{titles.get(predecessor_id, 'a task')}”",
+                    changes={"predecessor": [str(predecessor_id), None]})
     
     remaining = await crud_dependency.dependency.get_by_successor(db, successor_id=task_id)
     return remaining

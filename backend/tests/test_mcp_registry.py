@@ -35,11 +35,11 @@ EXPECTED = {
     # projects & members
     "list_projects", "get_project", "create_project", "update_project", "archive_project", "restore_project",
     "delete_project", "get_project_statistics", "export_project_json", "list_project_members",
-    "set_project_member_role", "remove_project_member", "get_portfolio_health",
+    "set_project_member_role", "remove_project_member", "get_portfolio_health", "get_project_activity",
     # tasks
     "list_tasks", "get_task", "create_task", "update_task", "update_task_status", "bulk_update_tasks",
     "archive_task", "restore_task", "delete_task", "list_archived_tasks", "list_my_tasks",
-    "add_dependency", "remove_dependency", "get_critical_path",
+    "add_dependency", "remove_dependency", "get_critical_path", "get_task_activity",
     # time, fields, automations
     "start_timer", "stop_timer", "get_running_timer", "log_time", "update_time_entry", "delete_time_entry",
     "get_task_time", "get_timesheet", "list_custom_fields", "create_custom_field", "update_custom_field",

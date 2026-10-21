@@ -51,6 +51,7 @@ jobs:
           tests/test_mcp_tokens.py
           tests/test_whiteboard_rooms.py
           tests/test_whiteboard_previews.py
+          tests/test_activity.py
       - name: Generated guide sections are up to date
         run: python scripts/docs/gen_reference.py --check
       - name: Dependencies have no known vulnerabilities

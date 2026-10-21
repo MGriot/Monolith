@@ -3,7 +3,7 @@ from app.api.api_v1.endpoints import (
     login, users, projects, tasks, subtasks, notifications, calendar, 
     dashboard, metadata, templates, teams, ideas, workflows, 
     comments, whiteboards, search, webhooks, folders, time_entries, custom_fields,
-    auth, outbox, automations
+    auth, outbox, automations, activity
 )
 
 api_router = APIRouter()
@@ -26,6 +26,7 @@ api_router.include_router(comments.router, prefix="/comments", tags=["comments"]
 api_router.include_router(folders.router, prefix="/folders", tags=["folders"])
 api_router.include_router(search.router, prefix="/search", tags=["search"])
 api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
+api_router.include_router(activity.router, tags=["activity"])
 api_router.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 api_router.include_router(subtasks.router, prefix="/subtasks", tags=["subtasks"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])

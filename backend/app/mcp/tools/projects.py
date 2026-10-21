@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import Field
 
+from app.api.api_v1.endpoints import activity as activity_api
 from app.api.api_v1.endpoints import custom_fields as fields_api
 from app.api.api_v1.endpoints import projects as projects_api
 from app.api.api_v1.endpoints import tasks as tasks_api
@@ -112,3 +113,17 @@ async def remove_project_member(project_id: UUID, user_id: UUID) -> dict[str, An
 async def get_portfolio_health() -> dict[str, Any]:
     """Health score, risk level and overdue counts for every active project you can see."""
     return await call(projects_api.get_portfolio_health)
+
+
+@mcp.tool()
+async def get_project_activity(
+    project_id: UUID,
+    limit: Annotated[int, Field(ge=1, le=500)] = 50,
+    kind: Annotated[str | None, Field(description="Only one kind: created, updated, status_changed, assigned, "
+                                                  "archived, restored, deleted, dependency_added, dependency_removed")] = None,
+) -> list[dict[str, Any]]:
+    """The project's change log, newest first: who created, edited, moved, assigned or deleted which task.
+
+    `actor` is the person; `actor_label` names automatic changes ("Automation: <rule>", "Automatic (from subtasks)").
+    """
+    return await call(activity_api.read_project_activity, project_id=project_id, limit=limit, before=None, kind=kind)

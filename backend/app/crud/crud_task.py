@@ -7,6 +7,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.orm.attributes import set_committed_value
 
+from app.core import activity
 from app.crud.base import CRUDBase
 from app.models.task import Task
 from app.models.metadata import Topic, WorkType
@@ -244,7 +245,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         if parent.status != new_status:
             # Use direct update to avoid triggering another loop if not needed, 
             # but we NEED to bubble up, so we call update which calls this again.
-            await self.update(db, db_obj=parent, obj_in={"status": new_status})
+            with activity.acting_as(activity.ROLLUP_LABEL):
+                await self.update(db, db_obj=parent, obj_in={"status": new_status})
             # The .update() call will handle the next level up if parent.parent_id exists.
 
     async def is_blocked_by_recursive(self, db: AsyncSession, item_id: UUID, blocker_candidate_id: UUID, visited: set) -> bool:
@@ -364,6 +366,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         db.add(db_obj)
         await commit(db)
         await db.refresh(db_obj)
+        activity.record(db, project_id=db_obj.project_id, task_id=db_obj.id, task_title=db_obj.title,
+                        kind="created", summary="created the task")
         
         # Handle recursive subtasks
         if subtasks_data:
@@ -465,6 +469,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         old_parent_id = db_obj.parent_id
         old_status = _enum_val(db_obj.status)
         added_assignee_ids: List[UUID] = []
+        before = activity.snapshot(db_obj)
         
         if isinstance(obj_in, TaskUpdate):
             obj_data = obj_in.dict(exclude_unset=True)
@@ -543,8 +548,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if await is_descendant(new_p_id, db_obj.id):
                 raise ValueError("Cannot set a descendant as a parent (circular hierarchy)")
 
-        # 8. Call base update for remaining fields
+        # 8. Call base update for remaining fields (relations are read now: the refresh below unloads them)
+        rel_after = {k: v for k, v in activity.snapshot(db_obj).items() if k in ("assignees", "topics", "types")}
         db_obj = await super().update(db, db_obj=db_obj, obj_in=obj_data)
+        activity.record_diff(db, db_obj, before, {**activity.snapshot(db_obj), **rel_after})
         
         # 9. Post-update bubbles
         if old_parent_id:
@@ -649,6 +656,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             
         parent_id = db_obj.parent_id
         project_id = db_obj.project_id
+        activity.record(db, project_id=project_id, task_id=db_obj.id, task_title=db_obj.title,
+                        kind="deleted", summary="deleted the task")
         
         obj = await super().remove(db, id=id)
         

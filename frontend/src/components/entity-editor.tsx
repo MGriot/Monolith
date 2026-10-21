@@ -43,7 +43,7 @@ interface EntityEditorProps {
 }
 
 const tabTriggerClass =
-  "relative h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2.5 text-xs font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none";
+  "relative h-9 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2.5 text-xs font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none";
 
 /**
  * Two-pane editor shared by tasks and projects: title, description and tabbed sections on the left,
@@ -78,7 +78,8 @@ export function EntityEditor({
       className={cn("flex flex-col", !isPage && "min-h-0 md:col-start-1 md:row-start-2")}
     >
       <div className={cn("shrink-0 border-b", isPage ? "px-5" : "px-6")}>
-        <TabsList className="scrollbar-hide h-auto w-full justify-start gap-0.5 overflow-x-auto rounded-none bg-transparent p-0">
+        {/* Tabs wrap onto a second row instead of scrolling out of sight (nine task tabs do not fit a dialog). */}
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-x-0.5 gap-y-0 rounded-none bg-transparent p-0">
           {tabs.map((tab) => (
             <TabsTrigger
               key={tab.value}
@@ -87,7 +88,7 @@ export function EntityEditor({
               title={tab.disabled ? tab.disabledReason : undefined}
               className={tabTriggerClass}
             >
-              {tab.icon} {tab.label}
+              {tab.icon && <span className={cn("contents", !isPage && "max-lg:[&>svg]:hidden")}>{tab.icon}</span>} {tab.label}
               {tab.badge !== undefined && tab.badge !== null && tab.badge !== "" && (
                 <span className="rounded-full bg-muted px-1.5 text-[11px] font-normal leading-4 tabular-nums text-fg-soft">{tab.badge}</span>
               )}

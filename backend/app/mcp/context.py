@@ -17,6 +17,7 @@ from mcp.server.fastmcp.exceptions import ToolError
 from pydantic import TypeAdapter, ValidationError
 
 from app.api import deps
+from app.core.activity import set_actor
 from app.core.mcp_tokens import mcp_token_hash, resolve_token_hash
 from app.db.session import AsyncSessionLocal
 from app.models.user import User
@@ -106,6 +107,7 @@ async def call(endpoint: Callable, **kwargs: Any) -> Any:
     route = routes_by_endpoint().get(endpoint)
     async with AsyncSessionLocal() as db:
         user = await acting_user(db)
+        set_actor(db, user.id)
         args = _inject(endpoint, db, user, kwargs)
         try:
             result = endpoint(**args)
@@ -126,6 +128,7 @@ async def with_user(fn: Callable) -> Any:
     """Run `await fn(db, user)` for the few tools that have no REST twin."""
     async with AsyncSessionLocal() as db:
         user = await acting_user(db)
+        set_actor(db, user.id)
         try:
             result = await fn(db, user)
             await db.commit()

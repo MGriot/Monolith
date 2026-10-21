@@ -21,6 +21,7 @@
 <!-- BEGIN:toc -->
 <span class="eyebrow">On this page</span>
 <a href="#comments">Comments</a>
+<a href="#activity-log">Activity and change log</a>
 <a href="#ideas">Ideas Hub</a>
 <a href="#sketches">Sketches (Excalidraw)</a>
 <a href="#file-hub">File Hub</a>
@@ -39,7 +40,34 @@
   <section id="comments">
     <span class="eyebrow">Discussion</span>
     <h2>Comments</h2>
-    <p class="prose">Projects (<span class="ui">Activity</span> tab), tasks (editor) and ideas each have a discussion. Messages are Markdown with links and images: attach a file, or pick an image from the project's <span class="ui">Gallery</span>, which includes every sketch preview. Comments can be threaded (<code>parent_id</code>), which the API and MCP expose; replies come back nested. Authors edit and delete their own comments, project admins any. Editors and above can comment; viewers read.</p>
+    <p class="prose">Projects (<span class="ui">Activity</span> tab), tasks (the editor's <span class="ui">Activity</span> tab) and ideas each have a discussion. Messages are Markdown with links and images: attach a file, or pick an image from the project's <span class="ui">Gallery</span>, which includes every sketch preview.</p>
+    <ul class="prose">
+      <li>Hover a message for <span class="ui">Reply</span>, <span class="ui">Edit</span> and <span class="ui">Delete</span> (on your own messages). The buttons stay hidden, and cannot be clicked by accident, until you hover or tab to the message; on touch screens they are always shown.</li>
+      <li>Replies are threaded under the message they answer. Deleting a message deletes its replies.</li>
+      <li>Editing opens the editor in place; <kbd>Esc</kbd> or <span class="ui">Cancel</span> leaves without saving. If saving fails, your text stays in the editor.</li>
+      <li>Messages older than today show their date; edited messages say "(edited)". New messages from others appear within half a minute.</li>
+      <li>Editors and above can comment; viewers read. Project admins may delete any message.</li>
+    </ul>
+  </section>
+
+  <section id="activity-log">
+    <span class="eyebrow">History</span>
+    <h2>Activity and change log</h2>
+    <p class="prose">Every change to a task is written down as a plain sentence with who made it, in the same transaction as the change itself. The project's <span class="ui">Activity</span> tab weaves these lines into the discussion, and <span class="ui">All</span> / <span class="ui">Comments</span> / <span class="ui">Changes</span> filter them. A task's own <span class="ui">Activity</span> tab shows just that task.</p>
+    <figure class="shot"><img src="../img/guide/activity.webp" alt="Project activity: change lines and comments in one timeline" loading="lazy" width="1440" height="900"><figcaption>Change lines (who, what, on which task) and messages in one timeline. Click a task name to open it.</figcaption></figure>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Recorded</th><th>Example line</th></tr></thead>
+      <tbody>
+        <tr><td>created, deleted</td><td>Sam Rivera created the task · deleted the task (the line keeps the task's name)</td></tr>
+        <tr><td>status</td><td>Sam Rivera changed status Todo → In Progress</td></tr>
+        <tr><td>fields</td><td>Sam Rivera changed due date 19 Oct 2026 → 23 Oct 2026; budget 21,000 → 24,000; edited the description</td></tr>
+        <tr><td>assignment</td><td>You assigned Sam Rivera; unassigned Ana</td></tr>
+        <tr><td>archive</td><td>You archived the task · restored the task</td></tr>
+        <tr><td>dependencies</td><td>You made it depend on "Provision landing zone" (SS, +2 d) · no longer depends on …</td></tr>
+        <tr><td>automatic</td><td><b>Automation: Notify reviewers</b> changed priority High → Critical · <b>Automatic (from subtasks)</b> changed status Todo → In Progress</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose">Changes are credited to whoever made them, whether in the app, through the API or through MCP (the token's owner). Changes made by automation rules and by the status roll-up are labelled instead of being credited to a person. The log belongs to the project: anyone with a role can read it, and it is deleted with the project. API: <code>GET /api/v1/projects/{id}/activity</code>, <code>GET /api/v1/tasks/{id}/activity</code>. MCP: <code>get_project_activity</code>, <code>get_task_activity</code>.</p>
   </section>
 
   <section id="ideas">
@@ -51,6 +79,7 @@
       <li><div><b>Decide</b>: project admins set Approved or Rejected.</div></li>
       <li><div><b>Promote</b> to a task in the project, or to a new project of its own. The idea becomes Converted and links to the result.</div></li>
     </ol>
+    <figure class="shot"><img src="../img/guide/ideas.webp" alt="Ideas Hub with votes and statuses" loading="lazy" width="1440" height="900"><figcaption><span class="ui">Ideas</span>: proposals with their votes and status.</figcaption></figure>
   </section>
 
   <section id="sketches">
@@ -78,6 +107,8 @@
     <p class="prose">Every sketch has a thumbnail in the File Hub, in task attachments and in the comment image picker. The editor exports a PNG when you save, and the leader of a live room (the editor who joined first) refreshes it after ten quiet seconds. Sketches written without a browser (MCP, imports) get an SVG rendered by the server. Previews are files under <code>/uploads/previews/</code>; whiteboard lists return only their URL, never the scene.</p>
     <h3>Export</h3>
     <p class="prose">From a task, <span class="ui">Export to Task</span> attaches the sketch as a PNG.</p>
+    <figure class="shot"><img src="../img/guide/sketch-live.webp" alt="A sketch open by two people, with the other person's labelled pointer" loading="lazy" width="1440" height="900"><figcaption>Two people on one sketch: Sam's pointer shows in his colour and the chip reads "Live · 1 other".</figcaption></figure>
+    <figure class="shot"><img src="../img/guide/share-dialog.webp" alt="Share dialog with link, people here now, and members with roles" loading="lazy" width="1440" height="900"><figcaption><span class="ui">Share</span>: the link, who is here now, and the project's members and roles.</figcaption></figure>
   </section>
 
   <section id="file-hub">
@@ -105,6 +136,8 @@
       </tbody>
     </table></div>
     <div class="callout warn"><b>Careful</b><p>Files under <code>/uploads</code> are served to anyone who has the URL; names are random UUIDs, so they cannot be guessed. Uploads that could execute in a browser (HTML, JS, SVGZ…) are refused, and SVG is served as a download with a sandbox policy.</p></div>
+    <figure class="shot"><img src="../img/guide/file-hub-files.webp" alt="File Hub folder with an .excalidraw file preview and a Markdown note" loading="lazy" width="1440" height="900"><figcaption>A folder with an uploaded <code>.excalidraw</code> file (its drawing as the thumbnail) and a note (its first lines).</figcaption></figure>
+    <figure class="shot"><img src="../img/guide/file-hub-sketches.webp" alt="Sketches view with a preview thumbnail" loading="lazy" width="1440" height="900"><figcaption><span class="ui">Sketches</span>: every sketch of the project with its preview.</figcaption></figure>
   </section>
 
   <section id="notifications">
