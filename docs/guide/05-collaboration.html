@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collaboration · Monolith Guide</title>
+<meta name="description" content="Comments, the Ideas Hub, real-time Excalidraw sketches with sharing, the File Hub with previews, notifications and e-mail in Monolith.">
+<link rel="icon" href="assets/monolith.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/guide.css">
+<script src="assets/guide.js" defer></script>
+</head>
+<body style="--chapter: '5.'">
+<!-- BEGIN:topbar -->
+<header class="topbar"><div class="topbar-in"><a class="brand" href="index.html"><img src="assets/monolith.svg" alt="" width="22" height="22">Monolith Guide</a><nav class="chapters" aria-label="Chapters"><a href="index.html">Overview</a><a href="01-getting-started.html"><b>1</b>Getting started</a><a href="02-concepts.html"><b>2</b>Concepts</a><a href="03-projects-and-tasks.html"><b>3</b>Projects &amp; tasks</a><a href="04-planning-views.html"><b>4</b>Planning views</a><a href="05-collaboration.html" aria-current="page"><b>5</b>Collaboration</a><a href="06-tracking.html"><b>6</b>Tracking</a><a href="07-automation.html"><b>7</b>Automation</a><a href="08-administration.html"><b>8</b>Administration</a><a href="09-mcp.html"><b>9</b>MCP</a><a href="10-api-reference.html"><b>10</b>API reference</a><a href="11-troubleshooting.html"><b>11</b>Troubleshooting</a></nav><button type="button" class="theme-btn">Dark mode</button></div></header>
+<!-- END:topbar -->
+<div class="shell">
+<nav class="toc" aria-label="On this page">
+<!-- BEGIN:toc -->
+<span class="eyebrow">On this page</span>
+<a href="#comments">Comments</a>
+<a href="#activity-log">Activity and change log</a>
+<a href="#ideas">Ideas Hub</a>
+<a href="#sketches">Sketches (Excalidraw)</a>
+<a href="#file-hub">File Hub</a>
+<a href="#notifications">Notifications</a>
+<a href="#email">E-mail</a>
+<!-- END:toc -->
+</nav>
+<main class="doc">
+  <header class="prose">
+    <span class="eyebrow">Chapter 5</span>
+    <h1>Collaboration</h1>
+    <p class="lede">Talking about the work next to the work: threaded comments, an ideas pipeline, sketches that several people draw on at
+      once, a file hub that shows what is inside each file, and notifications that reach people where they are.</p>
+  </header>
+
+  <section id="comments">
+    <span class="eyebrow">Discussion</span>
+    <h2>Comments</h2>
+    <p class="prose">Projects (<span class="ui">Activity</span> tab), tasks (the editor's <span class="ui">Activity</span> tab) and ideas each have a discussion. Messages are Markdown with links and images: attach a file, or pick an image from the project's <span class="ui">Gallery</span>, which includes every sketch preview.</p>
+    <ul class="prose">
+      <li>Hover a message for <span class="ui">Reply</span>, <span class="ui">Edit</span> and <span class="ui">Delete</span> (on your own messages). The buttons stay hidden, and cannot be clicked by accident, until you hover or tab to the message; on touch screens they are always shown.</li>
+      <li>Replies are threaded under the message they answer. Deleting a message deletes its replies.</li>
+      <li>Editing opens the editor in place; <kbd>Esc</kbd> or <span class="ui">Cancel</span> leaves without saving. If saving fails, your text stays in the editor.</li>
+      <li>Messages older than today show their date; edited messages say "(edited)". New messages from others appear within half a minute.</li>
+      <li>Editors and above can comment; viewers read. Project admins may delete any message.</li>
+    </ul>
+  </section>
+
+  <section id="activity-log">
+    <span class="eyebrow">History</span>
+    <h2>Activity and change log</h2>
+    <p class="prose">Every change to a task is written down as a plain sentence with who made it, in the same transaction as the change itself. The project's <span class="ui">Activity</span> tab weaves these lines into the discussion, and <span class="ui">All</span> / <span class="ui">Comments</span> / <span class="ui">Changes</span> filter them. A task's own <span class="ui">Activity</span> tab shows just that task.</p>
+    <figure class="shot"><img src="../img/guide/activity.webp" alt="Project activity: change lines and comments in one timeline" loading="lazy" width="1440" height="900"><figcaption>Change lines (who, what, on which task) and messages in one timeline. Click a task name to open it.</figcaption></figure>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Recorded</th><th>Example line</th></tr></thead>
+      <tbody>
+        <tr><td>created, deleted</td><td>Sam Rivera created the task · deleted the task (the line keeps the task's name)</td></tr>
+        <tr><td>status</td><td>Sam Rivera changed status Todo → In Progress</td></tr>
+        <tr><td>fields</td><td>Sam Rivera changed due date 19 Oct 2026 → 23 Oct 2026; budget 21,000 → 24,000; edited the description</td></tr>
+        <tr><td>assignment</td><td>You assigned Sam Rivera; unassigned Ana</td></tr>
+        <tr><td>archive</td><td>You archived the task · restored the task</td></tr>
+        <tr><td>dependencies</td><td>You made it depend on "Provision landing zone" (SS, +2 d) · no longer depends on …</td></tr>
+        <tr><td>automatic</td><td><b>Automation: Notify reviewers</b> changed priority High → Critical · <b>Automatic (from subtasks)</b> changed status Todo → In Progress</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose">Changes are credited to whoever made them, whether in the app, through the API or through MCP (the token's owner). Changes made by automation rules and by the status roll-up are labelled instead of being credited to a person. The log belongs to the project: anyone with a role can read it, and it is deleted with the project. API: <code>GET /api/v1/projects/{id}/activity</code>, <code>GET /api/v1/tasks/{id}/activity</code>. MCP: <code>get_project_activity</code>, <code>get_task_activity</code>.</p>
+  </section>
+
+  <section id="ideas">
+    <span class="eyebrow">Pipeline</span>
+    <h2>Ideas Hub</h2>
+    <ol class="steps">
+      <li><div><b>Propose</b> an idea on a project (optionally about one task) from <span class="ui">Ideas</span> or the project's <span class="ui">Ideas</span> tab.</div></li>
+      <li><div><b>Vote</b> up or down; voting again the same way removes your vote. Ideas sort by score.</div></li>
+      <li><div><b>Decide</b>: project admins set Approved or Rejected.</div></li>
+      <li><div><b>Promote</b> to a task in the project, or to a new project of its own. The idea becomes Converted and links to the result.</div></li>
+    </ol>
+    <figure class="shot"><img src="../img/guide/ideas.webp" alt="Ideas Hub with votes and statuses" loading="lazy" width="1440" height="900"><figcaption><span class="ui">Ideas</span>: proposals with their votes and status.</figcaption></figure>
+  </section>
+
+  <section id="sketches">
+    <span class="eyebrow">Real time</span>
+    <h2>Sketches (Excalidraw)</h2>
+    <p class="prose">Sketches are Excalidraw whiteboards that belong to a project and optionally a task. Create one from <span class="ui">File Hub</span> › <span class="ui">New</span> › <span class="ui">Sketch</span>, or from a task's attachments; open it full-screen from the File Hub's <span class="ui">Sketches</span> view.</p>
+    <h3>Drawing together</h3>
+    <p class="prose">As soon as a sketch has been saved once, everyone who opens it joins its <b>live room</b>:</p>
+    <ul class="prose">
+      <li>Edits appear for the others within a fraction of a second. Changes merge element by element with Excalidraw's own rule (newer version wins), so two people editing different shapes never overwrite each other.</li>
+      <li>Everyone's <b>pointer</b> and name show in their own colour; the toolbar chip reads <span class="ui">Live · 2 others</span>. The collaborators are the real signed-in members, nobody else.</li>
+      <li>The room <b>saves automatically</b> a few seconds after the last change and when the last person leaves. <span class="ui">Save</span> is still there to rename the sketch or force a save.</li>
+      <li><b>Viewers</b> follow along in view-only mode (<span class="ui">View only</span> badge); the server refuses edits from them. Roles are re-checked every few seconds: someone demoted to viewer drops to view-only, someone removed from the project is disconnected.</li>
+      <li>If the connection drops, the chip shows <span class="ui">Offline</span> and the editor reconnects with backoff, then merges what changed meanwhile.</li>
+    </ul>
+    <h3>Sharing</h3>
+    <p class="prose"><span class="ui">Share</span> (or the live-collaboration button in the canvas) opens the share dialog:</p>
+    <ul class="prose">
+      <li>a link for project members to copy,</li>
+      <li><b>Here now</b>: who is connected, with their colour and role,</li>
+      <li>the project's members and roles; project admins add any existing user as viewer or editor, or change and remove roles, right there.</li>
+    </ul>
+    <div class="callout note"><b>Note</b><p>Access to a sketch is access to its project: there are no separate sketch permissions to forget. Adding someone as a viewer lets them watch; editor lets them draw.</p></div>
+    <h3>Previews</h3>
+    <p class="prose">Every sketch has a thumbnail in the File Hub, in task attachments and in the comment image picker. The editor exports a PNG when you save, and the leader of a live room (the editor who joined first) refreshes it after ten quiet seconds. Sketches written without a browser (MCP, imports) get an SVG rendered by the server. Previews are files under <code>/uploads/previews/</code>; whiteboard lists return only their URL, never the scene.</p>
+    <h3>Export</h3>
+    <p class="prose">From a task, <span class="ui">Export to Task</span> attaches the sketch as a PNG.</p>
+    <figure class="shot"><img src="../img/guide/sketch-live.webp" alt="A sketch open by two people, with the other person's labelled pointer" loading="lazy" width="1440" height="900"><figcaption>Two people on one sketch: Sam's pointer shows in his colour and the chip reads "Live · 1 other".</figcaption></figure>
+    <figure class="shot"><img src="../img/guide/share-dialog.webp" alt="Share dialog with link, people here now, and members with roles" loading="lazy" width="1440" height="900"><figcaption><span class="ui">Share</span>: the link, who is here now, and the project's members and roles.</figcaption></figure>
+  </section>
+
+  <section id="file-hub">
+    <span class="eyebrow">Files</span>
+    <h2>File Hub</h2>
+    <p class="prose">Each project (and each task) has a File Hub: nested folders, uploaded files up to <code>MAX_UPLOAD_MB</code> (50 MB by default), Markdown notes and the project's sketches.</p>
+    <ul class="prose">
+      <li><b>Upload</b> by dropping files anywhere on the hub, or with <span class="ui">New</span> › <span class="ui">Upload</span>; an upload tray shows progress and retries.</li>
+      <li><b>Organise</b>: drag files and folders onto folders or breadcrumbs, rename inline, tag files with topics, switch grid and list.</li>
+      <li><b>Find</b>: the side navigation filters by kind (images, PDFs, documents, spreadsheets, presentations, notes, sketch files, archives, media).</li>
+      <li><b>Notes</b> are written and previewed as Markdown in place.</li>
+    </ul>
+    <h3>Previews</h3>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Kind</th><th>Thumbnail</th><th>Preview dialog</th></tr></thead>
+      <tbody>
+        <tr><td>Images</td><td>the image</td><td>full size</td></tr>
+        <tr><td>Sketches</td><td>saved preview</td><td>opens the live editor</td></tr>
+        <tr><td><code>.excalidraw</code> files</td><td>scene rendered in the browser</td><td>full drawing, plus <span class="ui">Open as sketch</span> to import it as a project sketch</td></tr>
+        <tr><td>PDF</td><td>type badge</td><td>embedded viewer</td></tr>
+        <tr><td>CSV, XLSX</td><td>type badge</td><td>table</td></tr>
+        <tr><td>DOCX</td><td>type badge</td><td>rendered document</td></tr>
+        <tr><td>TXT, LOG, SQL, JSON, MSG, EML</td><td>type badge</td><td>text</td></tr>
+        <tr><td>Notes</td><td>first lines</td><td>Markdown</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout warn"><b>Careful</b><p>Files under <code>/uploads</code> are served to anyone who has the URL; names are random UUIDs, so they cannot be guessed. Uploads that could execute in a browser (HTML, JS, SVGZ…) are refused, and SVG is served as a download with a sandbox policy.</p></div>
+    <figure class="shot"><img src="../img/guide/file-hub-files.webp" alt="File Hub folder with an .excalidraw file preview and a Markdown note" loading="lazy" width="1440" height="900"><figcaption>A folder with an uploaded <code>.excalidraw</code> file (its drawing as the thumbnail) and a note (its first lines).</figcaption></figure>
+    <figure class="shot"><img src="../img/guide/file-hub-sketches.webp" alt="Sketches view with a preview thumbnail" loading="lazy" width="1440" height="900"><figcaption><span class="ui">Sketches</span>: every sketch of the project with its preview.</figcaption></figure>
+  </section>
+
+  <section id="notifications">
+    <span class="eyebrow">Inbox</span>
+    <h2>Notifications</h2>
+    <p class="prose">The bell shows unread notifications in real time over a websocket (assignments, automation messages and deadline reminders). <span class="ui">Notifications</span> lists them all with filters by type and read state; mark one or all as read, or mark unread again.</p>
+  </section>
+
+  <section id="email">
+    <span class="eyebrow">Mail</span>
+    <h2>E-mail</h2>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Mail</th><th>Sent when</th><th>To</th></tr></thead>
+      <tbody>
+        <tr><td>Password reset</td><td><span class="ui">Forgot your password?</span> on the login page</td><td>active accounts (the answer is the same for unknown addresses)</td></tr>
+        <tr><td>Address verification</td><td><span class="ui">Settings</span> › <span class="ui">Notifications</span>, and after changing the address</td><td>you</td></tr>
+        <tr><td>Assignment</td><td>someone assigns you a task</td><td>if <i>Assignments and deadline reminders</i> is on</td></tr>
+        <tr><td>Deadline reminder</td><td>daily 07:00 UTC, tasks due within 48 h</td><td>assignees with that preference</td></tr>
+        <tr><td>Weekly digest</td><td>Monday 08:00 UTC: personal summary, team and project reports</td><td>if <i>Weekly digest</i> is on</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose">Preferences live in <span class="ui">Settings</span> › <span class="ui">Notifications</span>; in-app notifications are unaffected. Operating the mail queue is covered in <a href="08-administration.html#mail">8.6</a>.</p>
+  </section>
+
+<!-- BEGIN:pager -->
+<nav class="pager" aria-label="Chapters"><a class="prev" href="04-planning-views.html"><span>Previous</span>4. Planning views</a><a class="next" href="06-tracking.html"><span>Next</span>6. Tracking</a></nav>
+<!-- END:pager -->
+</main>
+</div>
+</body>
+</html>

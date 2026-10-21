@@ -122,7 +122,8 @@ async def create_note(
     db_obj = FileModel(
         name=note_in.name or "Untitled Note.md",
         url="note://internal",
-        content="# New Note\nStart typing...",
+        # the text the caller sent (MCP, API); the UI creates an empty note and edits it in place
+        content=note_in.content if note_in.content is not None else "# New Note\nStart typing...",
         extension=".md",
         folder_id=folder_id,
         owner_id=current_user.id

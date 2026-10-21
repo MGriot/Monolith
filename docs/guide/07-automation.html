@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automation · Monolith Guide</title>
+<meta name="description" content="Automation rules, webhooks, project templates, SOP workflows and data exports in Monolith.">
+<link rel="icon" href="assets/monolith.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/guide.css">
+<script src="assets/guide.js" defer></script>
+</head>
+<body style="--chapter: '7.'">
+<!-- BEGIN:topbar -->
+<header class="topbar"><div class="topbar-in"><a class="brand" href="index.html"><img src="assets/monolith.svg" alt="" width="22" height="22">Monolith Guide</a><nav class="chapters" aria-label="Chapters"><a href="index.html">Overview</a><a href="01-getting-started.html"><b>1</b>Getting started</a><a href="02-concepts.html"><b>2</b>Concepts</a><a href="03-projects-and-tasks.html"><b>3</b>Projects &amp; tasks</a><a href="04-planning-views.html"><b>4</b>Planning views</a><a href="05-collaboration.html"><b>5</b>Collaboration</a><a href="06-tracking.html"><b>6</b>Tracking</a><a href="07-automation.html" aria-current="page"><b>7</b>Automation</a><a href="08-administration.html"><b>8</b>Administration</a><a href="09-mcp.html"><b>9</b>MCP</a><a href="10-api-reference.html"><b>10</b>API reference</a><a href="11-troubleshooting.html"><b>11</b>Troubleshooting</a></nav><button type="button" class="theme-btn">Dark mode</button></div></header>
+<!-- END:topbar -->
+<div class="shell">
+<nav class="toc" aria-label="On this page">
+<!-- BEGIN:toc -->
+<span class="eyebrow">On this page</span>
+<a href="#rules">Automation rules</a>
+<a href="#webhooks">Webhooks</a>
+<a href="#templates">Project templates</a>
+<a href="#workflows">Workflows (SOPs)</a>
+<a href="#exports">Exports</a>
+<!-- END:toc -->
+</nav>
+<main class="doc">
+  <header class="prose">
+    <span class="eyebrow">Chapter 7</span>
+    <h1>Automation</h1>
+    <p class="lede">Make the routine happen by itself: rules that react to task events, messages to your chat tools, projects that start
+      from a template, procedures everyone follows, and data that leaves in a spreadsheet.</p>
+  </header>
+
+  <section id="rules">
+    <span class="eyebrow">When · if · then</span>
+    <h2>Automation rules</h2>
+    <p class="prose"><span class="ui">Project Settings</span> › <span class="ui">Rules &amp; automation</span> (project admins edit; every member reads rules and their history). A rule runs its actions in order <b>when</b> its trigger happens, <b>if</b> all its conditions hold.</p>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Part</th><th>Options</th></tr></thead>
+      <tbody>
+        <tr><td>Trigger</td><td><code>task_created</code>, <code>status_changed</code>, <code>assigned</code>, <code>task_completed</code>, <code>due_soon</code> (open tasks due within 48 h, checked by the daily 07:00 UTC job, once per rule and task)</td></tr>
+        <tr><td>Conditions (all must hold)</td><td>status, previous status (<code>status_changed</code> only), priority, assignee, title, tags, milestone, due date; operators is, is not, any of, none of, contains, is set, is empty</td></tr>
+        <tr><td>Actions</td><td>change status, priority or assignee; assign a user; notify assignees, the owner or a user (in-app, optionally e-mail; text may use <code>{task_title}</code> <code>{status}</code> <code>{priority}</code> <code>{project}</code>); call one of the project's webhooks</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Example</h3>
+    <pre class="code">{
+  <span class="k">"name"</span>: <span class="s">"Critical work needs a reviewer"</span>,
+  <span class="k">"trigger"</span>: <span class="s">"status_changed"</span>,
+  <span class="k">"conditions"</span>: [{<span class="k">"field"</span>: <span class="s">"status"</span>, <span class="k">"op"</span>: <span class="s">"eq"</span>, <span class="k">"value"</span>: <span class="s">"Review"</span>},
+                 {<span class="k">"field"</span>: <span class="s">"priority"</span>, <span class="k">"op"</span>: <span class="s">"eq"</span>, <span class="k">"value"</span>: <span class="s">"Critical"</span>}],
+  <span class="k">"actions"</span>: [{<span class="k">"type"</span>: <span class="s">"notify"</span>, <span class="k">"to"</span>: <span class="s">"owner"</span>, <span class="k">"message"</span>: <span class="s">"{task_title} is ready for review"</span>}]
+}</pre>
+    <h3>How it runs</h3>
+    <ul class="prose">
+      <li><b>Isolated</b>: each rule's actions run in a savepoint. A failing rule undoes only itself, is recorded with the error, and never fails the change that triggered it.</li>
+      <li><b>Loop-safe</b>: actions that change the task fire events again, at most 3 levels deep and once per rule and task per chain; skips are recorded.</li>
+      <li><b>Audited</b>: every run (ok or error) is kept for 90 days in the rule's <span class="ui">Run history</span>.</li>
+      <li>Limits: 50 rules per project, 10 conditions and 10 actions per rule. People and webhooks an action uses must belong to the project. Status roll-up from subtasks fires nothing.</li>
+    </ul>
+    <figure class="shot"><img src="../img/guide/automations.webp" alt="Rules and automation card with two rules and their run history" loading="lazy" width="1440" height="900"><figcaption>Two rules in <span class="ui">Project Settings</span> › <span class="ui">Rules &amp; automation</span>.</figcaption></figure>
+  </section>
+
+  <section id="webhooks">
+    <span class="eyebrow">Outbound</span>
+    <h2>Webhooks</h2>
+    <p class="prose">Personal webhooks live in <span class="ui">Settings</span> › <span class="ui">Integrations</span>; project webhooks (attached by project admins) in <span class="ui">Project Settings</span>. Providers: Slack (<code>{"text"}</code>), Discord (<code>{"content"}</code>) and generic JSON (<code>event</code>, <code>task</code>, <code>project</code>, <code>changes</code>, <code>url</code>, <code>timestamp</code>).</p>
+    <p class="prose">Project webhooks receive <code>task.created</code>, <code>task.status_changed</code>, <code>task.assigned</code> and <code>task.completed</code> (moving to Done sends only the last). Deliveries are queued in the same transaction as the change and posted by a background worker after the commit: 10 s timeout, no redirects, up to 5 attempts with exponential backoff. 4xx answers other than 408/425/429 fail at once.</p>
+    <div class="callout warn"><b>Careful</b><p>Webhook URLs to private or internal addresses (cloud metadata, <code>db</code>, <code>localhost</code>, RFC 1918) are refused when saved and again at send time, unless <code>WEBHOOK_ALLOW_PRIVATE=true</code>.</p></div>
+  </section>
+
+  <section id="templates">
+    <span class="eyebrow">Reuse</span>
+    <h2>Project templates</h2>
+    <p class="prose"><span class="ui">Templates</span> holds reusable project skeletons: a task tree, topic and work-type presets and the global taxonomy a project may use. In the editor, indent lines by two spaces to nest tasks:</p>
+    <pre class="code">Phase 1: Setup
+  Repository and CI
+  Environments
+Phase 2: Delivery
+  Build
+  Acceptance test</pre>
+    <p class="prose">Creating a project from the template builds the whole tree in one transaction. Templates can be private, shared with named co-owners, or public.</p>
+  </section>
+
+  <section id="workflows">
+    <span class="eyebrow">Knowledge</span>
+    <h2>Workflows (SOPs)</h2>
+    <p class="prose"><span class="ui">Workflows</span> is a library of standard operating procedures written in Markdown with LaTeX math (<code>$E = mc^2$</code>) and hover tooltips. Each SOP can be private, shared with co-owners, or public; search finds them by title and content.</p>
+  </section>
+
+  <section id="exports">
+    <span class="eyebrow">Data out</span>
+    <h2>Exports</h2>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Export</th><th>Where</th><th>Formats</th></tr></thead>
+      <tbody>
+        <tr><td>One project (summary or with every task)</td><td>project header › export</td><td>CSV, XLSX</td></tr>
+        <tr><td>All projects</td><td><span class="ui">Projects</span> › export</td><td>CSV, XLSX, optionally with archived</td></tr>
+        <tr><td>Tasks</td><td><span class="ui">Tasks</span> › <span class="ui">Export Tasks</span></td><td>CSV, XLSX</td></tr>
+        <tr><td>Gantt image</td><td>Gantt toolbar</td><td>PNG</td></tr>
+        <tr><td>Project as JSON</td><td>MCP <code>export_project_json</code></td><td>JSON: metadata, members, fields, full task tree</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose">Exports include the hard deadline, budget and actual cost, WBS codes and assignees.</p>
+  </section>
+
+<!-- BEGIN:pager -->
+<nav class="pager" aria-label="Chapters"><a class="prev" href="06-tracking.html"><span>Previous</span>6. Tracking</a><a class="next" href="08-administration.html"><span>Next</span>8. Administration</a></nav>
+<!-- END:pager -->
+</main>
+</div>
+</body>
+</html>

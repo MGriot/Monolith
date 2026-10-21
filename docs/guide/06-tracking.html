@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracking · Monolith Guide</title>
+<meta name="description" content="Time tracking, timesheets, custom fields, recurring tasks and the private iCalendar feed in Monolith.">
+<link rel="icon" href="assets/monolith.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/guide.css">
+<script src="assets/guide.js" defer></script>
+</head>
+<body style="--chapter: '6.'">
+<!-- BEGIN:topbar -->
+<header class="topbar"><div class="topbar-in"><a class="brand" href="index.html"><img src="assets/monolith.svg" alt="" width="22" height="22">Monolith Guide</a><nav class="chapters" aria-label="Chapters"><a href="index.html">Overview</a><a href="01-getting-started.html"><b>1</b>Getting started</a><a href="02-concepts.html"><b>2</b>Concepts</a><a href="03-projects-and-tasks.html"><b>3</b>Projects &amp; tasks</a><a href="04-planning-views.html"><b>4</b>Planning views</a><a href="05-collaboration.html"><b>5</b>Collaboration</a><a href="06-tracking.html" aria-current="page"><b>6</b>Tracking</a><a href="07-automation.html"><b>7</b>Automation</a><a href="08-administration.html"><b>8</b>Administration</a><a href="09-mcp.html"><b>9</b>MCP</a><a href="10-api-reference.html"><b>10</b>API reference</a><a href="11-troubleshooting.html"><b>11</b>Troubleshooting</a></nav><button type="button" class="theme-btn">Dark mode</button></div></header>
+<!-- END:topbar -->
+<div class="shell">
+<nav class="toc" aria-label="On this page">
+<!-- BEGIN:toc -->
+<span class="eyebrow">On this page</span>
+<a href="#time">Time tracking</a>
+<a href="#custom-fields">Custom fields</a>
+<a href="#recurring">Recurring tasks</a>
+<a href="#calendar-feed">Calendar feed</a>
+<!-- END:toc -->
+</nav>
+<main class="doc">
+  <header class="prose">
+    <span class="eyebrow">Chapter 6</span>
+    <h1>Tracking</h1>
+    <p class="lede">Measuring the work as it happens: time against estimates, the project-specific data you need on every task, work that
+      repeats, and your tasks in the calendar you already use.</p>
+  </header>
+
+  <section id="time">
+    <span class="eyebrow">Hours</span>
+    <h2>Time tracking</h2>
+    <ul class="prose">
+      <li><b>Timer</b>: <span class="ui">Start</span> on a task's <span class="ui">Time</span> tab. One timer per person runs at a time (enforced by the database); starting another stops nothing silently: you get a conflict and stop the first.</li>
+      <li><b>Manual entries</b>: add a block with start, end and a note; never in the future. Authors (and administrators) edit and delete their entries.</li>
+      <li><b>Estimate versus actual</b>: each task shows logged hours against its PERT expected duration (falling back to <code>duration_days</code>) at 8 working hours per day, with the variance and percent of estimate.</li>
+      <li><b>Timesheet</b>: hours per person and project over a date range (both dates inclusive, by entry start). With a project, members see everyone's time; without one you see your own (administrators anyone).</li>
+    </ul>
+    <div class="callout note"><b>Note</b><p>Any user who can read a task may log their own time on it, so an assigned viewer can record hours without editing the task. Timestamps are stored as naive UTC.</p></div>
+    <p class="prose small">API: <a href="10-api-reference.html#api-time"><code>/api/v1/time</code></a>. MCP: <code>start_timer</code>, <code>stop_timer</code>, <code>log_time</code>, <code>get_task_time</code>, <code>get_timesheet</code>.</p>
+    <figure class="shot"><img src="../img/guide/task-time.webp" alt="Time tab with logged entries against the PERT estimate" loading="lazy" width="1440" height="900"><figcaption>The task's <span class="ui">Time</span> tab: entries, total, and estimate versus actual.</figcaption></figure>
+  </section>
+
+  <section id="custom-fields">
+    <span class="eyebrow">Data</span>
+    <h2>Custom fields</h2>
+    <p class="prose">Project admins define fields in <span class="ui">Project Settings</span> › <span class="ui">Custom fields</span>; they appear in every task editor of that project.</p>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Type</th><th>Value</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><code>text</code></td><td>free text</td><td>Cost centre <code>CC-4410</code></td></tr>
+        <tr><td><code>number</code></td><td>any number</td><td>Allocation % <code>75</code></td></tr>
+        <tr><td><code>select</code></td><td>one of the field's options</td><td>Work package <code>WP2 Platform</code></td></tr>
+        <tr><td><code>date</code></td><td>ISO date</td><td>Contract signed</td></tr>
+        <tr><td><code>user</code></td><td>a user id</td><td>Reviewer</td></tr>
+      </tbody>
+    </table></div>
+    <ul class="prose">
+      <li>Names are unique per project. Values live in <code>tasks.custom_values</code> keyed by field id and are validated on every save: an unknown field or a wrong value is a 400.</li>
+      <li><code>null</code> clears a value; omitting <code>custom_values</code> on update leaves them untouched.</li>
+      <li>Deleting a field strips its values from every task; removing a select option clears tasks still using it.</li>
+    </ul>
+  </section>
+
+  <section id="recurring">
+    <span class="eyebrow">Repeat</span>
+    <h2>Recurring tasks</h2>
+    <p class="prose">Set <span class="ui">Repeat</span> in the task editor: daily, weekly, monthly or yearly, with an interval, weekdays, a day of month or “last Friday”, and an optional end date. When the task is marked <b>Done</b>, Monolith creates the next copy:</p>
+    <ul class="prose">
+      <li>Dates move by the distance to the next occurrence, keeping start, due and deadline spacing.</li>
+      <li>The copy starts as Todo with the checklist reset; assignees, topics, types, tags, estimates and custom values carry over. Subtasks are not copied.</li>
+      <li>Finishing late never creates overdue copies: the next occurrence is after both the task's date and the completion time.</li>
+      <li>Past the end date the series stops; clearing the rule on the open copy ends it. Re-saving a Done task creates nothing.</li>
+    </ul>
+    <p class="prose">Rules are a subset of RFC 5545 stored in <code>recurrence_rule</code>: <code>FREQ</code> (required), <code>INTERVAL</code> (1–365), <code>BYDAY</code>, <code>BYMONTHDAY</code> (1–31 or −1) and <code>UNTIL</code>. Anything else is a 422.</p>
+    <pre class="code">FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE      <span class="c"># every other Monday and Wednesday</span>
+FREQ=MONTHLY;BYMONTHDAY=-1              <span class="c"># last day of each month</span>
+FREQ=MONTHLY;BYDAY=1MO;UNTIL=20271231   <span class="c"># first Monday, until end of 2027</span></pre>
+    <div class="callout warn"><b>Careful</b><p>As in the RFC, “monthly on day 31” skips months without a 31st. Use the last-day option to always hit month end.</p></div>
+  </section>
+
+  <section id="calendar-feed">
+    <span class="eyebrow">ICS</span>
+    <h2>Calendar feed</h2>
+    <ol class="steps">
+      <li><div><span class="ui">Settings</span> › <span class="ui">Calendar feed</span> › <span class="ui">Create link</span>.</div></li>
+      <li><div>Copy the link into Google Calendar, Outlook or Apple Calendar (“add calendar from URL”).</div></li>
+    </ol>
+    <p class="prose">The feed lists tasks assigned to you (and your own tasks outside projects) that have a start or due date, as all-day events linking back to the task. Done tasks are hidden unless the URL ends with <code>?include_done=true</code>. Calendar apps refresh on their own schedule, often hourly or slower.</p>
+    <div class="callout danger"><b>Danger</b><p>The link <em>is</em> the credential (a 256-bit random token), because calendar apps cannot sign in. Anyone with it sees those task titles. <span class="ui">New link</span> replaces it at once; <span class="ui">Revoke</span> removes it. Wrong tokens are throttled (30 per hour per client).</p></div>
+  </section>
+
+<!-- BEGIN:pager -->
+<nav class="pager" aria-label="Chapters"><a class="prev" href="05-collaboration.html"><span>Previous</span>5. Collaboration</a><a class="next" href="07-automation.html"><span>Next</span>7. Automation</a></nav>
+<!-- END:pager -->
+</main>
+</div>
+</body>
+</html>

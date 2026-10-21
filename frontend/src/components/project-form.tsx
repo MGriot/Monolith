@@ -27,6 +27,7 @@ const projectSchema = z.object({
   priority: z.string().min(1, "Priority is required"),
   start_date: z.string().optional().nullable(),
   due_date: z.string().optional().nullable(),
+  deadline_at: z.string().optional().nullable(),
   tags: z.array(z.string()).optional(),
   member_ids: z.array(z.string()).optional(),
   budget: z.number().optional(),
@@ -86,6 +87,7 @@ export default function ProjectForm({
       member_ids: v.member_ids || v.members?.map(m => m.id) || [],
       start_date: toDateInputValue(v.start_date),
       due_date: toDateInputValue(v.due_date),
+      deadline_at: toDateInputValue(v.deadline_at),
       tags: Array.isArray(v.tags) ? v.tags : [],
       budget: v.budget || 0,
       real_cost: v.real_cost || 0,
@@ -117,6 +119,8 @@ export default function ProjectForm({
   const selectedMemberIds = watch("member_ids") || [];
   const startDate = watch("start_date");
   const dueDate = watch("due_date");
+  const deadline = watch("deadline_at");
+  const dueAfterDeadline = !!(dueDate && deadline && dueDate > deadline);
 
   const toggleItem = (field: "topic_ids" | "type_ids" | "member_ids", id: string) => {
     const current = watch(field) || [];
@@ -160,7 +164,7 @@ export default function ProjectForm({
             </div>
           )}
         >
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Start date" htmlFor="project_start_date">
               <Input id="project_start_date" type="date" className="h-9" {...register("start_date")} />
             </Field>
@@ -170,6 +174,13 @@ export default function ProjectForm({
               error={spanDays !== null && spanDays < 1 ? "Due date is before the start date" : undefined}
             >
               <Input id="project_due_date" type="date" className="h-9" {...register("due_date")} />
+            </Field>
+            <Field
+              label="Hard deadline"
+              htmlFor="project_deadline_at"
+              error={dueAfterDeadline ? "Planned due date is after the deadline" : undefined}
+            >
+              <Input id="project_deadline_at" type="date" className="h-9" {...register("deadline_at")} />
             </Field>
           </div>
         </Section>

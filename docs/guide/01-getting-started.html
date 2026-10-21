@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting started · Monolith Guide</title>
+<meta name="description" content="Install Monolith with Podman or Docker, configure it, sign in for the first time and run the development stack.">
+<link rel="icon" href="assets/monolith.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/guide.css">
+<script src="assets/guide.js" defer></script>
+</head>
+<body style="--chapter: '1.'">
+<!-- BEGIN:topbar -->
+<header class="topbar"><div class="topbar-in"><a class="brand" href="index.html"><img src="assets/monolith.svg" alt="" width="22" height="22">Monolith Guide</a><nav class="chapters" aria-label="Chapters"><a href="index.html">Overview</a><a href="01-getting-started.html" aria-current="page"><b>1</b>Getting started</a><a href="02-concepts.html"><b>2</b>Concepts</a><a href="03-projects-and-tasks.html"><b>3</b>Projects &amp; tasks</a><a href="04-planning-views.html"><b>4</b>Planning views</a><a href="05-collaboration.html"><b>5</b>Collaboration</a><a href="06-tracking.html"><b>6</b>Tracking</a><a href="07-automation.html"><b>7</b>Automation</a><a href="08-administration.html"><b>8</b>Administration</a><a href="09-mcp.html"><b>9</b>MCP</a><a href="10-api-reference.html"><b>10</b>API reference</a><a href="11-troubleshooting.html"><b>11</b>Troubleshooting</a></nav><button type="button" class="theme-btn">Dark mode</button></div></header>
+<!-- END:topbar -->
+<div class="shell">
+<nav class="toc" aria-label="On this page">
+<!-- BEGIN:toc -->
+<span class="eyebrow">On this page</span>
+<a href="#services">The stack</a>
+<a href="#install">Install and start</a>
+<a href="#configuration">Configuration</a>
+<a href="#first-sign-in">First sign-in</a>
+<a href="#development">Development mode</a>
+<a href="#podman-notes">Podman and rootless notes</a>
+<!-- END:toc -->
+</nav>
+<main class="doc">
+  <header class="prose">
+    <span class="eyebrow">Chapter 1</span>
+    <h1>Getting started</h1>
+    <p class="lede">From an empty machine to a running Monolith with an administrator, in about ten minutes. Everything runs in
+      containers; nothing but Podman or Docker is needed on the host.</p>
+    <div class="hero-meta"><span><b>You need</b> rootless Podman with podman-compose ≥ 1.2, or Docker with Compose v2</span><span><b>Ports</b> one, <code>8080</code> by default</span></div>
+  </header>
+
+  <section id="services">
+    <span class="eyebrow">What runs</span>
+    <h2>The stack</h2>
+    <p class="prose"><code>compose.yaml</code> defines five services. Only the proxy is published to the host; everything else talks over two private networks.</p>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Service</th><th>Container</th><th>Role</th><th>Reachable from</th></tr></thead>
+      <tbody>
+        <tr><td><code>proxy</code></td><td>monolith_proxy</td><td>nginx: serves the app, forwards <code>/api</code> (including websockets), <code>/uploads</code> and <code>/mcp</code></td><td>host, <code>http://localhost:${HTTP_PORT:-8080}</code></td></tr>
+        <tr><td><code>frontend</code></td><td>monolith_frontend</td><td>static React build on nginx-unprivileged</td><td>proxy</td></tr>
+        <tr><td><code>backend</code></td><td>monolith_backend</td><td>FastAPI on uvicorn (non-root uid 10001), migrations at start-up, background workers, MCP</td><td>proxy, mail network</td></tr>
+        <tr><td><code>db</code></td><td>monolith_db</td><td>PostgreSQL 16 (<code>pgdata</code> volume)</td><td>backend</td></tr>
+        <tr><td><code>mailserver</code></td><td>monolith_mail</td><td>docker-mailserver: internal SMTP for resets, verification, notifications and digests</td><td>backend over <code>mail_net</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="install">
+    <span class="eyebrow">Production-like</span>
+    <h2>Install and start</h2>
+    <ol class="steps">
+      <li><div><b>Create the configuration.</b> Copy the template and fill in at least the required values (next section).
+        <pre class="code">cp .env.example .env</pre></div></li>
+      <li><div><b>Prepare the mail server once.</b> It creates a self-signed TLS certificate and the sender mailbox; Dovecot stops the container two minutes after start if no mailbox exists.
+        <pre class="code">scripts/mail-bootstrap.sh</pre></div></li>
+      <li><div><b>Build and start.</b>
+        <pre class="code">podman-compose up -d --build      <span class="c"># or: docker compose up -d --build</span>
+podman ps                          <span class="c"># every service should report (healthy)</span></pre></div></li>
+      <li><div><b>Open the app</b> at <a href="http://localhost:8080">http://localhost:8080</a>. The interactive API documentation is at <code>/api/docs</code>.</div></li>
+    </ol>
+    <div class="callout tip"><b>Tip</b><p>The backend applies database migrations at start-up (<code>AUTO_MIGRATE=true</code>). Upgrading is <code>git pull</code> followed by the same <code>up -d --build</code>.</p></div>
+  </section>
+
+  <section id="configuration">
+    <span class="eyebrow">.env</span>
+    <h2>Configuration</h2>
+    <p class="prose">Every variable is documented in <code>.env.example</code>. These are the ones you set on day one.</p>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Variable</th><th>Required</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>POSTGRES_PASSWORD</code></td><td>yes</td><td>Database password (the database is never published).</td></tr>
+        <tr><td><code>SECRET_KEY</code></td><td>yes</td><td>Signs login and single-purpose tokens. Generate with <code>openssl rand -hex 32</code>; changing it signs everyone out.</td></tr>
+        <tr><td><code>FIRST_SUPERUSER_EMAIL</code>, <code>FIRST_SUPERUSER_PASSWORD</code></td><td>first start</td><td>The first administrator, created at start-up if no account has that address. Remove the password afterwards.</td></tr>
+        <tr><td><code>MAIL_DOMAIN</code>, <code>SMTP_USER</code>, <code>SMTP_PASSWORD</code></td><td>yes</td><td>Internal mail server domain and the sender mailbox (for example <code>noreply@monolith.local</code>).</td></tr>
+        <tr><td><code>HTTP_PORT</code></td><td>no (8080)</td><td>Host port of the proxy.</td></tr>
+        <tr><td><code>APP_BASE_URL</code></td><td>no</td><td>Public origin used in e-mail links, the calendar feed and the MCP Host check.</td></tr>
+        <tr><td><code>ALLOW_SIGNUP</code></td><td>no (false)</td><td>Let people request an account on <code>/register</code>; an administrator approves each request.</td></tr>
+        <tr><td><code>MCP_ENABLED</code></td><td>no (true)</td><td>Mount the MCP server at <code>/mcp</code>. Every client still needs a personal token (<a href="09-mcp.html#tokens">9.2</a>).</td></tr>
+        <tr><td><code>MCP_ALLOWED_HOSTS</code></td><td>no</td><td>Extra Host names accepted on <code>/mcp</code> besides <code>APP_BASE_URL</code> and localhost.</td></tr>
+        <tr><td><code>CORS_ORIGINS</code></td><td>no</td><td>Browser origins allowed to call the API cross-origin. The bundled proxy is same-origin and needs none.</td></tr>
+        <tr><td><code>EMAIL_ENABLED</code>, <code>SCHEDULER_ENABLED</code></td><td>no (true)</td><td>Master switch for mail; weekly digest and daily deadline reminders.</td></tr>
+        <tr><td><code>RELAY_HOST</code> …</td><td>no</td><td>Relay outgoing mail through a provider instead of delivering directly (<a href="08-administration.html#mail">8.6</a>).</td></tr>
+        <tr><td><code>WEBHOOK_ALLOW_PRIVATE</code></td><td>no (false)</td><td>Allow webhooks to private addresses (self-hosted chat).</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout warn"><b>Careful</b><p>The API rejects special-use domains (<code>.local</code>, <code>.test</code>, <code>.localhost</code>, <code>.invalid</code>) in <em>user</em> addresses. <code>MAIL_DOMAIN</code> may be <code>monolith.local</code>, but accounts need a normal domain such as <code>example.com</code>.</p></div>
+  </section>
+
+  <section id="first-sign-in">
+    <span class="eyebrow">Accounts</span>
+    <h2>First sign-in</h2>
+    <ol class="steps">
+      <li><div>Sign in with <code>FIRST_SUPERUSER_EMAIL</code> and its password. There are <b>no default accounts</b>; old addresses such as <code>admin@admin.com</code> do not work.</div></li>
+      <li><div>Remove <code>FIRST_SUPERUSER_PASSWORD</code> from <code>.env</code>. It is only read when the account does not exist yet.</div></li>
+      <li><div>Invite your team from <span class="ui">Team Members</span>: create accounts directly, or turn on <code>ALLOW_SIGNUP</code> and approve requests (<a href="08-administration.html#users">8.1</a>). People who get a temporary password must choose their own at first sign-in.</div></li>
+      <li><div>Define global topics and work types in <span class="ui">Metadata</span> before the first projects (<a href="08-administration.html#taxonomy">8.2</a>).</div></li>
+      <li><div>Create a project (<a href="03-projects-and-tasks.html#create-project">3.1</a>) and add members with a role (<a href="02-concepts.html#roles">2.4</a>).</div></li>
+    </ol>
+    <figure class="shot"><img src="../img/guide/dashboard.webp" alt="Dashboard with KPI tiles, due this week, status distribution and team capacity" loading="lazy" width="1440" height="900"><figcaption>The dashboard after the first sign-in, with the sample project loaded.</figcaption></figure>
+  </section>
+
+  <section id="development">
+    <span class="eyebrow">Contributors</span>
+    <h2>Development mode</h2>
+    <pre class="code">podman-compose -f compose.yaml -f compose.dev.yaml up -d --build</pre>
+    <p class="prose">The dev overlay bind-mounts the sources (<code>:z</code> for SELinux), runs uvicorn with <code>--reload</code> and the Vite dev server, and publishes:</p>
+    <div class="tbl"><table>
+      <thead><tr><th>What</th><th>Address</th></tr></thead>
+      <tbody>
+        <tr><td>Vite (hot module reload)</td><td><code>http://127.0.0.1:5173</code></td></tr>
+        <tr><td>API (uvicorn reload)</td><td><code>http://127.0.0.1:8000</code></td></tr>
+        <tr><td>PostgreSQL</td><td><code>127.0.0.1:54321</code></td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose">On Windows, file watching uses polling so changes cross the volume boundary reliably.</p>
+    <h3>Tests</h3>
+    <pre class="code"><span class="c"># backend unit tests (no database); CI runs the explicit list in .github/workflows/ci.yml</span>
+cd backend &amp;&amp; pip install -r requirements.txt pytest pytest-asyncio &amp;&amp; python -m pytest -q tests/
+<span class="c"># database integration tests: a throw-away Postgres, everything is rolled back (skipped without the variable)</span>
+podman run -d --name monolith_testdb -e POSTGRES_PASSWORD=test -p 55432:5432 postgres:16-alpine
+TEST_DATABASE_URL=postgresql+asyncpg://postgres:test@localhost:55432/postgres python -m pytest -q tests/test_db_integration.py
+<span class="c"># frontend</span>
+cd frontend &amp;&amp; npm ci &amp;&amp; npm run typecheck &amp;&amp; npm test &amp;&amp; npm run build
+<span class="c"># live checks against a stack with a FRESH database (they create users and projects)</span>
+scripts/live-smoke.sh
+<span class="c"># the generated parts of this guide</span>
+python scripts/docs/gen_reference.py --check</pre>
+    <div class="callout danger"><b>Danger</b><p>Never run <code>scripts/live-smoke.sh</code> against a stack that holds real data: it creates test accounts and projects. Use a throw-away stack with its own project name, port and volumes.</p></div>
+  </section>
+
+  <section id="podman-notes">
+    <span class="eyebrow">Rootless</span>
+    <h2>Podman and rootless notes</h2>
+    <ul>
+      <li>All host ports are above 1024, so no <code>net.ipv4.ip_unprivileged_port_start</code> change is needed.</li>
+      <li><code>PERMIT_DOCKER=none</code> on the mail server: rootless networking NATs source addresses and <code>connected-networks</code> could open a relay. The backend authenticates on port 587 with STARTTLS instead.</li>
+      <li>Mail state lives in <b>named volumes</b>; Postfix creates unix sockets that fail on Windows, macOS or network bind mounts. Only <code>mailserver/config</code> is bind-mounted.</li>
+      <li><code>loginctl enable-linger $USER</code> keeps rootless containers running after logout on Linux.</li>
+      <li>Several stacks on one host need their own <code>MAIL_CONFIG_DIR</code>, project name and port; re-run <code>scripts/mail-bootstrap.sh</code> after rotating <code>SMTP_PASSWORD</code>.</li>
+      <li>The backend runs <b>one worker</b>: live whiteboard rooms and the notification socket are kept in process (<a href="02-concepts.html#architecture">2.1</a>).</li>
+    </ul>
+  </section>
+
+<!-- BEGIN:pager -->
+<nav class="pager" aria-label="Chapters"><a class="prev" href="index.html"><span>Previous</span>Overview</a><a class="next" href="02-concepts.html"><span>Next</span>2. Concepts</a></nav>
+<!-- END:pager -->
+</main>
+</div>
+</body>
+</html>

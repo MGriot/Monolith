@@ -1,7 +1,7 @@
 """Automation rules: "when <trigger> and <conditions> then <actions>" per project, plus the project webhooks.
 
 Flow: `crud_task` calls `fire_task_events()` at the end of create / update / update_assignees, inside the request's
-unit of work (see docs/how-to/transactions.md). For each event:
+unit of work (see docs/guide/02-concepts.html#architecture). For each event:
 
   1. the project's active webhooks get a row in the `webhook_deliveries` queue (sent by a worker after the commit);
   2. every enabled rule of the project with that trigger whose conditions match runs its actions inside a SAVEPOINT,
@@ -22,6 +22,7 @@ from uuid import UUID
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import activity as activity_log
 from app.core.enums import Priority, Status
 
 logger = logging.getLogger(__name__)
@@ -463,8 +464,9 @@ async def _dispatch(db: AsyncSession, event: TaskEvent, rules: Optional[list]) -
         try:
             async with db.begin_nested():  # SAVEPOINT: a failing rule undoes only its own changes
                 lines = []
-                for action in rule.actions:
-                    lines.append(await execute_action(db, action, rule, snap, event))
+                with activity_log.acting_as(f"Automation: {rule.name}"):  # the change log names the rule
+                    for action in rule.actions:
+                        lines.append(await execute_action(db, action, rule, snap, event))
             message = "; ".join(lines)
         except Exception as exc:  # noqa: BLE001
             logger.warning("Automation rule %s failed: %s", rule.id, exc)

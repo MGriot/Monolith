@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     AUTO_MIGRATE: bool = True   # run `alembic upgrade head` (and stamp legacy databases) at start-up
     MAX_UPLOAD_MB: int = 50
 
-    # Bearer key for the /mcp endpoint. Empty = MCP is NOT mounted.
-    MCP_API_KEY: str = ""
+    # /mcp (Model Context Protocol, SSE). Clients authenticate with a personal token from Settings -> MCP access.
+    MCP_ENABLED: bool = True
     MCP_ALLOWED_HOSTS: str = ""   # extra Host header values accepted on /mcp (comma-separated)
 
     # Accounts / auth hardening

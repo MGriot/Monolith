@@ -1,8 +1,9 @@
 import secrets
+from datetime import datetime
 from typing import Any, List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Body, Depends, HTTPException, status, Query
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -170,6 +171,73 @@ async def revoke_my_calendar_feed(
     current_user.calendar_token = None
     db.add(current_user)
     await db.commit()
+
+
+class McpTokenOut(BaseModel):
+    id: UUID
+    name: str
+    token_prefix: str
+    created_at: datetime
+    last_used_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+    revoked_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class McpTokenCreated(McpTokenOut):
+    token: str  # the secret: returned only by POST, never again
+
+
+class McpTokenCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    expires_in_days: Optional[int] = Field(default=None, ge=1, le=3650)
+
+
+@router.get("/me/mcp-tokens", response_model=List[McpTokenOut])
+async def list_my_mcp_tokens(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: UserModel = Depends(deps.get_current_user),
+) -> Any:
+    """Personal MCP tokens (active and revoked), newest first. The secrets themselves are not stored."""
+    from app.models.mcp_token import McpToken
+
+    rows = await db.execute(
+        select(McpToken).where(McpToken.user_id == current_user.id).order_by(McpToken.created_at.desc())
+    )
+    return rows.scalars().all()
+
+
+@router.post("/me/mcp-tokens", response_model=McpTokenCreated, status_code=201)
+async def create_my_mcp_token(
+    body: McpTokenCreate,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: UserModel = Depends(deps.get_current_user),
+) -> Any:
+    """Mint a token for MCP clients. It acts as you, with your project roles. Copy it now: it is shown only once."""
+    from app.core.mcp_tokens import mint_token
+
+    row, raw = await mint_token(db, current_user, body.name, body.expires_in_days)
+    await db.commit()
+    return McpTokenCreated(**McpTokenOut.model_validate(row).model_dump(), token=raw)
+
+
+@router.delete("/me/mcp-tokens/{token_id}", status_code=204)
+async def revoke_my_mcp_token(
+    token_id: UUID,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: UserModel = Depends(deps.get_current_user),
+) -> None:
+    """Revoke a token; MCP calls made with it fail from the next request on."""
+    from app.models.mcp_token import McpToken
+
+    row = await db.get(McpToken, token_id)
+    if not row or row.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Token not found")
+    if row.revoked_at is None:
+        row.revoked_at = datetime.utcnow()
+        await db.commit()
 
 
 @router.put("/me", response_model=UserMe)

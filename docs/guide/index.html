@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monolith Guide</title>
+<meta name="description" content="The complete operating guide to Monolith: setup, every feature and screen, the REST API, the MCP server and operations.">
+<link rel="icon" href="assets/monolith.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/guide.css">
+<script src="assets/guide.js" defer></script>
+</head>
+<body style="--chapter: ''">
+<!-- BEGIN:topbar -->
+<header class="topbar"><div class="topbar-in"><a class="brand" href="index.html"><img src="assets/monolith.svg" alt="" width="22" height="22">Monolith Guide</a><nav class="chapters" aria-label="Chapters"><a href="index.html" aria-current="page">Overview</a><a href="01-getting-started.html"><b>1</b>Getting started</a><a href="02-concepts.html"><b>2</b>Concepts</a><a href="03-projects-and-tasks.html"><b>3</b>Projects &amp; tasks</a><a href="04-planning-views.html"><b>4</b>Planning views</a><a href="05-collaboration.html"><b>5</b>Collaboration</a><a href="06-tracking.html"><b>6</b>Tracking</a><a href="07-automation.html"><b>7</b>Automation</a><a href="08-administration.html"><b>8</b>Administration</a><a href="09-mcp.html"><b>9</b>MCP</a><a href="10-api-reference.html"><b>10</b>API reference</a><a href="11-troubleshooting.html"><b>11</b>Troubleshooting</a></nav><button type="button" class="theme-btn">Dark mode</button></div></header>
+<!-- END:topbar -->
+<div class="shell">
+<nav class="toc" aria-label="On this page">
+<!-- BEGIN:toc -->
+<span class="eyebrow">On this page</span>
+<a href="#at-a-glance">At a glance</a>
+<a href="#what-you-can-do">What you can do</a>
+<a href="#how-to-read">How to read this guide</a>
+<!-- END:toc -->
+</nav>
+<main class="doc">
+  <header class="prose" style="max-width:780px">
+    <span class="eyebrow">Monolith Guide · October 2026</span>
+    <h1>Run, use and extend Monolith</h1>
+    <p class="lede">Monolith is a self-hosted project planner for technical teams: projects hold a tree of tasks of any depth, with
+      dates, PERT estimates, dependencies and a live critical path, budgets and risk, time tracking, custom fields, automations,
+      comments, an ideas hub, a File Hub and real-time Excalidraw sketches. AI assistants work in it through a Model Context Protocol server.</p>
+    <div class="hero-meta">
+      <span><b>Stack</b> FastAPI · PostgreSQL 16 · React 19 · nginx</span>
+      <span><b>Runs on</b> Podman (rootless) or Docker Compose</span>
+      <span><b>API</b> REST <code>/api/v1</code> · websockets · MCP <code>/mcp/sse</code></span>
+    </div>
+  </header>
+
+  <nav class="areas" aria-label="Chapters">
+    <a href="01-getting-started.html"><b><i>1</i>Getting started</b><span>Install the stack, configure <code>.env</code>, first sign-in, dev mode.</span></a>
+    <a href="02-concepts.html"><b><i>2</i>Concepts</b><span>Architecture, the task tree, status roll-up, roles, scheduling and CPM.</span></a>
+    <a href="03-projects-and-tasks.html"><b><i>3</i>Projects &amp; tasks</b><span>Every field of the project and task editors, templates, bulk actions.</span></a>
+    <a href="04-planning-views.html"><b><i>4</i>Planning views</b><span>Gantt, Kanban, list, schedule, dashboard, heatmap, workload, risk.</span></a>
+    <a href="05-collaboration.html"><b><i>5</i>Collaboration</b><span>Comments, ideas, live sketches, File Hub, notifications, e-mail.</span></a>
+    <a href="06-tracking.html"><b><i>6</i>Tracking</b><span>Time tracking, custom fields, recurring tasks, the calendar feed.</span></a>
+    <a href="07-automation.html"><b><i>7</i>Automation</b><span>Rules, webhooks, templates, SOP workflows, exports.</span></a>
+    <a href="08-administration.html"><b><i>8</i>Administration</b><span>Users and approval, taxonomy, teams, settings, migrations, mail.</span></a>
+    <a href="09-mcp.html"><b><i>9</i>MCP</b><span>Personal tokens, client setup, every tool, the sample project.</span></a>
+    <a href="10-api-reference.html"><b><i>10</i>API reference</b><span>Every REST endpoint and the two websocket protocols.</span></a>
+    <a href="11-troubleshooting.html"><b><i>11</i>Troubleshooting</b><span>Security model, common errors, health checks, backups.</span></a>
+  </nav>
+
+  <section id="at-a-glance">
+    <span class="eyebrow">Overview</span>
+    <h2>At a glance</h2>
+    <p class="prose muted">Counts below are generated from the running code by <code>scripts/docs/gen_reference.py</code>, so the reference chapters never drift from the API.</p>
+<!-- BEGIN:stats -->
+<div class="stats"><div class="stat"><b>11</b><span>chapters</span></div><div class="stat"><b>148</b><span>REST endpoints documented</span></div><div class="stat"><b>112</b><span>MCP tools</span></div><div class="stat"><b>5 + 2</b><span>MCP resources + prompts</span></div></div>
+<!-- END:stats -->
+    <figure class="shot">
+      <img src="../img/gantt.png" alt="Gantt chart with dependencies, the critical path and a today marker" loading="lazy">
+      <figcaption>Project Gantt: bars by status, borders by priority, dependency arrows, the critical path and hard deadlines.</figcaption>
+    </figure>
+    <figure class="shot"><img src="../img/guide/project-overview-dark.webp" alt="Project overview in dark mode" loading="lazy" width="1440" height="900"><figcaption>The same project in dark mode (Settings › Appearance, or follow the system).</figcaption></figure>
+  </section>
+
+  <section id="what-you-can-do">
+    <span class="eyebrow">Capabilities</span>
+    <h2>What you can do</h2>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Area</th><th>Highlights</th><th>Chapter</th></tr></thead>
+      <tbody>
+        <tr><td>Plan</td><td>Projects with planned and hard deadlines, budget versus actual, risk; unlimited task nesting with WBS codes; FS/SS/FF/SF dependencies with lag; PERT estimates and a server-side critical path.</td><td><a href="03-projects-and-tasks.html">3</a>, <a href="02-concepts.html#scheduling">2.5</a></td></tr>
+        <tr><td>See</td><td>Gantt (day to year zoom, PNG export), Kanban with manual order, list with filters and saved views, master schedule, dashboard KPIs, activity heatmap, team workload, risk matrix.</td><td><a href="04-planning-views.html">4</a></td></tr>
+        <tr><td>Work together</td><td>Project roles (viewer, editor, admin), threaded comments with images, an ideas hub with voting and promotion, real-time Excalidraw sketches with presence and pointers, a File Hub with previews.</td><td><a href="05-collaboration.html">5</a></td></tr>
+        <tr><td>Track</td><td>Timers and manual time entries against PERT estimates, timesheets, typed custom fields, recurring tasks, a private iCalendar feed.</td><td><a href="06-tracking.html">6</a></td></tr>
+        <tr><td>Automate</td><td>"When / if / then" rules per project, Slack, Teams, Discord and JSON webhooks, project templates, SOP workflows with LaTeX, CSV and Excel exports.</td><td><a href="07-automation.html">7</a></td></tr>
+        <tr><td>Integrate</td><td>A REST API with interactive docs at <code>/api/docs</code>; an MCP server with 100+ typed tools so Claude and other assistants plan and update work as you.</td><td><a href="09-mcp.html">9</a>, <a href="10-api-reference.html">10</a></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="how-to-read">
+    <span class="eyebrow">Conventions</span>
+    <h2>How to read this guide</h2>
+    <ul>
+      <li>Sections are numbered <b>chapter.section.subsection</b>; every heading has a link target you can share.</li>
+      <li>Screen elements read as chips: <span class="ui">Settings</span> › <span class="ui">MCP access</span> › <span class="ui">Create token</span>. Keys look like <kbd>Ctrl</kbd> + <kbd>K</kbd>.</li>
+      <li>Endpoints look like <code>POST /api/v1/tasks/</code>; MCP tools like <code>create_task</code>. Both link into the reference chapters.</li>
+    </ul>
+    <div class="callout note"><b>Note</b><p>Callouts in blue add context.</p></div>
+    <div class="callout tip"><b>Tip</b><p>Green ones are shortcuts and good practice.</p></div>
+    <div class="callout warn"><b>Careful</b><p>Amber ones warn about behaviour that surprises people.</p></div>
+    <div class="callout danger"><b>Danger</b><p>Red ones are about data loss or security.</p></div>
+    <p class="small muted">The guide is plain HTML and CSS with no build step. Open <code>docs/guide/index.html</code> in a browser, or publish the folder with any static host. On GitHub the files show as source, so clone the repository to read them.</p>
+  </section>
+
+<!-- BEGIN:pager -->
+<nav class="pager" aria-label="Chapters"><a class="next" href="01-getting-started.html"><span>Next</span>1. Getting started</a></nav>
+<!-- END:pager -->
+  <p class="foot">Monolith is MIT licensed. Generated parts: chapter bar, contents rails, pager, statistics, chapter 9 tool reference and chapter 10.</p>
+</main>
+</div>
+</body>
+</html>

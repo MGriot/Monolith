@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from app.db.session import Base
 
 class Webhook(Base):
@@ -23,4 +23,5 @@ class Webhook(Base):
 
     # Relationships
     owner = relationship("User", backref="webhooks")
-    project = relationship("Project", backref="webhooks")
+    # project webhooks go with their project (ON DELETE CASCADE); personal ones have no project
+    project = relationship("Project", backref=backref("webhooks", cascade="all, delete-orphan", passive_deletes=True))

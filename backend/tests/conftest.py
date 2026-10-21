@@ -8,6 +8,7 @@ requires at import time. No database is contacted by the security tests.
 """
 import sys
 import os
+import tempfile
 
 # Add the backend root (parent of this tests/ directory) to sys.path
 backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,3 +17,5 @@ if backend_root not in sys.path:
 
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost:5432/test")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-test-secret-key-0123456789")
+# Files written by endpoints under test (uploads, sketch previews) go to a throw-away folder, never backend/uploads.
+os.environ.setdefault("UPLOAD_DIR", tempfile.mkdtemp(prefix="monolith-test-uploads-"))

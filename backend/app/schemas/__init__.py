@@ -6,4 +6,4 @@ from .notification import Notification, NotificationCreate, NotificationUpdate
 from .template import ProjectTemplate, ProjectTemplateCreate, ProjectTemplateUpdate
 from .team import Team, TeamCreate, TeamUpdate
 from .workflow import Workflow, WorkflowCreate, WorkflowUpdate
-from .whiteboard import Whiteboard, WhiteboardCreate, WhiteboardUpdate
+from .whiteboard import Whiteboard, WhiteboardCreate, WhiteboardUpdate, WhiteboardSummary, WhiteboardPreviewIn

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Task change log**: every task change (create, edit, status, assignment, archive, delete, dependencies) is recorded
+  as a plain sentence with who made it, through the app, the API or MCP; automation and roll-up changes are labelled.
+  Shown with the discussion in the project and task Activity tabs (filter All / Comments / Changes);
+  `GET /projects/{id}/activity`, `GET /tasks/{id}/activity`, MCP `get_project_activity` / `get_task_activity`. Migration 0013.
+- 18 new screenshots in the HTML guide and a new "Activity and change log" section.
+- **MCP server rewrite**: 112 typed tools, 5 resources and 2 prompts covering projects, members, tasks, dependencies and the
+  critical path, time, custom fields, automations, comments, ideas, sketches, File Hub, teams, taxonomy, templates, SOPs,
+  webhooks, notifications, dashboards and search. Tools call the REST handlers, so permissions, validation and side effects
+  are identical; refusals return `isError` with a readable reason.
+- **Personal MCP tokens** (Settings → MCP access, `mono_mcp_…`, hashed, optional expiry, revocable, re-checked per call) and
+  `python -m app.scripts.mint_mcp_token`. MCP acts as the token owner with their project roles.
+- **Real-time sketches**: websocket rooms per whiteboard (`/api/v1/whiteboards/{id}/ws`) with presence, live pointers, merge
+  by element version, autosave, view-only mode for viewers, and a share dialog to manage project members from the sketch.
+- **Sketch previews**: stored as files under `uploads/previews` (PNG from the editor, SVG rendered by the server for MCP-made
+  boards) and shown in the File Hub and task attachments; `.excalidraw` uploads render a preview and can be opened as a sketch.
+- **Project hard deadline** (`deadline_at`) in the editor, project timeline, exports and portfolio health.
+- **HTML guide** in `docs/guide/` (11 chapters) with generated MCP and API references (`scripts/docs/gen_reference.py`).
+- `scripts/mcp_sample_project.py`: builds a complete sample project through MCP only.
 - **Project roles**: viewer / editor / admin per project, enforced by the API.
 - **Automations**: per-project rules engine and signed outgoing webhooks.
 - **Recurring tasks** and a private iCalendar feed.
@@ -17,13 +35,33 @@ All notable changes to this project will be documented in this file.
 - README screenshots of the Gantt, Kanban, schedule and dark-mode dashboard.
 
 ### Changed
+- **Breaking:** `MCP_API_KEY` is gone. `/mcp` is mounted unless `MCP_ENABLED=false` and needs a personal token.
+- `GET /whiteboards/` returns summaries without the scene (`WhiteboardSummary`); open a board with `GET /whiteboards/{id}`.
+- Portfolio health includes projects you are a member of (not only owned ones) and penalises threatened deadlines.
 - Rootless Podman stack with a bundled mail server; Alembic migrations; one transaction per compound operation.
 - JWT handling moved from `python-jose` to `PyJWT`: `python-jose` and its `ecdsa` dependency have known vulnerabilities
   with no fixed release.
 - CI uses Node 22 and the Node 24-based majors of `actions/checkout`, `actions/setup-node` and `actions/setup-python`;
   the frontend image builds on `node:22-alpine`.
 
+### Removed
+- The fake "Matteo (You)" / "Antigravity" collaborators in the sketch editor.
+- Markdown docs under `docs/` (tutorials, how-to, reference, explanation), `MCP_GUIDE.md` and `document.md`, replaced by the guide.
+- The obsolete `mcp/` agent scripts and Dockerfile, `backend/test_mcp_standalone.py` and the reset/seed scripts that hard-coded
+  `admin@admin.com` / `test@example.com`.
+
 ### Fixed
+- The two hand-run database scripts that failed under pytest (`test_crud_dependencies_standalone.py`,
+  `test_recursive_logic.py`) are replaced by `tests/test_db_integration.py`: real PostgreSQL tests (dependencies, cycle
+  rejection, nested create, status roll-up and its change-log label) that roll back everything; CI runs them against a
+  Postgres service, locally they need `TEST_DATABASE_URL` and skip without it.
+- Gantt and team-timeline PNG export now include the whole chart, not just the visible part, with a progress notice.
+- Projects list and Kanban: topic and work-type chips no longer overlap; long lists collapse into "+N".
+- Task editor: the tab row wraps instead of hiding the last tabs (Ideas).
+- Comments: the hidden edit/delete buttons could be clicked by accident and left the editor open; they are now inert
+  until hover/focus, the editor is lighter, errors are reported, replies render threaded.
+- Notes created through the API or MCP kept placeholder text instead of their content.
+- The task editor's topic and work-type pickers missed the project's own scoped entries.
 - CI: the `pip-audit` step no longer fails, and the stray `.agent` gitlink that broke checkout cleanup
   (`git` exit code 128) is gone. `.agent/` is now ignored.
 - CI now runs the registration-approval tests.

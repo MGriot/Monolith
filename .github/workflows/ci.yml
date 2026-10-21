@@ -16,6 +16,14 @@ jobs:
   backend:
     name: Backend tests
     runs-on: ubuntu-24.04
+    services:
+      postgres:   # throw-away database for tests/test_db_integration.py (each test rolls back)
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -46,6 +54,19 @@ jobs:
           tests/test_recurrence_ics.py
           tests/test_registration_approval.py
           tests/test_cpm.py
+          tests/test_file_hub.py
+          tests/test_mcp_registry.py
+          tests/test_mcp_tokens.py
+          tests/test_whiteboard_rooms.py
+          tests/test_whiteboard_previews.py
+          tests/test_activity.py
+      - name: Database integration tests (service Postgres)
+        working-directory: backend
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://postgres:test@localhost:5432/postgres
+        run: python -m pytest -q -p no:cacheprovider tests/test_db_integration.py
+      - name: Generated guide sections are up to date
+        run: python scripts/docs/gen_reference.py --check
       - name: Dependencies have no known vulnerabilities
         continue-on-error: true   # advisory for now; flip to blocking once the baseline is clean
         run: pip install pip-audit && pip-audit -r backend/requirements.txt
@@ -87,7 +108,6 @@ jobs:
           FIRST_SUPERUSER_EMAIL=admin@example.com
           FIRST_SUPERUSER_PASSWORD=$(openssl rand -hex 12)
           ALLOW_SIGNUP=false
-          MCP_API_KEY=$(openssl rand -hex 16)
           HTTP_PORT=8080
           APP_BASE_URL=http://localhost:8080
           MAIL_DOMAIN=monolith.local

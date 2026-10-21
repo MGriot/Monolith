@@ -22,7 +22,8 @@ from app.api import access, deps
 from app.core import uploads
 from app.core.config import settings
 from app.core.utils import make_naive
-from app.main import BearerKeyASGI, app
+from app.main import app
+from app.core.mcp_tokens import McpTokenGate, mcp_token_hash, hash_token, token_is_usable
 
 
 # --------------------------------------------------------------------------- helpers
@@ -305,37 +306,44 @@ def test_author_cannot_self_approve_idea(client, as_user, monkeypatch):
 
 
 # --------------------------------------------------------------------------- /mcp lock
-class TestMcpBearerGate:
-    @staticmethod
-    def _client(key="s3cret"):
+class TestMcpTokenGate:
+    GOOD = "mono_mcp_good-token"
+
+    @classmethod
+    def _client(cls, seen=None):
         async def inner(scope, receive, send):
+            if seen is not None:
+                seen.append(mcp_token_hash.get())
             await send({"type": "http.response.start", "status": 200, "headers": []})
             await send({"type": "http.response.body", "body": b"ok"})
 
+        async def resolver(raw):
+            return object() if raw == cls.GOOD else None
+
         wrapper = FastAPI()
-        wrapper.mount("/mcp", BearerKeyASGI(inner, key))
+        wrapper.mount("/mcp", McpTokenGate(inner, resolver=resolver))
         return TestClient(wrapper)
 
-    def test_rejects_without_key(self):
+    def test_rejects_without_token(self):
         r = self._client().get("/mcp/")
-        assert r.status_code == 401
+        assert r.status_code == 401 and r.headers["www-authenticate"] == "Bearer"
 
-    def test_rejects_wrong_key(self):
-        assert self._client().get("/mcp/", headers={"Authorization": "Bearer nope"}).status_code == 401
+    def test_rejects_unknown_token(self):
+        assert self._client().get("/mcp/", headers={"Authorization": "Bearer mono_mcp_nope"}).status_code == 401
 
     def test_rejects_wrong_scheme(self):
-        assert self._client().get("/mcp/", headers={"Authorization": "Basic s3cret"}).status_code == 401
+        assert self._client().get("/mcp/", headers={"Authorization": f"Basic {self.GOOD}"}).status_code == 401
 
-    def test_accepts_correct_key(self):
-        r = self._client().get("/mcp/", headers={"Authorization": "Bearer s3cret"})
+    def test_accepts_valid_token_and_exposes_its_hash(self):
+        seen = []
+        r = self._client(seen).get("/mcp/", headers={"Authorization": f"Bearer {self.GOOD}"})
         assert r.status_code == 200 and r.text == "ok"
+        assert seen == [hash_token(self.GOOD)]
+        assert mcp_token_hash.get() is None  # reset after the request
 
-    def test_not_mounted_when_no_key_configured(self):
-        # the process-wide app only mounts /mcp when MCP_API_KEY is set
-        assert settings.MCP_API_KEY == "" or True
+    def test_mounted_by_default(self):
         paths = [getattr(r, "path", "") for r in app.routes]
-        if not settings.MCP_API_KEY:
-            assert "/mcp" not in paths
+        assert ("/mcp" in paths) == settings.MCP_ENABLED
 
 
 # --------------------------------------------------------------------------- uploads

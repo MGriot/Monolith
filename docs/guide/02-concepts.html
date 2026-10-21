@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concepts · Monolith Guide</title>
+<meta name="description" content="How Monolith is built and how it thinks: architecture, the task tree, status roll-up, project roles, scheduling and the critical path.">
+<link rel="icon" href="assets/monolith.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/guide.css">
+<script src="assets/guide.js" defer></script>
+</head>
+<body style="--chapter: '2.'">
+<!-- BEGIN:topbar -->
+<header class="topbar"><div class="topbar-in"><a class="brand" href="index.html"><img src="assets/monolith.svg" alt="" width="22" height="22">Monolith Guide</a><nav class="chapters" aria-label="Chapters"><a href="index.html">Overview</a><a href="01-getting-started.html"><b>1</b>Getting started</a><a href="02-concepts.html" aria-current="page"><b>2</b>Concepts</a><a href="03-projects-and-tasks.html"><b>3</b>Projects &amp; tasks</a><a href="04-planning-views.html"><b>4</b>Planning views</a><a href="05-collaboration.html"><b>5</b>Collaboration</a><a href="06-tracking.html"><b>6</b>Tracking</a><a href="07-automation.html"><b>7</b>Automation</a><a href="08-administration.html"><b>8</b>Administration</a><a href="09-mcp.html"><b>9</b>MCP</a><a href="10-api-reference.html"><b>10</b>API reference</a><a href="11-troubleshooting.html"><b>11</b>Troubleshooting</a></nav><button type="button" class="theme-btn">Dark mode</button></div></header>
+<!-- END:topbar -->
+<div class="shell">
+<nav class="toc" aria-label="On this page">
+<!-- BEGIN:toc -->
+<span class="eyebrow">On this page</span>
+<a href="#architecture">Architecture</a>
+<a href="#hierarchy">Projects and the task tree</a>
+<a href="#status">Status and progress roll-up</a>
+<a href="#roles">Project roles</a>
+<a href="#scheduling">Scheduling, deadlines and the critical path</a>
+<a href="#taxonomy-model">Topics, work types and tags</a>
+<!-- END:toc -->
+</nav>
+<main class="doc">
+  <header class="prose">
+    <span class="eyebrow">Chapter 2</span>
+    <h1>Concepts</h1>
+    <p class="lede">The handful of ideas that explain almost every behaviour in Monolith: one tree of tasks per project, statuses that
+      roll up, roles that gate every request, and a schedule computed from estimates and dependencies.</p>
+  </header>
+
+  <section id="architecture">
+    <span class="eyebrow">System</span>
+    <h2>Architecture</h2>
+    <pre class="tree"><b>browser</b>  React 19 · TanStack Query · Excalidraw
+   │  HTTPS (same origin)
+<b>proxy</b>    nginx  ── /            → frontend (static build)
+         ├─ /api/   → backend   <i>REST + websockets (/notifications/ws, /whiteboards/{id}/ws)</i>
+         ├─ /uploads/ → backend <i>files and sketch previews, served with nosniff</i>
+         └─ /mcp/   → backend   <i>MCP over SSE, personal tokens</i>
+<b>backend</b>  FastAPI · SQLAlchemy async · Alembic · one uvicorn worker
+   │  background: e-mail outbox · webhook outbox · scheduler (digest, reminders, due_soon)
+<b>db</b>       PostgreSQL 16            <b>mailserver</b>  docker-mailserver (internal SMTP, optional relay)</pre>
+    <div class="cols">
+      <div class="panel"><h4>One unit of work per operation</h4><p>Compound changes (a task update that moves parent statuses and project dates, a project created from a template, an idea promoted to a task) commit once or not at all. Side effects that must not undo the change, such as queueing an e-mail, run in a savepoint.</p></div>
+      <div class="panel"><h4>Queues, not inline calls</h4><p>Requests only insert rows into the e-mail and webhook outboxes. Workers deliver them after the commit with retries and backoff, using <code>SKIP LOCKED</code> so several processes never double-send.</p></div>
+      <div class="panel"><h4>In-process real time</h4><p>The notification socket and the live whiteboard rooms keep their state in the backend process. That is why the image runs a single worker; scaling out needs a shared broker in front.</p></div>
+      <div class="panel"><h4>One permission layer</h4><p>Every endpoint, the websockets and every MCP tool go through <code>app/api/access.py</code>. The UI hides controls by role, but the API is the gate.</p></div>
+    </div>
+  </section>
+
+  <section id="hierarchy">
+    <span class="eyebrow">Data model</span>
+    <h2>Projects and the task tree</h2>
+    <p class="prose">A <b>project</b> is the container: metadata, members and roles, custom fields, automations, files and sketches.
+      Inside it, <b>tasks nest to any depth</b>; a task with children is a summary task, a task without is a work item. Each task gets a
+      <b>WBS code</b> (<code>2.3.1</code>) from its position in the tree, recomputed whenever the tree changes.</p>
+    <pre class="tree"><b>Helios — Customer Data Platform Migration</b>            <i>project</i>
+├── <b>1 Discovery &amp; design</b>                             <i>summary task</i>
+│   ├── 1.1 Inventory the 42 source systems          <i>work item</i>
+│   └── 1.4 ◆ Gate 1 — architecture sign-off          <i>milestone</i>
+└── <b>2 Platform foundation</b>
+    └── 2.2 Streaming ingestion: Debezium CDC        <i>FS after 2.1</i></pre>
+    <p class="prose">Trees load with one recursive query plus one query per relation, so depth and size do not multiply queries.
+      "Subtasks" in older screens and the <code>/subtasks</code> API are the same task rows with a <code>parent_id</code>.</p>
+  </section>
+
+  <section id="status">
+    <span class="eyebrow">Roll-up</span>
+    <h2>Status and progress roll-up</h2>
+    <p class="prose">Statuses are <code>Backlog</code>, <code>Todo</code>, <code>In Progress</code>, <code>On hold</code>, <code>Review</code> and <code>Done</code>. Work items are set by people; summary tasks follow their children:</p>
+    <ul class="prose">
+      <li>If <b>any</b> child is In Progress, the parent becomes In Progress.</li>
+      <li>If <b>all</b> children are Done, the parent tries to become Done, unless it is blocked by an unfinished predecessor, in which case it stays In Progress.</li>
+      <li>A task cannot be marked Done while a predecessor it depends on is not Done; circular dependencies are rejected (depth-first search).</li>
+    </ul>
+    <p class="prose">The project's <code>progress_percent</code> weighs its top-level tasks:</p>
+    <div class="stats">
+      <div class="stat"><b>100%</b><span>Done</span></div><div class="stat"><b>80%</b><span>Review</span></div>
+      <div class="stat"><b>50%</b><span>In Progress</span></div><div class="stat"><b>25%</b><span>On hold</span></div>
+      <div class="stat"><b>0%</b><span>Todo, Backlog</span></div>
+    </div>
+    <p class="prose">A project's start and due dates follow its tasks: the earliest start and the latest planned due date (a task's hard deadline counts only when it has no due date). The project's own hard deadline is never changed by its tasks. Roll-up changes do not fire automation events (<a href="07-automation.html#rules">7.1</a>).</p>
+  </section>
+
+  <section id="roles">
+    <span class="eyebrow">Access</span>
+    <h2>Project roles</h2>
+    <p class="prose">Every member of a project has one role. The <b>owner</b> and <b>administrators</b> (superusers) are always admin.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Can…</th><th>viewer</th><th>editor</th><th>admin</th></tr></thead>
+      <tbody>
+        <tr><td class="wrap">Read the project, tasks, comments, ideas, files, sketches, time, field definitions</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+        <tr><td class="wrap">Watch a sketch live (presence and pointers)</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+        <tr><td class="wrap">Create, edit, delete tasks and dependencies</td><td></td><td class="c">✓</td><td class="c">✓</td></tr>
+        <tr><td class="wrap">Comment, propose and vote on ideas, upload files, draw on sketches</td><td></td><td class="c">✓</td><td class="c">✓</td></tr>
+        <tr><td class="wrap">Log time</td><td class="c">own assigned tasks</td><td class="c">✓</td><td class="c">✓</td></tr>
+        <tr><td class="wrap">Project settings, taxonomy, custom fields, automations, archive and restore</td><td></td><td></td><td class="c">✓</td></tr>
+        <tr><td class="wrap">Add and remove members, change roles</td><td></td><td></td><td class="c">✓</td></tr>
+        <tr><td class="wrap">Promote an idea to a task or a project</td><td></td><td></td><td class="c">✓</td></tr>
+        <tr><td class="wrap">Delete the project</td><td></td><td></td><td class="c">owner / administrator</td></tr>
+      </tbody>
+    </table></div>
+    <ul class="prose">
+      <li>A task's owner or assignee can always read it and log time on it, even without a project role.</li>
+      <li>Roles are read from the database on every request, so changes take effect at once; removing a member removes access immediately, including open websockets on their next message.</li>
+      <li>Unknown role values are treated as viewer, and the database rejects them anyway.</li>
+      <li>MCP tokens act as their owner with exactly these roles (<a href="09-mcp.html#identity">9.1</a>).</li>
+    </ul>
+  </section>
+
+  <section id="scheduling">
+    <span class="eyebrow">Time</span>
+    <h2>Scheduling, deadlines and the critical path</h2>
+    <h3>Dates</h3>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Field</th><th>On</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>start_date</code>, <code>due_date</code></td><td>project, task</td><td>The plan. For tasks, start, due and <code>duration_days</code> recalculate each other: change two and the third follows.</td></tr>
+        <tr><td><code>deadline_at</code></td><td>project, task</td><td>The <b>hard deadline</b>: the date that must not slip. A task deadline tightens the critical-path calculation; a project deadline drives the deadline chip and portfolio health.</td></tr>
+        <tr><td><code>completed_at</code></td><td>project, task</td><td>When it was actually finished; shown as an emerald marker on the Gantt.</td></tr>
+        <tr><td><code>optimistic_days</code>, <code>normal_days</code>, <code>pessimistic_days</code></td><td>task</td><td>PERT estimates. Expected duration = (O + 4N + P) / 6; time tracking compares against it at 8 h per workday.</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Dependencies</h3>
+    <p class="prose">A dependency links a predecessor to a successor in the same project, with a type and a lag in days (negative lag is a lead).</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Type</th><th>The successor…</th></tr></thead>
+      <tbody>
+        <tr><td><code>FS</code> finish-to-start</td><td class="wrap">starts after the predecessor finishes (the default)</td></tr>
+        <tr><td><code>SS</code> start-to-start</td><td class="wrap">starts after the predecessor starts</td></tr>
+        <tr><td><code>FF</code> finish-to-finish</td><td class="wrap">finishes after the predecessor finishes</td></tr>
+        <tr><td><code>SF</code> start-to-finish</td><td class="wrap">finishes after the predecessor starts</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Critical path (CPM)</h3>
+    <p class="prose"><code>backend/app/core/cpm.py</code> runs a forward and a backward pass over every task each time a project's task list is loaded:</p>
+    <ul class="prose">
+      <li>Tasks without predecessors start at their planned start; others as early as their links allow, so gaps in the plan do not hide the longest chain. Completed tasks keep their actual span.</li>
+      <li>The backward pass is anchored at the computed finish, so the longest chain always has zero slack. A task's hard deadline can tighten it further and push slack negative, which means it is already late.</li>
+      <li>Summary tasks (tasks with subtasks and no links of their own) are not activities: they take their result from their children, critical when any child is, with the smallest child slack. Link a summary task directly and it becomes an activity again.</li>
+      <li>Each task gets <code>is_critical</code> and <code>slack_days</code>; the Gantt and task list highlight the chain, and <code>get_critical_path</code> returns it over MCP.</li>
+    </ul>
+    <h3>Deadline status</h3>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Status</th><th>When</th><th>Shown as</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag">ok</span></td><td>The planned due date is on or before the hard deadline.</td><td>Deadline line on the project card</td></tr>
+        <tr><td><span class="tag warn">at risk</span></td><td>The plan already finishes after the deadline.</td><td>Amber, and −15 on the health score</td></tr>
+        <tr><td><span class="tag rm">overdue / missed</span></td><td>The deadline has passed and the project is not Done.</td><td>Red, and −40 on the health score</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="taxonomy-model">
+    <span class="eyebrow">Classification</span>
+    <h2>Topics, work types and tags</h2>
+    <p class="prose"><b>Topics</b> (what it is about, with a colour) and <b>work types</b> (what kind of work) are managed lists. Global ones are defined by administrators; projects and tasks can add <b>scoped</b> ones that only exist there, and a project can whitelist which global entries it uses. <b>Tags</b> are free text and need no setup. Files in the File Hub can be tagged with topics too.</p>
+  </section>
+
+<!-- BEGIN:pager -->
+<nav class="pager" aria-label="Chapters"><a class="prev" href="01-getting-started.html"><span>Previous</span>1. Getting started</a><a class="next" href="03-projects-and-tasks.html"><span>Next</span>3. Projects &amp; tasks</a></nav>
+<!-- END:pager -->
+</main>
+</div>
+</body>
+</html>

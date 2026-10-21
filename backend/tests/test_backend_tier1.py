@@ -1,5 +1,5 @@
 """Tier-1 backend behaviour that does not need a database: search, bulk notification update, dependency graph scoping,
-pagination caps. (The SQL itself runs against PostgreSQL in the live suites described in docs/how-to/database-migrations.md.)"""
+pagination caps. (The SQL itself runs against PostgreSQL in the live suites described in docs/guide/08-administration.html#migrations.)"""
 import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch

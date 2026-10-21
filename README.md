@@ -1,175 +1,123 @@
 # 🗿 Monolith
 
-[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-20232A?logo=react)](https://reactjs.org/)
+[![React](https://img.shields.io/badge/React-19-20232A?logo=react)](https://react.dev/)
+[![MCP](https://img.shields.io/badge/MCP-112%20tools-6741d9)](docs/guide/09-mcp.html)
 
-**Monolith** is a high-performance, dockerized project management platform built for technical teams. It enforces a strict **Project → Task → Subtask** hierarchy and provides advanced high-density visualizations to turn complex roadmaps into actionable plans.
+**Monolith** is a self-hosted project planner for technical teams. Projects hold a tree of tasks of any depth with dates, PERT
+estimates, dependencies and a live critical path, budgets and risk, time tracking, custom fields and automations. Comments, an ideas
+hub, a File Hub with previews and **real-time Excalidraw sketches** keep the conversation next to the work, and a **Model Context
+Protocol** server lets AI assistants plan and update projects as you.
 
----
-
-![Interactive Gantt chart with dependencies, critical path and a today marker](docs/img/gantt.png)
+![Gantt chart with dependencies, the critical path and a today marker](docs/img/gantt.png)
 
 <table>
   <tr>
     <td width="50%"><img src="docs/img/kanban.png" alt="Kanban board with filters and saved views"></td>
     <td width="50%"><img src="docs/img/schedule.png" alt="Master schedule showing every project on one yearly roadmap"></td>
   </tr>
-  <tr>
-    <td colspan="2"><img src="docs/img/dashboard-dark.png" alt="Dashboard in dark mode with KPIs and the task status breakdown"></td>
-  </tr>
 </table>
 
-## 🚀 Key Features
+## 📖 Documentation
 
-- **🎯 Strict Hierarchy:** Maintain absolute clarity with a 3-level structure. Subtask completion automatically drives Task progress, which in turn updates Project completion metrics.
-- **📊 High-Density Visualizations:**
-    - **Advanced Gantt:** Orthogonal stepped lines, dependency Z-shapes, and multi-level zoom (Day to Year).
-    - **Smart Kanban:** Full status parity (Backlog to Done) with precise drag-and-drop reordering and a 5-task column limit.
-    - **Activity Heatmap:** GitHub-style contribution tracking (Last 12 months rolling).
-- **🤝 Decentralized Management:** Every user can create and manage their own teams, fostering organic collaboration.
-- **💡 Universal Ideas Hub:** Centralized brainstorming engine with up/down voting, task-linking, and multi-path promotion (Task or Project).
-- **📜 Professional Workflows:** Enhanced SOP library with full LaTeX math support and interactive "Tipsy" tooltips.
-- **📥 Data Portability:** High-DPI Gantt PNGs, Project CSV, and Excel (.xlsx) exports for comprehensive reporting.
-- **🤖 AI-Ready (MCP):** Integrated **Model Context Protocol** server allows AI agents to autonomously manage your projects, tasks, and subtasks.
-- **🔐 Project Roles:** Viewer / editor / admin per project, enforced by the API. See [Project roles](docs/how-to/project-roles.md).
-- **⚙️ Automations & Webhooks:** "When X happens, do Y" rules per project plus signed outgoing webhooks. See [Automations](docs/how-to/automations.md).
-- **🔁 Recurring Tasks & Calendar Feed:** RRULE-based repeats and a private iCalendar (ICS) feed for Outlook, Google or Apple Calendar. See [Recurring tasks](docs/how-to/recurring-tasks-and-calendar-feed.md).
-- **⏱️ Time Tracking & Custom Fields:** Log time against tasks and add typed custom fields per project. See [the API reference](docs/reference-time-and-custom-fields.md).
-- **✉️ E-mail:** Bundled mail server with an outbox queue, password reset, address verification, assignment notifications, digests and an optional outbound relay. See [E-mail](docs/how-to/email.md).
-- **⌨️ Fast Navigation:** Command palette (<kbd>Ctrl</kbd>+<kbd>K</kbd>), keyboard shortcuts, filters and saved views. See [Command palette](docs/how-to/command-palette-and-saved-views.md).
-- **🔔 Notification Centre, Bulk Actions & Dark Mode:** An in-app inbox with real-time updates, multi-select edits on task lists, and a light / dark / system theme.
-- **⚡ Technical Excellence:**
-    - Manual sorting with `sort_index` (Up/Down).
-    - Recursive dependency tracking and status propagation.
-    - One database transaction per compound operation; schema changes via Alembic migrations.
-    - Automated weekly email summaries for users, team owners, and project owners.
-    - Rootless Podman (or Docker) stack: Nginx, FastAPI, React, PostgreSQL and a mail server.
+The complete guide is plain HTML in [`docs/guide/`](docs/guide/index.html). Open `docs/guide/index.html` in a browser after cloning
+(GitHub shows HTML files as source), or serve the folder with any static host.
 
----
+| | Chapter | Covers |
+|---|---|---|
+| 1 | [Getting started](docs/guide/01-getting-started.html) | the stack, `.env`, first sign-in, dev mode, tests, Podman notes |
+| 2 | [Concepts](docs/guide/02-concepts.html) | architecture, the task tree, status roll-up, roles, scheduling and CPM |
+| 3 | [Projects & tasks](docs/guide/03-projects-and-tasks.html) | every editor field, filters, saved views, shortcuts, bulk actions, archive |
+| 4 | [Planning views](docs/guide/04-planning-views.html) | Gantt, Kanban, schedule, dashboard, workload, heatmap, portfolio health |
+| 5 | [Collaboration](docs/guide/05-collaboration.html) | comments, ideas, live sketches and sharing, File Hub, notifications, e-mail |
+| 6 | [Tracking](docs/guide/06-tracking.html) | time tracking, custom fields, recurring tasks, calendar feed |
+| 7 | [Automation](docs/guide/07-automation.html) | rules, webhooks, templates, SOP workflows, exports |
+| 8 | [Administration](docs/guide/08-administration.html) | users and approval, taxonomy, teams, settings, migrations, mail queue |
+| 9 | [MCP server](docs/guide/09-mcp.html) | personal tokens, client setup, every tool, the sample project |
+| 10 | [API reference](docs/guide/10-api-reference.html) | every REST endpoint, the websocket protocols |
+| 11 | [Troubleshooting](docs/guide/11-troubleshooting.html) | security model, common problems, health checks, backups |
 
-## 🛠️ Tech Stack
+The tool and endpoint references are generated from the code: `python scripts/docs/gen_reference.py` (CI runs it with `--check`).
 
-- **Frontend:** React 19, TypeScript, Tailwind CSS, Shadcn/UI, Lucide Icons, TanStack Query.
-- **Backend:** FastAPI, SQLAlchemy (Async), PostgreSQL, Alembic, PyJWT, Pandas (for exports).
-- **Infrastructure:** Podman or Docker Compose, Nginx, docker-mailserver.
-- **AI Integration:** Model Context Protocol (MCP).
+## 🚀 Quick start
 
----
+Requirements: rootless **Podman** with `podman-compose` ≥ 1.2, or **Docker** with Compose v2.
 
-## 🏁 Quick Start
-
-### Prerequisites
-- Podman (rootless) with `podman-compose` >= 1.2, or Docker with Compose. See [Run with Podman](docs/how-to/run-with-podman.md) for details.
-
-### 1. Configure and launch the stack
 ```bash
-cp .env.example .env            # fill in the secrets and the first admin (see comments in the file)
-scripts/mail-bootstrap.sh       # one-time: TLS cert + mailbox for the internal mail server
+cp .env.example .env            # set POSTGRES_PASSWORD, SECRET_KEY, FIRST_SUPERUSER_EMAIL/PASSWORD, SMTP_USER/PASSWORD
+scripts/mail-bootstrap.sh       # one-time: TLS certificate + sender mailbox for the internal mail server
 podman-compose up -d --build    # or: docker compose up -d --build
 ```
 
-### 2. Access the Application
-- **Frontend:** [http://localhost:8080](http://localhost:8080) (change the port with `HTTP_PORT` in `.env`)
-- **API Docs:** [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
-- **MCP Server:** `http://localhost:8080/mcp/sse` when `MCP_API_KEY` is set (send it as a Bearer token).
+| What | Where |
+|---|---|
+| App | http://localhost:8080 (`HTTP_PORT`) |
+| API docs | http://localhost:8080/api/docs |
+| MCP | http://localhost:8080/mcp/sse with a personal token |
 
-### 3. First sign-in
-There are no default accounts. Sign in with `FIRST_SUPERUSER_EMAIL` / `FIRST_SUPERUSER_PASSWORD` from your `.env`, create further users from the admin
-screen, then remove the password from `.env`. Public sign-up is disabled unless `ALLOW_SIGNUP=true`.
+There are **no default accounts**: sign in with `FIRST_SUPERUSER_EMAIL`, then remove its password from `.env`. Development mode with
+hot reload: `podman-compose -f compose.yaml -f compose.dev.yaml up -d --build` (Vite on :5173, API on :8000). Details in
+[chapter 1](docs/guide/01-getting-started.html).
 
----
+## 🤖 Connect an AI assistant (MCP)
 
-## 📚 Documentation
+1. In Monolith, open **Settings → MCP access → Create token** and copy the token (it is shown once).
+2. Add the server to your client, for example Claude Code:
 
-**Tutorial**
-- [Getting Started Guide](docs/tutorials/getting-started.md)
+   ```bash
+   claude mcp add --transport sse monolith http://localhost:8080/mcp/sse --header "Authorization: Bearer $MONOLITH_MCP_TOKEN"
+   ```
 
-**How-to guides**
-- [Run with Podman (and the internal mail server)](docs/how-to/run-with-podman.md)
-- [Administrator Guide](docs/how-to/admin-guide.md)
-- [Project roles](docs/how-to/project-roles.md)
-- [Automation rules and webhooks](docs/how-to/automations.md)
-- [Recurring tasks and the calendar feed](docs/how-to/recurring-tasks-and-calendar-feed.md)
-- [Command palette, shortcuts and saved views](docs/how-to/command-palette-and-saved-views.md)
-- [E-mail](docs/how-to/email.md)
-- [Database migrations (Alembic)](docs/how-to/database-migrations.md)
-- [Transactions](docs/how-to/transactions.md)
-- [MCP Connection Guide](docs/how-to/setup-mcp.md)
+3. Ask it to plan something. Every tool acts as you, with your project roles; a viewer's token can read but not write.
 
-**Reference**
-- [MCP tools](docs/reference/mcp-tools.md)
-- [Time tracking and custom fields (API)](docs/reference-time-and-custom-fields.md)
-- Interactive API docs at `/api/docs` on a running stack
+Try the sample: `pip install "mcp<2"` and `python scripts/mcp_sample_project.py --replace` build a complete migration project
+(deadline, budget versus cost, allocations, 5 phases and 22 tasks with dependencies, time, comments, an idea, a sketch and a runbook) through MCP calls
+alone. See [chapter 9](docs/guide/09-mcp.html).
 
-**Explanation**
-- [System Architecture](docs/explanation/architecture.md)
-- [Hierarchy & Status Logic](docs/explanation/hierarchy-logic.md)
-- [Gantt logic](docs/explanation/gantt-logic.md)
+## ✨ Highlights
 
----
+- **Planning**: unlimited task nesting with WBS codes, FS/SS/FF/SF dependencies with lag, PERT estimates, a server-side critical path, planned dates and hard deadlines on projects and tasks.
+- **Views**: Gantt (day to year, PNG export), Kanban, filtered lists with shareable URLs and saved views, a yearly schedule, dashboard KPIs, workload, heatmap, risk matrix, portfolio health.
+- **Collaboration**: project roles (viewer, editor, admin), comments, an ideas hub with voting and promotion, live Excalidraw sketches with presence, pointers and view-only mode, a File Hub that previews images, PDFs, spreadsheets, documents, notes and `.excalidraw` files.
+- **Tracking & automation**: timers against estimates, timesheets, typed custom fields, recurring tasks, an ICS feed, "when / if / then" rules, Slack/Discord/JSON webhooks, templates, SOPs with LaTeX, CSV/XLSX exports.
+- **Operations**: rootless containers, one transaction per operation, Alembic migrations at start-up, queued e-mail and webhooks with retries, a bundled mail server.
 
-## 🤖 MCP Integration
+## 🛠️ Tech stack
 
-Monolith comes with a standalone MCP container. You can connect your favorite AI agent (e.g., Claude, Gemini) to the MCP server to automate your workflow.
+React 19 · TypeScript · Tailwind · TanStack Query · Excalidraw 0.18 — FastAPI · SQLAlchemy (async) · PostgreSQL 16 · Alembic · MCP Python SDK — nginx · docker-mailserver · Podman/Docker Compose.
 
-**Available MCP Tools:**
-- `create_project`: Generate new projects with metadata.
-- `create_task` / `create_subtask`: Build out hierarchies.
-- `search_projects`: Find project IDs by name.
-- `update_task_status`: Real-time progress updates.
-- `delete_project`: Full lifecycle management.
-
----
-
-## 📦 Project Structure
+## 📦 Repository layout
 
 ```text
-Monolith/
-├── backend/            # FastAPI application, models, Alembic migrations, tests
-├── frontend/           # React application (Vite)
-├── mcp/                # MCP Server entrypoint & Agent scripts
-├── nginx/              # Reverse proxy configuration
-├── scripts/            # mail-bootstrap.sh, live-smoke.sh
-├── docs/               # Tutorials, how-tos, reference, explanation, screenshots
-├── compose.yaml        # Full stack orchestration
-└── compose.dev.yaml    # Dev overlay: hot reload, ports for db/backend/Vite
+backend/     FastAPI app (app/api, app/mcp, app/core, app/models), Alembic migrations, tests (unit + live)
+frontend/    React app (Vite)
+docs/        guide/ (HTML documentation), img/ (screenshots; img/guide/ for the guide), redesign/ (UI redesign proposal)
+scripts/     mail-bootstrap.sh, live-smoke.sh, mcp_sample_project.py + sample_project.json, docs/gen_reference.py,
+             debug/ (one-off Playwright scripts)
+nginx/       reverse proxy configuration
+compose.yaml / compose.dev.yaml
 ```
-
----
 
 ## 🧪 Tests and CI
 
 ```bash
-# backend unit tests (no database needed); CI runs the explicit file list in ci.yml
-cd backend && pip install -r requirements.txt pytest pytest-asyncio && python -m pytest -q tests/test_security_tier0.py
-# frontend
+cd backend && python -m pytest -q tests/                      # unit tests, no database
+TEST_DATABASE_URL=postgresql+asyncpg://postgres:test@localhost:55432/postgres \
+  python -m pytest -q tests/test_db_integration.py              # against a throw-away Postgres (rolled back)
 cd frontend && npm ci && npm run typecheck && npm test && npm run build
-# live checks against a running stack with a fresh database
-scripts/live-smoke.sh
+scripts/live-smoke.sh                                         # against a throw-away stack with a fresh database
+python scripts/docs/gen_reference.py --check                  # generated guide sections are current
 ```
 
-GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the backend unit tests and a `pip-audit` dependency scan,
-the frontend typecheck, tests and build on Node 22, and then builds the full Podman stack and runs the live checks.
-
----
+[GitHub Actions](.github/workflows/ci.yml) runs the backend unit tests and a `pip-audit` scan, the docs check, the frontend typecheck,
+tests and build, then builds the Podman stack and runs the live checks (including MCP over SSE and two websocket peers on one sketch).
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our documentation for internal conventions and component structures.
-
-1. Fork the Project.
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the Branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
-
----
+See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions, tests and the pull-request process.
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
-
----
-*Created by the Monolith Team - 🌌 To the stars through projects.*
+MIT, see [LICENSE](LICENSE).

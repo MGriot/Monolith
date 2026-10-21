@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from app.db.session import Base
 
 class Whiteboard(Base):
@@ -27,6 +27,7 @@ class Whiteboard(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    project = relationship("Project", backref="whiteboards")
+    # Deleting a project deletes its sketches (project_id is NOT NULL); deleting a task only unlinks them.
+    project = relationship("Project", backref=backref("whiteboards", cascade="all, delete-orphan"))
     task = relationship("Task", backref="whiteboards")
     owner = relationship("User", backref="whiteboards")

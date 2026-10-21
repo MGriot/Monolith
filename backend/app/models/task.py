@@ -96,8 +96,12 @@ class Task(Base):
     owner = relationship("User", foreign_keys=[owner_id])
     assignees = relationship("User", secondary=task_assignees, backref="assigned_tasks")
     
-    blocked_by = relationship("Dependency", foreign_keys="Dependency.successor_id", back_populates="successor")
-    blocking = relationship("Dependency", foreign_keys="Dependency.predecessor_id", back_populates="predecessor")
+    # Dependencies die with either of their tasks (the FKs are ON DELETE CASCADE); without the cascade the ORM would
+    # try to null the NOT NULL foreign keys when a task or its project is deleted.
+    blocked_by = relationship("Dependency", foreign_keys="Dependency.successor_id", back_populates="successor",
+                              cascade="all, delete-orphan", passive_deletes=True)
+    blocking = relationship("Dependency", foreign_keys="Dependency.predecessor_id", back_populates="predecessor",
+                            cascade="all, delete-orphan", passive_deletes=True)
 
     topic_ref = relationship("Topic", foreign_keys=[topic_id])
     type_ref = relationship("WorkType", foreign_keys=[type_id])

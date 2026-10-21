@@ -18,5 +18,7 @@ from .automation import AutomationRule, AutomationRun, WebhookDelivery
 
 from .folder import Folder
 from .file import File
+from .mcp_token import McpToken
+from .activity import ActivityEvent
 
 from . import indexes  # noqa: F401,E402  (attaches secondary indexes to the tables)

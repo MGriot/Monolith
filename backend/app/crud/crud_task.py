@@ -7,6 +7,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.orm.attributes import set_committed_value
 
+from app.core import activity
 from app.crud.base import CRUDBase
 from app.models.task import Task
 from app.models.metadata import Topic, WorkType
@@ -19,6 +20,37 @@ from app.core.automations import fire_task_events
 
 def _enum_val(v: Any) -> Any:
     return v.value if hasattr(v, "value") else v
+
+def reconcile_dates(obj_data: dict, start0, due0, dur0) -> dict:
+    """Keep start, due and duration_days consistent for an update, in place (dur=1 means the same day).
+
+    Whatever the caller sent wins: duration (with start) moves the due date; start AND due together set the
+    duration; start alone keeps the duration and moves the due date; due alone sets the duration.
+    Key presence matters, not truthiness: an explicit null just clears that field.
+    """
+    from datetime import timedelta
+
+    start = obj_data["start_date"] if "start_date" in obj_data else start0
+    due = obj_data["due_date"] if "due_date" in obj_data else due0
+    dur = obj_data["duration_days"] if "duration_days" in obj_data else dur0
+    sent = obj_data.keys()
+
+    if "duration_days" in sent:
+        if start and dur and dur > 0:
+            obj_data["due_date"] = start + timedelta(days=dur - 1)
+    elif "start_date" in sent and "due_date" in sent:
+        if start and due:
+            obj_data["duration_days"] = (due - start).days + 1
+    elif "start_date" in sent:
+        if start and dur and dur > 0:
+            obj_data["due_date"] = start + timedelta(days=dur - 1)
+        elif start and due:
+            obj_data["duration_days"] = (due - start).days + 1
+    elif "due_date" in sent:
+        if start and due:
+            obj_data["duration_days"] = (due - start).days + 1
+    return obj_data
+
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     # --- tree loading -------------------------------------------------------------------------------
@@ -145,11 +177,9 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
 
         # 2. Date aggregation
         start_dates = [t.start_date for t in all_tasks if t.start_date]
-        due_dates = [t.due_date for t in all_tasks if t.due_date]
-        deadline_dates = [t.deadline_at for t in all_tasks if t.deadline_at]
-        
-        # end_date fallback logic: use due_date or deadline_at
-        effective_end_dates = due_dates + deadline_dates
+        # A task ends at its planned due date; its hard deadline only stands in when it has none. Counting every
+        # deadline would make the project's planned finish equal its latest deadline and hide deadline risk.
+        effective_end_dates = [t.due_date or t.deadline_at for t in all_tasks if t.due_date or t.deadline_at]
         
         new_start_date = min(start_dates) if start_dates else None
         new_due_date = max(effective_end_dates) if effective_end_dates else None
@@ -215,7 +245,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         if parent.status != new_status:
             # Use direct update to avoid triggering another loop if not needed, 
             # but we NEED to bubble up, so we call update which calls this again.
-            await self.update(db, db_obj=parent, obj_in={"status": new_status})
+            with activity.acting_as(activity.ROLLUP_LABEL):
+                await self.update(db, db_obj=parent, obj_in={"status": new_status})
             # The .update() call will handle the next level up if parent.parent_id exists.
 
     async def is_blocked_by_recursive(self, db: AsyncSession, item_id: UUID, blocker_candidate_id: UUID, visited: set) -> bool:
@@ -335,6 +366,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         db.add(db_obj)
         await commit(db)
         await db.refresh(db_obj)
+        activity.record(db, project_id=db_obj.project_id, task_id=db_obj.id, task_title=db_obj.title,
+                        kind="created", summary="created the task")
         
         # Handle recursive subtasks
         if subtasks_data:
@@ -436,6 +469,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         old_parent_id = db_obj.parent_id
         old_status = _enum_val(db_obj.status)
         added_assignee_ids: List[UUID] = []
+        before = activity.snapshot(db_obj)
         
         if isinstance(obj_in, TaskUpdate):
             obj_data = obj_in.dict(exclude_unset=True)
@@ -453,29 +487,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         obj_data = clean_dict_datetimes(obj_data)
         
         # 2. Bidirectional Date/Duration logic
-        from datetime import timedelta
-        # `.get(key, default)` would return None for an explicit null, so test for key presence.
-        start = obj_data["start_date"] if "start_date" in obj_data else db_obj.start_date
-        due = obj_data["due_date"] if "due_date" in obj_data else db_obj.due_date
-        dur = obj_data["duration_days"] if "duration_days" in obj_data else db_obj.duration_days
-
-        # Detect what changed to decide calculation priority (explicit nulls just clear the field)
-        changed = list(obj_data.keys())
-
-        if "duration_days" in changed:
-            # If duration changed, update due date (dur=1 means same day)
-            if start and dur and dur > 0:
-                obj_data["due_date"] = start + timedelta(days=dur - 1)
-        elif "start_date" in changed:
-            # If start changed, either update due (if dur exists) or dur (if due exists)
-            if start and dur and dur > 0:
-                obj_data["due_date"] = start + timedelta(days=dur - 1)
-            elif start and due:
-                obj_data["duration_days"] = (due - start).days + 1
-        elif "due_date" in changed:
-            # If due changed, update duration
-            if start and due:
-                obj_data["duration_days"] = (due - start).days + 1
+        reconcile_dates(obj_data, db_obj.start_date, db_obj.due_date, db_obj.duration_days)
 
         # 3. Status logic: check blockers ONLY if moving TO Done
         if obj_data.get("status") == Status.DONE and db_obj.status != Status.DONE:
@@ -536,8 +548,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if await is_descendant(new_p_id, db_obj.id):
                 raise ValueError("Cannot set a descendant as a parent (circular hierarchy)")
 
-        # 8. Call base update for remaining fields
+        # 8. Call base update for remaining fields (relations are read now: the refresh below unloads them)
+        rel_after = {k: v for k, v in activity.snapshot(db_obj).items() if k in ("assignees", "topics", "types")}
         db_obj = await super().update(db, db_obj=db_obj, obj_in=obj_data)
+        activity.record_diff(db, db_obj, before, {**activity.snapshot(db_obj), **rel_after})
         
         # 9. Post-update bubbles
         if old_parent_id:
@@ -642,6 +656,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             
         parent_id = db_obj.parent_id
         project_id = db_obj.project_id
+        activity.record(db, project_id=project_id, task_id=db_obj.id, task_title=db_obj.title,
+                        kind="deleted", summary="deleted the task")
         
         obj = await super().remove(db, id=id)
         

@@ -73,12 +73,13 @@ import {
   type SortKey,
 } from '@/lib/file-hub';
 import { useUploadQueue } from '@/hooks/use-upload-queue';
+import { SketchThumbnail } from '@/components/sketch-thumbnail';
 import { DropNavItem, FileCard, FileThumbnail, FolderCard, InlineName, KindIcon, TreeNode, UploadTray, type NativeDropProps } from './parts';
 import type { Topic } from '@/types';
 
 type ViewState = HubView | { type: 'sketches' };
 
-interface Whiteboard { id: string; title: string; updated_at?: string; created_at?: string }
+interface Whiteboard { id: string; title: string; preview_image?: string | null; updated_at?: string; created_at?: string }
 
 const INBOX_NAME = 'Uploads';
 const VIEW_KEY = 'monolith:file-hub-view';
@@ -908,10 +909,9 @@ function SketchGrid({ projectId, whiteboards }: { projectId: string; whiteboards
           onClick={() => navigate(`/projects/${projectId}/whiteboards/${wb.id}`)}
           className="flex flex-col gap-2 rounded-lg border bg-card p-2 text-left transition-colors hover:border-foreground/20"
         >
-          <div className="flex aspect-[4/3] items-center justify-center rounded-md bg-subtle">
-            <PenTool className="h-7 w-7 text-fg-ghost" />
-          </div>
+          <SketchThumbnail src={wb.preview_image} className="aspect-[4/3] border border-hairline" />
           <span className="truncate px-0.5 text-sm font-medium">{wb.title || 'Untitled sketch'}</span>
+          {wb.updated_at && <span className="-mt-1.5 px-0.5 text-xs text-muted-foreground">Edited {new Date(wb.updated_at + (wb.updated_at.endsWith('Z') ? '' : 'Z')).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>}
         </button>
       ))}
     </div>

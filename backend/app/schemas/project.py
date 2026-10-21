@@ -18,6 +18,7 @@ class ProjectBase(BaseModel):
     priority: Optional[Priority] = Priority.MEDIUM
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
+    deadline_at: Optional[datetime] = None
     tags: Optional[List[str]] = []
     is_archived: bool = False
     archived_at: Optional[datetime] = None

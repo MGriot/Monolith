@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Administration · Monolith Guide</title>
+<meta name="description" content="Administer Monolith: users and sign-up approval, topics and work types, teams, personal settings, database migrations and the mail queue.">
+<link rel="icon" href="assets/monolith.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/guide.css">
+<script src="assets/guide.js" defer></script>
+</head>
+<body style="--chapter: '8.'">
+<!-- BEGIN:topbar -->
+<header class="topbar"><div class="topbar-in"><a class="brand" href="index.html"><img src="assets/monolith.svg" alt="" width="22" height="22">Monolith Guide</a><nav class="chapters" aria-label="Chapters"><a href="index.html">Overview</a><a href="01-getting-started.html"><b>1</b>Getting started</a><a href="02-concepts.html"><b>2</b>Concepts</a><a href="03-projects-and-tasks.html"><b>3</b>Projects &amp; tasks</a><a href="04-planning-views.html"><b>4</b>Planning views</a><a href="05-collaboration.html"><b>5</b>Collaboration</a><a href="06-tracking.html"><b>6</b>Tracking</a><a href="07-automation.html"><b>7</b>Automation</a><a href="08-administration.html" aria-current="page"><b>8</b>Administration</a><a href="09-mcp.html"><b>9</b>MCP</a><a href="10-api-reference.html"><b>10</b>API reference</a><a href="11-troubleshooting.html"><b>11</b>Troubleshooting</a></nav><button type="button" class="theme-btn">Dark mode</button></div></header>
+<!-- END:topbar -->
+<div class="shell">
+<nav class="toc" aria-label="On this page">
+<!-- BEGIN:toc -->
+<span class="eyebrow">On this page</span>
+<a href="#users">Users and sign-up approval</a>
+<a href="#taxonomy">Topics and work types</a>
+<a href="#teams">Teams</a>
+<a href="#settings">Personal settings</a>
+<a href="#migrations">Database migrations</a>
+<a href="#mail">Mail queue and relay</a>
+<!-- END:toc -->
+</nav>
+<main class="doc">
+  <header class="prose">
+    <span class="eyebrow">Chapter 8</span>
+    <h1>Administration</h1>
+    <p class="lede">Running Monolith for a team: who gets in, how work is classified, how people organise themselves, and the operational
+      pieces an administrator looks after.</p>
+    <div class="hero-meta"><span><b>Administrators</b> users with <code>is_superuser</code>: see and change every project, manage users and global metadata</span></div>
+  </header>
+
+  <section id="users">
+    <span class="eyebrow">People</span>
+    <h2>Users and sign-up approval</h2>
+    <p class="prose"><span class="ui">Team Members</span> (administrators only) lists every account.</p>
+    <ul class="prose">
+      <li><b>Approve requests</b>: with <code>ALLOW_SIGNUP=true</code>, people ask for an account on <code>/register</code>. Requests wait in the pending list; <b>approving</b> activates the account and e-mails a temporary password that must be changed at first sign-in (so e-mail must be enabled), <b>rejecting</b> deletes the request.</li>
+      <li><b>Promote or demote</b> administrators, and <b>set a new password</b> for someone who is locked out.</li>
+      <li><b>Auto-archive</b> projects that have been Done for a week.</li>
+      <li><b>Create accounts directly</b> through the API (<code>POST /api/v1/users/</code>) or the MCP tool <code>create_user</code>, as an administrator. Passwords must pass the strength rules: at least <code>MIN_PASSWORD_LENGTH</code> (8) characters, at most 72 bytes, no leading or trailing spaces.</li>
+      <li>Deactivated accounts (<code>is_active=false</code>) stop working at once, including their login tokens, MCP tokens and calendar link.</li>
+    </ul>
+    <div class="callout warn"><b>Careful</b><p>Login attempts are throttled: after <code>LOGIN_MAX_FAILURES</code> failures (5) in <code>LOGIN_WINDOW_SECONDS</code> (15 min) the account answers 429 for a while; other accounts are unaffected.</p></div>
+    <figure class="shot"><img src="../img/guide/team-members.webp" alt="Team Members page listing accounts, roles and status" loading="lazy" width="1440" height="900"><figcaption><span class="ui">Team Members</span> (administrators only).</figcaption></figure>
+  </section>
+
+  <section id="taxonomy">
+    <span class="eyebrow">Classification</span>
+    <h2>Topics and work types</h2>
+    <p class="prose"><span class="ui">Metadata</span> (administrators) manages the <b>global</b> lists: name, colour, active flag. Topic colours tint project headers and Gantt bars. Project admins add <b>scoped</b> entries in <span class="ui">Project Settings</span>, which only that project sees, and choose which global entries the project offers. Deactivating hides an entry from pickers without touching items that use it.</p>
+  </section>
+
+  <section id="teams">
+    <span class="eyebrow">Groups</span>
+    <h2>Teams</h2>
+    <p class="prose">Any user can create a team in <span class="ui">Teams</span>, add members, share co-ownership with others or make it public. Teams drive the activity feed (<code>GET /teams/activity</code>) and the owners' weekly team report; they do not grant access to projects, project membership does.</p>
+  </section>
+
+  <section id="settings">
+    <span class="eyebrow">Per person</span>
+    <h2>Personal settings</h2>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Section</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><span class="ui">Profile</span></td><td>Your full name as teammates see it; your e-mail address is shown (changing it through the API requires verifying it again).</td></tr>
+        <tr><td><span class="ui">Appearance</span></td><td>Light, dark or system theme.</td></tr>
+        <tr><td><span class="ui">Notifications</span></td><td>E-mail opt-outs for assignments/reminders and the weekly digest; verify your address.</td></tr>
+        <tr><td><span class="ui">Calendar feed</span></td><td>Private ICS link (<a href="06-tracking.html#calendar-feed">6.4</a>).</td></tr>
+        <tr><td><span class="ui">Integrations</span></td><td>Personal webhooks to Slack, Discord or any JSON endpoint.</td></tr>
+        <tr><td><span class="ui">MCP access</span></td><td>Personal tokens for AI assistants and ready-to-paste client configuration (<a href="09-mcp.html#tokens">9.2</a>).</td></tr>
+        <tr><td><span class="ui">Security</span></td><td>Change your password (needs the current one).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="migrations">
+    <span class="eyebrow">Schema</span>
+    <h2>Database migrations</h2>
+    <p class="prose">Alembic manages the schema (<code>backend/migrations</code>). With <code>AUTO_MIGRATE=true</code> (the default) the backend upgrades at start-up under a Postgres advisory lock: an empty database is created, a database from an old version without <code>alembic_version</code> is stamped at the baseline first, a versioned one is upgraded.</p>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Revision</th><th>Adds</th></tr></thead>
+      <tbody>
+        <tr><td><code>0001</code></td><td>Baseline schema</td></tr>
+        <tr><td><code>0002</code></td><td>Lookup, tree and trigram search indexes (<code>pg_trgm</code>)</td></tr>
+        <tr><td><code>0003</code></td><td>Time entries, custom fields</td></tr>
+        <tr><td><code>0004</code></td><td>E-mail outbox, job runs, user preferences</td></tr>
+        <tr><td><code>0005</code></td><td>Project member roles</td></tr>
+        <tr><td><code>0006</code></td><td>Automations, runs, webhook deliveries</td></tr>
+        <tr><td><code>0007</code></td><td>Recurrence, calendar feed tokens</td></tr>
+        <tr><td><code>0008</code></td><td>Registration approval</td></tr>
+        <tr><td><code>0009</code></td><td>File Hub topics</td></tr>
+        <tr><td><code>0010</code></td><td>Project hard deadline (<code>projects.deadline_at</code>)</td></tr>
+        <tr><td><code>0011</code></td><td>Personal MCP tokens (<code>mcp_tokens</code>, hashed)</td></tr>
+        <tr><td><code>0012</code></td><td>Sketch previews moved from base64 in the database to files under <code>uploads/previews</code></td></tr>
+        <tr><td><code>0013</code></td><td>Task change log (<code>activity_events</code>): who changed what, per project</td></tr>
+      </tbody>
+    </table></div>
+    <pre class="code">podman exec monolith_backend alembic -c /app/alembic.ini current
+podman exec monolith_backend alembic -c /app/alembic.ini upgrade head
+podman exec monolith_backend alembic -c /app/alembic.ini downgrade -1</pre>
+    <h3>Changing the schema</h3>
+    <ol class="steps">
+      <li><div>Edit the model (indexes in <code>app/models/indexes.py</code>).</div></li>
+      <li><div>Autogenerate against a throw-away empty database so the diff is clean, then read and fix the file (data migrations, enums, extensions) and write a <code>downgrade</code>.</div></li>
+      <li><div><code>alembic check</code> must report no new operations after upgrading; <code>tests/test_db_tier1.py</code> fails when a declared index is missing from every migration.</div></li>
+    </ol>
+  </section>
+
+  <section id="mail">
+    <span class="eyebrow">Operations</span>
+    <h2>Mail queue and relay</h2>
+    <p class="prose">Every mail goes through <code>email_outbox</code>: requests only insert rows, a worker delivers them over authenticated STARTTLS with retries (<code>EMAIL_RETRY_BASE_SECONDS</code>, doubled each time, up to <code>EMAIL_MAX_ATTEMPTS</code>). A slow or stopped mail server never slows down the app.</p>
+    <pre class="code"><span class="c"># administrator token; bodies (which contain links) only with include_body=true</span>
+curl -H "Authorization: Bearer $TOKEN" "$URL/api/v1/outbox/?status=failed"
+curl -X POST -H "Authorization: Bearer $TOKEN" "$URL/api/v1/outbox/&lt;id&gt;/retry"
+podman exec monolith_mail setup email list</pre>
+    <ul class="prose">
+      <li><code>pending</code> waits for its first try or backoff, <code>sent</code> was accepted, <code>failed</code> gave up (<code>last_error</code> says why).</li>
+      <li>The scheduler claims each slot atomically in <code>job_runs</code>, so several processes never send a digest twice; a newly installed system does not fire last Monday's digest.</li>
+      <li>Templates are in <code>backend/app/templates/email/</code> (<code>.txt.j2</code> sets the subject, <code>.html.j2</code> is the HTML part).</li>
+      <li>To reach external inboxes from a home connection, set <code>RELAY_HOST</code>, <code>RELAY_PORT</code>, <code>RELAY_USER</code>, <code>RELAY_PASSWORD</code> and relay through a provider. Direct delivery needs MX, SPF, DKIM, DMARC, reverse DNS, a real certificate and open port 25.</li>
+    </ul>
+  </section>
+
+<!-- BEGIN:pager -->
+<nav class="pager" aria-label="Chapters"><a class="prev" href="07-automation.html"><span>Previous</span>7. Automation</a><a class="next" href="09-mcp.html"><span>Next</span>9. MCP</a></nav>
+<!-- END:pager -->
+</main>
+</div>
+</body>
+</html>

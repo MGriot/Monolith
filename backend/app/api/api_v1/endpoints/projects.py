@@ -54,6 +54,7 @@ async def export_projects_multi(
                 "Type": ", ".join([t.name for t in p.types]) if p.types else (p.type or ""),
                 "Start Date": p.start_date.strftime("%Y-%m-%d") if p.start_date else "",
                 "Due Date": p.due_date.strftime("%Y-%m-%d") if p.due_date else "",
+                "Deadline": p.deadline_at.strftime("%Y-%m-%d") if p.deadline_at else "",
                 "Archived": "Yes" if p.is_archived else "No",
                 "Archived At": p.archived_at.strftime("%Y-%m-%d") if p.archived_at else "",
                 "Owner": p.owner.full_name or p.owner.email if p.owner else ""
@@ -73,6 +74,7 @@ async def export_projects_multi(
                 "Assignees": "",
                 "Start Date": p.start_date.strftime("%Y-%m-%d") if p.start_date else "",
                 "Due Date": p.due_date.strftime("%Y-%m-%d") if p.due_date else "",
+                "Deadline": p.deadline_at.strftime("%Y-%m-%d") if p.deadline_at else "",
                 "Progress %": f"{p.progress_percent}%",
                 "Description": p.description or ""
             })
@@ -152,6 +154,7 @@ async def export_project(
             "Progress %": project.progress_percent,
             "Start Date": project.start_date.strftime("%Y-%m-%d") if project.start_date else "",
             "Due Date": project.due_date.strftime("%Y-%m-%d") if project.due_date else "",
+            "Deadline": project.deadline_at.strftime("%Y-%m-%d") if project.deadline_at else "",
             "Archived": "Yes" if project.is_archived else "No",
             "Owner": project.owner.full_name or project.owner.email if project.owner else "N/A",
             "Tags": ", ".join(project.tags or [])
@@ -234,8 +237,8 @@ async def get_portfolio_health(
         projects = await crud_project.project.get_multi(db, limit=1000)
         projects = [p for p in projects if not p.is_archived]
     else:
-        # Simplified: owner only for now
-        projects = await crud_project.project.get_multi_by_owner(db, owner_id=current_user.id)
+        # Projects the caller owns or is a member of (same scope as GET /projects/)
+        projects = await crud_project.project.get_multi_by_user(db, user_id=current_user.id, limit=1000)
         projects = [p for p in projects if not p.is_archived]
 
     project_healths = []
@@ -252,9 +255,13 @@ async def get_portfolio_health(
         overdue = sum(1 for t in tasks if t.due_date and t.due_date < now and t.status != TaskStatus.DONE)
         critical_path = sum(1 for t in tasks if getattr(t, 'is_critical', False))
         
-        # Simple health score formula: 100 - (overdue * 5)
+        # Simple health score formula: 100 - (overdue * 5), with penalties for a threatened hard deadline
         score = 100.0 - (overdue * 5.0)
         if p.status == "On hold": score -= 20
+        deadline_missed = bool(p.deadline_at and p.deadline_at < now and p.status != TaskStatus.DONE)
+        plan_past_deadline = bool(p.deadline_at and p.due_date and p.due_date > p.deadline_at)
+        if deadline_missed: score -= 40
+        elif plan_past_deadline: score -= 15
         score = max(0.0, min(100.0, score))
 
         risk = "Low"
@@ -273,7 +280,9 @@ async def get_portfolio_health(
             overdue_tasks=overdue,
             critical_path_tasks=critical_path,
             risk_level=risk,
-            variance_days=overdue # Simplified variance
+            variance_days=overdue, # Simplified variance
+            deadline_at=p.deadline_at,
+            deadline_status="missed" if deadline_missed else ("at_risk" if plan_past_deadline else ("ok" if p.deadline_at else "none")),
         ))
 
     return PortfolioHealthResponse(
@@ -563,7 +572,13 @@ async def delete_project(
     if not current_user.is_superuser and (project.owner_id != current_user.id):
         raise HTTPException(status_code=403, detail="Only the project owner can delete the project")
         
+    from app.core.previews import delete_preview
+    from app.models.whiteboard import Whiteboard
+
+    previews = (await db.execute(select(Whiteboard.preview_image).where(Whiteboard.project_id == project_id))).scalars().all()
     project = await crud_project.project.remove(db=db, id=project_id)
+    for url in previews:  # the sketches went with the project; drop their preview files too
+        delete_preview(url)
     return project
 
 @router.post("/{project_id}/archive", response_model=Project)

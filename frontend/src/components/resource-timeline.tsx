@@ -15,7 +15,7 @@ import {
   max,
   startOfDay
 } from 'date-fns';
-import { toPng } from 'html-to-image';
+import { exportFullElement } from '@/lib/export-image';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, User as UserIcon, Download, Folder } from 'lucide-react';
@@ -45,19 +45,16 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
   const exportTimeline = async () => {
     if (!timelineRef.current) return;
     setIsExporting(true);
+    let toastId: string | number | undefined;
     try {
-      const dataUrl = await toPng(timelineRef.current, { 
-        backgroundColor: '#ffffff',
-        style: { overflow: 'visible' }
-      });
-      const link = document.createElement('a');
-      link.download = `resource-timeline-${format(new Date(), 'yyyy-MM-dd')}.png`;
-      link.href = dataUrl;
-      link.click();
+      const timeline = (timelineRef.current.firstElementChild as HTMLElement | null) ?? timelineRef.current;
+      toastId = toast.loading('Preparing the whole timeline as an image…');
+      await exportFullElement(timeline, `resource-timeline-${format(new Date(), 'yyyy-MM-dd')}.png`);
+      toast.dismiss(toastId);
       toast.success('Timeline exported as PNG');
     } catch (err) {
       console.error(err);
-      toast.error('Failed to export timeline');
+      toast.error('Failed to export timeline', { id: toastId });
     } finally {
       setIsExporting(false);
     }

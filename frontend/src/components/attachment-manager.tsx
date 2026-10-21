@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import WhiteboardEditor from "./whiteboard-editor";
+import { SketchThumbnail } from "./sketch-thumbnail";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -191,7 +192,7 @@ export default function AttachmentManager({ taskId, projectId, attachments }: At
                     setIsEditorOpen(true);
                 }}
               >
-                <Layout className="w-5 h-5 text-blue-500" />
+                <SketchThumbnail src={wb.preview_image} className="h-full w-full rounded-none" iconClassName="h-5 w-5 text-blue-500" />
               </div>
               
               <div 

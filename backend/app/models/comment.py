@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Text, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from app.db.session import Base
 
 class Comment(Base):
@@ -32,8 +32,9 @@ class Comment(Base):
     # Relationships
     author = relationship("User", backref="threaded_comments", lazy="selectin")
     
-    project = relationship("Project", backref="threaded_comments")
-    task = relationship("Task", backref="threaded_comments")
+    # ON DELETE CASCADE in the database; without passive_deletes the ORM would null the FKs and orphan the comments
+    project = relationship("Project", backref=backref("threaded_comments", cascade="all, delete-orphan", passive_deletes=True))
+    task = relationship("Task", backref=backref("threaded_comments", cascade="all, delete-orphan", passive_deletes=True))
     idea = relationship("Idea", backref="threaded_comments")
     
     # Threading Relationships

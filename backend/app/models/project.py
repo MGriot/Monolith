@@ -29,6 +29,8 @@ class Project(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     start_date = Column(DateTime, nullable=True)
     due_date = Column(DateTime, nullable=True)
+    # Hard deadline: the date the project must not slip past (due_date is the plan)
+    deadline_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     
     tags = Column(ARRAY(String), default=[])

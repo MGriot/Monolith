@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   Loader2,
   NotebookPen,
+  PenTool,
   Presentation,
   RotateCcw,
   X,
@@ -20,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { fileKind, formatBytes, type FileKind, type HubFile, type HubFolder, type HubIndex } from '@/lib/file-hub';
 import type { UploadItem } from '@/hooks/use-upload-queue';
+import { ExcalidrawScenePreview } from '@/components/sketch-thumbnail';
 
 /** Handlers that make an element accept files dragged in from the desktop. */
 export interface NativeDropProps {
@@ -35,6 +37,7 @@ const KIND_STYLE: Record<FileKind, { icon: typeof FileIcon; tone: string; label:
   sheet: { icon: FileSpreadsheet, tone: 'bg-success-soft text-success', label: 'XLS' },
   slides: { icon: Presentation, tone: 'bg-warning-soft text-warning', label: 'PPT' },
   note: { icon: NotebookPen, tone: 'bg-review-soft text-review', label: 'MD' },
+  sketch: { icon: PenTool, tone: 'bg-info-soft text-info', label: 'SKETCH' },
   archive: { icon: Archive, tone: 'bg-muted text-fg-soft', label: 'ZIP' },
   media: { icon: Film, tone: 'bg-review-soft text-review', label: 'AV' },
   other: { icon: FileIcon, tone: 'bg-muted text-fg-soft', label: 'FILE' },
@@ -45,7 +48,7 @@ export function KindIcon({ kind, className }: { kind: FileKind; className?: stri
   return <Icon className={className} aria-hidden />;
 }
 
-/** Image files show themselves, notes show their first lines, everything else a coloured type badge. */
+/** Images show themselves, sketches render their scene, notes show their first lines, everything else a type badge. */
 export function FileThumbnail({ file, className, large }: { file: HubFile; className?: string; large?: boolean }) {
   const kind = fileKind(file);
   const [broken, setBroken] = useState(false);
@@ -57,6 +60,10 @@ export function FileThumbnail({ file, className, large }: { file: HubFile; class
         <img src={file.url} alt="" loading="lazy" draggable={false} onError={() => setBroken(true)} className="h-full w-full object-cover" />
       </div>
     );
+  }
+
+  if (kind === 'sketch') {
+    return <ExcalidrawScenePreview url={file.url} className={className} />;
   }
 
   if (kind === 'note') {

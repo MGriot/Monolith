@@ -38,8 +38,9 @@ class CRUDTopic(CRUDBase[Topic, TopicCreate, TopicUpdate]):
         filters = []
         
         if project_id and task_id:
-            # Strictly for a specific task in a project
-            scope_filter = and_(self.model.project_id == project_id, self.model.task_id == task_id)
+            # A task sees its project's topics plus those scoped to the task itself
+            scope_filter = and_(self.model.project_id == project_id,
+                                or_(self.model.task_id == task_id, self.model.task_id == None))
         elif project_id:
             # For a project (includes project-level topics)
             scope_filter = and_(self.model.project_id == project_id, self.model.task_id == None)
@@ -91,7 +92,9 @@ class CRUDWorkType(CRUDBase[WorkType, WorkTypeCreate, WorkTypeUpdate]):
         filters = []
         
         if project_id and task_id:
-            scope_filter = and_(self.model.project_id == project_id, self.model.task_id == task_id)
+            # A task sees its project's work types plus those scoped to the task itself
+            scope_filter = and_(self.model.project_id == project_id,
+                                or_(self.model.task_id == task_id, self.model.task_id == None))
         elif project_id:
             scope_filter = and_(self.model.project_id == project_id, self.model.task_id == None)
         elif task_id:

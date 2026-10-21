@@ -48,6 +48,7 @@ import AutomationRules from '@/components/automation-rules';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import type { Project, Task } from '@/types';
 import { useTitle } from '@/context/title-context';
+import { DeadlineLine } from '@/components/deadline-line';
 import { fromDateInput } from "@/lib/dates";
 import { calculateSortIndex, flattenTasks } from '@/lib/kanban';
 import TaskFilterBar from '@/components/task-filter-bar';
@@ -209,6 +210,7 @@ export default function ProjectDetailPage() {
         tags: values.tags || [],
         start_date: fromDateInput(values.start_date),
         due_date: fromDateInput(values.due_date),
+        deadline_at: fromDateInput(values.deadline_at),
         topic_ids: values.topic_ids || [],
         type_ids: values.type_ids || [],
         member_ids: values.member_ids || [],
@@ -483,6 +485,7 @@ export default function ProjectDetailPage() {
                     <div className="flex flex-col gap-1">
                         <p className="text-[11px] text-muted-foreground font-medium">Start: {project.start_date ? new Date(project.start_date).toLocaleDateString() : '-'}</p>
                         <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold">Due: {project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}</p>
+                        <DeadlineLine deadline={project.deadline_at} due={project.due_date} done={project.status === 'Done'} />
                     </div>
                 </CardContent>
             </Card>
@@ -631,12 +634,19 @@ export default function ProjectDetailPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-primary" />
-                  Project Activity
+                  Project activity
                 </CardTitle>
-                <CardDescription>Universal threaded discussion and change logs for this project.</CardDescription>
+                <CardDescription>The project's discussion, and every change to its tasks with who made it.</CardDescription>
               </CardHeader>
               <CardContent>
-                <CommentSection projectId={id} />
+                <CommentSection
+                  projectId={id}
+                  onOpenTask={(taskId) => {
+                    setEditingTaskId(taskId);
+                    setParentTaskId(null);
+                    setIsTaskDialogOpen(true);
+                  }}
+                />
               </CardContent>
             </Card>
           </div>
@@ -744,6 +754,7 @@ export default function ProjectDetailPage() {
       <FilePreviewDialog 
         url={previewUrl}
         onClose={() => setPreviewUrl(null)}
+        projectId={id}
       />
 
       <DataExportDialog 

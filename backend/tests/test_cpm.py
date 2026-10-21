@@ -153,3 +153,24 @@ def test_cycles_do_not_hang():
 
 def test_schema_default_slack_is_unset():
     assert make_task("Fresh", 0, 1).slack_days is None
+
+
+def test_summary_tasks_follow_their_children_instead_of_their_planned_window():
+    # Phase 2's planned window ends last, but its work is pulled forward by links: the real chain runs through
+    # the subtasks, and the phases only mirror their children.
+    p1 = make_task("Phase 1", 0, 10)
+    a = make_task("A", 0, 10)
+    p1.subtasks = [a]
+    p2 = make_task("Phase 2", 30, 60)
+    b = make_task("B", 30, 40)
+    c = make_task("C", 40, 45)
+    link(a, b)
+    link(b, c)
+    p2.subtasks = [b, c]
+    side = make_task("Side", 0, 2)
+
+    calculate_cpm([p1, p2, side])
+
+    assert a.is_critical and b.is_critical and c.is_critical
+    assert p1.is_critical and p2.is_critical and p2.slack_days == 0
+    assert not side.is_critical and side.slack_days > 0

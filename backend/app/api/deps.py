@@ -12,6 +12,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.token import TokenPayload
 from app.crud import crud_user
+from app.core.activity import set_actor
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"/api/v1/login/access-token"
@@ -46,6 +47,7 @@ async def get_current_user(
     # Unknown or deactivated accounts must not keep working with a still-valid token.
     if not user or not user.is_active:
         raise _credentials_exc()
+    set_actor(db, user.id)  # the change log attributes this request's edits to them
     return user
 
 async def get_current_user_optional(

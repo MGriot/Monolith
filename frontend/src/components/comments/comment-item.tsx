@@ -1,169 +1,183 @@
-import { useState } from 'react';
-import type { Comment } from '@/types';
-import { CommentInput } from './comment-input';
-import { format } from 'date-fns';
-import { UserAvatar } from "@/components/ui/user-avatar";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { 
-  Trash2, 
-  Edit2,
-  Globe,
-  FileText,
-  ExternalLink
-} from 'lucide-react';
+import { Edit2, ExternalLink, FileText, Globe, Reply, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import type { Comment } from '@/types';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { Button } from '@/components/ui/button';
+import { errorMessage } from '@/components/auth-card';
+import { confirmDialog } from '@/lib/confirm';
+import { parseUtc } from '@/lib/activity';
+import { cn } from '@/lib/utils';
+import { CommentInput } from './comment-input';
 
 interface CommentItemProps {
   comment: Comment;
   currentUserId?: string;
   onEdit: (commentId: string, content: string) => Promise<void>;
   onDelete: (commentId: string) => Promise<void>;
+  onReply?: (parentId: string, content: string) => Promise<void>;
   projectId?: string;
   taskId?: string;
   ideaId?: string;
+  depth?: number;
 }
 
-export function CommentItem({ 
-  comment, 
-  currentUserId, 
-  onEdit, 
-  onDelete, 
-  projectId,
-  taskId,
-  ideaId
-}: CommentItemProps) {
+const isImage = (url: string) => ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(url.split('.').pop()?.toLowerCase() || '');
+
+function when(value: string) {
+  const at = parseUtc(value);
+  const today = new Date().toDateString() === at.toDateString();
+  return today
+    ? at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    : at.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+export function CommentItem({ comment, currentUserId, onEdit, onDelete, onReply, projectId, taskId, ideaId, depth = 0 }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
-
+  const [isReplying, setIsReplying] = useState(false);
   const isMe = currentUserId === comment.author_id;
-
-  const handleEditSubmit = async (content: string) => {
-    await onEdit(comment.id, content);
-    setIsEditing(false);
+  const context = {
+    projectId: projectId || comment.project_id || undefined,
+    taskId: taskId || comment.task_id || undefined,
+    ideaId: ideaId || comment.idea_id || undefined,
   };
 
-  const isImage = (url: string) => {
-    const ext = url.split('.').pop()?.toLowerCase();
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
+  // Esc leaves the editor without saving.
+  useEffect(() => {
+    if (!isEditing && !isReplying) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setIsEditing(false); setIsReplying(false); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isEditing, isReplying]);
+
+  const save = async (content: string) => {
+    try {
+      await onEdit(comment.id, content);
+      setIsEditing(false);
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not save the comment')); // the editor stays open with the text
+    }
+  };
+
+  const reply = async (content: string) => {
+    if (!onReply) return;
+    try {
+      await onReply(comment.id, content);
+      setIsReplying(false);
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not post the reply'));
+    }
+  };
+
+  const remove = async () => {
+    if (!(await confirmDialog({ title: 'Delete this comment?', description: 'Replies to it are deleted too.', confirmLabel: 'Delete', tone: 'danger' }))) return;
+    await onDelete(comment.id);
   };
 
   return (
-    <div className={cn(
-        "flex gap-3 w-full",
-        isMe ? "flex-row-reverse" : "flex-row"
-    )}>
-      <UserAvatar user={comment.author} className="h-8 w-8 shrink-0 mt-1" />
-      
-      <div className={cn(
-        "flex flex-col max-w-[85%] sm:max-w-[70%] gap-1",
-        isMe ? "items-end" : "items-start"
-      )}>
-        {/* Header: Author & Time */}
-        <div className="flex items-center gap-2 px-1">
-          <span className="text-[11px] font-semibold uppercase text-fg-faint tracking-tight">
-            {isMe ? 'You' : (comment.author?.full_name || 'Guest')}
-          </span>
-          <span className="text-[11px] text-fg-ghost font-bold">
-            {format(new Date(comment.created_at), 'HH:mm')}
-          </span>
+    <div className={cn('flex w-full gap-3', depth > 0 && 'pl-11')} data-testid="comment">
+      <UserAvatar user={comment.author} className="mt-0.5 h-8 w-8 shrink-0" />
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex items-baseline gap-2">
+          <span className="text-xs font-medium text-foreground">{isMe ? 'You' : comment.author?.full_name || comment.author?.email || 'Former member'}</span>
+          <time className="text-[11px] tabular-nums text-fg-faint" dateTime={comment.created_at} title={parseUtc(comment.created_at).toLocaleString()}>
+            {when(comment.created_at)}
+          </time>
+          {comment.updated_at && parseUtc(comment.updated_at).getTime() - parseUtc(comment.created_at).getTime() > 60_000 && (
+            <span className="text-[11px] text-fg-faint">(edited)</span>
+          )}
         </div>
 
-        {/* Content Bubble */}
-        <div className={cn(
-            "relative p-3 rounded-2xl group shadow-sm border transition-all",
-            isMe 
-                ? "bg-primary text-primary-foreground rounded-tr-none border-primary shadow-primary/10" 
-                : "bg-background text-foreground rounded-tl-none border-hairline shadow-slate-200/50"
-        )}>
-          {isEditing ? (
-            <div className="min-w-[300px]">
-                <CommentInput
-                    initialValue={comment.content}
-                    onSubmit={handleEditSubmit}
-                    onCancel={() => setIsEditing(false)}
-                    submitLabel="Save"
-                    projectId={projectId || comment.project_id || undefined}
-                    taskId={taskId || comment.task_id || undefined}
-                    ideaId={ideaId || comment.idea_id || undefined}
-                />
-            </div>
-          ) : (
-            <div className={cn(
-                "text-xs prose prose-sm max-w-none leading-relaxed",
-                isMe ? "prose-invert" : "prose-slate"
-            )}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {comment.content}
-              </ReactMarkdown>
-            </div>
-          )}
-
-          {/* Attachments & Previews inside bubble or below */}
-          {(comment.attachments && comment.attachments.length > 0) && (
-              <div className="mt-3 space-y-2">
-                  {comment.attachments.map((url, idx) => (
-                      <div key={idx} className={cn(
-                          "rounded-lg overflow-hidden border shadow-sm max-w-sm",
-                          isMe ? "bg-background/10 border-white/20" : "bg-subtle border-hairline"
-                      )}>
-                          {isImage(url) ? (
-                              <div className="group/img relative">
-                                <img src={url} alt="attachment" className="w-full h-auto max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(url, '_blank')} />
-                                <div className="absolute top-1 right-1 opacity-0 group-hover/img:opacity-100 transition-opacity">
-                                    <Button variant="secondary" size="icon" className="h-6 w-6 rounded-md bg-background/90 backdrop-blur" onClick={() => window.open(url, '_blank')}>
-                                        <ExternalLink className="h-3 w-3" />
-                                    </Button>
-                                </div>
-                              </div>
-                          ) : (
-                              <a href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 hover:bg-black/5 transition-colors">
-                                  <div className="h-8 w-8 rounded bg-border flex items-center justify-center shrink-0">
-                                      <FileText className="h-4 w-4 text-muted-foreground" />
-                                  </div>
-                                  <div className="min-w-0">
-                                      <p className="text-[11px] font-bold truncate tracking-tight">{url.split('/').pop()}</p>
-                                      <p className="text-[11px] uppercase font-semibold opacity-60">File Attachment</p>
-                                  </div>
-                              </a>
-                          )}
-                      </div>
-                  ))}
-              </div>
-          )}
-
-          {/* Actions Popover (Hover only on non-mobile) */}
-          <div className={cn(
-              "absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-background border border-hairline p-0.5 rounded-lg shadow-lg z-10",
-              isMe ? "-left-12" : "-right-12"
-          )}>
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-fg-faint hover:text-primary" onClick={() => setIsEditing(true)}>
-                <Edit2 className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-fg-faint hover:text-destructive" onClick={() => onDelete(comment.id)}>
-                <Trash2 className="h-3 w-3" />
-            </Button>
+        {isEditing ? (
+          <div className="rounded-lg border bg-background p-2">
+            <CommentInput initialValue={comment.content} onSubmit={save} onCancel={() => setIsEditing(false)} submitLabel="Save" {...context} />
           </div>
-        </div>
-
-        {/* Links Preview */}
-        {(comment.links && comment.links.length > 0) && (
-            <div className="flex flex-col gap-1 w-full mt-1">
-                {comment.links.map((link, idx) => (
-                    <a 
-                      key={idx} 
-                      href={link} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-hairline bg-background text-fg-soft hover:border-primary/30 transition-all group/link shadow-sm"
-                    >
-                        <Globe className="h-3 w-3 text-fg-ghost group-hover/link:text-primary" />
-                        <span className="text-[11px] font-bold truncate max-w-[150px]">{link.replace(/^https?:\/\//, '')}</span>
-                        <ExternalLink className="h-2.5 w-2.5 text-border ml-auto" />
-                    </a>
-                ))}
+        ) : (
+          <div className={cn('group relative rounded-lg border px-3 py-2', isMe ? 'border-primary/15 bg-primary/5' : 'border-hairline bg-background')}>
+            <div className="prose prose-sm max-w-none text-[13px] leading-relaxed dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.content}</ReactMarkdown>
             </div>
+
+            {!!comment.attachments?.length && (
+              <div className="mt-2 space-y-2">
+                {comment.attachments.map((url, idx) => (
+                  <div key={idx} className="max-w-sm overflow-hidden rounded-md border border-hairline bg-subtle">
+                    {isImage(url) ? (
+                      <img src={url} alt="attachment" className="max-h-48 w-full cursor-pointer object-cover hover:opacity-90" onClick={() => window.open(url, '_blank')} />
+                    ) : (
+                      <a href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 hover:bg-muted">
+                        <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate text-xs font-medium">{url.split('/').pop()}</span>
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Hidden until hover/focus; while hidden it cannot be clicked (it used to open the editor by accident). */}
+            <div
+              className={cn(
+                'pointer-events-none absolute -top-3 right-2 flex gap-0.5 rounded-md border border-hairline bg-background p-0.5 opacity-0 shadow-sm transition-opacity',
+                'group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100',
+                '[@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100',
+              )}
+            >
+              {onReply && depth < 3 && (
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-fg-faint hover:text-foreground" aria-label="Reply" title="Reply" onClick={() => setIsReplying(true)}>
+                  <Reply className="h-3 w-3" />
+                </Button>
+              )}
+              {isMe && (
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-fg-faint hover:text-foreground" aria-label="Edit comment" title="Edit" onClick={() => setIsEditing(true)}>
+                  <Edit2 className="h-3 w-3" />
+                </Button>
+              )}
+              {isMe && (
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-fg-faint hover:text-danger" aria-label="Delete comment" title="Delete" onClick={remove}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </div>
         )}
+
+        {!!comment.links?.length && (
+          <div className="flex flex-wrap gap-1">
+            {comment.links.map((link, idx) => (
+              <a key={idx} href={link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-background px-2.5 py-1 text-[11px] text-fg-soft hover:border-primary/30">
+                <Globe className="h-3 w-3" />
+                <span className="max-w-[12rem] truncate">{link.replace(/^https?:\/\//, '')}</span>
+                <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            ))}
+          </div>
+        )}
+
+        {isReplying && (
+          <div className="rounded-lg border bg-background p-2">
+            <CommentInput onSubmit={reply} onCancel={() => setIsReplying(false)} submitLabel="Reply" placeholder="Write a reply…" {...context} />
+          </div>
+        )}
+
+        {comment.replies?.map((child) => (
+          <CommentItem
+            key={child.id}
+            comment={child}
+            currentUserId={currentUserId}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onReply={onReply}
+            projectId={projectId}
+            taskId={taskId}
+            ideaId={ideaId}
+            depth={depth + 1}
+          />
+        ))}
       </div>
     </div>
   );

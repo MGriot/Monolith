@@ -33,7 +33,8 @@ class Folder(Base):
     # Relationships
     # selectin: the response schema walks subfolders/files, and lazy loading is impossible in async code
     parent = relationship("Folder", remote_side=[id], backref=backref("subfolders", lazy="selectin"))
-    project = relationship("Project", backref="folders")
-    task = relationship("Task", backref="folders")
+    # ON DELETE CASCADE in the database (files follow their folder); the ORM must not null the FKs instead
+    project = relationship("Project", backref=backref("folders", cascade="all, delete-orphan", passive_deletes=True))
+    task = relationship("Task", backref=backref("folders", cascade="all, delete-orphan", passive_deletes=True))
     owner = relationship("User", backref="folders")
     files = relationship("File", back_populates="folder", cascade="all, delete-orphan", lazy="selectin")
