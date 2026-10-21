@@ -17,6 +17,7 @@ Needs the backend's Python dependencies (no database: nothing is queried).
 import argparse
 import asyncio
 import html
+import inspect
 import json
 import os
 import re
@@ -178,8 +179,9 @@ def mcp_blocks():
         for tool in items:
             schema = tool.inputSchema
             defs = schema.get("$defs", {})
-            first = (tool.description or "").strip().split("\n")[0]
-            rest = "\n".join((tool.description or "").strip().split("\n")[1:]).strip()
+            # cleandoc: Python < 3.13 keeps docstring indentation, 3.13+ strips it; the page must not depend on that
+            lines = inspect.cleandoc(tool.description or "").split("\n")
+            first, rest = lines[0], "\n".join(lines[1:]).strip()
             model_notes = "".join(_model_fields(defs, p["$ref"].rsplit("/", 1)[-1])
                                   for p in schema.get("properties", {}).values() if "$ref" in p)
             cards.append(
