@@ -1,0 +1,1252 @@
+<title>Monolith UI Redesign</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky contents rail + reading column; wireframes break out to the full 1040px column and scroll sideways on phones */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --sunken: #eff2f5;
+  --line: #e0e5eb;
+  --hair: #e9edf2;
+  --fill: #dce2e9;
+  --fg: #111827;
+  --fg-soft: #4b5565;
+  --fg-faint: #7f8a9b;
+  --ink: #0f172a;
+  --ink-fg: #f8fafc;
+  --accent: #2a5bd7;
+  --accent-soft: #e6ecfb;
+  --pin-fg: #ffffff;
+  --ok: #0e9468;   --ok-soft: #e3f5ed;
+  --warn: #c27a02; --warn-soft: #fbf1d8;
+  --bad: #d23c3c;  --bad-soft: #fbe9e9;
+  --rev: #7c4ddb;  --rev-soft: #efe8fc;
+  --scrim: rgba(15, 23, 42, .34);
+  --shadow-dlg: 0 24px 60px -12px rgba(15, 23, 42, .28);
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0e15; --surface: #121823; --sunken: #0d121a; --line: #252e3c; --hair: #1b2230; --fill: #2a3342;
+    --fg: #e7ebf1; --fg-soft: #a9b3c2; --fg-faint: #6f7b8e; --ink: #e7ebf1; --ink-fg: #0b0f16;
+    --accent: #7096ff; --accent-soft: #19233d; --pin-fg: #0b0f16;
+    --ok: #3cc895; --ok-soft: #0f2a20; --warn: #f2b441; --warn-soft: #2b2210; --bad: #f07373; --bad-soft: #2e1517;
+    --rev: #a98bf5; --rev-soft: #231b39; --scrim: rgba(0, 0, 0, .55); --shadow-dlg: 0 24px 60px -12px rgba(0, 0, 0, .7);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a0e15; --surface: #121823; --sunken: #0d121a; --line: #252e3c; --hair: #1b2230; --fill: #2a3342;
+  --fg: #e7ebf1; --fg-soft: #a9b3c2; --fg-faint: #6f7b8e; --ink: #e7ebf1; --ink-fg: #0b0f16;
+  --accent: #7096ff; --accent-soft: #19233d; --pin-fg: #0b0f16;
+  --ok: #3cc895; --ok-soft: #0f2a20; --warn: #f2b441; --warn-soft: #2b2210; --bad: #f07373; --bad-soft: #2e1517;
+  --rev: #a98bf5; --rev-soft: #231b39; --scrim: rgba(0, 0, 0, .55); --shadow-dlg: 0 24px 60px -12px rgba(0, 0, 0, .7);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
+
+.shell {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 48px;
+  max-width: 1280px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 96px;
+}
+@media (min-width: 1100px) { .shell { grid-template-columns: 180px minmax(0, 1fr); gap: 56px; padding-block-start: 56px; } }
+
+.toc { display: none; }
+@media (min-width: 1100px) {
+  .toc { display: block; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 32px); align-self: start; font-size: 13px; }
+}
+.toc .eyebrow { display: block; margin: 0 0 12px 12px; }
+.toc a { display: block; padding: 5px 12px; border-left: 2px solid var(--line); color: var(--fg-soft); text-decoration: none; }
+.toc a:hover { color: var(--fg); }
+.toc a.on { border-left-color: var(--accent); color: var(--fg); font-weight: 500; }
+
+.doc { min-width: 0; max-width: 1040px; }
+.prose { max-width: 700px; }
+h1 { font-size: clamp(30px, 4.4vw, 42px); line-height: 1.12; font-weight: 600; letter-spacing: -.022em; margin: 14px 0 14px; text-wrap: balance; }
+h2 { font-size: clamp(22px, 2.6vw, 26px); line-height: 1.25; font-weight: 600; letter-spacing: -.012em; margin: 10px 0 10px; text-wrap: balance; }
+h3 { font-size: 16px; line-height: 1.35; font-weight: 600; margin: 36px 0 10px; }
+p { margin: 0 0 12px; }
+ul.plain { margin: 0 0 12px; padding-left: 18px; display: grid; gap: 6px; }
+ul.plain li::marker { color: var(--fg-faint); }
+.lede { font-size: 17px; line-height: 1.55; color: var(--fg-soft); max-width: 660px; }
+.eyebrow { font: 500 11.5px/1 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--fg-faint); }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code { font-family: var(--font-mono); font-size: .84em; background: var(--sunken); border: 1px solid var(--hair); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+strong { font-weight: 600; }
+.muted { color: var(--fg-soft); }
+.small { font-size: 13px; }
+
+section { margin-top: 64px; padding-top: 56px; border-top: 1px solid var(--line); scroll-margin-top: 24px; }
+
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 22px; font-size: 13px; color: var(--fg-soft); }
+.hero-meta span b { color: var(--fg); font-weight: 500; }
+.areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; margin-top: 28px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.areas a { display: grid; gap: 4px; padding: 14px 16px; background: var(--surface); color: var(--fg); text-decoration: none; }
+.areas a:hover { background: var(--sunken); }
+.areas a b { font-weight: 600; font-size: 14px; }
+.areas a span { font-size: 13px; color: var(--fg-soft); line-height: 1.45; }
+
+/* stat tiles (audit) */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 22px 0 8px; }
+.stat { background: var(--surface); padding: 16px 18px; display: grid; gap: 4px; align-content: start; }
+.stat b { font: 600 28px/1.1 var(--font-body); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.stat span { font-size: 13px; color: var(--fg-soft); line-height: 1.4; }
+.caption { font-size: 12.5px; color: var(--fg-faint); }
+
+/* tables */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin: 16px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th { text-align: left; font: 500 11.5px/1.3 var(--font-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--fg-faint); background: var(--sunken); }
+th, td { padding: 10px 14px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 500; white-space: nowrap; }
+td.wrap { white-space: normal; }
+.tag { display: inline-block; font: 500 11px/1 var(--font-mono); padding: 4px 7px; border-radius: 999px; background: var(--sunken); border: 1px solid var(--line); color: var(--fg-soft); white-space: nowrap; }
+.tag.rm { background: var(--bad-soft); border-color: transparent; color: var(--bad); }
+.tag.new { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
+.tag.ch { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+
+/* columns */
+.cols { display: grid; gap: 20px; }
+@media (min-width: 780px) { .cols { grid-template-columns: 1fr 1fr; } .cols > * { min-width: 0; } }
+.panel { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 18px 20px; }
+.panel h4 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.panel ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }
+
+/* swatches + type specimen */
+.sw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 14px 0; }
+.swatch { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.swatch .chips2 { display: grid; grid-template-columns: 1fr 1fr; height: 40px; }
+.swatch .lab { padding: 8px 10px; font: 12px/1.4 var(--font-mono); color: var(--fg-soft); }
+.swatch .lab b { color: var(--fg); font-weight: 500; display: block; }
+.spec { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; margin: 14px 0; }
+.spec > div { display: grid; grid-template-columns: 1fr; gap: 4px; padding: 12px 16px; border-bottom: 1px solid var(--hair); }
+.spec > div:last-child { border-bottom: 0; }
+@media (min-width: 700px) { .spec > div { grid-template-columns: 130px minmax(0, 1fr) 270px; align-items: baseline; gap: 16px; } }
+.spec .role { font-size: 13px; color: var(--fg-faint); }
+.spec .cls { font: 12px/1.4 var(--font-mono); color: var(--fg-soft); overflow-wrap: anywhere; }
+
+/* figures */
+.figure { margin: 22px 0 8px; }
+.fig-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.fig-bar .eyebrow { line-height: 1.4; }
+.seg-ctl { display: inline-flex; padding: 3px; border-radius: 9px; background: var(--sunken); border: 1px solid var(--line); }
+.seg-ctl button { font: 500 13px/1 var(--font-body); color: var(--fg-soft); background: transparent; border: 0; padding: 7px 12px; border-radius: 6px; cursor: pointer; }
+.seg-ctl button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
+.scroll-x { overflow-x: auto; border-radius: 14px; -webkit-overflow-scrolling: touch; }
+.today { margin: 0; }
+.today img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 14px; }
+.today.narrow img { max-width: 420px; margin: 0 auto; }
+.today figcaption { font-size: 12.5px; color: var(--fg-faint); margin-top: 8px; }
+.hint-scroll { display: none; font-size: 12px; color: var(--fg-faint); margin-top: 6px; }
+@media (max-width: 960px) { .hint-scroll { display: block; } }
+
+.pin { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: var(--pin-fg); font: 600 10px/1 var(--font-mono); flex: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+ol.notes { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 10px; font-size: 14px; }
+@media (min-width: 780px) { ol.notes { grid-template-columns: 1fr 1fr; column-gap: 28px; } }
+ol.notes li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; }
+ol.notes .pin { margin-top: 2px; }
+
+pre.tree, pre.code { font: 12.5px/1.6 var(--font-mono); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; overflow-x: auto; color: var(--fg-faint); margin: 14px 0; }
+pre.tree b { color: var(--fg); font-weight: 500; }
+pre.tree i { color: var(--fg-soft); font-style: normal; }
+pre.code .k { color: var(--accent); }
+pre.code .s { color: var(--ok); }
+pre.code .c { color: var(--fg-faint); }
+pre.code { color: var(--fg); }
+
+/* phases */
+.phases { display: grid; gap: 14px; margin: 18px 0; }
+@media (min-width: 860px) { .phases { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.stage { display: grid; gap: 10px; align-content: start; }
+.stage > .eyebrow { padding-left: 2px; }
+.ph { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 14px 16px; display: grid; gap: 6px; }
+.ph header { display: flex; align-items: baseline; gap: 10px; }
+.ph header b { font: 600 13px/1 var(--font-mono); color: var(--accent); }
+.ph header span { font-weight: 600; }
+.ph p { margin: 0; font-size: 13.5px; color: var(--fg-soft); line-height: 1.5; }
+.ph .needs { font: 12px/1.4 var(--font-mono); color: var(--fg-faint); }
+
+.dodont { display: grid; gap: 14px; margin: 14px 0; }
+@media (min-width: 780px) { .dodont { grid-template-columns: 1fr 1fr; } }
+.dodont .panel h4 { display: flex; align-items: center; gap: 8px; }
+.dodont .ok h4::before, .dodont .no h4::before { content: ""; width: 8px; height: 8px; border-radius: 50%; }
+.dodont .ok h4::before { background: var(--ok); }
+.dodont .no h4::before { background: var(--bad); }
+
+/* ---------- wireframe kit (rendered with the proposed tokens) ---------- */
+.wf { min-width: 940px; background: var(--sunken); border: 1px solid var(--line); border-radius: 14px; padding: 18px; font-size: 12px; line-height: 1.4; color: var(--fg); display: grid; gap: 12px; }
+.wf .c { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.wf .ch { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 13px 9px; font-weight: 600; font-size: 12.5px; }
+.wf .ch small { font-weight: 400; color: var(--fg-faint); font-size: 11.5px; }
+.wf .cb { padding: 0 13px 13px; }
+.wf .row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.wf .sb { justify-content: space-between; }
+.wf .grow { flex: 1; min-width: 0; }
+.wf .stackv { display: grid; gap: 8px; }
+.wf .t { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.wf .m { color: var(--fg-faint); }
+.wf .s { color: var(--fg-soft); }
+.wf .num { font-variant-numeric: tabular-nums; }
+.wf .eb { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--fg-faint); font-weight: 500; }
+.wf .bar { height: 7px; border-radius: 4px; background: var(--fill); }
+.wf .in { height: 28px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); display: flex; align-items: center; gap: 6px; padding: 0 9px; color: var(--fg-faint); min-width: 0; white-space: nowrap; overflow: hidden; }
+.wf .in.v { color: var(--fg); }
+.wf .in.f { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); color: var(--fg); }
+.wf .btn { height: 28px; padding: 0 11px; border: 1px solid var(--line); border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; background: var(--surface); font-weight: 500; white-space: nowrap; }
+.wf .btn.p { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+.wf .btn.g { background: transparent; border-color: transparent; color: var(--fg-soft); }
+.wf .btn.sm { height: 24px; padding: 0 8px; font-size: 11.5px; }
+.wf .chip { display: inline-flex; align-items: center; gap: 5px; height: 21px; padding: 0 8px; border-radius: 999px; font-size: 11px; background: var(--sunken); border: 1px solid var(--line); white-space: nowrap; color: var(--fg); }
+.wf .chip.add { border-style: dashed; color: var(--fg-faint); background: transparent; }
+.wf .chip.info { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.wf .chip.ok { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
+.wf .chip.warn { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+.wf .chip.bad { background: var(--bad-soft); border-color: transparent; color: var(--bad); }
+.wf .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+.wf .av { width: 22px; height: 22px; border-radius: 50%; background: var(--fill); display: inline-grid; place-items: center; font-size: 9px; font-weight: 600; color: var(--fg-soft); border: 2px solid var(--surface); flex: none; }
+.wf .avs { display: inline-flex; }
+.wf .avs .av + .av { margin-left: -7px; }
+.wf .sw { width: 26px; height: 15px; border-radius: 999px; background: var(--accent); position: relative; flex: none; }
+.wf .sw::after { content: ""; position: absolute; top: 2px; left: 13px; width: 11px; height: 11px; border-radius: 50%; background: var(--surface); }
+.wf .sw.off { background: var(--fill); }
+.wf .sw.off::after { left: 2px; }
+.wf .seg { display: inline-flex; padding: 2px; border-radius: 7px; background: var(--sunken); border: 1px solid var(--line); }
+.wf .seg span { padding: 3px 9px; border-radius: 5px; color: var(--fg-soft); white-space: nowrap; }
+.wf .seg .on { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
+.wf .tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--line); }
+.wf .tabs span { padding: 9px 0 8px; color: var(--fg-soft); display: inline-flex; gap: 6px; align-items: center; }
+.wf .tabs .on { color: var(--fg); box-shadow: inset 0 -2px 0 var(--fg); font-weight: 500; }
+.wf .tabs .cnt { font-size: 10px; padding: 0 5px; border-radius: 999px; background: var(--sunken); color: var(--fg-soft); }
+.wf .rows > * + * { border-top: 1px solid var(--hair); }
+.wf .lrow { display: flex; align-items: center; gap: 9px; padding: 0 13px; height: 38px; min-width: 0; }
+.wf .lrow .name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wf .ell { color: var(--fg-faint); letter-spacing: 1px; }
+.wf .prog { height: 5px; border-radius: 3px; background: var(--hair); overflow: hidden; }
+.wf .prog i { display: block; height: 100%; background: var(--ok); border-radius: 3px; }
+.wf .prog.info i { background: var(--accent); }
+
+/* dashboard */
+.wf .kpis { display: grid; grid-template-columns: repeat(4, 1fr); }
+.wf .kpis > div { padding: 13px 15px; display: grid; gap: 5px; align-content: start; }
+.wf .kpis > div + div { border-left: 1px solid var(--hair); }
+.wf .kpis b { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; line-height: 1.1; }
+.wf .stack { display: flex; height: 10px; gap: 2px; border-radius: 5px; overflow: hidden; }
+.wf .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--fg-soft); }
+.wf .legend span { display: inline-flex; align-items: center; gap: 6px; }
+.wf .legend b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.wf .g12 { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; }
+.wf .s3 { grid-column: span 3; } .wf .s4 { grid-column: span 4; } .wf .s5 { grid-column: span 5; } .wf .s6 { grid-column: span 6; } .wf .s7 { grid-column: span 7; } .wf .s8 { grid-column: span 8; } .wf .s9 { grid-column: span 9; } .wf .s12 { grid-column: span 12; }
+.wf .heat { display: grid; grid-template-columns: 112px repeat(14, minmax(0, 1fr)); gap: 3px; align-items: center; }
+.wf .heat .hd { font-size: 9.5px; color: var(--fg-faint); text-align: center; }
+.wf .hc { height: 20px; border-radius: 4px; background: var(--hair); }
+.wf .l1 { background: var(--accent-soft); }
+.wf .l2 { background: color-mix(in srgb, var(--accent) 42%, var(--surface)); }
+.wf .l3 { background: var(--accent); }
+.wf .l4 { background: var(--bad); }
+.wf .risk { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+.wf .risk div { aspect-ratio: 1; border-radius: 4px; display: grid; place-items: center; font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.wf .r-lo { background: var(--ok-soft); color: var(--ok); }
+.wf .r-mid { background: var(--warn-soft); color: var(--warn); }
+.wf .r-hi { background: var(--bad-soft); color: var(--bad); }
+.wf .contrib { display: grid; grid-template-rows: repeat(7, 9px); grid-auto-flow: column; grid-auto-columns: 9px; gap: 2px; justify-content: start; }
+.wf .contrib i { border-radius: 2px; background: var(--hair); }
+.wf .contrib i.l1 { background: color-mix(in srgb, var(--ok) 25%, var(--surface)); }
+.wf .contrib i.l2 { background: color-mix(in srgb, var(--ok) 50%, var(--surface)); }
+.wf .contrib i.l3 { background: var(--ok); }
+.wf .wl { display: grid; grid-template-columns: 64px minmax(0, 1fr) 26px; gap: 8px; align-items: center; }
+.wf .wl .track { height: 8px; border-radius: 4px; background: var(--hair); overflow: hidden; display: flex; }
+
+/* dialog frame */
+.wf.backdrop { background: linear-gradient(var(--scrim), var(--scrim)), var(--sunken); padding: 26px 34px; }
+.wf .dlg { background: var(--surface); border: 1px solid var(--line); border-radius: 13px; box-shadow: var(--shadow-dlg); overflow: hidden; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.wf .dlg-h { padding: 15px 20px 13px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; }
+.wf .dlg-f { padding: 11px 20px; border-top: 1px solid var(--line); background: var(--sunken); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.wf .editor { display: grid; grid-template-columns: minmax(0, 1fr) 270px; min-height: 430px; }
+.wf .rail { background: var(--sunken); border-left: 1px solid var(--line); padding: 15px 16px; display: grid; gap: 16px; align-content: start; }
+.wf .rail .grp { display: grid; gap: 9px; }
+.wf .fld { display: grid; gap: 4px; }
+.wf .fld > label { font-size: 11px; color: var(--fg-soft); font-weight: 500; }
+.wf .sec { border: 1px solid var(--line); border-radius: 9px; padding: 12px; display: grid; gap: 10px; align-content: start; }
+.wf .slider { height: 4px; border-radius: 2px; background: var(--fill); position: relative; }
+.wf .slider i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--warn); }
+.wf .slider b { position: absolute; top: -5px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); border: 2px solid var(--warn); transform: translateX(-7px); }
+.wf .score { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; border-radius: 7px; }
+.wf .swatches { display: flex; gap: 6px; }
+.wf .swatches i { width: 16px; height: 16px; border-radius: 50%; }
+.wf .swatches i.sel { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--fg); }
+
+/* anatomy figure */
+.anat { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+@media (min-width: 780px) { .anat { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; } }
+.anat .wf { min-width: 0; }
+.anat-dlg { display: grid; grid-template-rows: auto 150px auto; }
+.anat-dlg > div { position: relative; }
+.anat-dlg .tagline { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font: 500 10px/1 var(--font-mono); color: var(--accent); background: var(--accent-soft); padding: 4px 6px; border-radius: 4px; letter-spacing: .03em; }
+.anat-body { padding: 14px 20px; display: grid; gap: 9px; align-content: start; overflow: hidden; background: repeating-linear-gradient(0deg, transparent 0 22px, var(--hair) 22px 23px); }
+.sizes { display: grid; gap: 9px; }
+.sizes div { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: center; font-size: 13px; }
+.sizes code { justify-self: start; }
+.sizes .w { height: 26px; border-radius: 6px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); display: flex; align-items: center; padding: 0 9px; font-size: 12px; color: var(--fg-soft); white-space: nowrap; overflow: hidden; }
+
+/* settings */
+.wf .set { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 34px; }
+.wf .snav { display: grid; gap: 2px; align-content: start; }
+.wf .snav span { padding: 6px 10px; border-radius: 6px; color: var(--fg-soft); }
+.wf .snav .on { background: var(--surface); color: var(--fg); font-weight: 500; border: 1px solid var(--line); }
+.wf .scontent { max-width: 600px; display: grid; gap: 20px; }
+.wf .sgroup-h { display: grid; gap: 2px; margin-bottom: 8px; }
+.wf .sgroup-h b { font-size: 13.5px; font-weight: 600; }
+.wf .srow { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 14px; min-height: 50px; }
+.wf .srow .lbl { display: grid; gap: 1px; min-width: 0; }
+.wf .srow .lbl b { font-weight: 500; }
+.wf .dirty { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 9px 14px; background: var(--sunken); border-top: 1px solid var(--hair); border-radius: 0 0 10px 10px; }
+
+/* file hub */
+.wf .hub { display: grid; grid-template-columns: 178px minmax(0, 1fr) 214px; min-height: 470px; }
+.wf .hub-side { border-right: 1px solid var(--line); padding: 12px 10px; display: grid; gap: 14px; align-content: start; }
+.wf .hub-side .grp { display: grid; gap: 1px; }
+.wf .hub-side .grp .eb { padding: 0 8px 5px; }
+.wf .nav { display: flex; align-items: center; gap: 7px; padding: 5px 8px; border-radius: 6px; color: var(--fg-soft); }
+.wf .nav .n { margin-left: auto; font-size: 10.5px; color: var(--fg-faint); font-variant-numeric: tabular-nums; }
+.wf .nav.on { background: var(--sunken); color: var(--fg); font-weight: 500; }
+.wf .nav.drop { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); font-weight: 500; }
+.wf .fold { width: 15px; height: 11px; border-radius: 2px 3px 3px 3px; background: var(--fg-faint); position: relative; flex: none; margin-top: 2px; opacity: .8; }
+.wf .fold::before { content: ""; position: absolute; left: 0; top: -3px; width: 7px; height: 4px; border-radius: 2px 2px 0 0; background: inherit; }
+.wf .nav.drop .fold { background: var(--accent); }
+.wf .hub-main { padding: 12px 14px; display: grid; gap: 10px; align-content: start; position: relative; min-width: 0; }
+.wf .fgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.wf .fcard { border: 1px solid var(--line); border-radius: 9px; background: var(--surface); padding: 7px; display: grid; gap: 6px; min-width: 0; }
+.wf .fcard.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.wf .fcard .nm { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wf .folder-card { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+.wf .thumb { aspect-ratio: 4 / 3; border-radius: 6px; background: var(--sunken); display: grid; place-items: center; overflow: hidden; position: relative; }
+.wf .thumb.img { background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 34%, var(--surface)) 0 55%, color-mix(in srgb, var(--ok) 34%, var(--surface)) 55%); }
+.wf .thumb.img::after { content: ""; position: absolute; width: 22%; aspect-ratio: 1; border-radius: 50%; right: 16%; top: 16%; background: color-mix(in srgb, var(--warn) 55%, var(--surface)); }
+.wf .thumb.logo { background: var(--surface); }
+.wf .thumb.logo::after { content: ""; width: 34%; aspect-ratio: 1; border-radius: 8px; background: var(--ink); transform: rotate(12deg); }
+.wf .thumb.doc { align-content: center; justify-items: start; gap: 4px; padding: 10px 12px; }
+.wf .thumb.doc i { display: block; height: 4px; border-radius: 2px; background: var(--fill); }
+.wf .ext { font: 600 10px/1 var(--font-mono); padding: 4px 6px; border-radius: 4px; }
+.wf .ghost { position: absolute; left: -64px; top: 128px; display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: var(--ink); color: var(--ink-fg); font-weight: 500; box-shadow: 0 10px 24px -8px rgba(0, 0, 0, .45); transform: rotate(-2deg); z-index: 2; white-space: nowrap; }
+.wf .dropzone { border: 1.5px dashed var(--accent); background: var(--accent-soft); border-radius: 10px; padding: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--accent); font-weight: 500; }
+.wf .arrowup { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--accent); display: grid; place-items: center; font-size: 12px; line-height: 1; }
+.wf .hub-prev { border-left: 1px solid var(--line); padding: 12px; display: grid; gap: 10px; align-content: start; }
+.wf .kv { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 5px 8px; font-size: 11.5px; }
+.wf .kv dt { color: var(--fg-faint); }
+.wf .kv dd { margin: 0; }
+.wf .tray { position: absolute; right: 14px; bottom: 12px; width: 250px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 14px 30px -12px rgba(0, 0, 0, .3); padding: 10px 12px; display: grid; gap: 8px; }
+
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+html { scroll-behavior: smooth; }
+</style>
+
+<div class="shell">
+  <nav class="toc" aria-label="Contents">
+    <span class="eyebrow">Contents</span>
+    <a href="#audit">Audit</a>
+    <a href="#foundation">Foundation</a>
+    <a href="#dialogs">Dialogs</a>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#metadata">Metadata</a>
+    <a href="#settings">Settings</a>
+    <a href="#filehub">File Hub</a>
+    <a href="#phases">Phases</a>
+    <a href="#guidelines">Guidelines</a>
+  </nav>
+
+  <main class="doc">
+    <header class="prose" style="max-width:760px">
+      <span class="eyebrow">Proposal · 18 October 2026</span>
+      <h1>Monolith UI Redesign</h1>
+      <p class="lede">One layout system for dialogs, the Dashboard, Metadata, Settings and the File Hub. The plan builds on what already works in the codebase (the sized dialog primitive, the HSL tokens and the two-pane task editor) and doesn't rewrite it.</p>
+      <div class="hero-meta">
+        <span><b>Frontend</b> React 19 · Tailwind 3 · Radix · dnd-kit</span>
+        <span><b>Source</b> <code>docs/ui-redesign-plan.md</code></span>
+        <span><b>Status</b> Not started</span>
+      </div>
+    </header>
+
+    <nav class="areas" aria-label="Areas">
+      <a href="#dialogs"><b>Dialogs</b><span>One dialog standard. Project editor matches the task editor.</span></a>
+      <a href="#dashboard"><b>Dashboard</b><span>Summary first, fewer cards, compact empty states.</span></a>
+      <a href="#metadata"><b>Metadata</b><span>No tabs. Topics and work types side by side, edited inline.</span></a>
+      <a href="#settings"><b>Settings</b><span>Section nav, settings rows, one scroll.</span></a>
+      <a href="#filehub"><b>File Hub</b><span>Drag-and-drop file manager with previews.</span></a>
+    </nav>
+
+    <!-- AUDIT -->
+    <section id="audit">
+      <span class="eyebrow">Audit</span>
+      <h2>What's wrong today</h2>
+      <p class="prose muted">Most of the visual noise comes from a few repeated habits: tiny shouting labels, shadows on every card, and native browser dialogs. The counts below come from <code>frontend/src</code>.</p>
+      <div class="stats">
+        <div class="stat"><b>218</b><span><code>text-[10px]</code> labels, plus 82 at 8–9px</span></div>
+        <div class="stat"><b>142</b><span><code>font-black</code> uses; hierarchy comes from weight, not size</span></div>
+        <div class="stat"><b>108</b><span><code>shadow-sm</code> on cards that already have a border</span></div>
+        <div class="stat"><b>14</b><span><code>window.confirm()</code> calls, unstyled and ignoring dark mode</span></div>
+      </div>
+      <p class="caption">Counted with grep on 18 October 2026, commit 3be4249.</p>
+
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Area</th><th>Problem</th><th>Where</th></tr></thead>
+          <tbody>
+            <tr><td>Project dialog</td><td class="wrap">One column with ten sections, about 1,200px tall. The footer sits inside the scroll area, so Save scrolls out of view. Amber and blue tinted boxes don't match the task editor. Members has two controls for one job, and tags are a comma-separated text box.</td><td><code>project-form.tsx</code></td></tr>
+            <tr><td>Dashboard</td><td class="wrap">The KPI row mixes metrics with a button. The status breakdown repeats the KPIs in six boxes. The heatmap gives one person a 140px card. Empty states are 170px tall. Three link cards duplicate the sidebar.</td><td><code>dashboard.tsx</code></td></tr>
+            <tr><td>Metadata</td><td class="wrap">Tabs hide half the data. The create form permanently takes a third of the width. Editing opens a separate dialog.</td><td><code>admin-metadata.tsx</code></td></tr>
+            <tr><td>Settings</td><td class="wrap">Labels sit beside cards inside <code>max-w-4xl</code>, which leaves large dead areas on wide screens. "Security" labels a column holding notifications, the calendar feed and the password form. Each card has its own footer.</td><td><code>settings.tsx</code></td></tr>
+            <tr><td>File Hub</td><td class="wrap">A folder tree only: files stay hidden until a folder is expanded, upload hides in a hover menu, and there's no drag-and-drop, preview or multi-select. The API can't move files or folders and has no endpoint to delete a file.</td><td><code>folder-tree.tsx</code>, <code>folders.py</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FOUNDATION -->
+    <section id="foundation">
+      <span class="eyebrow">Phase P0</span>
+      <h2>Design foundation</h2>
+      <p class="prose muted">Every later phase depends on this. It adds tokens and primitives without changing pages, so it can ship first with no visual regressions.</p>
+
+      <h3>Semantic color tokens</h3>
+      <p class="prose">Add these to <code>index.css</code> next to the existing <code>--subtle</code> and <code>--fg-faint</code>, and map them in <code>tailwind.config.js</code> the same way. Then rebuild <code>STATUS_COLORS</code> and <code>PRIORITY_COLORS</code> in <code>constants/colors.ts</code> on top of them, so chips, Kanban, Gantt and the Dashboard read one source.</p>
+      <div class="sw-grid">
+        <div class="swatch"><div class="chips2"><i style="background:var(--accent)"></i><i style="background:var(--accent-soft)"></i></div><div class="lab"><b>info / info-soft</b>In progress, drop targets</div></div>
+        <div class="swatch"><div class="chips2"><i style="background:var(--ok)"></i><i style="background:var(--ok-soft)"></i></div><div class="lab"><b>success / -soft</b>Done, under budget</div></div>
+        <div class="swatch"><div class="chips2"><i style="background:var(--warn)"></i><i style="background:var(--warn-soft)"></i></div><div class="lab"><b>warning / -soft</b>On hold, medium risk</div></div>
+        <div class="swatch"><div class="chips2"><i style="background:var(--bad)"></i><i style="background:var(--bad-soft)"></i></div><div class="lab"><b>danger / -soft</b>Overdue, delete, over capacity</div></div>
+        <div class="swatch"><div class="chips2"><i style="background:var(--rev)"></i><i style="background:var(--rev-soft)"></i></div><div class="lab"><b>review / -soft</b>Review status</div></div>
+        <div class="swatch"><div class="chips2"><i style="background:var(--surface)"></i><i style="background:var(--sunken)"></i></div><div class="lab"><b>surface / sunken</b>Cards and dialogs / page, rails, footers</div></div>
+      </div>
+      <p class="caption">Swatches follow your light or dark theme. Each soft background is about 10% of its hue in dark mode.</p>
+
+      <h3>Type scale</h3>
+      <p class="prose">These are the only sizes allowed. Nothing goes below 11px, <code>font-black</code> is retired, and uppercase only appears through the <code>Eyebrow</code> component. A lint rule flags new <code>font-black</code> and <code>text-[8–10px]</code>.</p>
+      <div class="spec">
+        <div><span class="role">Page title</span><span style="font-size:20px;font-weight:600;letter-spacing:-.01em">Team capacity</span><span class="cls">text-xl font-semibold tracking-tight</span></div>
+        <div><span class="role">Section title</span><span style="font-size:16px;font-weight:600">Notifications</span><span class="cls">text-base font-semibold</span></div>
+        <div><span class="role">Card title</span><span style="font-size:14px;font-weight:600">Upcoming deadlines</span><span class="cls">text-sm font-semibold</span></div>
+        <div><span class="role">Body</span><span style="font-size:14px">Tasks due in the next 7 days.</span><span class="cls">text-sm</span></div>
+        <div><span class="role">Meta and hints</span><span style="font-size:12px;color:var(--fg-soft)">Updated 18 Oct, 15:53</span><span class="cls">text-xs text-muted-foreground</span></div>
+        <div><span class="role">Eyebrow</span><span style="font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--fg-faint)">Classification</span><span class="cls">text-[11px] font-medium uppercase tracking-wide</span></div>
+        <div><span class="role">KPI number</span><span style="font-size:24px;font-weight:600;font-variant-numeric:tabular-nums">64%</span><span class="cls">text-2xl font-semibold tabular-nums</span></div>
+      </div>
+
+      <div class="cols">
+        <div class="panel">
+          <h4>Spacing, radius, elevation</h4>
+          <ul>
+            <li>4px grid. Page gutter <code>px-4 md:px-6 lg:px-8</code>, card padding <code>p-5</code>.</li>
+            <li><code>gap-6</code> between page sections, <code>gap-4</code> inside grids.</li>
+            <li>Cards and dialogs <code>rounded-xl</code>, controls <code>rounded-md</code>, chips <code>rounded-full</code>.</li>
+            <li>Cards get a border and no shadow. Popovers <code>shadow-lg</code>, dialogs <code>shadow-2xl</code>.</li>
+            <li>Clickable cards show hover through the border color only.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4>One scroll container per surface</h4>
+          <ul>
+            <li>Pages scroll only in the layout's <code>&lt;main&gt;</code>. Settings and Metadata lose their extra <code>overflow-auto</code> wrappers.</li>
+            <li>Dialogs scroll only in <code>DialogBody</code>, or in the editor panes. Footers never sit inside the body.</li>
+            <li>Long lists on a page use "Show all (n)", not an inner scrollbar.</li>
+            <li>Exceptions: Gantt, Kanban columns and File Hub panes, which are workspaces.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>New shared primitives</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Component</th><th>Purpose</th><th>Origin</th></tr></thead>
+          <tbody>
+            <tr><td><code>PageHeader</code></td><td class="wrap">Title, description and actions on the right</td><td><span class="tag new">new</span></td></tr>
+            <tr><td><code>Section</code>, <code>Field</code>, <code>EmptyState</code></td><td class="wrap">Titled block; label with control, hint and error; empty state in sm (120px max) or md size</td><td><span class="tag ch">from task-form.tsx</span></td></tr>
+            <tr><td><code>Eyebrow</code></td><td class="wrap">The only sanctioned uppercase label</td><td><span class="tag new">new</span></td></tr>
+            <tr><td><code>StatTile</code></td><td class="wrap">Label, value, sub-line, optional progress, link</td><td><span class="tag new">new</span></td></tr>
+            <tr><td><code>SettingsGroup</code>, <code>SettingsRow</code></td><td class="wrap">Bordered list; each row has its label on the left and control on the right</td><td><span class="tag new">new</span></td></tr>
+            <tr><td><code>ConfirmDialog</code>, <code>useConfirm()</code></td><td class="wrap">Promise-based replacement for <code>window.confirm</code>, with a danger tone</td><td><span class="tag new">new</span></td></tr>
+            <tr><td><code>ColorSwatchPicker</code></td><td class="wrap">Preset swatches plus custom hex in a popover; replaces four copies</td><td><span class="tag new">new</span></td></tr>
+            <tr><td><code>TagInput</code></td><td class="wrap">Chips; Enter or comma adds, Backspace removes</td><td><span class="tag new">new</span></td></tr>
+            <tr><td><code>Dropzone</code></td><td class="wrap">Native file drag with an overlay; calls <code>onFiles(files, target)</code></td><td><span class="tag new">new</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DIALOGS -->
+    <section id="dialogs">
+      <span class="eyebrow">Phase P1</span>
+      <h2>Dialogs</h2>
+      <p class="prose muted">The primitive in <code>ui/dialog.tsx</code> already has the right structure. What's missing is consistent use: which size goes with what, where the footer lives, and how forms submit.</p>
+
+      <div class="anat">
+        <div class="wf" aria-label="Dialog anatomy">
+          <div class="dlg anat-dlg">
+            <div class="dlg-h"><div class="stackv" style="gap:3px"><b style="font-size:13.5px">Add webhook</b><span class="m">Post project updates to Slack or Discord</span></div><span class="m">×</span><span class="tagline">HEADER · FIXED</span></div>
+            <div class="anat-body">
+              <div class="fld"><label>Name</label><div class="in v">Releases channel</div></div>
+              <div class="fld"><label>Webhook URL</label><div class="in">https://hooks.slack.com/…</div></div>
+              <span class="tagline">BODY · ONLY SCROLL</span>
+            </div>
+            <div class="dlg-f"><span></span><div class="row"><span class="btn g">Cancel</span><span class="btn p">Add webhook</span></div><span class="tagline" style="right:auto;left:10px">FOOTER · FIXED</span></div>
+          </div>
+        </div>
+        <div>
+          <p style="margin-bottom:10px"><strong>Size by content</strong></p>
+          <div class="sizes">
+            <div><code>sm</code><span class="w" style="width:36%">400 · confirm, one field</span></div>
+            <div><code>md</code><span class="w" style="width:46%">520 · up to 5 fields</span></div>
+            <div><code>lg</code><span class="w" style="width:64%">720 · sectioned forms, pickers</span></div>
+            <div><code>xl</code><span class="w" style="width:86%">960 · builders (workflows)</span></div>
+            <div><code>2xl</code><span class="w" style="width:100%">1120 · Task and Project editors</span></div>
+          </div>
+          <ul class="plain small" style="margin-top:16px">
+            <li>The form wraps both Body and Footer, so Enter submits and the footer stays put.</li>
+            <li>Destructive actions and metadata go on the left of the footer; Cancel and a verb-labelled primary go on the right.</li>
+            <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> submits. <kbd>Esc</kbd> closes and asks first if the form is dirty.</li>
+            <li>Labels are sentence case through <code>Field</code>, never uppercase.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Project editor, rebuilt on the task editor's layout</h3>
+      <p class="prose">The task editor already has the right shape. Extracting it as <code>EntityEditor</code> lets the Project dialog, and the project Settings tab, use the same skeleton and the same risk and cost panel.</p>
+
+      <div class="figure" data-fig>
+        <div class="fig-bar">
+          <span class="eyebrow">New project · 2xl dialog · example data</span>
+          <div class="seg-ctl" role="group" aria-label="Project editor view">
+            <button type="button" aria-pressed="true" data-show="proposed">Proposed</button>
+            <button type="button" aria-pressed="false" data-show="today">Today</button>
+          </div>
+        </div>
+        <div data-view="proposed">
+          <div class="scroll-x">
+            <div class="wf backdrop">
+              <div class="dlg">
+                <div class="dlg-h">
+                  <div class="row" style="align-items:flex-start;gap:10px"><span class="pin">1</span><div class="stackv" style="gap:2px"><b style="font-size:14px">New project</b><span class="m">From template: Software launch</span></div></div>
+                  <span class="m" style="font-size:14px">×</span>
+                </div>
+                <div class="editor">
+                  <div style="display:grid;grid-template-rows:auto auto minmax(0,1fr);min-width:0">
+                    <div style="padding:16px 20px 10px;display:grid;gap:10px">
+                      <div class="row"><span class="pin">2</span><span style="font-size:19px;font-weight:600;letter-spacing:-.01em">Website relaunch</span></div>
+                      <div class="in v" style="height:auto;padding:9px 10px;display:grid;gap:6px;white-space:normal">
+                        <span>Rebuild the marketing site on the new design system and move the blog to the CMS.</span>
+                        <span class="m">Launch target is the December release.</span>
+                      </div>
+                    </div>
+                    <div class="tabs" style="padding:0 20px"><span>Overview</span><span class="on">Budget &amp; risk</span><span>Fields <span class="cnt">3</span></span><span style="margin-left:auto"><span class="pin">3</span></span></div>
+                    <div style="padding:14px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start">
+                      <div class="sec">
+                        <div class="row sb"><b>Risk</b><span class="m">Probability × impact</span></div>
+                        <div class="fld"><div class="row sb"><label class="s" style="font-size:11px">Probability</label><span class="num" style="font-weight:600">3 / 5</span></div><div class="slider"><i style="width:50%"></i><b style="left:50%"></b></div></div>
+                        <div class="fld" style="margin-top:4px"><div class="row sb"><label class="s" style="font-size:11px">Impact</label><span class="num" style="font-weight:600">4 / 5</span></div><div class="slider"><i style="width:75%"></i><b style="left:75%"></b></div></div>
+                        <div class="score" style="background:var(--warn-soft);color:var(--warn)"><span style="font-weight:500">Exposure</span><b class="num" style="font-size:15px">12</b></div>
+                      </div>
+                      <div class="sec">
+                        <div class="row sb"><b>Cost</b><span class="m">EUR</span></div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                          <div class="fld"><label>Budget</label><div class="in v num">48,000</div></div>
+                          <div class="fld"><label>Spent</label><div class="in v num">31,200</div></div>
+                        </div>
+                        <div class="prog"><i style="width:65%"></i></div>
+                        <div class="score" style="background:var(--ok-soft);color:var(--ok)"><span style="font-weight:500">Remaining</span><b class="num" style="font-size:15px">16,800</b></div>
+                      </div>
+                    </div>
+                  </div>
+                  <aside class="rail">
+                    <div class="row" style="justify-content:flex-end;margin-bottom:-8px"><span class="pin">4</span></div>
+                    <div class="grp">
+                      <span class="eb">Properties</span>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                        <div class="fld"><label>Status</label><div class="in v"><span class="dot" style="background:var(--accent)"></span>In progress</div></div>
+                        <div class="fld"><label>Priority</label><div class="in v"><span class="dot" style="background:#ea580c"></span>High</div></div>
+                        <div class="fld"><label>Start</label><div class="in v num">03 Nov</div></div>
+                        <div class="fld"><label>Due</label><div class="in v num">19 Dec</div></div>
+                      </div>
+                    </div>
+                    <div class="grp">
+                      <span class="eb">Classification</span>
+                      <div class="fld"><label>Topics</label><div class="row" style="flex-wrap:wrap;gap:5px"><span class="chip"><span class="dot" style="background:var(--accent)"></span>Frontend</span><span class="chip"><span class="dot" style="background:var(--ok)"></span>SEO</span><span class="chip add">+ Add</span></div></div>
+                      <div class="fld"><label>Work types</label><div class="row" style="flex-wrap:wrap;gap:5px"><span class="chip"><span class="dot" style="background:var(--rev)"></span>Feature</span><span class="chip add">+ Add</span></div></div>
+                      <div class="fld"><label class="row" style="gap:6px">Tags <span class="pin">5</span></label><div class="in v" style="gap:5px"><span class="chip">critical ×</span><span class="chip">web ×</span><span class="m">Add tag…</span></div></div>
+                    </div>
+                    <div class="grp">
+                      <span class="eb">People</span>
+                      <div class="fld"><label class="row" style="gap:6px">Members <span class="pin">6</span></label><div class="row" style="flex-wrap:wrap;gap:6px"><span class="avs"><span class="av">AD</span><span class="av">EL</span><span class="av">MR</span></span><span class="chip info">Team · Web (4) ▾</span><span class="chip add">+</span></div></div>
+                    </div>
+                    <div class="grp">
+                      <span class="eb">Appearance</span>
+                      <div class="swatches"><i style="background:#64748b"></i><i class="sel" style="background:var(--accent)"></i><i style="background:var(--ok)"></i><i style="background:var(--warn)"></i><i style="background:var(--bad)"></i><i style="background:var(--rev)"></i></div>
+                    </div>
+                  </aside>
+                </div>
+                <div class="dlg-f">
+                  <span class="btn g">← Back to templates</span>
+                  <div class="row"><span class="pin">7</span><span class="btn g">Cancel</span><span class="btn p" style="min-width:120px;justify-content:center">Create project</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="hint-scroll">Scroll sideways to see the whole wireframe.</p>
+          <ol class="notes">
+            <li><span class="pin">1</span><span>Header shows the template picked in step 1. The template picker step stays an <code>lg</code> dialog; the editor step switches to <code>2xl</code>.</span></li>
+            <li><span class="pin">2</span><span>Inline title and an auto-growing markdown description, the same as the task editor.</span></li>
+            <li><span class="pin">3</span><span>Tabs: Overview, Budget &amp; risk, Fields. Budget &amp; risk reuses the task editor's <code>RiskCostPanel</code>, which replaces the tinted boxes.</span></li>
+            <li><span class="pin">4</span><span>Property rail grouped by Properties, Classification, People and Appearance. Dates move here.</span></li>
+            <li><span class="pin">5</span><span><code>TagInput</code> chips replace the comma-separated text box. The API already takes an array.</span></li>
+            <li><span class="pin">6</span><span>One <code>MembersField</code>. Picking a team adds its members as a "Team · 4" chip you can expand or undo.</span></li>
+            <li><span class="pin">7</span><span>Footer sits outside the scroll area. In the project Settings tab, the same editor shows a sticky "Unsaved changes" bar instead.</span></li>
+          </ol>
+        </div>
+        <figure class="today narrow" data-view="today" hidden>
+          <img src="{{IMG_PROJECT}}" alt="Current Project Details dialog: a single long column of fields with the Save button at the bottom of the scroll area">
+          <figcaption>Today: one scrolling column; the footer scrolls with the content.</figcaption>
+        </figure>
+      </div>
+
+      <pre class="tree" aria-label="Entity editor component tree"><b>EntityEditor</b>            <i>layout grid from task-form.tsx:182 · props: main, tabs, rail, footer · variant "dialog" | "page"</i>
+├── <b>EditorTitle</b>         <i>inline large input</i>
+├── <b>EditorDescription</b>   <i>markdown, auto-grow, max 12rem</i>
+├── <b>EditorTabs</b>          <i>underline tabs, count badges, disabled with a reason</i>
+├── <b>PropertyRail</b>        <i>w-80, sunken surface</i>
+│   └── <b>RailGroup</b>       <i>Eyebrow + stacked Fields</i>
+└── <b>EditorFooter</b>        <i>footerStart | Cancel + Submit</i>
+shared: <b>RiskCostPanel</b> · <b>DateRangeFields</b> · <b>MembersField</b> · <b>TagInput</b></pre>
+
+      <p class="prose"><strong>Task editor touch-ups.</strong> It was rebuilt in f3b67cc, so changes stay small: group its rail with the same <code>RailGroup</code> headings, add count badges to the Dependencies, Files and Activity tabs, and swap its two <code>window.confirm</code> calls for <code>useConfirm</code>.</p>
+
+      <h3>Every other dialog</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Dialog</th><th>File</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>Edit topic, edit work type</td><td><code>admin-metadata.tsx</code></td><td><span class="tag rm">remove</span> inline editing replaces it</td></tr>
+            <tr><td>Scoped topic and type</td><td><code>scoped-taxonomy-manager.tsx</code></td><td><span class="tag ch">reuse</span> Metadata row components</td></tr>
+            <tr><td>Add webhook</td><td><code>settings.tsx</code></td><td><span class="tag ch">restyle</span> <code>Field</code> labels, provider as a segmented control</td></tr>
+            <tr><td>Team editor, template editor</td><td><code>teams.tsx</code>, <code>templates.tsx</code></td><td><span class="tag ch">restyle</span> footer out of the body; <code>MembersField</code>, <code>Section</code></td></tr>
+            <tr><td>Workflow builder</td><td><code>workflows.tsx</code></td><td><span class="tag">keep size</span> standard header and footer</td></tr>
+            <tr><td>Idea dialogs (3), Gantt quick edit</td><td><code>project-ideas.tsx</code>, <code>project-gantt.tsx</code></td><td><span class="tag ch">restyle</span> standard footer and <code>Field</code></td></tr>
+            <tr><td>Folder note editor</td><td><code>folder-tree.tsx</code></td><td><span class="tag ch">move</span> into the File Hub preview panel</td></tr>
+            <tr><td>Attachment pickers</td><td><code>attachment-manager.tsx</code></td><td><span class="tag ch">reuse</span> <code>Dropzone</code> and <code>FileCard</code></td></tr>
+            <tr><td>All 14 <code>window.confirm</code></td><td>various</td><td><span class="tag new">replace</span> <code>useConfirm()</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard">
+      <span class="eyebrow">Phase P3</span>
+      <h2>Dashboard</h2>
+      <p class="prose muted">Put the summary first, then what needs attention today, then the team and the insights. Merge overlapping widgets and make empty states small enough that an empty dashboard still fits on one screen.</p>
+
+      <div class="figure" data-fig>
+        <div class="fig-bar">
+          <span class="eyebrow">Dashboard · 12-column grid · example data</span>
+          <div class="seg-ctl" role="group" aria-label="Dashboard view">
+            <button type="button" aria-pressed="true" data-show="proposed">Proposed</button>
+            <button type="button" aria-pressed="false" data-show="today">Today</button>
+          </div>
+        </div>
+        <div data-view="proposed">
+          <div class="scroll-x">
+            <div class="wf">
+              <div class="row sb">
+                <div class="stackv" style="gap:2px"><span class="t">Good afternoon, Administrator</span><span class="m">Sunday 18 October · 3 tasks due this week</span></div>
+                <div class="row"><span class="pin">1</span><span class="btn">+ Task</span><span class="btn p">+ Project</span></div>
+              </div>
+
+              <div class="c" style="position:relative">
+                <div class="kpis">
+                  <div><span class="s row" style="gap:6px">Active projects <span class="pin" style="margin-left:auto">2</span></span><b>6</b><span class="m">2 due this month</span></div>
+                  <div><span class="s">Open tasks</span><b>48</b><span class="m">12 in progress · 5 in review</span></div>
+                  <div><span class="s">Blocked or on hold</span><b style="color:var(--warn)">3</b><span class="m">Oldest blocked 4 days</span></div>
+                  <div><span class="s">Completion</span><b>64%</b><div class="prog"><i style="width:64%"></i></div></div>
+                </div>
+              </div>
+
+              <div class="c">
+                <div class="ch"><span class="row">Status distribution <small>· 82 tasks</small></span><span class="pin">3</span></div>
+                <div class="cb stackv" style="gap:10px">
+                  <div class="stack">
+                    <span style="flex:14;background:var(--fg-faint)"></span>
+                    <span style="flex:17;background:var(--fill)"></span>
+                    <span style="flex:12;background:var(--accent)"></span>
+                    <span style="flex:3;background:var(--warn)"></span>
+                    <span style="flex:5;background:var(--rev)"></span>
+                    <span style="flex:31;background:var(--ok)"></span>
+                  </div>
+                  <div class="legend">
+                    <span><i class="dot" style="background:var(--fg-faint)"></i>Backlog <b>14</b></span>
+                    <span><i class="dot" style="background:var(--fill)"></i>To do <b>17</b></span>
+                    <span><i class="dot" style="background:var(--accent)"></i>In progress <b>12</b></span>
+                    <span><i class="dot" style="background:var(--warn)"></i>On hold <b>3</b></span>
+                    <span><i class="dot" style="background:var(--rev)"></i>Review <b>5</b></span>
+                    <span><i class="dot" style="background:var(--ok)"></i>Done <b>31</b></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="g12">
+                <div class="c s8">
+                  <div class="ch"><span class="row">My focus <span class="pin">4</span></span><span class="seg" style="font-weight:400"><span class="on">Overdue · 2</span><span>This week · 3</span><span>Next 14 days · 9</span></span></div>
+                  <div class="rows">
+                    <div class="lrow"><span class="dot" style="background:var(--bad)"></span><span class="name">Migrate blog posts to CMS</span><span class="m">Website relaunch</span><span class="chip bad">2 days late</span><span class="av">EL</span></div>
+                    <div class="lrow"><span class="dot" style="background:#ea580c"></span><span class="name">Sign off pricing page copy</span><span class="m">Website relaunch</span><span class="chip bad">Yesterday</span><span class="av">AD</span></div>
+                    <div class="lrow"><span class="dot" style="background:var(--warn)"></span><span class="name">Vendor security questionnaire</span><span class="m">Procurement</span><span class="chip">Tue 20</span><span class="av">MR</span></div>
+                    <div class="lrow"><span class="dot" style="background:var(--accent)"></span><span class="name">Q4 capacity review</span><span class="m">Operations</span><span class="chip">Thu 22</span><span class="av">AD</span></div>
+                  </div>
+                </div>
+                <div class="c s4">
+                  <div class="ch"><span class="row">Activity <span class="pin">5</span></span><span class="s" style="font-weight:500">Recap →</span></div>
+                  <div class="cb stackv" style="gap:11px">
+                    <div class="row" style="align-items:flex-start"><span class="av">EL</span><div class="grow"><span>Elena completed <b>Hero illustrations</b></span><div class="m">12 min ago</div></div></div>
+                    <div class="row" style="align-items:flex-start"><span class="av">MR</span><div class="grow"><span>Marco moved <b>API rate limits</b> to Review</span><div class="m">1 h ago</div></div></div>
+                    <div class="row" style="align-items:flex-start"><span class="av">AD</span><div class="grow"><span>You created <b>Website relaunch</b></span><div class="m">Yesterday</div></div></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="c">
+                <div class="ch"><span class="row">Team capacity <small>· next 14 days</small> <span class="pin">6</span></span><span class="legend" style="font-weight:400;font-size:11px"><span><i class="dot" style="background:var(--accent-soft)"></i>Low</span><span><i class="dot" style="background:color-mix(in srgb,var(--accent) 42%,var(--surface))"></i>Medium</span><span><i class="dot" style="background:var(--accent)"></i>Full</span><span><i class="dot" style="background:var(--bad)"></i>Over</span></span></div>
+                <div class="cb"><div class="heat" id="heat"></div></div>
+              </div>
+
+              <div class="row" style="gap:8px"><span class="eb">Insights · admins only</span><span class="pin">7</span></div>
+              <div class="g12">
+                <div class="c s4">
+                  <div class="ch">Workload <small>open tasks</small></div>
+                  <div class="cb stackv" style="gap:9px" id="workload"></div>
+                </div>
+                <div class="c s4">
+                  <div class="ch">Risk exposure <small>probability × impact</small></div>
+                  <div class="cb"><div class="risk" id="risk"></div></div>
+                </div>
+                <div class="c s4">
+                  <div class="ch">Contribution <small>26 weeks</small></div>
+                  <div class="cb stackv"><div class="contrib" id="contrib"></div><span class="m">214 tasks completed</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="hint-scroll">Scroll sideways to see the whole wireframe.</p>
+          <ol class="notes">
+            <li><span class="pin">1</span><span>Quick actions in the header replace the Manage Projects, Roadmap and Team Stats link cards, which duplicate the sidebar.</span></li>
+            <li><span class="pin">2</span><span>One card, four <code>StatTile</code>s. Each links to a filtered list. "System activity" stops being a KPI and moves to the Activity header.</span></li>
+            <li><span class="pin">3</span><span>One stacked bar replaces six status boxes and saves about 90px. Clicking a segment filters the task list.</span></li>
+            <li><span class="pin">4</span><span>My focus merges Upcoming deadlines with overdue items, as tabs with counts. An empty tab shows a 120px empty state with a link to plan the week.</span></li>
+            <li><span class="pin">5</span><span>One activity feed merges recent completions, teammate activity and the system recap link.</span></li>
+            <li><span class="pin">6</span><span>Compact 20px rows and "Show all" after 8 people. A one-person team gets a half-width card next to Activity.</span></li>
+            <li><span class="pin">7</span><span>Insights get equal 320px heights and the same header style. Non-admins see Workload only, at full width.</span></li>
+          </ol>
+        </div>
+        <figure class="today" data-view="today" hidden>
+          <img src="{{IMG_DASHBOARD}}" alt="Current dashboard: five KPI cards, six status boxes, a one-row heatmap, large empty states and three link cards">
+          <figcaption>Today: overlapping widgets, 170px empty states, link cards that duplicate the sidebar.</figcaption>
+        </figure>
+      </div>
+
+      <p class="prose" style="margin-top:20px"><strong>Responsive.</strong> 12 columns on desktop, 6 on tablets (Focus and Activity stack, Insights two across), one column on phones with the KPI strip as a 2×2 grid.</p>
+
+      <pre class="tree" aria-label="Dashboard component tree"><b>DashboardPage</b>
+├── <b>PageHeader</b>              <i>greeting, date, + Task, + Project</i>
+├── <b>KpiStrip</b> → <b>StatTile</b> ×4
+├── <b>StatusDistributionBar</b>
+├── grid
+│   ├── <b>FocusPanel</b> → SegmentedTabs, TaskRow[], EmptyState sm
+│   └── <b>ActivityFeed</b> → ActivityItem[], EmptyState sm
+├── <b>CapacityHeatmap</b>         <i>existing ProjectHeatmap logic in the new Panel shell</i>
+└── <b>InsightsRow</b> (admins)    <i>WorkloadChart · RiskHeatmap · ContributionHeatmap</i></pre>
+    </section>
+
+    <!-- METADATA -->
+    <section id="metadata">
+      <span class="eyebrow">Phase P2</span>
+      <h2>Metadata</h2>
+      <p class="prose muted">Show topics and work types side by side with no tabs. Creating and editing happen in place, so nothing opens on top of the list.</p>
+
+      <div class="figure" data-fig>
+        <div class="fig-bar">
+          <span class="eyebrow">Metadata · single page · example data</span>
+          <div class="seg-ctl" role="group" aria-label="Metadata view">
+            <button type="button" aria-pressed="true" data-show="proposed">Proposed</button>
+            <button type="button" aria-pressed="false" data-show="today">Today</button>
+          </div>
+        </div>
+        <div data-view="proposed">
+          <div class="scroll-x">
+            <div class="wf">
+              <div class="row sb" style="align-items:flex-end">
+                <div class="stackv" style="gap:2px"><span class="t">Metadata</span><span class="m">Topics and work types used across projects</span></div>
+                <div class="row"><span class="pin">1</span><div class="in" style="width:220px">⌕ Filter by name</div><div class="in v" style="width:120px">Scope: All ▾</div><span class="row s" style="gap:6px"><span class="sw off"></span>Show inactive</span></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div class="c">
+                  <div class="ch"><span>Topics <small>· 9</small></span></div>
+                  <div style="padding:0 13px 10px"><div class="row"><span class="pin">2</span><span class="dot" style="background:var(--rev);width:14px;height:14px"></span><div class="in grow">New topic name</div><span class="btn">Add</span></div></div>
+                  <div style="padding:8px 13px 4px;border-top:1px solid var(--hair)"><span class="eb">Global</span></div>
+                  <div class="rows">
+                    <div class="lrow"><span class="dot" style="background:var(--accent)"></span><div class="in f grow" style="height:26px">Backend services</div><span class="m" style="font-size:10.5px">Enter saves · Esc cancels</span><span class="pin">3</span></div>
+                    <div class="lrow"><span class="dot" style="background:var(--ok)"></span><span class="name">Frontend</span><span class="sw"></span><span class="ell">⋯</span></div>
+                    <div class="lrow"><span class="dot" style="background:var(--warn)"></span><span class="name">Infrastructure</span><span class="sw"></span><span class="ell">⋯</span></div>
+                    <div class="lrow"><span class="dot" style="background:var(--rev)"></span><span class="name">Design</span><span class="sw"></span><span class="ell">⋯</span></div>
+                  </div>
+                  <div class="row" style="padding:10px 13px 4px;border-top:1px solid var(--hair)"><span class="eb">Website relaunch · project</span><span class="m">▾</span><span class="pin">4</span></div>
+                  <div class="rows">
+                    <div class="lrow"><span class="dot" style="background:var(--ok)"></span><span class="name">SEO</span><span class="sw"></span><span class="ell">⋯</span></div>
+                    <div class="lrow"><span class="dot" style="background:#64748b"></span><span class="name">Copywriting</span><span class="sw"></span><span class="ell">⋯</span></div>
+                  </div>
+                </div>
+                <div class="c">
+                  <div class="ch"><span>Work types <small>· 6</small></span></div>
+                  <div style="padding:0 13px 10px"><div class="row"><span class="dot" style="background:var(--accent);width:14px;height:14px"></span><div class="in grow">New work type</div><span class="btn">Add</span></div></div>
+                  <div style="padding:8px 13px 4px;border-top:1px solid var(--hair)"><span class="eb">Global</span></div>
+                  <div class="rows">
+                    <div class="lrow"><span class="dot" style="background:var(--rev)"></span><span class="name">Feature</span><span class="sw"></span><span class="ell">⋯</span></div>
+                    <div class="lrow"><span class="dot" style="background:var(--bad)"></span><span class="name">Bug</span><span class="sw"></span><span class="ell">⋯</span></div>
+                    <div class="lrow"><span class="dot" style="background:var(--accent)"></span><span class="name">Research</span><span class="sw"></span><span class="pin">5</span></div>
+                    <div class="lrow" style="position:relative"><span class="dot" style="background:#64748b"></span><span class="name">Chore</span><span class="sw"></span><span class="ell" style="color:var(--fg)">⋯</span><span class="pin">6</span>
+                      <div class="c" style="position:absolute;right:10px;top:34px;width:150px;padding:4px;box-shadow:0 14px 30px -12px rgba(0,0,0,.3);z-index:2;display:grid">
+                        <span style="padding:6px 8px">Rename</span><span style="padding:6px 8px">Change color</span><span style="padding:6px 8px">Move to global</span><span style="padding:6px 8px;color:var(--bad);border-top:1px solid var(--hair)">Delete…</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row" style="padding:10px 13px 4px;border-top:1px solid var(--hair)"><span class="eb">Website relaunch · project</span><span class="m">▾</span></div>
+                  <div class="rows">
+                    <div class="lrow"><span class="dot" style="background:var(--warn)"></span><span class="name">Content</span><span class="sw"></span><span class="ell">⋯</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="hint-scroll">Scroll sideways to see the whole wireframe.</p>
+          <ol class="notes">
+            <li><span class="pin">1</span><span>One filter bar drives both panels, so finding where "Backend" exists takes one search. The tabs are gone.</span></li>
+            <li><span class="pin">2</span><span>The add row replaces the one-third-width form card. Enter adds and keeps focus for quick entry; the color defaults to the next unused preset.</span></li>
+            <li><span class="pin">3</span><span>Click a name to edit it in place. Both edit dialogs are deleted.</span></li>
+            <li><span class="pin">4</span><span>Rows are grouped by scope: Global first, then one collapsible group per project.</span></li>
+            <li><span class="pin">5</span><span>The active switch saves at once, with an Undo toast. Inactive items are hidden unless "Show inactive" is on.</span></li>
+            <li><span class="pin">6</span><span>The ⋯ menu holds Rename, Change color, Move to global and Delete, which asks through the styled confirm.</span></li>
+          </ol>
+        </div>
+        <figure class="today" data-view="today" hidden>
+          <img src="{{IMG_METADATA}}" alt="Current Metadata page: Topics and Work Types tabs, a create form taking a third of the width, and an empty table">
+          <figcaption>Today: tabs hide half the data; the create form takes a third of the width.</figcaption>
+        </figure>
+      </div>
+
+      <pre class="tree" aria-label="Metadata component tree"><b>MetadataPage</b>
+├── <b>PageHeader</b> + <b>TaxonomyFilterBar</b>   <i>search, scope, show inactive</i>
+└── grid xl:2 columns
+    ├── <b>TaxonomyPanel</b> kind="topic"
+    │   ├── <b>TaxonomyAddRow</b> → ColorSwatchPicker, Input
+    │   └── <b>TaxonomyGroup</b>(scope) → <b>TaxonomyRow</b>[] → ColorSwatchPicker, InlineText, Switch, RowMenu
+    └── <b>TaxonomyPanel</b> kind="work-type"   <i>same components; also reused by scoped-taxonomy-manager.tsx</i></pre>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="settings">
+      <span class="eyebrow">Phase P2</span>
+      <h2>Settings</h2>
+      <p class="prose muted">Use one reading column with a section nav, and turn each section into a list of rows instead of a card with its own footer. Settings that are toggles save instantly.</p>
+
+      <div class="figure" data-fig>
+        <div class="fig-bar">
+          <span class="eyebrow">Settings · section nav + rows</span>
+          <div class="seg-ctl" role="group" aria-label="Settings view">
+            <button type="button" aria-pressed="true" data-show="proposed">Proposed</button>
+            <button type="button" aria-pressed="false" data-show="today">Today</button>
+          </div>
+        </div>
+        <div data-view="proposed">
+          <div class="scroll-x">
+            <div class="wf">
+              <span class="t">Settings</span>
+              <div class="set">
+                <div class="snav">
+                  <span class="on">Profile</span><span>Appearance</span><span>Notifications</span><span>Calendar feed</span><span>Integrations</span><span>Security</span>
+                  <span style="padding-top:10px"><span class="pin">1</span></span>
+                </div>
+                <div class="scontent">
+                  <div>
+                    <div class="sgroup-h"><b>Profile</b><span class="m">How your name appears to teammates</span></div>
+                    <div class="c rows">
+                      <div class="srow"><div class="lbl"><b>Full name</b></div><div class="in v" style="width:260px">Administrator</div></div>
+                      <div class="srow"><div class="lbl"><b>Email</b><span class="m">Used for sign-in and notifications</span></div><div class="row"><span>admin@monolith.dev</span><span class="chip warn">Not verified</span><span class="s" style="text-decoration:underline">Send link</span><span class="pin">3</span></div></div>
+                      <div class="dirty"><span class="m">Unsaved changes</span><span class="btn g sm">Discard</span><span class="btn p sm">Save</span><span class="pin">4</span></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="sgroup-h"><b>Appearance</b></div>
+                    <div class="c rows">
+                      <div class="srow"><div class="lbl"><b>Theme</b><span class="m">Light, dark, or follow your device</span></div><span class="seg"><span>System</span><span class="on">Light</span><span>Dark</span></span></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="sgroup-h"><b class="row">Notifications <span class="pin">2</span></b><span class="m">In-app notifications always stay on</span></div>
+                    <div class="c rows">
+                      <div class="srow"><div class="lbl"><b>Assignments and deadline reminders</b><span class="m">When you're assigned, and 48 hours before a due date</span></div><span class="sw"></span></div>
+                      <div class="srow"><div class="lbl"><b>Weekly digest</b><span class="m">Monday summary of your open tasks and reports you own</span></div><span class="sw"></span></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="sgroup-h"><b class="row">Integrations <span class="pin">5</span></b><span class="m">Post project updates to chat apps</span></div>
+                    <div class="c rows">
+                      <div class="srow"><div class="lbl"><b>Releases channel</b><span class="m">Slack · hooks.slack.com/…/••••3f9a</span></div><div class="row"><span class="btn sm">Send test</span><span class="ell">⋯</span></div></div>
+                      <div class="srow" style="min-height:42px"><span class="s" style="font-weight:500">+ Add webhook</span></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="sgroup-h"><b class="row">Security <span class="pin">6</span></b></div>
+                    <div class="c rows">
+                      <div class="srow"><div class="lbl"><b>Password</b><span class="m">Last changed 3 months ago</span></div><span class="btn sm">Change password</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="hint-scroll">Scroll sideways to see the whole wireframe.</p>
+          <ol class="notes">
+            <li><span class="pin">1</span><span>Sticky section nav with scroll-spy that updates the <code>#hash</code>. On narrow screens it becomes a row of chips under the header.</span></li>
+            <li><span class="pin">2</span><span>Each section has a title and one bordered group of rows. There are no nested cards and no per-card footers, and toggles save instantly.</span></li>
+            <li><span class="pin">3</span><span>Email verification moves into the email row. It currently sits in Notifications.</span></li>
+            <li><span class="pin">4</span><span>Profile and password are the only real forms. Their Save appears only when something changed.</span></li>
+            <li><span class="pin">5</span><span>Webhooks become rows with a test button. "Add webhook" opens the <code>md</code> dialog.</span></li>
+            <li><span class="pin">6</span><span>Security holds only the password for now, with room for sessions and two-factor sign-in later.</span></li>
+          </ol>
+        </div>
+        <figure class="today" data-view="today" hidden>
+          <img src="{{IMG_SETTINGS}}" alt="Current Settings page: section labels on the left of cards inside a narrow centered column, with large empty margins">
+          <figcaption>Today: a narrow three-column grid, cards with their own footers, mixed groupings.</figcaption>
+        </figure>
+      </div>
+
+      <pre class="tree" aria-label="Settings component tree"><b>SettingsPage</b>
+├── <b>PageHeader</b>
+├── <b>SettingsNav</b>                 <i>sticky, scroll-spy</i>
+└── <b>SettingsSection</b> ×6          <i>Profile · Appearance · Notifications · Calendar feed · Integrations · Security</i>
+    └── <b>SettingsGroup</b> → <b>SettingsRow</b>[]  <i>+ footer that appears when dirty</i>
+        <i>reuses ThemeSegmented; NotificationPrefsCard and CalendarFeedCard drop their Card wrappers and export rows</i></pre>
+    </section>
+
+    <!-- FILE HUB -->
+    <section id="filehub">
+      <span class="eyebrow">Phases P4a + P4b</span>
+      <h2>File Hub</h2>
+      <p class="prose muted">Replace the folder tree with a file manager: folders on the left, files shown as cards in the middle, and a preview on the right. Dropping files anywhere uploads them, and dragging cards moves them.</p>
+
+      <div class="figure" data-fig>
+        <div class="fig-bar">
+          <span class="eyebrow">Project › Files · mid-drag · example data</span>
+          <div class="seg-ctl" role="group" aria-label="File Hub view">
+            <button type="button" aria-pressed="true" data-show="proposed">Proposed</button>
+            <button type="button" aria-pressed="false" data-show="today">Today</button>
+          </div>
+        </div>
+        <div data-view="proposed">
+          <div class="scroll-x">
+            <div class="wf" style="padding:0;gap:0;overflow:hidden">
+              <div class="row sb" style="padding:11px 14px;border-bottom:1px solid var(--line);background:var(--surface)">
+                <div class="row"><span class="pin">1</span><span class="s">Files</span><span class="m">›</span><span class="s">Design</span><span class="m">›</span><b>Mockups</b></div>
+                <div class="row"><div class="in" style="width:190px">⌕ Search files</div><span class="btn">Sort: Modified ▾</span><span class="seg"><span class="on">Grid</span><span>List</span></span><span class="btn">New ▾</span><span class="btn p">↑ Upload</span></div>
+              </div>
+              <div class="hub" style="background:var(--surface)">
+                <div class="hub-side">
+                  <div class="grp"><span class="nav">All files <span class="n">38</span></span><span class="nav">Recent</span></div>
+                  <div class="grp"><span class="eb row" style="gap:6px">Types <span class="pin">2</span></span>
+                    <span class="nav">Images <span class="n">14</span></span><span class="nav">Documents <span class="n">9</span></span><span class="nav">Notes <span class="n">4</span></span><span class="nav">Sketches <span class="n">3</span></span>
+                  </div>
+                  <div class="grp"><span class="eb row" style="gap:6px">Folders <span class="pin">3</span></span>
+                    <span class="nav"><span class="m">▾</span><span class="fold"></span>Design</span>
+                    <span class="nav on" style="padding-left:22px"><span class="fold"></span>Mockups</span>
+                    <span class="nav drop" style="padding-left:22px"><span class="fold"></span>Brand <span class="n" style="color:var(--accent)">Move here</span></span>
+                    <span class="nav"><span class="m">▸</span><span class="fold"></span>Contracts</span>
+                    <span class="nav"><span class="m">▸</span><span class="fold"></span>Research</span>
+                  </div>
+                  <div class="grp"><span class="eb row" style="gap:6px">Topics <span class="pin">4</span></span>
+                    <span class="nav"><span class="dot" style="background:var(--accent)"></span>Frontend</span>
+                    <span class="nav"><span class="dot" style="background:var(--bad)"></span>Legal</span>
+                  </div>
+                </div>
+                <div class="hub-main">
+                  <span class="ghost">⧉ 2 files</span>
+                  <span class="eb">Folders</span>
+                  <div class="fgrid">
+                    <div class="folder-card"><span class="fold"></span><div class="grow"><b>Desktop</b><div class="m">6 files</div></div></div>
+                    <div class="folder-card"><span class="fold"></span><div class="grow"><b>Mobile</b><div class="m">4 files</div></div></div>
+                    <div class="folder-card"><span class="fold"></span><div class="grow"><b>Exports</b><div class="m">11 files</div></div></div>
+                  </div>
+                  <div class="row" style="gap:8px;margin-top:2px"><span class="eb">Files</span><span class="m">2 selected</span><span class="pin">5</span></div>
+                  <div class="fgrid">
+                    <div class="fcard sel"><div class="thumb img"></div><span class="nm">hero-desktop.png</span><span class="m">1.2 MB · 18 Oct</span></div>
+                    <div class="fcard sel"><div class="thumb logo"></div><span class="nm">logo-mark.svg</span><span class="m">14 KB · 17 Oct</span></div>
+                    <div class="fcard"><div class="thumb"><span class="ext" style="background:var(--bad-soft);color:var(--bad)">PDF</span></div><span class="nm">creative-brief.pdf</span><span class="m">840 KB · 12 Oct</span></div>
+                    <div class="fcard"><div class="thumb doc"><i style="width:80%"></i><i style="width:64%"></i><i style="width:72%"></i><i style="width:40%"></i></div><span class="nm">review-notes.md</span><span class="m">Note · 11 Oct</span></div>
+                  </div>
+                  <div class="dropzone"><span class="arrowup">↑</span>Drop files to upload to Design › Mockups<span class="pin">6</span></div>
+                  <div style="height:64px"></div>
+                  <div class="tray">
+                    <div class="row sb"><b>Uploading 3 files</b><span class="row"><span class="pin">8</span><span class="m">×</span></span></div>
+                    <div class="stackv" style="gap:3px"><div class="row sb"><span>wireframes-v3.fig</span><span class="m num">72%</span></div><div class="prog info"><i style="width:72%"></i></div></div>
+                    <div class="stackv" style="gap:3px"><div class="row sb"><span>moodboard.jpg</span><span class="m num">31%</span></div><div class="prog info"><i style="width:31%"></i></div></div>
+                    <div class="row sb"><span class="s">footer.png</span><span class="m">Waiting</span></div>
+                  </div>
+                </div>
+                <div class="hub-prev">
+                  <div class="row sb"><b>Preview</b><span class="pin">7</span></div>
+                  <div class="thumb img" style="border:1px solid var(--line)"></div>
+                  <b style="font-size:12.5px">hero-desktop.png</b>
+                  <dl class="kv">
+                    <dt>Size</dt><dd>1.2 MB · PNG</dd>
+                    <dt>Dimensions</dt><dd>1600 × 900</dd>
+                    <dt>Added</dt><dd>18 Oct by Admin</dd>
+                    <dt>Folder</dt><dd>Design › Mockups</dd>
+                  </dl>
+                  <div class="row" style="flex-wrap:wrap;gap:5px"><span class="chip"><span class="dot" style="background:var(--accent)"></span>Frontend</span><span class="chip add">+ Topic</span></div>
+                  <div class="row"><span class="btn sm p">Open</span><span class="btn sm">Download</span><span class="btn sm">⋯</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="hint-scroll">Scroll sideways to see the whole wireframe.</p>
+          <ol class="notes">
+            <li><span class="pin">1</span><span>Toolbar with breadcrumb (each crumb is a drop target), search, sort, grid or list view, New (folder, note, sketch) and Upload.</span></li>
+            <li><span class="pin">2</span><span>Smart views by type. Sketches are the project's whiteboards, so the project has one place for all its files.</span></li>
+            <li><span class="pin">3</span><span>Every folder node is a drop target. Hovering one for 600ms during a drag expands it.</span></li>
+            <li><span class="pin">4</span><span>Topics act as tags. Dropping files on a topic tags them, reusing the existing taxonomy and colors.</span></li>
+            <li><span class="pin">5</span><span>Click, Shift-click and Ctrl-click selection reuses <code>lib/selection.ts</code>. Here, two selected files are being dragged onto Brand. The move applies at once and the toast offers Undo.</span></li>
+            <li><span class="pin">6</span><span>Dragging files in from the desktop shows this overlay. Dropping uploads to the current folder, or into the folder under the pointer.</span></li>
+            <li><span class="pin">7</span><span>Selecting one file opens the preview panel. Double-click opens the full <code>FilePreviewDialog</code>; notes open in the editor.</span></li>
+            <li><span class="pin">8</span><span>The upload tray runs 3 uploads at a time, with progress, cancel and retry for each file. It warns before the 100 MB nginx limit.</span></li>
+          </ol>
+        </div>
+        <figure class="today" data-view="today" hidden>
+          <img src="{{IMG_FILEHUB}}" alt="Current File Hub tab: a card with a 'Project files' heading, a plus button and a single folder row named dsa">
+          <figcaption>Today: a folder tree; files appear only after expanding a folder.</figcaption>
+        </figure>
+      </div>
+
+      <h3>Interactions</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Gesture</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Desktop files over the main pane</td><td class="wrap">Overlay "Drop to upload to <em>current folder</em>"</td></tr>
+            <tr><td>…over a folder card or tree node</td><td class="wrap">That folder highlights in the info color; the drop uploads into it</td></tr>
+            <tr><td>Card dragged onto a folder</td><td class="wrap">Move, applied at once, with an Undo toast</td></tr>
+            <tr><td>Card dragged onto a topic</td><td class="wrap">Tags the file or files with that topic</td></tr>
+            <tr><td>More than one selected</td><td class="wrap">Bulk bar: Move to…, Tag, Download, Delete</td></tr>
+            <tr><td>Keyboard</td><td class="wrap">Arrows move focus, Enter opens, F2 renames, Delete asks to confirm, Ctrl+A selects all, Esc clears</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="prose small muted">Internal drags use <code>@dnd-kit/core</code>, which is already installed, with its keyboard sensor for accessibility. Desktop file drops need native drag events, because dnd-kit doesn't handle <code>DataTransfer.files</code>.</p>
+
+      <h3>Backend changes (P4a, can start now)</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Change</th><th>Endpoint or model</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Move a file</td><td class="wrap"><code>PUT /folders/files/{id}</code> accepts <code>folder_id</code></td><td class="wrap">Write access on source and target; same project only</td></tr>
+            <tr><td>Move a folder</td><td class="wrap"><code>PUT /folders/{id}</code> accepts <code>parent_id</code></td><td class="wrap">Reject a move into itself or a descendant</td></tr>
+            <tr><td>Delete a file</td><td class="wrap"><code>DELETE /folders/files/{id}</code></td><td class="wrap"><span class="tag rm">missing today</span> also removes the stored object</td></tr>
+            <tr><td>Tag files</td><td class="wrap"><code>file_topics</code> table, <code>topic_ids</code> on File</td><td class="wrap">Alembic migration; reuses Topics instead of a new tag system</td></tr>
+            <tr><td>Smart views</td><td class="wrap"><code>GET /folders/files?kind=&amp;recent=&amp;topic_id=</code></td><td class="wrap">Flat listing; files currently arrive only nested in folders</td></tr>
+            <tr><td>Bulk actions</td><td class="wrap"><code>POST /folders/files/bulk</code></td><td class="wrap">Optional; the client can loop with <code>chunk()</code> first</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <pre class="tree" aria-label="File Hub component tree"><b>FileHub</b>                    <i>replaces FolderTree in the project Files tab</i>
+├── <b>FileHubProvider</b>         <i>selection, current folder, view mode, DnD context, upload queue</i>
+├── <b>FileHubSidebar</b> → SmartViewList, <b>FolderTreeNav</b> → FolderNode, <b>TopicDropList</b> → TopicChip
+├── <b>FileHubToolbar</b> → Breadcrumbs, SearchInput, SortMenu, ViewToggle, NewMenu, UploadButton
+├── <b>FileHubPane</b> (Dropzone)
+│   ├── <b>FolderGrid</b> → FolderCard            <i>draggable + droppable</i>
+│   ├── <b>FileGrid</b> | <b>FileList</b> → <b>FileCard</b> | FileRow → <b>FileThumbnail</b>
+│   └── EmptyState as a dropzone
+├── <b>FilePreviewPanel</b> → FileThumbnail lg, FileMeta, TopicPicker, actions
+├── <b>BulkActionBar</b>
+└── <b>UploadTray</b> → UploadItem[]
+<i>FileCard, FileThumbnail and Dropzone are reused by the task dialog's Files tab.</i></pre>
+      <p class="prose small muted">Tests: pytest for move permissions, cross-project rejection, cycle rejection, delete and tagging. Vitest for the upload queue and drop-target resolution, written as pure functions in <code>lib/file-hub.ts</code> like <code>lib/kanban.ts</code>.</p>
+    </section>
+
+    <!-- PHASES -->
+    <section id="phases">
+      <span class="eyebrow">Delivery</span>
+      <h2>Phases</h2>
+      <p class="prose muted">Each phase is one pull request. The columns show the order: everything in a column can run in parallel once the column to its left has landed.</p>
+      <div class="phases">
+        <div class="stage">
+          <span class="eyebrow">Start now</span>
+          <div class="ph"><header><b>P0</b><span>Foundation</span></header><p>Tokens, Tailwind mapping, <code>colors.ts</code> on tokens, the primitives, the lint guard. Drop card shadows.</p><span class="needs">Done when no page regresses visually</span></div>
+          <div class="ph"><header><b>P4a</b><span>File Hub API</span></header><p>Move, delete, tagging, flat listing, migration and pytest.</p><span class="needs">Needs nothing</span></div>
+        </div>
+        <div class="stage">
+          <span class="eyebrow">After P0</span>
+          <div class="ph"><header><b>P1</b><span>Dialogs</span></header><p><code>EntityEditor</code>, Project editor in dialog and page form, <code>useConfirm</code> everywhere, the dialog pass.</p><span class="needs">Done when no footer scrolls and no window.confirm remains</span></div>
+          <div class="ph"><header><b>P2</b><span>Metadata + Settings</span></header><p>Single-page Metadata with inline editing; Settings with nav and rows.</p><span class="needs">Done when there are no tabs, no edit dialogs, one scroll</span></div>
+          <div class="ph"><header><b>P3</b><span>Dashboard</span></header><p>The layout above at every breakpoint.</p><span class="needs">Done when empty states are 120px or less</span></div>
+        </div>
+        <div class="stage">
+          <span class="eyebrow">After P0 and P4a</span>
+          <div class="ph"><header><b>P4b</b><span>File Hub UI</span></header><p>Drop to upload, drag to move, preview panel, multi-select, keyboard.</p><span class="needs">Done when it works without a mouse</span></div>
+        </div>
+      </div>
+
+      <h3>Checks for every phase</h3>
+      <ul class="plain prose">
+        <li><code>npm run typecheck</code>, <code>npm run lint</code> and <code>npm test</code> in <code>frontend/</code>; <code>pytest</code> in <code>backend/</code> for P4a.</li>
+        <li>Screenshots of each changed page in light and dark at 375, 768, 1440 and 2000px, replacing the outdated ones in <code>docs/img/</code>.</li>
+        <li>Keyboard pass: every dialog opens, submits with Ctrl+Enter, closes with Esc and traps focus.</li>
+        <li>Contrast of at least 4.5:1 for text. Check status chips in dark mode first, since the soft backgrounds are the risk.</li>
+      </ul>
+    </section>
+
+    <!-- GUIDELINES -->
+    <section id="guidelines">
+      <span class="eyebrow">Reference</span>
+      <h2>Styling guidelines</h2>
+      <div class="dodont">
+        <div class="panel ok">
+          <h4>Do</h4>
+          <ul>
+            <li>One primary button per view</li>
+            <li>Sentence-case labels through <code>Field</code></li>
+            <li>Icons at <code>h-4 w-4</code>, muted, one per header</li>
+            <li><code>tabular-nums</code> on every number that lines up</li>
+            <li>Skeletons, not spinners, for panels that load with the page</li>
+            <li>Status colors from tokens: <code>bg-info-soft text-info</code></li>
+          </ul>
+        </div>
+        <div class="panel no">
+          <h4>Don't</h4>
+          <ul>
+            <li>Nest cards inside cards</li>
+            <li>Uppercase anything outside <code>Eyebrow</code></li>
+            <li>Use text smaller than 11px or <code>font-black</code></li>
+            <li>Put shadows on cards</li>
+            <li>Add inner scrollbars to document pages</li>
+            <li>Use raw <code>slate-*</code> or <code>blue-50</code> classes where a token exists (24 <code>slate-*</code> uses remain)</li>
+          </ul>
+        </div>
+      </div>
+<pre class="code"><span class="c">// Panel</span>
+&lt;Card className=<span class="s">"rounded-xl border bg-card"</span>&gt;            <span class="c">{/* no shadow */}</span>
+  &lt;div className=<span class="s">"flex items-center justify-between px-5 py-4"</span>&gt;
+    &lt;h3 className=<span class="s">"text-sm font-semibold"</span>&gt;Topics &lt;span className=<span class="s">"text-muted-foreground"</span>&gt;· 12&lt;/span&gt;&lt;/h3&gt;
+  &lt;/div&gt;
+  &lt;div className=<span class="s">"divide-y border-t"</span>&gt;…rows h-10 px-5…&lt;/div&gt;
+&lt;/Card&gt;
+
+<span class="c">// Status chip from tokens</span>
+&lt;span className=<span class="s">"inline-flex h-6 items-center gap-1.5 rounded-full bg-info-soft px-2.5 text-xs font-medium text-info"</span>&gt;
+  &lt;span className=<span class="s">"h-1.5 w-1.5 rounded-full bg-info"</span> /&gt; In progress
+&lt;/span&gt;
+
+<span class="c">// Drop target states</span>
+<span class="k">idle</span>    <span class="s">"rounded-xl border border-dashed border-border"</span>
+<span class="k">over</span>    <span class="s">"border-info bg-info-soft ring-2 ring-info/40"</span>
+<span class="k">reject</span>  <span class="s">"border-danger bg-danger-soft"</span></pre>
+      <p class="caption">The full plan, with the same content in Markdown, lives at docs/ui-redesign-plan.md in the repository.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  // Proposed / Today toggles
+  document.querySelectorAll('[data-fig]').forEach(function (fig) {
+    var buttons = fig.querySelectorAll('.seg-ctl button');
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var show = btn.getAttribute('data-show');
+        buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+        fig.querySelectorAll('[data-view]').forEach(function (v) { v.hidden = v.getAttribute('data-view') !== show; });
+      });
+    });
+  });
+
+  // Deterministic example data for the dashboard wireframe
+  var seed = 7;
+  function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+
+  var heat = document.getElementById('heat');
+  if (heat) {
+    var days = ['S','M','T','W','T','F','S','S','M','T','W','T','F','S'];
+    var html = '<span></span>' + days.map(function (d, i) { return '<span class="hd">' + d + '<br>' + (18 + i > 31 ? 18 + i - 31 : 18 + i) + '</span>'; }).join('');
+    var people = [['AD','Administrator',[0,2,2,3,3,2,0,0,2,3,4,3,2,0]],['EL','Elena',[0,3,3,3,2,2,0,0,1,2,2,2,1,0]],['MR','Marco',[0,1,1,2,2,1,0,0,3,4,4,3,3,0]],['PR','Priya',[0,2,1,1,0,0,0,0,1,1,2,2,1,0]]];
+    people.forEach(function (p) {
+      html += '<span class="row" style="gap:6px"><span class="av">' + p[0] + '</span><span>' + p[1] + '</span></span>';
+      p[2].forEach(function (l, i) { html += '<span class="hc' + (l ? ' l' + l : '') + '" title="' + p[1] + ', day ' + (i + 1) + '"></span>'; });
+    });
+    heat.innerHTML = html;
+  }
+
+  var wl = document.getElementById('workload');
+  if (wl) {
+    var rows = [['Administrator',14,3],['Elena',11,1],['Marco',16,5],['Priya',7,0]];
+    var max = 22;
+    wl.innerHTML = rows.map(function (r) {
+      return '<div class="wl"><span class="s">' + r[0] + '</span><span class="track"><i style="display:block;width:' + (r[1] - r[2]) / max * 100 + '%;background:var(--accent)"></i><i style="display:block;width:' + r[2] / max * 100 + '%;background:var(--bad)"></i></span><span class="num" style="text-align:right">' + r[1] + '</span></div>';
+    }).join('') + '<div class="legend" style="font-size:11px"><span><i class="dot" style="background:var(--accent)"></i>On track</span><span><i class="dot" style="background:var(--bad)"></i>Overdue</span></div>';
+  }
+
+  var risk = document.getElementById('risk');
+  if (risk) {
+    var counts = {'5-4':1,'4-4':2,'4-2':1,'3-3':3,'2-4':1,'2-2':4,'1-3':2,'1-1':5};
+    var cells = '';
+    for (var p = 5; p >= 1; p--) {
+      for (var i = 1; i <= 5; i++) {
+        var s = p * i, cls = s <= 4 ? 'r-lo' : s <= 9 ? 'r-mid' : 'r-hi';
+        var n = counts[p + '-' + i] || '';
+        cells += '<div class="' + cls + '" title="Probability ' + p + ', impact ' + i + '">' + n + '</div>';
+      }
+    }
+    risk.innerHTML = cells;
+  }
+
+  var contrib = document.getElementById('contrib');
+  if (contrib) {
+    var out = '';
+    for (var k = 0; k < 26 * 7; k++) {
+      var day = k % 7, r = rnd();
+      var lvl = (day === 0 || day === 6) ? (r > .85 ? 1 : 0) : (r > .8 ? 3 : r > .55 ? 2 : r > .25 ? 1 : 0);
+      out += '<i' + (lvl ? ' class="l' + lvl + '"' : '') + '></i>';
+    }
+    contrib.innerHTML = out;
+  }
+
+  // Contents scroll-spy
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  if ('IntersectionObserver' in window && links.length) {
+    var byId = {};
+    links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (a) { a.classList.remove('on'); });
+          var a = byId[e.target.id];
+          if (a) a.classList.add('on');
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    Object.keys(byId).forEach(function (id) { var el = document.getElementById(id); if (el) io.observe(el); });
+  }
+})();
+</script>
