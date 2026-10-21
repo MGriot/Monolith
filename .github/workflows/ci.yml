@@ -16,6 +16,14 @@ jobs:
   backend:
     name: Backend tests
     runs-on: ubuntu-24.04
+    services:
+      postgres:   # throw-away database for tests/test_db_integration.py (each test rolls back)
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -52,6 +60,11 @@ jobs:
           tests/test_whiteboard_rooms.py
           tests/test_whiteboard_previews.py
           tests/test_activity.py
+      - name: Database integration tests (service Postgres)
+        working-directory: backend
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://postgres:test@localhost:5432/postgres
+        run: python -m pytest -q -p no:cacheprovider tests/test_db_integration.py
       - name: Generated guide sections are up to date
         run: python scripts/docs/gen_reference.py --check
       - name: Dependencies have no known vulnerabilities

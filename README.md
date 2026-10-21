@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-19-20232A?logo=react)](https://react.dev/)
-[![MCP](https://img.shields.io/badge/MCP-110%20tools-6741d9)](docs/guide/09-mcp.html)
+[![MCP](https://img.shields.io/badge/MCP-112%20tools-6741d9)](docs/guide/09-mcp.html)
 
 **Monolith** is a self-hosted project planner for technical teams. Projects hold a tree of tasks of any depth with dates, PERT
 estimates, dependencies and a live critical path, budgets and risk, time tracking, custom fields and automations. Comments, an ideas
@@ -104,6 +104,8 @@ compose.yaml / compose.dev.yaml
 
 ```bash
 cd backend && python -m pytest -q tests/                      # unit tests, no database
+TEST_DATABASE_URL=postgresql+asyncpg://postgres:test@localhost:55432/postgres \
+  python -m pytest -q tests/test_db_integration.py              # against a throw-away Postgres (rolled back)
 cd frontend && npm ci && npm run typecheck && npm test && npm run build
 scripts/live-smoke.sh                                         # against a throw-away stack with a fresh database
 python scripts/docs/gen_reference.py --check                  # generated guide sections are current

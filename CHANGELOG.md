@@ -9,8 +9,8 @@ All notable changes to this project will be documented in this file.
   as a plain sentence with who made it, through the app, the API or MCP; automation and roll-up changes are labelled.
   Shown with the discussion in the project and task Activity tabs (filter All / Comments / Changes);
   `GET /projects/{id}/activity`, `GET /tasks/{id}/activity`, MCP `get_project_activity` / `get_task_activity`. Migration 0013.
-- 17 new screenshots in the HTML guide and a new "Activity and change log" section.
-- **MCP server rewrite**: 110 typed tools, 5 resources and 2 prompts covering projects, members, tasks, dependencies and the
+- 18 new screenshots in the HTML guide and a new "Activity and change log" section.
+- **MCP server rewrite**: 112 typed tools, 5 resources and 2 prompts covering projects, members, tasks, dependencies and the
   critical path, time, custom fields, automations, comments, ideas, sketches, File Hub, teams, taxonomy, templates, SOPs,
   webhooks, notifications, dashboards and search. Tools call the REST handlers, so permissions, validation and side effects
   are identical; refusals return `isError` with a readable reason.
@@ -51,6 +51,10 @@ All notable changes to this project will be documented in this file.
   `admin@admin.com` / `test@example.com`.
 
 ### Fixed
+- The two hand-run database scripts that failed under pytest (`test_crud_dependencies_standalone.py`,
+  `test_recursive_logic.py`) are replaced by `tests/test_db_integration.py`: real PostgreSQL tests (dependencies, cycle
+  rejection, nested create, status roll-up and its change-log label) that roll back everything; CI runs them against a
+  Postgres service, locally they need `TEST_DATABASE_URL` and skip without it.
 - Gantt and team-timeline PNG export now include the whole chart, not just the visible part, with a progress notice.
 - Projects list and Kanban: topic and work-type chips no longer overlap; long lists collapse into "+N".
 - Task editor: the tab row wraps instead of hiding the last tabs (Ideas).
