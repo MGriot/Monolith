@@ -16,8 +16,11 @@ mailserver*/
 
 # local agent tooling state (contains credentials), never commit
 .agent/
+.claude/worktrees/
+.claude/settings.local.json
 
-# sketch previews written when the backend runs outside a container
+# files and sketch previews written when the backend runs outside a container
+/uploads/
 backend/uploads/previews/
 
 # screenshots and debug output never belong at the repository root

@@ -9,14 +9,14 @@ By participating in this project, you agree to abide by our standards of profess
 ## 🛠️ Development Setup
 
 ### Backend
-- Language: Python 3.12+
+- Language: Python 3.12 (the version CI and the container image use)
 - Framework: FastAPI
-- ORM: SQLAlchemy (Async)
-- Linting: Use `ruff`
+- ORM: SQLAlchemy (Async), migrations with Alembic
+- Linting: Use `ruff` (not enforced by CI yet)
 
 ### Frontend
-- Language: TypeScript
-- Framework: React (Vite)
+- Language: TypeScript, Node 22
+- Framework: React 19 (Vite)
 - Styling: Tailwind CSS & Shadcn/UI
 - State: React Query (TanStack)
 
