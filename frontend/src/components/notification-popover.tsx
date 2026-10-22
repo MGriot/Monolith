@@ -20,6 +20,7 @@ import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { parseServerDate } from "@/lib/dates";
 
 export default function NotificationPopover() {
   const queryClient = useQueryClient();
@@ -152,7 +153,7 @@ export default function NotificationPopover() {
                       </p>
                       <span className="text-[11px] text-fg-faint whitespace-nowrap flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                        {formatDistanceToNow(parseServerDate(n.created_at), { addSuffix: true })}
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-normal line-clamp-2">

@@ -15,12 +15,12 @@ import {
   formatDuration,
   manualEntryRange,
   parseDurationInput,
-  parseServerDate,
   type TaskTimeSummary,
   type TimeEntry,
 } from '@/lib/time-tracking';
 import { useAuth } from '@/components/auth-provider';
 import { errorMessage } from '@/lib/api-error';
+import { parseServerDate } from '@/lib/dates';
 
 interface TaskTimeResponse {
   summary: TaskTimeSummary;

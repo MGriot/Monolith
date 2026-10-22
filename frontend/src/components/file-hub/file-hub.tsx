@@ -77,6 +77,7 @@ import { SketchThumbnail } from '@/components/sketch-thumbnail';
 import { DropNavItem, FileCard, FileThumbnail, FolderCard, InlineName, KindIcon, TreeNode, UploadTray, type NativeDropProps } from './parts';
 import type { Topic } from '@/types';
 import { errorMessage } from '@/lib/api-error';
+import { parseServerDate } from '@/lib/dates';
 
 type ViewState = HubView | { type: 'sketches' };
 
@@ -768,7 +769,7 @@ export default function FileHub({ projectId, onOpenFile }: FileHubProps) {
               <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 text-xs">
                 <dt className="text-fg-faint">Type</dt><dd>{KIND_LABELS[fileKind(single)].replace(/s$/, '')}</dd>
                 {single.size_bytes ? (<><dt className="text-fg-faint">Size</dt><dd className="tabular-nums">{formatBytes(single.size_bytes)}</dd></>) : null}
-                <dt className="text-fg-faint">Added</dt><dd>{new Date(single.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</dd>
+                <dt className="text-fg-faint">Added</dt><dd>{parseServerDate(single.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</dd>
                 <dt className="text-fg-faint">Folder</dt>
                 <dd className="truncate">
                   <button type="button" className="hover:underline" onClick={() => openView({ type: 'folder', id: single.folder_id })}>
@@ -909,7 +910,7 @@ function SketchGrid({ projectId, whiteboards }: { projectId: string; whiteboards
         >
           <SketchThumbnail src={wb.preview_image} className="aspect-[4/3] border border-hairline" />
           <span className="truncate px-0.5 text-sm font-medium">{wb.title || 'Untitled sketch'}</span>
-          {wb.updated_at && <span className="-mt-1.5 px-0.5 text-xs text-muted-foreground">Edited {new Date(wb.updated_at + (wb.updated_at.endsWith('Z') ? '' : 'Z')).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>}
+          {wb.updated_at && <span className="-mt-1.5 px-0.5 text-xs text-muted-foreground">Edited {parseServerDate(wb.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>}
         </button>
       ))}
     </div>

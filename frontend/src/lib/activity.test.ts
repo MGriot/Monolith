@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Comment } from '@/types';
-import { actorName, buildTimeline, dayLabel, parseUtc, type ActivityEvent } from './activity';
+import { actorName, buildTimeline, dayLabel, type ActivityEvent } from './activity';
 
 const comment = (id: string, at: string): Comment => ({
   id, content: 'hi', author_id: 'u1', created_at: at, updated_at: at,
@@ -9,13 +9,6 @@ const comment = (id: string, at: string): Comment => ({
 const event = (id: string, at: string, extra: Partial<ActivityEvent> = {}): ActivityEvent => ({
   id, project_id: 'p', task_id: 't', task_title: 'Wave 1', actor: { id: 'u2', email: 'sam@example.com', full_name: 'Sam Rivera' } as never,
   actor_label: null, kind: 'status_changed', summary: 'changed status Todo → In Progress', changes: {}, created_at: at, ...extra,
-});
-
-describe('parseUtc', () => {
-  it('treats naive API timestamps as UTC', () => {
-    expect(parseUtc('2026-10-18T10:00:00').toISOString()).toBe('2026-10-18T10:00:00.000Z');
-    expect(parseUtc('2026-10-18T10:00:00Z').toISOString()).toBe('2026-10-18T10:00:00.000Z');
-  });
 });
 
 describe('buildTimeline', () => {

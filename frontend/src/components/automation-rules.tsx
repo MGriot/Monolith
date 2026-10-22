@@ -46,6 +46,7 @@ import {
   type Trigger,
 } from '@/lib/automations';
 import { confirmDialog } from '@/lib/confirm';
+import { parseServerDate } from '@/lib/dates';
 
 interface Member {
   user_id: string;
@@ -200,7 +201,7 @@ function RunHistory({ projectId, ruleId }: { projectId: string; ruleId: string }
             <Badge variant={run.status === 'ok' ? 'secondary' : 'destructive'}>{RUN_STATUS_LABEL[run.status]}</Badge>
             <span className="flex-1 text-fg-soft break-words">{run.message || '-'}</span>
             <time className="text-fg-faint whitespace-nowrap" dateTime={run.ran_at}>
-              {new Date(run.ran_at + (run.ran_at.endsWith('Z') ? '' : 'Z')).toLocaleString()}
+              {parseServerDate(run.ran_at).toLocaleString()}
             </time>
           </li>
         ))}

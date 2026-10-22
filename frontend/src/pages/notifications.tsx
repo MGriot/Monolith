@@ -9,6 +9,7 @@ import { useTitle } from '@/context/title-context';
 import { useNotificationList, useNotificationMutations, useUnreadCount } from '@/hooks/use-notifications';
 import { cn } from '@/lib/utils';
 import { mayHaveMore, NOTIFICATION_TYPES, PAGE_SIZE, typeLabel, type AppNotification } from '@/lib/notifications';
+import { parseServerDate } from '@/lib/dates';
 
 function TypeIcon({ type }: { type: string | null }) {
   if (type === 'assignment') return <MessageSquare className="w-4 h-4 text-blue-500" aria-hidden />;
@@ -131,8 +132,8 @@ export default function NotificationsPage() {
                       >
                         {n.title}
                       </button>
-                      <span className="shrink-0 text-xs text-fg-faint" title={new Date(n.created_at).toLocaleString()}>
-                        {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                      <span className="shrink-0 text-xs text-fg-faint" title={parseServerDate(n.created_at).toLocaleString()}>
+                        {formatDistanceToNow(parseServerDate(n.created_at), { addSuffix: true })}
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground">{n.message}</p>
