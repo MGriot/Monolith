@@ -1,10 +1,9 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Loader2, Send, Image as ImageIcon } from 'lucide-react';
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
-import api from '@/lib/api';
-import { toast } from 'sonner';
+import { markdownEditorOptions } from '@/lib/markdown-editor';
 import { ImageGalleryDialog } from './image-gallery-dialog';
 
 interface CommentInputProps {
@@ -34,50 +33,16 @@ export function CommentInput({
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const mdeRef = useRef<any>(null);
 
-  const handleImageUpload = useCallback(async (file: File, onSuccess: (url: string) => void, onError: (error: string) => void) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-      const response = await api.post('/comments/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      // The backend returns a path or full URL. Assuming it's a relative path to /uploads/
-      const url = response.data.url.startsWith('http') ? response.data.url : `/uploads/${response.data.url.split('/').pop()}`;
-      onSuccess(url);
-    } catch (error) {
-      console.error('Upload failed:', error);
-      onError("Upload failed");
-      toast.error("Failed to upload image");
-    }
-  }, []);
-
-  const mdeOptions = useMemo(() => {
-    return {
-      autofocus: false,
-      spellChecker: false,
-      placeholder: placeholder,
-      status: false,
-      minHeight: "72px", // compact: the conversation above gets the room
-      uploadImage: true,
-      imageUploadFunction: handleImageUpload,
-      imageAccept: "image/png, image/jpeg, image/gif, image/webp",
-      toolbar: [
-        "bold", "italic", "heading", "|", 
-        "quote", "unordered-list", "ordered-list", "|", 
-        "link", "image", 
-        {
-          name: "gallery",
-          action: () => setIsGalleryOpen(true),
-          className: "fa fa-camera", // FontAwesome class for camera icon as placeholder
-          title: "Insert from Gallery",
-        },
-        "table", "|", 
-        "preview", "side-by-side", "fullscreen", "|", 
-        "guide"
-      ],
-    } as any;
-  }, [placeholder, handleImageUpload]);
+  const mdeOptions = useMemo(() => markdownEditorOptions({
+    placeholder,
+    minHeight: "72px", // compact: the conversation above gets the room
+    extraTools: [{
+      name: "gallery",
+      action: () => setIsGalleryOpen(true),
+      className: "fa fa-camera", // FontAwesome class for camera icon as placeholder
+      title: "Insert from Gallery",
+    }],
+  }), [placeholder]);
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
