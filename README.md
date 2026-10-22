@@ -184,8 +184,7 @@ React 19 · TypeScript · Tailwind · TanStack Query · Excalidraw 0.18 — Fast
 backend/     FastAPI app (app/api, app/mcp, app/core, app/models), Alembic migrations, tests (unit + live)
 frontend/    React app (Vite)
 docs/        guide/ (HTML documentation), img/ (screenshots; img/guide/ for the guide), redesign/ (UI redesign proposal)
-scripts/     mail-bootstrap.sh, live-smoke.sh, mcp_sample_project.py + sample_project.json, docs/gen_reference.py,
-             debug/ (one-off Playwright scripts)
+scripts/     mail-bootstrap.sh, live-smoke.sh, mcp_sample_project.py + sample_project.json, docs/gen_reference.py
 nginx/       reverse proxy configuration
 compose.yaml / compose.dev.yaml
 ```

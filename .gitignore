@@ -23,6 +23,5 @@ mailserver*/
 /uploads/
 backend/uploads/
 
-# screenshots and debug output never belong at the repository root
+# screenshots never belong at the repository root
 /*.png
-scripts/debug/output/
