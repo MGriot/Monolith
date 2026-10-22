@@ -29,6 +29,7 @@ import ResourceTimeline from '@/components/resource-timeline';
 import { useTitle } from '@/context/title-context';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { confirmDialog } from '@/lib/confirm';
+import { errorMessage } from '@/lib/api-error';
 
 interface User {
   id: string;
@@ -64,7 +65,7 @@ export default function UsersPage() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success(action === 'approve' ? 'Approved. A temporary password was e-mailed.' : 'Request rejected');
     },
-    onError: (err: any) => toast.error(err?.response?.data?.detail || 'Could not update the request'),
+    onError: (err: any) => toast.error(errorMessage(err, 'Could not update the request')),
   });
 
   const { data: calendarData } = useQuery({

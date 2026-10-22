@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import type { Comment } from '@/types';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { Button } from '@/components/ui/button';
-import { errorMessage } from '@/components/auth-card';
+import { errorMessage } from '@/lib/api-error';
 import { confirmDialog } from '@/lib/confirm';
 import { parseUtc } from '@/lib/activity';
 import { cn } from '@/lib/utils';

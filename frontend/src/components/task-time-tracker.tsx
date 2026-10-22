@@ -20,13 +20,12 @@ import {
   type TimeEntry,
 } from '@/lib/time-tracking';
 import { useAuth } from '@/components/auth-provider';
+import { errorMessage } from '@/lib/api-error';
 
 interface TaskTimeResponse {
   summary: TaskTimeSummary;
   entries: TimeEntry[];
 }
-
-const errorMessage = (e: any, fallback: string) => e?.response?.data?.detail || fallback;
 
 /** Timer control, manual entry, estimate-vs-actual and the entry list for one task. */
 export default function TaskTimeTracker({ taskId }: { taskId: string }) {

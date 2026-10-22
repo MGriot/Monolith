@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import api from '@/lib/api';
+import { errorMessage } from '@/lib/api-error';
 
 /** Matches MAX_UPLOAD_MB on the server; checked here so a big file fails at once instead of after uploading. */
 export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
@@ -20,10 +21,10 @@ export interface UploadItem {
 let nextId = 1;
 
 const errorText = (err: unknown) => {
-  const e = err as { code?: string; response?: { status?: number; data?: { detail?: string } } };
+  const e = err as { code?: string; response?: { status?: number } };
   if (e?.code === 'ERR_CANCELED') return 'Cancelled';
   if (e?.response?.status === 413) return 'Larger than the 50 MB limit';
-  return e?.response?.data?.detail || 'Upload failed';
+  return errorMessage(err, 'Upload failed');
 };
 
 /** Uploads files to folders, three at a time, with progress, cancel and retry. */

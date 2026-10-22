@@ -25,6 +25,7 @@ import { Switch } from '@/components/ui/switch';
 import { AssigneeSelector } from '@/components/assignee-selector';
 import { useTitle } from '@/context/title-context';
 import { confirmDialog } from '@/lib/confirm';
+import { errorMessage } from '@/lib/api-error';
 
 interface Team {
   id: string;
@@ -79,7 +80,7 @@ export default function TeamsPage() {
       toast.success('Team created');
     },
     onError: (err: any) => {
-        toast.error(err.response?.data?.detail || 'Failed to create team');
+        toast.error(errorMessage(err, 'Failed to create team'));
     }
   });
 
@@ -93,7 +94,7 @@ export default function TeamsPage() {
       toast.success('Team updated');
     },
     onError: (err: any) => {
-        toast.error(err.response?.data?.detail || 'Failed to update team');
+        toast.error(errorMessage(err, 'Failed to update team'));
     }
   });
 

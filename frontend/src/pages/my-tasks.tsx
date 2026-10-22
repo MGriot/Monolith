@@ -48,6 +48,7 @@ import BulkActionBar from '@/components/bulk-action-bar';
 import { clickSelection, EMPTY_SELECTION, headerState, pruneSelection, toggleAll, type SelectionState } from '@/lib/selection';
 import { useAuth } from '@/components/auth-provider';
 import { confirmDialog } from '@/lib/confirm';
+import { errorMessage } from '@/lib/api-error';
 
 export default function MyTasksPage() {
   const queryClient = useQueryClient();
@@ -199,8 +200,7 @@ export default function MyTasksPage() {
     },
     onError: (err: any, __, context) => {
       queryClient.setQueryData(['tasks', 'assigned'], context?.previousTasks);
-      const msg = err.response?.data?.detail || err.message;
-      toast.error(`Move failed: ${msg}`);
+      toast.error(`Move failed: ${errorMessage(err, err.message)}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', 'assigned'] });

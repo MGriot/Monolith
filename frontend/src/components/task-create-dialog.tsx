@@ -14,6 +14,7 @@ import TaskDialog from '@/components/task-dialog';
 import type { Project } from '@/types';
 import { toast } from 'sonner';
 import { fromDateInput } from "@/lib/dates";
+import { errorMessage } from '@/lib/api-error';
 
 interface TaskCreateDialogProps {
   open: boolean;
@@ -57,8 +58,7 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
       toast.success("Task created successfully");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.detail || err.message;
-      toast.error(`Failed to create task: ${typeof msg === 'object' ? JSON.stringify(msg) : msg}`);
+      toast.error(`Failed to create task: ${errorMessage(err, err.message)}`);
     }
   });
 

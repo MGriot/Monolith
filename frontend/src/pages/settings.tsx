@@ -33,6 +33,7 @@ import { SettingsGroup, SettingsRow, SettingsSection } from '@/components/ui/set
 import { Field } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 import { confirmDialog } from '@/lib/confirm';
+import { errorMessage } from '@/lib/api-error';
 
 interface ProfileFormValues {
   full_name: string;
@@ -68,9 +69,6 @@ const PROVIDERS = [
   { value: 'discord', label: 'Discord' },
   { value: 'generic', label: 'Other (JSON)' },
 ] as const;
-
-const errorText = (err: unknown, fallback: string) =>
-  (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || fallback;
 
 /** Hide the middle of a webhook URL: it is a secret, but the host and the last characters help tell hooks apart. */
 const maskUrl = (url: string) => {
@@ -136,7 +134,7 @@ export default function SettingsPage() {
       setWebhookForm({ name: '', url: '', provider: 'slack' });
       toast.success("Webhook added");
     },
-    onError: (err) => toast.error(errorText(err, "Could not add the webhook. Check the URL.")),
+    onError: (err) => toast.error(errorMessage(err, "Could not add the webhook. Check the URL.")),
   });
 
   const deleteWebhookMutation = useMutation({
@@ -166,7 +164,7 @@ export default function SettingsPage() {
       profileForm.reset(values);
       toast.success('Profile saved');
     } catch (error) {
-      toast.error(errorText(error, 'Could not save the profile'));
+      toast.error(errorMessage(error, 'Could not save the profile'));
     }
   };
 
@@ -182,7 +180,7 @@ export default function SettingsPage() {
       setPasswordOpen(false);
       await refreshUser();
     } catch (error) {
-      toast.error(errorText(error, 'Could not change the password'));
+      toast.error(errorMessage(error, 'Could not change the password'));
     }
   };
 

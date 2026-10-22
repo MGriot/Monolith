@@ -84,6 +84,7 @@ import {
   type DepType,
   type DragMode,
 } from '@/lib/gantt';
+import { errorMessage } from '@/lib/api-error';
 
 export interface ProjectGanttProps {
   tasks: Task[];
@@ -117,11 +118,6 @@ interface LinkDrag {
   y: number;
   target: { id: string; side: BarSide; ok: boolean; reason?: string } | null;
 }
-
-const errorDetail = (err: any, fallback: string): string => {
-  const d = err?.response?.data?.detail;
-  return typeof d === 'string' && d ? d : fallback;
-};
 
 type GanttItem = (Task | (Subtask & { isSubtask: boolean, parentTitle: string, parentId: string })) & { rowIndex: number, projectName?: string };
 type ZoomLevel = 'day' | 'week' | 'month' | 'quarter' | 'year';
@@ -538,7 +534,7 @@ export default function ProjectGantt({
         return n;
       });
       flashRejected(id);
-      toast.error(errorDetail(err, 'Could not reschedule the task'));
+      toast.error(errorMessage(err, 'Could not reschedule the task'));
     }
   };
 
@@ -663,7 +659,7 @@ export default function ProjectGantt({
       } catch (err) {
         setPendingDeps((d) => d.filter((x) => x.id !== temp.id));
         flashRejected(target.id);
-        toast.error(errorDetail(err, 'Could not create the dependency'));
+        toast.error(errorMessage(err, 'Could not create the dependency'));
       }
     };
     const onKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') stop(); };

@@ -15,11 +15,9 @@ import { filterTaxonomy, groupTaxonomy, type TaxonomyScope } from '@/lib/taxonom
 import { nextPresetColor } from '@/constants/colors';
 import { cn } from '@/lib/utils';
 import type { Project, Topic, WorkType } from '@/types';
+import { errorMessage } from '@/lib/api-error';
 
 type Kind = 'topics' | 'work-types';
-
-const errorText = (err: unknown, fallback: string) =>
-  (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || fallback;
 
 /** Topics and work types for every scope on one page: no tabs, inline editing. */
 export default function AdminMetadataPage() {
@@ -60,7 +58,7 @@ export default function AdminMetadataPage() {
       invalidate(kind);
       toast.success(`Added “${name}”`);
     },
-    onError: (err) => toast.error(errorText(err, 'Could not add it')),
+    onError: (err) => toast.error(errorMessage(err, 'Could not add it')),
   });
 
   const update = useMutation({
@@ -83,7 +81,7 @@ export default function AdminMetadataPage() {
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(ctx.key, ctx.previous);
-      toast.error(errorText(err, 'Could not save the change'));
+      toast.error(errorMessage(err, 'Could not save the change'));
     },
     onSuccess: (_, { kind, item, patch }) => {
       if (patch.is_active !== undefined) {
@@ -101,7 +99,7 @@ export default function AdminMetadataPage() {
       invalidate(kind);
       toast.success(`Deleted “${item.name}”`);
     },
-    onError: (err) => toast.error(errorText(err, 'Could not delete it')),
+    onError: (err) => toast.error(errorMessage(err, 'Could not delete it')),
   });
 
   const askDelete = (kind: Kind, item: TaxonomyItem) => {

@@ -35,6 +35,7 @@ import {
 } from '@/lib/calendar-range';
 import TaskCreateDialog from '@/components/task-create-dialog';
 import { useTitle } from '@/context/title-context';
+import { errorMessage } from '@/lib/api-error';
 
 // --- Calendar View Component ---
 
@@ -269,8 +270,7 @@ function CalendarView() {
     },
     onError: (error: any, _vars, context) => {
       context?.snapshots.forEach(([k, d]) => queryClient.setQueryData(k, d));
-      const detail = error?.response?.data?.detail;
-      toast.error(typeof detail === 'string' && detail ? detail : 'Could not move the task');
+      toast.error(errorMessage(error, 'Could not move the task'));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar'] });

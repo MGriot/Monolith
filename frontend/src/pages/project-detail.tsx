@@ -58,6 +58,7 @@ import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
 import BulkActionBar from '@/components/bulk-action-bar';
 import { EMPTY_SELECTION, type SelectionState } from '@/lib/selection';
 import { confirmDialog } from '@/lib/confirm';
+import { errorMessage } from '@/lib/api-error';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -311,7 +312,7 @@ export default function ProjectDetailPage() {
     },
     onError: (error: any) => {
       // The board already moved the card optimistically: tell the user why it was refused and put it back.
-      toast.error(error?.response?.data?.detail || 'Could not move the task');
+      toast.error(errorMessage(error, 'Could not move the task'));
       setKanbanSyncKey((k) => k + 1);
       queryClient.invalidateQueries({ queryKey: ['tasks', id] });
     },

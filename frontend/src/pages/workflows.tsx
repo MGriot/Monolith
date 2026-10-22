@@ -41,6 +41,7 @@ import "easymde/dist/easymde.min.css";
 import { useTitle } from '@/context/title-context';
 import { cn } from '@/lib/utils';
 import { confirmDialog } from '@/lib/confirm';
+import { errorMessage } from '@/lib/api-error';
 
 export default function WorkflowsPage() {
     const { user } = useAuth();
@@ -163,7 +164,7 @@ export default function WorkflowsPage() {
             toast.success('Workflow created');
         },
         onError: (err: any) => {
-            toast.error(err.response?.data?.detail || 'Failed to create workflow');
+            toast.error(errorMessage(err, 'Failed to create workflow'));
         }
     });
 
@@ -178,7 +179,7 @@ export default function WorkflowsPage() {
             toast.success('Workflow updated');
         },
         onError: (err: any) => {
-            toast.error(err.response?.data?.detail || 'Failed to update workflow');
+            toast.error(errorMessage(err, 'Failed to update workflow'));
         }
     });
 
