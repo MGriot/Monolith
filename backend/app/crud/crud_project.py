@@ -221,28 +221,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
 
         return await super().update(db, db_obj=db_obj, obj_in=update_data)
 
-    async def get_multi_by_owner(
-        self, db: AsyncSession, *, owner_id: UUID, skip: int = 0, limit: int = 100, include_archived: bool = False
-    ) -> List[Project]:
-        query = select(self.model).filter(self.model.owner_id == owner_id)
-        if not include_archived:
-            query = query.filter(self.model.is_archived == False)
-            
-        result = await db.execute(
-            query
-            .options(
-                selectinload(Project.topic_ref),
-                selectinload(Project.type_ref),
-                selectinload(Project.topics),
-                selectinload(Project.types),
-                selectinload(Project.members),
-                selectinload(Project.owner)
-            )
-            .offset(skip)
-            .limit(limit)
-        )
-        return result.scalars().all()
-
     async def get_multi_by_user(
         self, db: AsyncSession, *, user_id: UUID, skip: int = 0, limit: int = 100, include_archived: bool = False
     ) -> List[Project]:

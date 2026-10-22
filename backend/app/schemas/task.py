@@ -148,8 +148,6 @@ TaskShortCreate.model_rebuild()
 # but deprecated
 Subtask = Task
 SubtaskCreate = TaskCreate
-SubtaskUpdate = TaskUpdate
-SubtaskShortCreate = TaskShortCreate
 
 # ---- bulk actions (POST /tasks/bulk) ----------------------------------------------------------------------------
 BULK_MAX_IDS = 200

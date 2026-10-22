@@ -668,5 +668,3 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return obj
 
 task = CRUDTask(Task)
-# Point subtask to task for backward compatibility during migration
-subtask = task

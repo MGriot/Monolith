@@ -63,15 +63,6 @@ class CRUDNotification(CRUDBase[Notification, NotificationCreate, NotificationUp
         )
         return int(result.scalar() or 0)
 
-    async def mark_as_read(self, db: AsyncSession, *, notification_id: UUID) -> Notification:
-        db_obj = await self.get(db, id=notification_id)
-        if db_obj:
-            db_obj.is_read = True
-            db.add(db_obj)
-            await commit(db)
-            await db.refresh(db_obj)
-        return db_obj
-
     async def mark_all_as_read(self, db: AsyncSession, *, user_id: UUID) -> int:
         """Mark every unread notification of the user as read with a single UPDATE; returns the row count."""
         result = await db.execute(

@@ -31,18 +31,6 @@ class CRUDProjectTemplate(CRUDBase[ProjectTemplate, ProjectTemplateCreate, Proje
         )
         return result.scalars().all()
 
-    async def get_multi_by_owner(
-        self, db: AsyncSession, *, owner_id: UUID, skip: int = 0, limit: int = 100
-    ) -> List[ProjectTemplate]:
-        result = await db.execute(
-            select(self.model)
-            .filter(self.model.owner_id == owner_id)
-            .options(selectinload(ProjectTemplate.shared_with), selectinload(ProjectTemplate.owner))
-            .offset(skip)
-            .limit(limit)
-        )
-        return result.scalars().all()
-
     async def get_multi_by_user(
         self, db: AsyncSession, *, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> List[ProjectTemplate]:

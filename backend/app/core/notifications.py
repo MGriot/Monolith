@@ -67,11 +67,3 @@ async def send_email_notification(recipient: str, subject: str, body: str, html_
     except Exception:
         # Queueing must not crash the request flow, but it must not be silent either.
         logger.exception("Could not queue e-mail notification to %s", recipient)
-
-async def notify_critical_update(user_email: str, title: str, message: str):
-    """
-    Send a critical update notification via email.
-    """
-    subject = f"[Monolith Planner] Critical Update: {title}"
-    body = f"Hello,\n\nYou have a new critical update:\n\n{message}\n\nBest regards,\nMonolith Team"
-    await send_email_notification(user_email, subject, body)

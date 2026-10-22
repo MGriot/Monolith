@@ -53,8 +53,4 @@ class CRUDDependency(CRUDBase[Dependency, DependencyCreate, DependencyCreate]):
         result = await db.execute(select(self.model).filter(self.model.successor_id == successor_id))
         return result.scalars().all()
 
-    async def get_by_predecessor(self, db: AsyncSession, predecessor_id: UUID) -> List[Dependency]:
-        result = await db.execute(select(self.model).filter(self.model.predecessor_id == predecessor_id))
-        return result.scalars().all()
-
 dependency = CRUDDependency(Dependency)
