@@ -1,8 +1,3 @@
-import sys
-import os
-# Add the backend directory to sys.path
-sys.path.append(os.path.join(os.getcwd(), "backend"))
-
 from app.core.dependencies import has_cycle, find_cycle
 import uuid
 
@@ -60,11 +55,3 @@ def test_cycle_detection():
     assert len(cycle_path) == 4
     assert cycle_path[0] == cycle_path[-1]
     print("Case 5 passed (Path return)")
-
-if __name__ == "__main__":
-    try:
-        test_cycle_detection()
-        print("All cycle detection tests passed.")
-    except Exception as e:
-        print(f"Cycle detection tests failed: {e}")
-        sys.exit(1)

@@ -37,29 +37,10 @@ jobs:
         run: pip install -r backend/requirements.txt pytest pytest-asyncio
       - name: Unit tests (no database needed)
         working-directory: backend
+        # every test module except the live stack checks and the Postgres tests (next step)
         run: >
-          python -m pytest -q -p no:cacheprovider
-          tests/test_security_tier0.py
-          tests/test_security_tier0_followup.py
-          tests/test_db_tier1.py
-          tests/test_backend_tier1.py
-          tests/test_email_flows.py
-          tests/test_summaries.py
-          tests/test_notifications.py
-          tests/test_transactions.py
-          tests/test_project_roles.py
-          tests/test_time_and_custom_fields.py
-          tests/test_bulk_and_notifications.py
-          tests/test_automations.py
-          tests/test_recurrence_ics.py
-          tests/test_registration_approval.py
-          tests/test_cpm.py
-          tests/test_file_hub.py
-          tests/test_mcp_registry.py
-          tests/test_mcp_tokens.py
-          tests/test_whiteboard_rooms.py
-          tests/test_whiteboard_previews.py
-          tests/test_activity.py
+          python -m pytest -q -p no:cacheprovider tests
+          --ignore=tests/live --ignore=tests/test_db_integration.py
       - name: Database integration tests (service Postgres)
         working-directory: backend
         env:
