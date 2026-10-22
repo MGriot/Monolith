@@ -42,6 +42,7 @@ import { useTitle } from '@/context/title-context';
 import { cn } from '@/lib/utils';
 import { confirmDialog } from '@/lib/confirm';
 import { errorMessage } from '@/lib/api-error';
+import { parseServerDate } from '@/lib/dates';
 
 export default function WorkflowsPage() {
     const { user } = useAuth();
@@ -255,7 +256,7 @@ export default function WorkflowsPage() {
                                         <Badge variant="outline" className={cn("text-[11px] font-semibold uppercase tracking-tight", selectedWorkflow.is_public ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20" : "text-muted-foreground bg-subtle border-border")}>
                                             {selectedWorkflow.is_public ? 'Public Document' : 'Internal SOP'}
                                         </Badge>
-                                        <span className="text-[11px] text-fg-faint font-bold uppercase tracking-wide">Modified {new Date(selectedWorkflow.updated_at).toLocaleDateString()}</span>
+                                        <span className="text-[11px] text-fg-faint font-bold uppercase tracking-wide">Modified {parseServerDate(selectedWorkflow.updated_at).toLocaleDateString()}</span>
                                     </div>
                                     <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-none">{selectedWorkflow.title}</h1>
                                     {selectedWorkflow.description && (

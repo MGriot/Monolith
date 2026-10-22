@@ -40,6 +40,7 @@ import TaskCustomFields, { useCustomFieldDefs } from "./task-custom-fields";
 import { RecurrenceField } from "./recurrence-field";
 import { sanitizeCustomValues, validateCustomValues, type CustomValues } from "@/lib/custom-fields";
 import type { Task, Topic, WorkType, Project } from "@/types";
+import { toDateInputValue } from "@/lib/dates";
 
 const subtaskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -171,16 +172,6 @@ export default function TaskForm({
   });
 
   const processedInitialValues = useMemo(() => {
-    const formatDate = (dateStr?: string | null) => {
-      if (!dateStr) return "";
-      try {
-        // Only return the date part YYYY-MM-DD
-        return format(parseISO(dateStr), "yyyy-MM-dd");
-      } catch {
-        return "";
-      }
-    };
-
     const vals = {
       status: "Todo",
       priority: "Medium",
@@ -202,10 +193,10 @@ export default function TaskForm({
       subtasks: [],
       custom_values: taskObject?.custom_values ?? {},
       ...initialValues,
-      start_date: formatDate(initialValues?.start_date),
-      due_date: formatDate(initialValues?.due_date),
-      deadline_at: formatDate(initialValues?.deadline_at),
-      completed_at: formatDate(initialValues?.completed_at),
+      start_date: toDateInputValue(initialValues?.start_date),
+      due_date: toDateInputValue(initialValues?.due_date),
+      deadline_at: toDateInputValue(initialValues?.deadline_at),
+      completed_at: toDateInputValue(initialValues?.completed_at),
     };
 
     if (initialValues?.topics && vals.topic_ids?.length === 0) {

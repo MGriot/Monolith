@@ -49,7 +49,7 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import type { Project, Task } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { DeadlineLine } from '@/components/deadline-line';
-import { fromDateInput } from "@/lib/dates";
+import { formatDisplayDate, fromDateInput } from "@/lib/dates";
 import { calculateSortIndex, flattenTasks } from '@/lib/kanban';
 import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
@@ -484,8 +484,8 @@ export default function ProjectDetailPage() {
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="flex flex-col gap-1">
-                        <p className="text-[11px] text-muted-foreground font-medium">Start: {project.start_date ? new Date(project.start_date).toLocaleDateString() : '-'}</p>
-                        <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold">Due: {project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}</p>
+                        <p className="text-[11px] text-muted-foreground font-medium">Start: {formatDisplayDate(project.start_date)}</p>
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold">Due: {formatDisplayDate(project.due_date)}</p>
                         <DeadlineLine deadline={project.deadline_at} due={project.due_date} done={project.status === 'Done'} />
                     </div>
                 </CardContent>

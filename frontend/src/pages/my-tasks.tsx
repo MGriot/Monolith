@@ -38,7 +38,7 @@ import { taskExtraTabs, taskSubtitle } from '@/components/task-dialog-helpers';
 import type { Task } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { toast } from 'sonner';
-import { fromDateInput } from "@/lib/dates";
+import { formatDisplayDate, fromDateInput } from "@/lib/dates";
 import { calculateSortIndex as sharedSortIndex, flattenTasks } from '@/lib/kanban';
 import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
@@ -350,7 +350,7 @@ export default function MyTasksPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right text-xs font-bold text-muted-foreground">
-                          {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                          {formatDisplayDate(task.due_date)}
                         </TableCell>
                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>

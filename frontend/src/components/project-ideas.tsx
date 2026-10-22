@@ -38,6 +38,7 @@ import CommentSection from '@/components/comments/comment-section';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { confirmDialog } from '@/lib/confirm';
+import { parseServerDate } from '@/lib/dates';
 
 interface ProjectIdeasProps {
   projectId?: string;
@@ -539,7 +540,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
                     <div className="flex items-center gap-2 mt-2">
                         <UserAvatar user={selectedIdea.author} className="w-5 h-5" />
                         <DialogDescription className="text-xs text-muted-foreground">
-                            Proposed by <span className="font-bold text-fg-body">{selectedIdea.author?.full_name || 'Anonymous'}</span> on {new Date(selectedIdea.created_at).toLocaleDateString()}
+                            Proposed by <span className="font-bold text-fg-body">{selectedIdea.author?.full_name || 'Anonymous'}</span> on {parseServerDate(selectedIdea.created_at).toLocaleDateString()}
                         </DialogDescription>
                     </div>
                 </DialogHeader>

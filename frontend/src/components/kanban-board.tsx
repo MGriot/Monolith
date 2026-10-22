@@ -27,7 +27,7 @@ import { MoreVertical, GripVertical, Plus, User as UserIcon, Milestone, AlertTri
 import { cn } from '@/lib/utils';
 import { parseISO } from 'date-fns';
 import type { Task, Subtask } from '@/types';
-import { isAfterDueDay } from "@/lib/dates";
+import { formatDisplayDate, isAfterDueDay } from "@/lib/dates";
 
 interface KanbanItem {
   id: string;
@@ -488,7 +488,7 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
         {item.deadline_at && (
             <div className="flex items-center gap-1 text-[11px] font-semibold text-red-500">
                 <AlertTriangle className="w-2.5 h-2.5" />
-                {new Date(item.deadline_at).toLocaleDateString()}
+                {formatDisplayDate(item.deadline_at)}
             </div>
         )}
 
