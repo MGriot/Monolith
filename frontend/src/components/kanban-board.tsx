@@ -29,6 +29,7 @@ import { parseISO } from 'date-fns';
 import type { Task, Subtask } from '@/types';
 import { formatDisplayDate, isAfterDueDay } from "@/lib/dates";
 import { walkTasks } from "@/lib/tasks";
+import { STATUSES, statusLabel } from "@/constants/statuses";
 
 interface KanbanItem {
   id: string;
@@ -62,24 +63,12 @@ interface KanbanBoardProps {
   syncKey?: number;
 }
 
-const COLUMNS = [
-  { id: 'Backlog', title: 'Backlog' },
-  { id: 'Todo', title: 'To Do' },
-  { id: 'In Progress', title: 'In Progress' },
-  { id: 'On hold', title: 'On Hold' },
-  { id: 'Review', title: 'Review' },
-  { id: 'Done', title: 'Done' }
-];
+const COLUMNS = STATUSES.map((id) => ({ id, title: id === 'Todo' ? 'To Do' : statusLabel(id) }));
+
+const emptyColumns = (): Record<string, string[]> => Object.fromEntries(STATUSES.map((s) => [s, []]));
 
 export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorder, onAddTask, onTaskClick, onSubtaskClick, syncKey = 0 }: KanbanBoardProps) {
-  const [items, setItems] = useState<Record<string, string[]>>({
-    'Backlog': [],
-    'Todo': [],
-    'In Progress': [],
-    'On hold': [],
-    'Review': [],
-    'Done': []
-  });
+  const [items, setItems] = useState<Record<string, string[]>>(emptyColumns);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [initialContainer, setInitialContainer] = useState<string | null>(null);
 
@@ -107,14 +96,7 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorde
   }, [tasks]);
 
   useEffect(() => {
-    const newItems: Record<string, string[]> = {
-      'Backlog': [],
-      'Todo': [],
-      'In Progress': [],
-      'On hold': [],
-      'Review': [],
-      'Done': []
-    };
+    const newItems = emptyColumns();
     kanbanItems.forEach((item: KanbanItem) => {
       const statusKey = Object.keys(newItems).find(k => k.toLowerCase() === item.status.toLowerCase());
       if (statusKey) {

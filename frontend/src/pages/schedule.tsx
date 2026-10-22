@@ -35,6 +35,7 @@ import {
 } from '@/lib/calendar-range';
 import TaskCreateDialog from '@/components/task-create-dialog';
 import { useTitle } from '@/context/title-context';
+import { isDoneStatus } from '@/constants/statuses';
 import { errorMessage } from '@/lib/api-error';
 
 // --- Calendar View Component ---
@@ -622,7 +623,7 @@ function RoadmapView() {
                   <div 
                     className={cn(
                       "absolute h-8 rounded-md border flex items-center px-3 shadow-sm transition-transform group-hover:scale-[1.01]",
-                      project.status === 'done' ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30" : "bg-primary/5 border-primary/20"
+                      isDoneStatus(project.status) ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30" : "bg-primary/5 border-primary/20"
                     )}
                     style={{ 
                       left: `${getPosition(project.start_date)}%`, 
@@ -631,7 +632,7 @@ function RoadmapView() {
                   >
                     <span className={cn(
                         "text-[11px] font-bold truncate",
-                        project.status === 'done' ? "text-emerald-700 dark:text-emerald-300" : "text-primary"
+                        isDoneStatus(project.status) ? "text-emerald-700 dark:text-emerald-300" : "text-primary"
                     )}>
                       {project.name}
                     </span>

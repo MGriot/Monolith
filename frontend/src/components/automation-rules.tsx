@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, Loader2, Pencil, Plus, Trash2, X } from 'luc
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import { errorMessage } from '@/lib/api-error';
+import { PRIORITIES, STATUSES } from '@/constants/statuses';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,9 +18,7 @@ import {
   MAX_CONDITIONS,
   MESSAGE_PLACEHOLDERS,
   OP_LABELS,
-  PRIORITIES,
   RUN_STATUS_LABEL,
-  STATUSES,
   TRIGGERS,
   blankAction,
   blankCondition,

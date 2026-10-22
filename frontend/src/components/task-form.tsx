@@ -42,6 +42,7 @@ import { sanitizeCustomValues, validateCustomValues, type CustomValues } from "@
 import type { Task, Topic, WorkType, Project } from "@/types";
 import { toDateInputValue } from "@/lib/dates";
 import { subtreeIds, walkTasks } from "@/lib/tasks";
+import { PRIORITIES, STATUSES, statusLabel } from "@/constants/statuses";
 
 const subtaskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -749,20 +750,12 @@ export default function TaskForm({
         <div className="grid grid-cols-2 gap-3">
           <Field label="Status" htmlFor="status">
             <select id="status" className={selectClass} {...register("status")}>
-              <option value="Backlog">Backlog</option>
-              <option value="Todo">Todo</option>
-              <option value="In Progress">In Progress</option>
-              <option value="On hold">On Hold</option>
-              <option value="Review">Review</option>
-              <option value="Done">Done</option>
+              {STATUSES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
             </select>
           </Field>
           <Field label="Priority" htmlFor="priority">
             <select id="priority" className={selectClass} {...register("priority")}>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Critical">Critical</option>
+              {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </Field>
         </div>
