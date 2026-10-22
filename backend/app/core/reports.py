@@ -119,7 +119,6 @@ async def notify_near_deadlines(db: AsyncSession):
     # 2. Not archived
     # 3. Due within 48h
     # 4. Have assignees
-    from app.models.associations import task_assignees
     query = (
         select(Task)
         .filter(

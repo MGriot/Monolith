@@ -5,19 +5,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-from app import crud, models, schemas
+from app import models, schemas
 from app.api import deps
 from app.api.access import EDITOR, require_folder_access, require_project_access, require_task_access
 from app.core.uploads import save_upload
 from app.core.file_hub import creates_cycle, same_scope
-from app.models.folder import Folder, FolderType
+from app.models.folder import Folder
 from app.models.file import File as FileModel
 from app.models.metadata import Topic
 from app.schemas.folder import FolderCreate, FolderUpdate, Folder as FolderSchema
-from app.schemas.file import FileCreate, File as FileSchema
+from app.schemas.file import File as FileSchema
 from app.core.config import settings
 import os
-import uuid as uuid_pkg
 
 router = APIRouter()
 

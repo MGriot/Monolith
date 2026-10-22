@@ -8,7 +8,7 @@ from app.crud.base import CRUDBase
 from app.models.workflow import Workflow
 from app.models.user import User
 from app.schemas.workflow import WorkflowCreate, WorkflowUpdate
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 class CRUDWorkflow(CRUDBase[Workflow, WorkflowCreate, WorkflowUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[Workflow]:

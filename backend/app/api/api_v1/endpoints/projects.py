@@ -1,6 +1,6 @@
 from typing import Any, List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -387,7 +387,6 @@ async def read_project_statistics(
     """
     from sqlalchemy import func
     from app.models.task import Task
-    from app.models.project import Project as ProjectModel
     from sqlalchemy import select
 
     project = await crud_project.project.get(db, id=project_id)

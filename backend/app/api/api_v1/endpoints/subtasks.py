@@ -1,11 +1,11 @@
 from typing import Any, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
 from app.api.access import require_task_access
-from app.crud import crud_task, crud_project
+from app.crud import crud_task
 from app.schemas.task import Task, TaskCreate, TaskUpdate
 from app.models.user import User
 

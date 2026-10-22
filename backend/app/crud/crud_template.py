@@ -9,7 +9,7 @@ from app.models.template import ProjectTemplate
 from app.models.user import User
 from app.schemas.template import ProjectTemplateCreate, ProjectTemplateUpdate
 from app.core.utils import clean_dict_for_json
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 class CRUDProjectTemplate(CRUDBase[ProjectTemplate, ProjectTemplateCreate, ProjectTemplateUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[ProjectTemplate]:

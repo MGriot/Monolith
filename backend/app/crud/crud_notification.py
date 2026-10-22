@@ -7,7 +7,7 @@ from sqlalchemy.future import select
 from app.crud.base import CRUDBase
 from app.models.notification import Notification
 from app.schemas.notification import NotificationCreate, NotificationUpdate, Notification as NotificationSchema
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 class CRUDNotification(CRUDBase[Notification, NotificationCreate, NotificationUpdate]):
     async def create(self, db: AsyncSession, *, obj_in: NotificationCreate) -> Notification:

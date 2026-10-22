@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime
 from typing import Any, List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Body, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -8,7 +8,7 @@ from app.crud.base import CRUDBase
 from app.models.team import Team
 from app.models.user import User
 from app.schemas.team import TeamCreate, TeamUpdate
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[Team]:

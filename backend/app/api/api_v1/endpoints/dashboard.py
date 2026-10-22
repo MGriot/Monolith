@@ -1,4 +1,4 @@
-from typing import Any, List, Dict
+from typing import Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_

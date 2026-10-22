@@ -38,7 +38,7 @@ async def read_team_activity(
     """
     from app.models.task import Task
     from app.models.associations import team_members
-    from sqlalchemy import select, desc, and_
+    from sqlalchemy import select, desc
     
     # 1. Find all teammates (users in the same teams as current_user)
     team_ids_query = select(team_members.c.team_id).where(team_members.c.user_id == current_user.id)

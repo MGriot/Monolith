@@ -1,9 +1,6 @@
 from typing import Any, List, Optional
-import os
-import shutil
-import uuid
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_
 from sqlalchemy.future import select
@@ -21,13 +18,10 @@ from app.schemas.task import (
 from app.db.transaction import transaction
 from app.models.user import User
 from app.models.dependency import Dependency as DependencyModel
-from app.core.config import settings
-from app.core.enums import Status
 from datetime import datetime
 
 import io
 import pandas as pd
-from datetime import datetime
 from fastapi.responses import StreamingResponse
 
 router = APIRouter()
@@ -218,7 +212,6 @@ async def read_tasks(
     """
     Retrieve tasks for a project.
     """
-    from typing import Optional
     project = await crud_project.project.get(db, id=project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -380,7 +373,6 @@ async def update_task(
         task_obj = await crud_task.task.update(db=db, db_obj=task_obj, obj_in=task_in)
         return task_obj
     except ValueError as e:
-        print(f"DEBUG: Task update ValueError: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete("/{task_id}", response_model=Task)

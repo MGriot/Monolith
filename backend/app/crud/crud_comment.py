@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.comment import Comment
 from app.schemas.comment import CommentCreate, CommentUpdate
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 class CRUDComment:
     def _get_deep_options(self):

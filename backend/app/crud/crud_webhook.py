@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -6,7 +6,7 @@ from sqlalchemy.future import select
 from app.crud.base import CRUDBase
 from app.models.webhook import Webhook
 from app.schemas.webhook import WebhookCreate, WebhookUpdate
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 class CRUDWebhook(CRUDBase[Webhook, WebhookCreate, WebhookUpdate]):
     async def create_with_owner(

@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, func, select, or_
@@ -6,7 +6,7 @@ from datetime import datetime
 
 from app.api import deps
 from app.models.project import Project
-from app.models.task import Task, Subtask
+from app.models.task import Task
 from app.models.user import User
 from app.schemas.calendar import CalendarResponse, CalendarItem
 from app.core.enums import Status
