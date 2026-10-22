@@ -155,11 +155,11 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 
                 # If not in map, maybe it's already a real UUID (global)
                 if not t_topic_id and t_data.get("topic_id"):
-                    try: t_topic_id = UUID(t_data["topic_id"])
-                    except: pass
+                    try: t_topic_id = UUID(str(t_data["topic_id"]))
+                    except ValueError: pass  # neither a preset id nor a UUID: leave the task without a topic
                 if not t_type_id and t_data.get("type_id"):
-                    try: t_type_id = UUID(t_data["type_id"])
-                    except: pass
+                    try: t_type_id = UUID(str(t_data["type_id"]))
+                    except ValueError: pass
 
                 task_in = TaskCreate(
                     title=t_data["title"],
