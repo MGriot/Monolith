@@ -7,7 +7,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.api.access import EDITOR, has_task_access, require_project_access, require_task_access
+from app.api.access import EDITOR, require_project_access, require_task_access
 from app.core import activity
 from app.core.uploads import save_upload
 from app.crud import crud_task, crud_project, crud_dependency, crud_custom_field
@@ -274,10 +274,6 @@ async def create_task(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-async def check_task_permissions(db: AsyncSession, task_obj: Any, current_user: User, required_level: str = "read") -> None:
-    if not await has_task_access(db, task_obj, current_user, write=(required_level != "read")):
-        raise HTTPException(status_code=403, detail="Not enough permissions for this task")
-
 @router.post("/bulk", response_model=BulkTaskResponse)
 async def bulk_update_tasks(
     *,
@@ -341,11 +337,8 @@ async def read_task(
     """
     Get task by ID.
     """
+    await require_task_access(db, task_id, current_user)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "read")
     return task_obj
 
 @router.put("/{task_id}", response_model=Task)
@@ -359,11 +352,8 @@ async def update_task(
     """
     Update a task.
     """
+    await require_task_access(db, task_id, current_user, write=True)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "write")
             
     try:
         if "custom_values" in task_in.model_fields_set:
@@ -385,11 +375,8 @@ async def delete_task(
     """
     Delete a task.
     """
+    await require_task_access(db, task_id, current_user, write=True)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "write")
     
     task_obj = await crud_task.task.remove(db=db, id=task_id)
     return task_obj
@@ -404,11 +391,8 @@ async def upload_task_attachment(
     """
     Upload an attachment to a task.
     """
+    await require_task_access(db, task_id, current_user, write=True)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "write")
     
     unique_filename, _ext, _size = await save_upload(file)
     
@@ -501,11 +485,8 @@ async def archive_task(
     """
     Archive a task.
     """
+    await require_task_access(db, task_id, current_user, write=True)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "write")
         
     task_obj = await crud_task.task.update(
         db=db, 
@@ -524,11 +505,8 @@ async def restore_task(
     """
     Restore an archived task.
     """
+    await require_task_access(db, task_id, current_user, write=True)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "write")
         
     task_obj = await crud_task.task.update(
         db=db, 
