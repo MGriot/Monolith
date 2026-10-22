@@ -1,17 +1,11 @@
-import sys
-import os
-import asyncio
+import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-
-# Setup path and dummy env
-sys.path.append(os.getcwd())
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://user:pass@localhost/db"
-os.environ["SECRET_KEY"] = "testing_secret"
 
 from app.api.api_v1.endpoints.search import search_all
 from app.models.user import User
 
+@pytest.mark.asyncio
 async def test_search_logic():
     print("Testing Unified Search Logic...")
     
@@ -29,6 +23,3 @@ async def test_search_logic():
     assert isinstance(results, list)
     assert db.execute.call_count == 3
     print("PASS: Unified search executed 3 sub-queries")
-
-if __name__ == "__main__":
-    asyncio.run(test_search_logic())

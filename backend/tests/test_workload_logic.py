@@ -1,20 +1,14 @@
-import sys
-import os
-import asyncio
+import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 from datetime import datetime, timedelta
-
-# Setup path and dummy env
-sys.path.append(os.getcwd())
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://user:pass@localhost/db"
-os.environ["SECRET_KEY"] = "testing_secret"
 
 from app.api.api_v1.endpoints.dashboard import get_team_workload
 from app.models.user import User
 from app.models.task import Task
 from app.core.enums import Status
 
+@pytest.mark.asyncio
 async def test_workload_logic():
     print("Testing Resource Workload Leveling Logic...")
     
@@ -58,6 +52,3 @@ async def test_workload_logic():
     assert user_data.workload[0].hours == 4.0
     assert user_data.workload[0].task_count == 1
     print("PASS: Workload calculation correct (4h/day for 2 days)")
-
-if __name__ == "__main__":
-    asyncio.run(test_workload_logic())
