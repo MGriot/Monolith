@@ -17,7 +17,7 @@ jobs:
     name: Backend tests
     runs-on: ubuntu-24.04
     services:
-      postgres:   # throw-away database for tests/test_db_integration.py (each test rolls back)
+      postgres:   # throw-away database for tests/test_*_integration.py (each test rolls back)
         image: postgres:16-alpine
         env:
           POSTGRES_PASSWORD: test
@@ -38,12 +38,12 @@ jobs:
         # every test module except the live stack checks and the Postgres tests (next step)
         run: >
           python -m pytest -q -p no:cacheprovider tests
-          --ignore=tests/live --ignore=tests/test_db_integration.py
+          --ignore=tests/live --ignore=tests/test_db_integration.py --ignore=tests/test_exports_integration.py
       - name: Database integration tests (service Postgres)
         working-directory: backend
         env:
           TEST_DATABASE_URL: postgresql+asyncpg://postgres:test@localhost:5432/postgres
-        run: python -m pytest -q -p no:cacheprovider tests/test_db_integration.py
+        run: python -m pytest -q -p no:cacheprovider tests/test_db_integration.py tests/test_exports_integration.py
       - name: Generated guide sections are up to date
         run: python scripts/docs/gen_reference.py --check
       - name: Dependencies have no known vulnerabilities

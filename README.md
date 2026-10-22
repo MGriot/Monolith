@@ -194,7 +194,7 @@ compose.yaml / compose.dev.yaml
 ```bash
 cd backend && python -m pytest -q tests/                      # unit tests, no database
 TEST_DATABASE_URL=postgresql+asyncpg://postgres:test@localhost:55432/postgres \
-  python -m pytest -q tests/test_db_integration.py              # against a throw-away Postgres (rolled back)
+  python -m pytest -q tests/test_*_integration.py               # against a throw-away Postgres (rolled back)
 cd frontend && npm ci && npm run typecheck && npm test && npm run build
 scripts/live-smoke.sh                                         # against a throw-away stack with a fresh database
 python scripts/docs/gen_reference.py --check                  # generated guide sections are current
