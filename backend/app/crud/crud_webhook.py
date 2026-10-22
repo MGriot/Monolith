@@ -12,7 +12,7 @@ class CRUDWebhook(CRUDBase[Webhook, WebhookCreate, WebhookUpdate]):
     async def create_with_owner(
         self, db: AsyncSession, *, obj_in: WebhookCreate, owner_id: UUID
     ) -> Webhook:
-        obj_in_data = obj_in.dict()
+        obj_in_data = obj_in.model_dump()
         db_obj = self.model(**obj_in_data, owner_id=owner_id)
         db.add(db_obj)
         await commit(db)

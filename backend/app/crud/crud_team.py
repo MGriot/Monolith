@@ -41,7 +41,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
     async def create(
         self, db: AsyncSession, *, obj_in: TeamCreate
     ) -> Team:
-        obj_in_data = obj_in.dict(exclude={'member_ids', 'shared_with_ids'})
+        obj_in_data = obj_in.model_dump(exclude={'member_ids', 'shared_with_ids'})
         db_obj = self.model(**obj_in_data)
         
         if obj_in.member_ids:
@@ -63,7 +63,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
             
         if "member_ids" in update_data:
             member_ids = update_data.pop("member_ids")

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -182,8 +182,7 @@ class McpTokenOut(BaseModel):
     expires_at: Optional[datetime] = None
     revoked_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class McpTokenCreated(McpTokenOut):

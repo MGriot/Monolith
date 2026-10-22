@@ -67,7 +67,7 @@ async def create_folder(
         await require_folder_access(db, folder_in.parent_id, current_user, write=True)
 
     db_obj = Folder(
-        **folder_in.dict(),
+        **folder_in.model_dump(),
         owner_id=current_user.id
     )
     db.add(db_obj)

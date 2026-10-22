@@ -268,7 +268,7 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
         return new_task
 
     async def create(self, db: AsyncSession, *, obj_in: IdeaCreate, author_id: UUID) -> Idea:
-        obj_in_data = obj_in.dict()
+        obj_in_data = obj_in.model_dump()
         db_obj = self.model(**obj_in_data, author_id=author_id)
         db.add(db_obj)
         await commit(db)

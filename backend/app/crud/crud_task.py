@@ -302,7 +302,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
 
     @atomic
     async def create(self, db: AsyncSession, *, obj_in: TaskCreate, owner_id: Optional[UUID] = None) -> Task:
-        obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True, exclude={'topic_ids', 'type_ids'}))
+        obj_data = clean_dict_datetimes(obj_in.model_dump(exclude_unset=True, exclude={'topic_ids', 'type_ids'}))
         assignee_ids = obj_data.pop("assignee_ids", [])
         subtasks_data = obj_data.pop("subtasks", [])
         
@@ -472,7 +472,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         before = activity.snapshot(db_obj)
         
         if isinstance(obj_in, TaskUpdate):
-            obj_data = obj_in.dict(exclude_unset=True)
+            obj_data = obj_in.model_dump(exclude_unset=True)
         else:
             obj_data = obj_in.copy()
         

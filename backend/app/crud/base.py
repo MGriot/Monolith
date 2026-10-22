@@ -27,7 +27,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return result.scalars().all()
 
     async def create(self, db: AsyncSession, *, obj_in: CreateSchemaType) -> ModelType:
-        obj_in_data = clean_dict_datetimes(obj_in.dict())
+        obj_in_data = clean_dict_datetimes(obj_in.model_dump())
         db_obj = self.model(**obj_in_data)
         db.add(db_obj)
         await commit(db)
@@ -41,7 +41,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db_obj: ModelType,
         obj_in: Union[UpdateSchemaType, Dict[str, Any]]
     ) -> ModelType:
-        obj_data = obj_in.dict(exclude_unset=True) if isinstance(obj_in, BaseModel) else obj_in
+        obj_data = obj_in.model_dump(exclude_unset=True) if isinstance(obj_in, BaseModel) else obj_in
         obj_data = clean_dict_datetimes(obj_data)
         mapper = sa_inspect(type(db_obj))
         columns = {c.key: c for c in mapper.columns}

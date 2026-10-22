@@ -1,7 +1,7 @@
 from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.schemas.user import User
 
 class CommentBase(BaseModel):
@@ -30,8 +30,7 @@ class CommentResponse(CommentBase):
     author: Optional[User] = None
     replies: List["CommentResponse"] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Resolve forward reference for recursive model
 CommentResponse.model_rebuild()

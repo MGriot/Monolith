@@ -60,7 +60,7 @@ class CRUDProjectTemplate(CRUDBase[ProjectTemplate, ProjectTemplateCreate, Proje
     async def create_with_owner(
         self, db: AsyncSession, *, obj_in: ProjectTemplateCreate, owner_id: UUID
     ) -> ProjectTemplate:
-        obj_in_data = obj_in.dict(exclude={'shared_with_ids'})
+        obj_in_data = obj_in.model_dump(exclude={'shared_with_ids'})
         # Clean for JSON serialization (convert UUIDs to strings in JSON fields)
         obj_in_data = clean_dict_for_json(obj_in_data)
         
@@ -81,7 +81,7 @@ class CRUDProjectTemplate(CRUDBase[ProjectTemplate, ProjectTemplateCreate, Proje
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
             
         if "shared_with_ids" in update_data:
             shared_with_ids = update_data.pop("shared_with_ids")

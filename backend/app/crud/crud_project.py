@@ -54,7 +54,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
 
     @atomic
     async def create(self, db: AsyncSession, *, obj_in: ProjectCreate) -> Project:
-        obj_data = clean_dict_datetimes(obj_in.dict(exclude={'topic_ids', 'type_ids', 'member_ids', 'template_id'}))
+        obj_data = clean_dict_datetimes(obj_in.model_dump(exclude={'topic_ids', 'type_ids', 'member_ids', 'template_id'}))
         db_obj = self.model(**obj_data)
         
         if obj_in.topic_ids:
@@ -83,7 +83,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
     async def create_with_owner(
         self, db: AsyncSession, *, obj_in: ProjectCreate, owner_id: UUID
     ) -> Project:
-        obj_in_data = clean_dict_datetimes(obj_in.dict(exclude={'topic_ids', 'type_ids', 'member_ids', 'template_id'}))
+        obj_in_data = clean_dict_datetimes(obj_in.model_dump(exclude={'topic_ids', 'type_ids', 'member_ids', 'template_id'}))
         db_obj = self.model(**obj_in_data, owner_id=owner_id)
         
         if obj_in.topic_ids:
@@ -190,7 +190,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
             
         # Handle many-to-many topics
         if "topic_ids" in update_data:

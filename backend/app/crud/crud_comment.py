@@ -85,7 +85,7 @@ class CRUDComment:
         return await self.get(db, db_obj.id)
 
     async def update(self, db: AsyncSession, *, db_obj: Comment, obj_in: CommentUpdate) -> Comment:
-        update_data = obj_in.dict(exclude_unset=True)
+        update_data = obj_in.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(db_obj, field, value)
         db.add(db_obj)
