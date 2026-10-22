@@ -115,30 +115,36 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
 
         from app.crud.crud_task import task as crud_task
 
-        # 1. Instantiate Scoped Topics
+        # 1. Instantiate Scoped Topics (names are unique per project, so a preset repeated in the template is reused)
         topic_map = {} # template_id -> new_id
+        topic_by_name = {}
         for t_preset in (template.topics_preset or []):
-            new_topic = Topic(
-                name=t_preset["name"],
-                color=t_preset.get("color", "#64748b"),
-                project_id=project_id
-            )
-            db.add(new_topic)
-            await db.flush()
-            topic_map[t_preset.get("id")] = new_topic.id
+            if t_preset["name"] not in topic_by_name:
+                new_topic = Topic(
+                    name=t_preset["name"],
+                    color=t_preset.get("color", "#64748b"),
+                    project_id=project_id
+                )
+                db.add(new_topic)
+                await db.flush()
+                topic_by_name[t_preset["name"]] = new_topic.id
+            topic_map[t_preset.get("id")] = topic_by_name[t_preset["name"]]
 
         # 2. Instantiate Scoped WorkTypes
         type_map = {}
+        type_by_name = {}
         for w_preset in (template.work_types_preset or []):
-            new_type = WorkType(
-                name=w_preset["name"],
-                color=w_preset.get("color", "#64748b"),
-                icon=w_preset.get("icon"),
-                project_id=project_id
-            )
-            db.add(new_type)
-            await db.flush()
-            type_map[w_preset.get("id")] = new_type.id
+            if w_preset["name"] not in type_by_name:
+                new_type = WorkType(
+                    name=w_preset["name"],
+                    color=w_preset.get("color", "#64748b"),
+                    icon=w_preset.get("icon"),
+                    project_id=project_id
+                )
+                db.add(new_type)
+                await db.flush()
+                type_by_name[w_preset["name"]] = new_type.id
+            type_map[w_preset.get("id")] = type_by_name[w_preset["name"]]
 
         # 3. Instantiate Hierarchical Tasks
         async def create_recursive_tasks(tasks_data, parent_id=None):

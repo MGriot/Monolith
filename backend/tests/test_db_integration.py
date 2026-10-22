@@ -17,7 +17,8 @@ DB_URL = os.environ.get("TEST_DATABASE_URL")
 if not DB_URL:
     pytest.skip("TEST_DATABASE_URL is not set (needs a throw-away PostgreSQL)", allow_module_level=True)
 
-from sqlalchemy import select, text  # noqa: E402
+from sqlalchemy import func, select, text  # noqa: E402
+from sqlalchemy.exc import IntegrityError  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine  # noqa: E402
 
 import app.models  # noqa: E402,F401  (registers every table and index)
@@ -26,6 +27,8 @@ from app.core.security import get_password_hash  # noqa: E402
 from app.crud import crud_dependency, crud_project, crud_task  # noqa: E402
 from app.db.session import Base  # noqa: E402
 from app.models.activity import ActivityEvent  # noqa: E402
+from app.models.metadata import Topic, WorkType  # noqa: E402
+from app.models.template import ProjectTemplate  # noqa: E402
 from app.models.user import User  # noqa: E402
 from app.schemas.project import ProjectCreate  # noqa: E402
 from app.schemas.task import DependencyCreate, TaskCreate, TaskShortCreate  # noqa: E402
@@ -121,5 +124,49 @@ def test_nested_create_and_status_roll_up():
         assert by_task[level2_id].actor_label is None
         assert by_task[level1_id].actor_label == "Automatic (from subtasks)"
         assert by_task[root_id].actor_label == "Automatic (from subtasks)"
+
+    run_in_rolled_back_db(scenario)
+
+
+def test_topic_and_work_type_names_are_unique_per_scope():
+    async def scenario(db, owner_id):
+        project = await _project(db, owner_id, "Taxonomy")
+        db.add(Topic(name="Research"))
+        await db.flush()
+        # NULL scope columns used to make UNIQUE(name, project_id, task_id) a no-op for global names.
+        with pytest.raises(IntegrityError):
+            async with db.begin_nested():
+                db.add(Topic(name="Research"))
+                await db.flush()
+        with pytest.raises(IntegrityError):
+            async with db.begin_nested():
+                db.add_all([WorkType(name="Dev", project_id=project.id), WorkType(name="Dev", project_id=project.id)])
+                await db.flush()
+        # The same name in another scope is fine.
+        db.add(Topic(name="Research", project_id=project.id))
+        await db.flush()
+
+    run_in_rolled_back_db(scenario)
+
+
+def test_template_with_a_repeated_preset_name_instantiates_once():
+    async def scenario(db, owner_id):
+        template = ProjectTemplate(
+            name="Tpl", owner_id=owner_id, tasks_json=[{"title": "Uses the second copy", "topic_id": "t2"}],
+            topics_preset=[{"id": "t1", "name": "Ops"}, {"id": "t2", "name": "Ops"}],
+            work_types_preset=[{"id": "w1", "name": "Build"}, {"id": "w2", "name": "Build"}],
+            allowed_global_topics=[], allowed_global_work_types=[],
+        )
+        db.add(template)
+        await db.flush()
+        project = await crud_project.project.create_with_owner(
+            db, obj_in=ProjectCreate(name="From template", template_id=template.id), owner_id=owner_id)
+        project_id = project.id
+
+        topics = (await db.execute(select(Topic).where(Topic.project_id == project_id))).scalars().all()
+        assert [t.name for t in topics] == ["Ops"]
+        assert (await db.execute(select(func.count()).select_from(WorkType).where(WorkType.project_id == project_id))).scalar_one() == 1
+        tasks = await crud_task.task.get_multi_by_project(db, project_id=project_id)
+        assert [t.topic_id for t in tasks] == [topics[0].id]
 
     run_in_rolled_back_db(scenario)

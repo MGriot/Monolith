@@ -49,8 +49,15 @@ All notable changes to this project will be documented in this file.
 - Markdown docs under `docs/` (tutorials, how-to, reference, explanation), `MCP_GUIDE.md` and `document.md`, replaced by the guide.
 - The obsolete `mcp/` agent scripts and Dockerfile, `backend/test_mcp_standalone.py` and the reset/seed scripts that hard-coded
   `admin@admin.com` / `test@example.com`.
+- The remaining loose scripts in `backend/` (26 hand-run `test_*.py`, the pre-Alembic `apply_*` / `cleanup_*` /
+  `purge_*` / `list_*` scripts) and `scripts/debug/`. Two still-valid tests moved to `backend/tests/`.
+- User uploads that had been committed under `backend/uploads/` (the folder is now ignored).
 
 ### Fixed
+- Topic and work-type names are unique per scope again (migration 0014). The old `UNIQUE(name, project_id, task_id)`
+  let duplicate global and project names through, because NULL scope columns never compare equal. The migration merges
+  existing duplicates into one (links, allow-lists, template tasks and automation rules follow it); creating a duplicate
+  is now a 409. `backend/fix_scoped_taxonomy_constraints.py`, which did this by hand on old databases, is gone.
 - The two hand-run database scripts that failed under pytest (`test_crud_dependencies_standalone.py`,
   `test_recursive_logic.py`) are replaced by `tests/test_db_integration.py`: real PostgreSQL tests (dependencies, cycle
   rejection, nested create, status roll-up and its change-log label) that roll back everything; CI runs them against a
