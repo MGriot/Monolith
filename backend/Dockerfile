@@ -12,10 +12,6 @@ ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
-    pkg-config \
-    libcairo2-dev \
-    libjpeg-dev \
-    libz-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python -m venv /opt/venv
@@ -33,12 +29,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
     PATH="/opt/venv/bin:$PATH"
 
-# Runtime libraries only (libpq for asyncpg/psycopg, cairo + jpeg for PDF/image rendering)
+# Runtime libraries only
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
-    libcairo2 \
-    libjpeg62-turbo \
-    zlib1g \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /opt/venv /opt/venv
