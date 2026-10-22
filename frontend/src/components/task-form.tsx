@@ -176,7 +176,7 @@ export default function TaskForm({
       try {
         // Only return the date part YYYY-MM-DD
         return format(parseISO(dateStr), "yyyy-MM-dd");
-      } catch (e) {
+      } catch {
         return "";
       }
     };
@@ -280,7 +280,7 @@ export default function TaskForm({
         if (diff >= 0 && diff !== durationDays) {
           setValue("duration_days", diff);
         }
-      } catch (e) {
+      } catch {
         // Ignore parsing errors
       }
     }
@@ -295,7 +295,7 @@ export default function TaskForm({
         
         const newEnd = addDays(start, val - 1);
         setValue("due_date", format(newEnd, "yyyy-MM-dd"));
-      } catch (e) {
+      } catch {
         // Ignore calculation errors
       }
     }
@@ -485,7 +485,7 @@ export default function TaskForm({
         setValue("pessimistic_days", pessimistic);
         setValue("optimistic_days", optimistic);
         toast.success("PERT values suggested from timeline");
-    } catch (e) {
+    } catch {
         toast.error("Could not calculate suggestions");
     }
   };
@@ -504,7 +504,7 @@ export default function TaskForm({
                     if (!isNaN(d.getTime())) {
                         if (!minStart || d < minStart) minStart = d;
                     }
-                } catch (e) {}
+                } catch {}
             }
             if (st.due_date) {
                 try {
@@ -512,7 +512,7 @@ export default function TaskForm({
                     if (!isNaN(d.getTime())) {
                         if (!maxDue || d > maxDue) maxDue = d;
                     }
-                } catch (e) {}
+                } catch {}
             }
             if (st.subtasks && st.subtasks.length > 0) {
                 traverse(st.subtasks);

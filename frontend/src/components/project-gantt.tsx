@@ -191,7 +191,7 @@ const ZOOM_CONFIG = {
   }
 };
 
-// IMPROVED: Proportionally scaling orthogonal path generation with adaptive loop buffers
+// Proportionally scaling orthogonal path generation with adaptive loop buffers
 const getOrthogonalPath = (
   startSide: 'left' | 'right',
   x1: number,
@@ -206,7 +206,7 @@ const getOrthogonalPath = (
   const baseGutterOffset = 22;
   const referenceDayWidth = 120; // Maximum zoom level as reference
 
-  // FIXED: Scale radius and gutter proportionally
+  // Scale radius and gutter proportionally
   const r = Math.max(0.5, baseRadius * (dayWidth / referenceDayWidth));
   const gutterOffset = Math.max(8, baseGutterOffset * (dayWidth / referenceDayWidth));
 
@@ -725,7 +725,7 @@ export default function ProjectGantt({
       case 'year': dates = eachYearOfInterval(interval); break;
     }
 
-    // IMPROVED: Ensure the first unit label is visible even if the interval starts mid-unit
+    // Ensure the first unit label is visible even if the interval starts mid-unit
     if (dates.length === 0 || isAfter(dates[0], viewWindow.start)) {
       let firstTick: Date;
       switch (zoomLevel) {
@@ -782,7 +782,7 @@ export default function ProjectGantt({
     }
   }, [viewWindow, zoomLevel]);
 
-  // IMPROVED: Zoom-aware arrow markers with proportional scaling
+  // Zoom-aware arrow markers with proportional scaling
   const arrowMarkerSize = useMemo(() => {
     const scale = Math.max(0.4, Math.min(1, dayWidth / 120));
     return {
@@ -794,7 +794,7 @@ export default function ProjectGantt({
     };
   }, [dayWidth]);
 
-  // IMPROVED: Zoom-aware stroke width with better minimum threshold
+  // Zoom-aware stroke width with better minimum threshold
   const getStrokeWidth = (isCritical: boolean) => {
     const baseWidth = isCritical ? 3 : 2;
     // Improved scaling: minimum 1px, scales more gracefully

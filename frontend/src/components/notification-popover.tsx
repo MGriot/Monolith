@@ -38,11 +38,7 @@ export default function NotificationPopover() {
     // Create WebSocket connection
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    // Note: In development inside Docker, host might need to point to the backend container or proxy
-    // But since Vite proxies /api, and usually WebSockets are separate, 
-    // we try to reach the backend directly or via the same host if Nginx handles it.
-    // Given vite.config.ts proxies /api, we'll try to reach the backend at /api/v1/notifications/ws/
-    
+    // Same origin: the Vite dev proxy and nginx both forward /api WebSocket upgrades to the backend.
     const wsUrl = `${protocol}//${host}/api/v1/notifications/ws`;
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
@@ -59,7 +55,7 @@ export default function NotificationPopover() {
           });
           queryClient.invalidateQueries({ queryKey: notificationKeys.all });
         }
-      } catch (e) {
+      } catch {
         // Silently ignore non-JSON
       }
     };

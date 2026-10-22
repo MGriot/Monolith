@@ -163,7 +163,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
   const dayWidth = ZOOM_CONFIG[zoomLevel].scale;
   const containerWidth = totalDays * dayWidth;
 
-  // IMPROVED: High-precision pixel positioning using calendar days to avoid drift during DST changes
+  // High-precision pixel positioning using calendar days to avoid drift during DST changes
   const getPositionPx = (dateInput: string | Date) => {
     if (!viewWindow) return 0;
     const date = typeof dateInput === 'string' ? parseISO(dateInput) : dateInput;
