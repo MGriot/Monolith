@@ -87,10 +87,6 @@ export default function MyTasksPage() {
         </div>
       </div>
     );
-    return () => {
-      setActions(null);
-      setTitle(null);
-    };
   }, [setActions, setTitle, view]);
 
   const { data: tasks, isLoading, isError } = useQuery({

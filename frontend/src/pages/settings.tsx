@@ -91,7 +91,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setTitle("Settings");
-    return () => setTitle(null);
   }, [setTitle]);
 
   // Scroll-spy: highlight the section nearest the top of the page.

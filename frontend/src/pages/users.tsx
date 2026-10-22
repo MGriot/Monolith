@@ -121,7 +121,6 @@ export default function UsersPage() {
           Run Auto-Archive
       </Button>
     );
-    return () => setActions(null);
   }, [setActions, autoArchiveMutation.isPending]);
 
   if (!currentUser?.is_superuser) {

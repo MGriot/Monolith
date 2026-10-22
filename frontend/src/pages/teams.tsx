@@ -59,7 +59,6 @@ export default function TeamsPage() {
         <Plus className="w-4 h-4" /> Create Team
       </Button>
     );
-    return () => setActions(null);
   }, [setActions]);
 
   const { data: teams, isLoading } = useQuery({

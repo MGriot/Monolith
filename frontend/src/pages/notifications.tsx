@@ -27,7 +27,6 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     setTitle('Notifications');
-    return () => setTitle(null);
   }, [setTitle]);
 
   const { data: notifications, isLoading, isError } = useNotificationList(filters);

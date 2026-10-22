@@ -177,10 +177,6 @@ export default function ProjectDetailPage() {
         </div>
       );
     }
-    return () => {
-      setTitle(null);
-      setActions(null);
-    };
   }, [project, setTitle, setActions, activeTab, archiveProjectMutation.isPending]);
 
   // Recursive find to handle deep WBS hierarchy

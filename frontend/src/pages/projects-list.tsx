@@ -98,7 +98,6 @@ export default function ProjectsListPage() {
         </Button>
       </div>
     );
-    return () => setActions(null);
   }, [setActions, view]);
 
   useEffect(() => {

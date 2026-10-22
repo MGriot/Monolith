@@ -654,7 +654,6 @@ export default function SchedulePage() {
 
     useEffect(() => {
         setTitle("Master Schedule");
-        return () => setTitle(null);
     }, [setTitle]);
 
     return (

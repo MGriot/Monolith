@@ -104,10 +104,6 @@ export default function WorkflowsPage() {
                 </div>
             );
         }
-        return () => {
-            setTitle(null);
-            setActions(null);
-        };
     }, [selectedWorkflow, setTitle, setActions, searchTerm]);
 
     const { data: workflows, isLoading } = useQuery({

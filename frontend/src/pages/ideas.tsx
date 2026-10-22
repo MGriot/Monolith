@@ -9,10 +9,6 @@ export default function IdeasPage() {
   useEffect(() => {
     setTitle('Universal Ideas');
     setIcon(Lightbulb);
-    return () => {
-      setTitle(null);
-      setIcon(null);
-    };
   }, [setTitle, setIcon]);
 
   return (

@@ -29,7 +29,6 @@ export default function AdminMetadataPage() {
 
   useEffect(() => {
     setTitle('Metadata');
-    return () => setTitle(null);
   }, [setTitle]);
 
   const { data: topics, isLoading: topicsLoading } = useQuery<Topic[]>({
