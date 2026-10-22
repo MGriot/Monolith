@@ -39,7 +39,8 @@ import type { Task } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { toast } from 'sonner';
 import { formatDisplayDate, fromDateInput } from "@/lib/dates";
-import { calculateSortIndex as sharedSortIndex, flattenTasks } from '@/lib/kanban';
+import { calculateSortIndex as sharedSortIndex } from '@/lib/kanban';
+import { findTask, flattenTasks } from '@/lib/tasks';
 import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
 import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
@@ -125,18 +126,7 @@ export default function MyTasksPage() {
   // command palette "toggle view"
   useEffect(() => onAppEvent(TOGGLE_VIEW_EVENT, () => setView((v) => (v === 'kanban' ? 'list' : 'kanban'))), []);
 
-  const findTaskRecursive = (taskList: Task[], taskId: string): Task | null => {
-    for (const task of taskList) {
-      if (task.id === taskId) return task;
-      if (task.subtasks && task.subtasks.length > 0) {
-        const found = findTaskRecursive(task.subtasks, taskId);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  const editingTask = tasks && editingTaskId ? findTaskRecursive(tasks, editingTaskId) : null;
+  const editingTask = tasks && editingTaskId ? findTask(tasks, editingTaskId) : null;
 
   const updateTaskMutation = useMutation({
     mutationFn: async ({ taskId, data }: { taskId: string; data: Partial<TaskFormValues> }) => {

@@ -85,6 +85,7 @@ import {
   type DragMode,
 } from '@/lib/gantt';
 import { errorMessage } from '@/lib/api-error';
+import { walkTasks } from '@/lib/tasks';
 
 export interface ProjectGanttProps {
   tasks: Task[];
@@ -407,29 +408,22 @@ export default function ProjectGantt({
     const items: GanttItem[] = [];
     let currentRow = 0;
 
-    const flattenTasks = (taskList: Task[], level: number = 0, parent?: Task) => {
-      const sorted = [...taskList].sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
-
-      sorted.forEach(task => {
-        if (task.start_date && (task.due_date || task.deadline_at || task.completed_at)) {
-          items.push({
-            ...task,
-            isSubtask: level > 0,
-            parentTitle: parent?.title || "",
-            parentId: parent?.id || "",
-            projectName: task.project?.name || parent?.project?.name || "",
-            rowIndex: currentRow++,
-            hierarchyLevel: level
-          } as any);
-        }
-
-        if (showSubtasks && task.subtasks && task.subtasks.length > 0) {
-          flattenTasks(task.subtasks, level + 1, task);
-        }
-      });
-    };
-
-    flattenTasks(tasks);
+    walkTasks(tasks, (task, parent, level) => {
+      if (task.start_date && (task.due_date || task.deadline_at || task.completed_at)) {
+        items.push({
+          ...task,
+          isSubtask: level > 0,
+          parentTitle: parent?.title || "",
+          parentId: parent?.id || "",
+          projectName: task.project?.name || parent?.project?.name || "",
+          rowIndex: currentRow++,
+          hierarchyLevel: level
+        } as any);
+      }
+    }, {
+      order: (siblings) => [...siblings].sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0)),
+      descend: () => showSubtasks,
+    });
     return items;
   }, [tasks, showSubtasks]);
 

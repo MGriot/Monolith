@@ -1,23 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { calculateSortIndex, flattenTasks, type SortableTask } from './kanban';
+import { calculateSortIndex, type SortableTask } from './kanban';
 
 const t = (id: string, status: string, sort_index: number, extra: Partial<SortableTask> = {}): SortableTask => ({
   id, status, sort_index, created_at: '2025-01-01T00:00:00', ...extra,
-});
-
-describe('flattenTasks', () => {
-  it('returns every task depth-first, subtasks included', () => {
-    const tree: SortableTask[] = [
-      t('a', 'Todo', 0, { subtasks: [t('a1', 'Todo', 0, { subtasks: [t('a1x', 'Done', 0)] }), t('a2', 'Todo', 10)] }),
-      t('b', 'Todo', 10),
-    ];
-    expect(flattenTasks(tree).map((x) => x.id)).toEqual(['a', 'a1', 'a1x', 'a2', 'b']);
-  });
-
-  it('handles empty input and missing subtasks', () => {
-    expect(flattenTasks([])).toEqual([]);
-    expect(flattenTasks([{ ...t('a', 'Todo', 0), subtasks: null }]).map((x) => x.id)).toEqual(['a']);
-  });
 });
 
 describe('calculateSortIndex', () => {

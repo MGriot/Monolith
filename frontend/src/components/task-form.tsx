@@ -41,6 +41,7 @@ import { RecurrenceField } from "./recurrence-field";
 import { sanitizeCustomValues, validateCustomValues, type CustomValues } from "@/lib/custom-fields";
 import type { Task, Topic, WorkType, Project } from "@/types";
 import { toDateInputValue } from "@/lib/dates";
+import { subtreeIds, walkTasks } from "@/lib/tasks";
 
 const subtaskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -346,41 +347,15 @@ export default function TaskForm({
   // Helper to flatten tasks for the select, excluding descendants of the current task
   const getAvailableParents = () => {
     const flat: { id: string; title: string; wbs_code?: string; level: number }[] = [];
+    if (!allTasks) return flat;
 
-    // Find descendants to exclude
-    const descendants = new Set<string>();
-    if (editingTaskId && allTasks) {
-      const findDescendants = (tasks: Task[]) => {
-        for (const t of tasks) {
-          descendants.add(t.id);
-          if (t.subtasks) findDescendants(t.subtasks);
-        }
-      };
+    // A task can't move under itself or one of its descendants
+    const excluded = editingTaskId ? subtreeIds(allTasks, editingTaskId) : new Set<string>();
+    if (editingTaskId) excluded.add(editingTaskId);
 
-      const findAndExclude = (tasks: Task[]) => {
-        for (const t of tasks) {
-          if (t.id === editingTaskId) {
-            if (t.subtasks) findDescendants(t.subtasks);
-            return true;
-          }
-          if (t.subtasks && findAndExclude(t.subtasks)) return true;
-        }
-        return false;
-      };
-      findAndExclude(allTasks);
-      descendants.add(editingTaskId);
-    }
-
-    const recurse = (tasks: Task[], level: number) => {
-      for (const t of tasks) {
-        if (!descendants.has(t.id)) {
-          flat.push({ id: t.id, title: t.title, wbs_code: t.wbs_code, level });
-          if (t.subtasks) recurse(t.subtasks, level + 1);
-        }
-      }
-    };
-
-    if (allTasks) recurse(allTasks, 0);
+    walkTasks(allTasks, (t, _parent, level) => {
+      if (!excluded.has(t.id)) flat.push({ id: t.id, title: t.title, wbs_code: t.wbs_code, level });
+    }, { descend: (t) => !excluded.has(t.id) });
     return flat;
   };
 

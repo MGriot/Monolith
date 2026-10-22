@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { parseISO } from 'date-fns';
 import type { Task, Subtask } from '@/types';
 import { formatDisplayDate, isAfterDueDay } from "@/lib/dates";
+import { walkTasks } from "@/lib/tasks";
 
 interface KanbanItem {
   id: string;
@@ -85,25 +86,16 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorde
   // Flatten tasks recursively
   const kanbanItems = useMemo(() => {
     const list: KanbanItem[] = [];
-    
-    const flatten = (taskList: Task[], parent?: Task) => {
-        taskList.forEach(task => {
-            list.push({ 
-                ...task, 
-                type: task.parent_id ? 'subtask' : 'task', 
-                topic: task.topic || parent?.topic, 
-                parentId: task.parent_id || undefined,
-                project: task.project || parent?.project,
-                has_children: task.subtasks && task.subtasks.length > 0
-            } as any);
-            
-            if (task.subtasks && task.subtasks.length > 0) {
-                flatten(task.subtasks, task);
-            }
-        });
-    };
-
-    flatten(tasks);
+    walkTasks(tasks, (task, parent) => {
+        list.push({ 
+            ...task, 
+            type: task.parent_id ? 'subtask' : 'task', 
+            topic: task.topic || parent?.topic, 
+            parentId: task.parent_id || undefined,
+            project: task.project || parent?.project,
+            has_children: task.subtasks && task.subtasks.length > 0
+        } as any);
+    });
     // Sort flattened list by sort_index to ensure initial items order is correct
     // Secondary sort by created_at for stability
     return list.sort((a, b) => {

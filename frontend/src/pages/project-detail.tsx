@@ -50,7 +50,8 @@ import type { Project, Task } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { DeadlineLine } from '@/components/deadline-line';
 import { formatDisplayDate, fromDateInput } from "@/lib/dates";
-import { calculateSortIndex, flattenTasks } from '@/lib/kanban';
+import { calculateSortIndex } from '@/lib/kanban';
+import { findTask, flattenTasks } from '@/lib/tasks';
 import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
 import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
@@ -183,18 +184,7 @@ export default function ProjectDetailPage() {
   }, [project, setTitle, setActions, activeTab, archiveProjectMutation.isPending]);
 
   // Recursive find to handle deep WBS hierarchy
-  const findTaskRecursive = (taskList: Task[], taskId: string): Task | null => {
-    for (const task of taskList) {
-      if (task.id === taskId) return task;
-      if (task.subtasks && task.subtasks.length > 0) {
-        const found = findTaskRecursive(task.subtasks, taskId);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  const editingTask = tasks && editingTaskId ? findTaskRecursive(tasks, editingTaskId) : null;
+  const editingTask = tasks && editingTaskId ? findTask(tasks, editingTaskId) : null;
 
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ['project-stats', id],

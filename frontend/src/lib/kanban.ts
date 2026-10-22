@@ -6,19 +6,6 @@ export interface SortableTask {
   subtasks?: SortableTask[] | null;
 }
 
-/** Depth-first flat list of tasks and all their descendants. */
-export function flattenTasks<T extends SortableTask>(tasks: T[]): T[] {
-  const out: T[] = [];
-  const walk = (list: T[]) => {
-    for (const t of list) {
-      out.push(t);
-      if (t.subtasks?.length) walk(t.subtasks as T[]);
-    }
-  };
-  walk(tasks);
-  return out;
-}
-
 const byOrder = (a: SortableTask, b: SortableTask) => {
   const d = (a.sort_index || 0) - (b.sort_index || 0);
   if (d !== 0) return d;
