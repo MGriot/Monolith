@@ -27,6 +27,7 @@ import { useTitle } from '@/context/title-context';
 import { confirmDialog } from '@/lib/confirm';
 import { parseServerDate } from '@/lib/dates';
 import { errorMessage } from '@/lib/api-error';
+import { usersQuery } from '@/lib/queries';
 
 interface Team {
   id: string;
@@ -66,10 +67,7 @@ export default function TeamsPage() {
     queryFn: async () => (await api.get('/teams/')).data as Team[],
   });
 
-  const { data: users } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => (await api.get('/users/')).data as User[],
-  });
+  const { data: users } = useQuery(usersQuery);
 
   const createMutation = useMutation({
     mutationFn: (newTeam: any) => api.post('/teams/', newTeam),

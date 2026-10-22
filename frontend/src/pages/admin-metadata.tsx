@@ -14,8 +14,9 @@ import { confirmDialog } from '@/lib/confirm';
 import { filterTaxonomy, groupTaxonomy, type TaxonomyScope } from '@/lib/taxonomy';
 import { nextPresetColor } from '@/constants/colors';
 import { cn } from '@/lib/utils';
-import type { Project, Topic, WorkType } from '@/types';
+import type { Topic, WorkType } from '@/types';
 import { errorMessage } from '@/lib/api-error';
+import { projectsQuery } from '@/lib/queries';
 
 type Kind = 'topics' | 'work-types';
 
@@ -41,10 +42,7 @@ export default function AdminMetadataPage() {
     queryFn: async () => (await api.get('/metadata/work-types?all_scopes=true')).data,
   });
 
-  const { data: projects } = useQuery<Project[]>({
-    queryKey: ['projects'],
-    queryFn: async () => (await api.get('/projects/')).data,
-  });
+  const { data: projects } = useQuery(projectsQuery);
 
   const projectNames = useMemo(() => new Map((projects || []).map(p => [p.id, p.name])), [projects]);
 

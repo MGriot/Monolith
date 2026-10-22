@@ -11,10 +11,10 @@ import {
 import { Label } from "@/components/ui/label";
 import TaskForm, { type TaskFormValues } from '@/components/task-form';
 import TaskDialog from '@/components/task-dialog';
-import type { Project } from '@/types';
 import { toast } from 'sonner';
 import { fromDateInput } from "@/lib/dates";
 import { errorMessage } from '@/lib/api-error';
+import { projectsQuery } from '@/lib/queries';
 
 interface TaskCreateDialogProps {
   open: boolean;
@@ -25,14 +25,7 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
   const queryClient = useQueryClient();
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
 
-  const { data: projects, isLoading: isProjectsLoading } = useQuery({
-    queryKey: ['projects-minimal'],
-    queryFn: async () => {
-      const response = await api.get('/projects/');
-      return response.data as Project[];
-    },
-    enabled: open
-  });
+  const { data: projects, isLoading: isProjectsLoading } = useQuery({ ...projectsQuery, enabled: open });
 
   const createTaskMutation = useMutation({
     mutationFn: async (newTask: TaskFormValues) => {

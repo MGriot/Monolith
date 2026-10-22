@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { isProjectRole, PROJECT_ROLES, ROLE_HINTS, ROLE_LABELS, type ProjectRole } from '@/lib/roles';
 import { confirmDialog } from '@/lib/confirm';
+import { usersQuery } from '@/lib/queries';
 
 interface Member {
   user_id: string;
@@ -17,13 +18,6 @@ interface Member {
   full_name?: string | null;
   role: ProjectRole;
   is_owner: boolean;
-}
-
-interface UserOption {
-  id: string;
-  email: string;
-  full_name?: string | null;
-  is_active?: boolean;
 }
 
 const selectClass =
@@ -39,11 +33,7 @@ export function ProjectMembersCard({ projectId, canManage }: { projectId: string
     queryKey: ['project-members', projectId],
     queryFn: async () => (await api.get<Member[]>(`/projects/${projectId}/members`)).data,
   });
-  const users = useQuery({
-    queryKey: ['users-for-members'],
-    enabled: canManage,
-    queryFn: async () => (await api.get<UserOption[]>('/users/', { params: { limit: 500 } })).data,
-  });
+  const users = useQuery({ ...usersQuery, enabled: canManage });
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['project-members', projectId] });

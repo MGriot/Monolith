@@ -56,6 +56,7 @@ import type { Project as ProjectType, ProjectTemplate } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { fromDateInput } from "@/lib/dates";
 import { confirmDialog } from '@/lib/confirm';
+import { projectsQuery } from '@/lib/queries';
 
 export default function ProjectsListPage() {
   const navigate = useNavigate();
@@ -111,13 +112,7 @@ export default function ProjectsListPage() {
     }
   }, [searchParams, setSearchParams]);
 
-  const { data: projects, isLoading, isError } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => {
-      const response = await api.get('/projects/');
-      return response.data as ProjectType[];
-    },
-  });
+  const { data: projects, isLoading, isError } = useQuery(projectsQuery);
 
   const { data: templates } = useQuery({
     queryKey: ['templates'],

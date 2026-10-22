@@ -30,27 +30,14 @@ import { useTitle } from '@/context/title-context';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { confirmDialog } from '@/lib/confirm';
 import { errorMessage } from '@/lib/api-error';
-
-interface User {
-  id: string;
-  email: string;
-  full_name: string;
-  is_active: boolean;
-  is_superuser: boolean;
-}
+import { usersQuery, type UserRecord as User } from '@/lib/queries';
 
 export default function UsersPage() {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
   const { setActions } = useTitle();
 
-  const { data: users, isLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const response = await api.get('/users/');
-      return response.data as User[];
-    },
-  });
+  const { data: users, isLoading } = useQuery(usersQuery);
 
   const { data: pending } = useQuery({
     queryKey: ['users', 'pending'],

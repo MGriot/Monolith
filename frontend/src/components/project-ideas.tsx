@@ -39,6 +39,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { confirmDialog } from '@/lib/confirm';
 import { parseServerDate } from '@/lib/dates';
+import { projectsQuery } from '@/lib/queries';
 
 interface ProjectIdeasProps {
   projectId?: string;
@@ -64,14 +65,7 @@ export default function ProjectIdeas({ projectId, taskId, onPromoteSuccess }: Pr
 
   const queryKey = ['ideas', projectId || 'all', taskId || 'all'];
 
-  const { data: projects } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => {
-        const response = await api.get('/projects/');
-        return response.data as Project[];
-    },
-    enabled: !projectId
-  });
+  const { data: projects } = useQuery({ ...projectsQuery, enabled: !projectId });
 
   const { data: ideas, isLoading } = useQuery({
     queryKey,
