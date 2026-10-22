@@ -4,7 +4,7 @@ These need the real stack (Postgres + nginx + backend) and a **fresh database**:
 They run *inside* the backend container against the proxy, so nothing has to be reachable from the host.
 
 ```bash
-scripts/live-smoke.sh            # uses .env; add ENV_FILE=... COMPOSE=docker for other setups
+scripts/live-smoke.sh            # runs every smoke_*.py; ENGINE=docker and/or CONTAINER=<name> for other setups
 ```
 
 | File | Checks |
@@ -15,4 +15,11 @@ scripts/live-smoke.sh            # uses .env; add ENV_FILE=... COMPOSE=docker fo
 | `smoke_bulk.py` | bulk task actions (per-id authorization, partial failures, validation, 200-id cap) and the notification unread-count / filters / mark-unread |
 | `smoke_automations.py` | rule CRUD + role gates, validation, set_field / assign / notify (in-app + e-mail queue), status triggers, ping-pong loop termination, failure isolation, project webhook queueing and formats, the `due_soon` sweep |
 | `smoke_mcp.py` | personal MCP tokens over real SSE, tools acting with the owner's project role, isError on refused writes, revocation, server-rendered sketch previews, two live websocket peers on one whiteboard (presence, relay, viewer refusal, save on leave) |
-| `bench_task_tree.py` | query count / time / output equivalence of the task tree loader against the old nested-selectinload version |
+| `smoke_activity.py` | task change log through REST and MCP (actor, summary), roll-ups and automations labelled as automatic, viewer/outsider access, lines kept after a delete |
+| `smoke_mail.py` | delivery through the outbox to the real mail server over authenticated STARTTLS |
+| `smoke_recurrence_ics.py` | recurring tasks and the personal calendar feed |
+| `smoke_roles.py` | project roles (viewer / editor / admin) |
+| `smoke_transactions.py` | the unit of work: failures injected half-way through compound CRUD operations leave nothing behind |
+
+`bench_task_tree.py` is not part of `live-smoke.sh` (only `smoke_*.py` are). It measures query count, time and output
+equivalence of the task tree loader; copy it into the backend container and run it there by hand.

@@ -1,6 +1,7 @@
 # Monolith — Frontend
 
-React 19 + TypeScript + Vite frontend for the **Monolith** project management platform.
+React 19 + TypeScript + Vite frontend for the **Monolith** project management platform. Setup, development mode and
+the first sign-in are covered in the [guide, chapter 1](../docs/guide/01-getting-started.html).
 
 ## Tech Stack
 
@@ -19,47 +20,35 @@ React 19 + TypeScript + Vite frontend for the **Monolith** project management pl
 
 ## Branding
 
-The app uses a custom `M` monogram as its favicon (`public/monolith.svg`) — a black rounded square with a white bold "M", matching the sidebar logo badge. This replaces the default Vite icon.
+The app uses a custom `M` monogram as its favicon (`public/monolith.svg`) — a black rounded square with a white bold "M", matching the sidebar logo badge.
 
-## Running in Development (Docker)
+## Running in Development
 
-The frontend runs as part of the full Docker stack. From the repo root:
+With hot reload, from the repo root (Vite on **http://localhost:5173**, API on :8000):
 
 ```bash
-docker-compose up -d
+podman-compose -f compose.yaml -f compose.dev.yaml up -d --build   # or: docker compose -f compose.yaml -f compose.dev.yaml up -d --build
 ```
 
-The Vite dev server will be available at **http://localhost:5173**.
-
-> If you add new npm packages to `package.json`, run `npm install` inside the container to update `node_modules` without rebuilding the image:
-> ```bash
-> docker exec monolith_frontend npm install
-> docker restart monolith_frontend
-> ```
-
-## Running Locally (without Docker)
+Or run Vite on the host against a running backend:
 
 ```bash
 cd frontend
 npm install
-npm run dev
+VITE_PROXY_TARGET=http://localhost:8000 npm run dev
 ```
 
-## Building for Production
+The Vite dev server proxies API requests to `VITE_PROXY_TARGET` (default `http://backend:8000`, the compose service; see
+`vite.config.ts`).
+
+## Checks and Production Build
 
 ```bash
-npm run build
+npm run typecheck && npm test && npm run build
 ```
 
-Output is placed in `dist/` and served via the Nginx container in the full Docker stack.
+Output is placed in `dist/` and served by the frontend container behind the edge proxy in the full stack.
 
-## Environment
+## Accounts
 
-The Vite dev server proxies API requests to the backend. See `vite.config.ts` for the proxy configuration.
-
-## Default Credentials
-
-| Role | Email | Password |
-|---|---|---|
-| Superuser | `admin@admin.com` | `admin123` |
-| Tester | `tester@example.com` | `tester123` |
+There are no default accounts: sign in with the `FIRST_SUPERUSER_EMAIL` / `FIRST_SUPERUSER_PASSWORD` from the root `.env`.
