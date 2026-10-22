@@ -1,7 +1,6 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Monolith Project Planner"
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str = "HS256"

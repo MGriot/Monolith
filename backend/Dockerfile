@@ -53,7 +53,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload
 
 FROM runtime AS prod
 RUN useradd --system --uid 10001 --create-home app \
-    && mkdir -p /app/uploads /app/media \
+    && mkdir -p /app/uploads \
     && chown -R app:app /app
 COPY --chown=app:app . .
 USER app
