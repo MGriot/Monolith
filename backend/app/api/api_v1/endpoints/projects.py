@@ -1,16 +1,15 @@
 from typing import Any, List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, field_validator
-import io
-import pandas as pd
 from datetime import datetime
 
 from app.api import deps
 from app.api.access import ADMIN, ROLES, project_role, require_project_access
+from app.core.export import enum_value, fmt_date, tabular_response
+from app.core.wbs import apply_wbs_codes
 from app.db.transaction import commit
 from app.crud import crud_project, crud_task
 from app.schemas.project import Project, ProjectCreate, ProjectUpdate
@@ -18,6 +17,11 @@ from app.models.user import User
 from app.models.task import Task
 
 router = APIRouter()
+
+
+def _person(user) -> str:
+    return user.full_name or user.email
+
 
 @router.get("/export/all")
 async def export_projects_multi(
@@ -42,91 +46,63 @@ async def export_projects_multi(
         )
 
     data = []
-    
+
     if mode == "summary":
         for p in projects:
             data.append({
                 "Name": p.name,
                 "Description": p.description or "",
-                "Status": p.status.value if hasattr(p.status, 'value') else str(p.status),
+                "Status": enum_value(p.status),
                 "Progress %": p.progress_percent,
                 "Topic": ", ".join([t.name for t in p.topics]) if p.topics else (p.topic or ""),
                 "Type": ", ".join([t.name for t in p.types]) if p.types else (p.type or ""),
-                "Start Date": p.start_date.strftime("%Y-%m-%d") if p.start_date else "",
-                "Due Date": p.due_date.strftime("%Y-%m-%d") if p.due_date else "",
-                "Deadline": p.deadline_at.strftime("%Y-%m-%d") if p.deadline_at else "",
+                "Start Date": fmt_date(p.start_date),
+                "Due Date": fmt_date(p.due_date),
+                "Deadline": fmt_date(p.deadline_at),
                 "Archived": "Yes" if p.is_archived else "No",
-                "Archived At": p.archived_at.strftime("%Y-%m-%d") if p.archived_at else "",
-                "Owner": p.owner.full_name or p.owner.email if p.owner else ""
+                "Archived At": fmt_date(p.archived_at),
+                "Owner": _person(p.owner) if p.owner else ""
             })
     else:
-        # Details mode: explosion
-        from app.core.wbs import apply_wbs_codes
-        
+        # Details mode: one header row per project, then its task tree
+        def flatten_for_export(tasks, project_name):
+            for t in tasks:
+                data.append({
+                    "Project": project_name,
+                    "WBS": getattr(t, 'wbs_code', ""),
+                    "Title": t.title,
+                    "Status": enum_value(t.status),
+                    "Priority": enum_value(t.priority),
+                    "Assignees": ", ".join([_person(u) for u in t.assignees]),
+                    "Start Date": fmt_date(t.start_date),
+                    "Due Date": fmt_date(t.due_date),
+                    "Progress %": "",
+                    "Description": t.description or ""
+                })
+                if t.subtasks:
+                    flatten_for_export(t.subtasks, project_name)
+
         for p in projects:
-            # Project header row
             data.append({
                 "Project": p.name,
                 "WBS": "",
                 "Title": "[PROJECT ROOT]",
-                "Status": p.status.value if hasattr(p.status, 'value') else str(p.status),
+                "Status": enum_value(p.status),
                 "Priority": "",
                 "Assignees": "",
-                "Start Date": p.start_date.strftime("%Y-%m-%d") if p.start_date else "",
-                "Due Date": p.due_date.strftime("%Y-%m-%d") if p.due_date else "",
-                "Deadline": p.deadline_at.strftime("%Y-%m-%d") if p.deadline_at else "",
+                "Start Date": fmt_date(p.start_date),
+                "Due Date": fmt_date(p.due_date),
+                "Deadline": fmt_date(p.deadline_at),
                 "Progress %": f"{p.progress_percent}%",
                 "Description": p.description or ""
             })
-            
-            # Fetch hierarchical tasks for this project
             all_tasks_tree = await crud_task.task.get_multi_by_project(db, project_id=p.id, limit=1000)
             apply_wbs_codes(all_tasks_tree)
-            
-            def flatten_for_export(tasks, project_name):
-                for t in tasks:
-                    data.append({
-                        "Project": project_name,
-                        "WBS": getattr(t, 'wbs_code', ""),
-                        "Title": t.title,
-                        "Status": t.status.value if hasattr(t.status, 'value') else str(t.status),
-                        "Priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
-                        "Assignees": ", ".join([u.full_name or u.email for u in t.assignees]),
-                        "Start Date": t.start_date.strftime("%Y-%m-%d") if t.start_date else "",
-                        "Due Date": t.due_date.strftime("%Y-%m-%d") if t.due_date else "",
-                        "Progress %": "", 
-                        "Description": t.description or ""
-                    })
-                    if t.subtasks:
-                        flatten_for_export(t.subtasks, project_name)
-            
             flatten_for_export(all_tasks_tree, p.name)
 
-    df = pd.DataFrame(data)
-    
-    if format == "csv":
-        stream = io.StringIO()
-        df.to_csv(stream, index=False)
-        response = StreamingResponse(
-            io.BytesIO(stream.getvalue().encode()),
-            media_type="text/csv",
-        )
-        filename = f"projects_export_{'archived' if include_archived else 'active'}_{mode}_{datetime.now().strftime('%Y%m%d')}.csv"
-        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
-        return response
-    else:
-        # Excel
-        stream = io.BytesIO()
-        with pd.ExcelWriter(stream, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Projects')
-        
-        response = StreamingResponse(
-            io.BytesIO(stream.getvalue()),
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-        filename = f"projects_export_{'archived' if include_archived else 'active'}_{mode}_{datetime.now().strftime('%Y%m%d')}.xlsx"
-        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
-        return response
+    scope = 'archived' if include_archived else 'active'
+    return tabular_response(data, fmt=format, sheet="Projects",
+                            basename=f"projects_export_{scope}_{mode}_{datetime.now().strftime('%Y%m%d')}")
 
 @router.get("/{project_id}/export")
 async def export_project(
@@ -142,51 +118,45 @@ async def export_project(
     project = await crud_project.project.get(db, id=project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     await require_project_access(db, project_id, current_user)
 
     if mode == "summary":
-        # Just project metadata
         data = [{
             "Project Name": project.name,
             "Description": project.description or "",
-            "Status": project.status.value if hasattr(project.status, 'value') else str(project.status),
+            "Status": enum_value(project.status),
             "Progress %": project.progress_percent,
-            "Start Date": project.start_date.strftime("%Y-%m-%d") if project.start_date else "",
-            "Due Date": project.due_date.strftime("%Y-%m-%d") if project.due_date else "",
-            "Deadline": project.deadline_at.strftime("%Y-%m-%d") if project.deadline_at else "",
+            "Start Date": fmt_date(project.start_date),
+            "Due Date": fmt_date(project.due_date),
+            "Deadline": fmt_date(project.deadline_at),
             "Archived": "Yes" if project.is_archived else "No",
-            "Owner": project.owner.full_name or project.owner.email if project.owner else "N/A",
+            "Owner": _person(project.owner) if project.owner else "N/A",
             "Tags": ", ".join(project.tags or [])
         }]
     else:
-        # Fetch hierarchical tasks (Details mode)
         all_tasks_tree = await crud_task.task.get_multi_by_project(db, project_id=project_id, limit=1000)
-        
-        # Apply WBS codes
-        from app.core.wbs import apply_wbs_codes
         apply_wbs_codes(all_tasks_tree)
-        
-        # Flatten the tree for export
+
         data = []
         def flatten_for_export(tasks):
             for t in tasks:
                 duration = 0
                 if t.start_date and t.due_date:
                     duration = (t.due_date - t.start_date).days + 1
-                
+
                 data.append({
                     "WBS": getattr(t, 'wbs_code', ""),
                     "Title": t.title,
                     "Description": t.description or "",
-                    "Status": t.status.value if hasattr(t.status, 'value') else str(t.status),
-                    "Priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
-                    "Start Date": t.start_date.strftime("%Y-%m-%d") if t.start_date else "",
-                    "Due Date": t.due_date.strftime("%Y-%m-%d") if t.due_date else "",
-                    "Deadline": t.deadline_at.strftime("%Y-%m-%d") if t.deadline_at else "",
-                    "Completed At": t.completed_at.strftime("%Y-%m-%d %H:%M") if t.completed_at else "",
+                    "Status": enum_value(t.status),
+                    "Priority": enum_value(t.priority),
+                    "Start Date": fmt_date(t.start_date),
+                    "Due Date": fmt_date(t.due_date),
+                    "Deadline": fmt_date(t.deadline_at),
+                    "Completed At": fmt_date(t.completed_at, "%Y-%m-%d %H:%M"),
                     "Duration (Days)": duration,
-                    "Assignees": ", ".join([u.full_name or u.email for u in t.assignees]),
+                    "Assignees": ", ".join([_person(u) for u in t.assignees]),
                     "Milestone": "Yes" if t.is_milestone else "No",
                     "Tags": ", ".join(t.tags or [])
                 })
@@ -195,31 +165,8 @@ async def export_project(
 
         flatten_for_export(all_tasks_tree)
 
-    df = pd.DataFrame(data)
-    
-    if format == "csv":
-        stream = io.StringIO()
-        df.to_csv(stream, index=False)
-        response = StreamingResponse(
-            io.BytesIO(stream.getvalue().encode()),
-            media_type="text/csv",
-        )
-        filename = f"export_{project.name}_{datetime.now().strftime('%Y%m%d')}.csv"
-        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
-        return response
-    else:
-        # Excel
-        stream = io.BytesIO()
-        with pd.ExcelWriter(stream, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Tasks')
-        
-        response = StreamingResponse(
-            io.BytesIO(stream.getvalue()),
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-        filename = f"export_{project.name}_{datetime.now().strftime('%Y%m%d')}.xlsx"
-        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
-        return response
+    return tabular_response(data, fmt=format, sheet="Tasks",
+                            basename=f"export_{project.name}_{datetime.now().strftime('%Y%m%d')}")
 
 from app.schemas.portfolio import PortfolioHealthResponse, ProjectHealth
 from app.core.enums import Status as TaskStatus

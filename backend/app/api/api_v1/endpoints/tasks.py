@@ -18,11 +18,8 @@ from app.schemas.task import (
 from app.db.transaction import transaction
 from app.models.user import User
 from app.models.dependency import Dependency as DependencyModel
+from app.core.export import enum_value, fmt_date, tabular_response
 from datetime import datetime
-
-import io
-import pandas as pd
-from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 
@@ -79,11 +76,11 @@ async def export_tasks(
             "Parent Task": parent_title or "",
             "Title": t.title,
             "Description": t.description or "",
-            "Status": t.status.value if hasattr(t.status, 'value') else str(t.status),
-            "Priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
-            "Start Date": t.start_date.strftime("%Y-%m-%d") if t.start_date else "",
-            "Due Date": t.due_date.strftime("%Y-%m-%d") if t.due_date else "",
-            "Completed At": t.completed_at.strftime("%Y-%m-%d %H:%M") if t.completed_at else "",
+            "Status": enum_value(t.status),
+            "Priority": enum_value(t.priority),
+            "Start Date": fmt_date(t.start_date),
+            "Due Date": fmt_date(t.due_date),
+            "Completed At": fmt_date(t.completed_at, "%Y-%m-%d %H:%M"),
             "Duration (Days)": duration,
             "Assignees": ", ".join([u.full_name or u.email for u in t.assignees]),
             "Milestone": "Yes" if t.is_milestone else "No",
@@ -100,31 +97,8 @@ async def export_tasks(
     for t in tasks:
         process_task(t)
 
-    df = pd.DataFrame(data)
-    
-    if format == "csv":
-        stream = io.StringIO()
-        df.to_csv(stream, index=False)
-        response = StreamingResponse(
-            io.BytesIO(stream.getvalue().encode()),
-            media_type="text/csv",
-        )
-        filename = f"tasks_export_{datetime.now().strftime('%Y%m%d')}.csv"
-        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
-        return response
-    else:
-        # Excel
-        stream = io.BytesIO()
-        with pd.ExcelWriter(stream, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='My Tasks')
-        
-        response = StreamingResponse(
-            io.BytesIO(stream.getvalue()),
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-        filename = f"tasks_export_{datetime.now().strftime('%Y%m%d')}.xlsx"
-        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
-        return response
+    return tabular_response(data, fmt=format, sheet="My Tasks",
+                            basename=f"tasks_export_{datetime.now().strftime('%Y%m%d')}")
 
 @router.get("/assigned", response_model=List[Task])
 async def read_assigned_tasks(
