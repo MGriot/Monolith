@@ -86,6 +86,7 @@ import {
 } from '@/lib/gantt';
 import { errorMessage } from '@/lib/api-error';
 import { walkTasks } from '@/lib/tasks';
+import { positionPx, stepZoom, widthPx } from '@/lib/timeline';
 
 export interface ProjectGanttProps {
   tasks: Task[];
@@ -187,6 +188,8 @@ const ZOOM_CONFIG = {
     minorUnits: ['quarter', 'month']
   }
 };
+
+const ZOOM_LEVELS = Object.keys(ZOOM_CONFIG) as ZoomLevel[];
 
 // Proportionally scaling orthogonal path generation with adaptive loop buffers
 const getOrthogonalPath = (
@@ -807,24 +810,9 @@ export default function ProjectGantt({
   const totalDays = differenceInCalendarDays(viewWindow.end, viewWindow.start) + 1;
   const containerWidth = totalDays * dayWidth;
 
-  const getPositionPx = (dateInput: string | Date) => {
-    if (!viewWindow) return 0;
-    const date = typeof dateInput === 'string' ? parseISO(dateInput) : dateInput;
-    const days = differenceInCalendarDays(date, viewWindow.start);
-    const msIntoDay = date.getTime() - startOfDay(date).getTime();
-    const fraction = msIntoDay / (24 * 60 * 60 * 1000);
-    return (days + fraction) * dayWidth;
-  };
+  const getPositionPx = (dateInput: string | Date) => (viewWindow ? positionPx(dateInput, viewWindow.start, dayWidth) : 0);
 
-  const getWidthPx = (startStr: string, endStr: string) => {
-    if (!viewWindow) return 0;
-    const start = parseISO(startStr);
-    const end = parseISO(endStr);
-    const days = differenceInCalendarDays(end, start);
-    const startFrac = (start.getTime() - startOfDay(start).getTime()) / (24 * 60 * 60 * 1000);
-    const endFrac = (end.getTime() - startOfDay(end).getTime()) / (24 * 60 * 60 * 1000);
-    return (days + 1 + endFrac - startFrac) * dayWidth;
-  };
+  const getWidthPx = (startStr: string, endStr: string) => (viewWindow ? widthPx(startStr, endStr, dayWidth) : 0);
 
   const getItemLeftEdgePx = (item: any) => {
     const isMilestone = item.is_milestone || (item.start_date && item.start_date === getEffectiveEndDate(item));
@@ -849,12 +837,7 @@ export default function ProjectGantt({
     return '0%';
   };
 
-  const handleZoom = (direction: 'in' | 'out') => {
-    const levels: ZoomLevel[] = ['day', 'week', 'month', 'quarter', 'year'];
-    const currentIndex = levels.indexOf(zoomLevel);
-    if (direction === 'in' && currentIndex > 0) setZoomLevel(levels[currentIndex - 1]);
-    if (direction === 'out' && currentIndex < levels.length - 1) setZoomLevel(levels[currentIndex + 1]);
-  };
+  const handleZoom = (direction: 'in' | 'out') => setZoomLevel(stepZoom(ZOOM_LEVELS, zoomLevel, direction));
 
   const moveColumn = (index: number, direction: 'up' | 'down') => {
     const newCols = [...columns];
