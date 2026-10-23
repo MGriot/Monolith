@@ -129,22 +129,9 @@ export default function ProjectsListPage() {
         deadline_at: fromDateInput(values.deadline_at),
       };
 
-      const projectResponse = await api.post('/projects/', formattedValues);
-      const newProject = projectResponse.data;
-
-      // If a template was selected, create the tasks from it
-      if (selectedTemplate && selectedTemplate.tasks_json) {
-        for (const taskTemplate of selectedTemplate.tasks_json) {
-          await api.post('/tasks/', {
-            ...taskTemplate,
-            project_id: newProject.id,
-            start_date: formattedValues.start_date,
-            due_date: formattedValues.due_date
-          });
-        }
-      }
-
-      return newProject;
+      // The API copies the template (task tree, topic and work type presets) in the same request
+      const projectResponse = await api.post('/projects/', { ...formattedValues, template_id: selectedTemplate?.id ?? null });
+      return projectResponse.data;
     },
     onSuccess: (newProject) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
