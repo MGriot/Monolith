@@ -14,19 +14,23 @@ from app.schemas.task import TaskCreate
 from app.core.utils import clean_dict_datetimes
 from app.db.transaction import atomic, commit
 
+# Relations every project read returns (the Project schema serialises all of them).
+_PROJECT_LOAD = (
+    selectinload(Project.topic_ref),
+    selectinload(Project.type_ref),
+    selectinload(Project.topics),
+    selectinload(Project.types),
+    selectinload(Project.members),
+    selectinload(Project.owner),
+)
+
+
 class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[Project]:
         result = await db.execute(
             select(self.model)
             .filter(self.model.id == id)
-            .options(
-                selectinload(Project.topic_ref),
-                selectinload(Project.type_ref),
-                selectinload(Project.topics),
-                selectinload(Project.types),
-                selectinload(Project.members),
-                selectinload(Project.owner)
-            )
+            .options(*_PROJECT_LOAD)
         )
         return result.scalars().first()
 
@@ -39,49 +43,18 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             
         result = await db.execute(
             query
-            .options(
-                selectinload(Project.topic_ref),
-                selectinload(Project.type_ref),
-                selectinload(Project.topics),
-                selectinload(Project.types),
-                selectinload(Project.members),
-                selectinload(Project.owner)
-            )
+            .options(*_PROJECT_LOAD)
             .offset(skip)
             .limit(limit)
         )
         return result.scalars().all()
 
-    @atomic
     async def create(self, db: AsyncSession, *, obj_in: ProjectCreate) -> Project:
-        obj_data = clean_dict_datetimes(obj_in.model_dump(exclude={'topic_ids', 'type_ids', 'member_ids', 'template_id'}))
-        db_obj = self.model(**obj_data)
-        
-        if obj_in.topic_ids:
-            topics_result = await db.execute(select(Topic).filter(Topic.id.in_(obj_in.topic_ids)))
-            db_obj.topics = topics_result.scalars().all()
-            
-        if obj_in.type_ids:
-            types_result = await db.execute(select(WorkType).filter(WorkType.id.in_(obj_in.type_ids)))
-            db_obj.types = types_result.scalars().all()
-
-        if obj_in.member_ids:
-            members_result = await db.execute(select(User).filter(User.id.in_(obj_in.member_ids)))
-            db_obj.members = members_result.scalars().all()
-
-        db.add(db_obj)
-        await commit(db)
-        await db.refresh(db_obj)
-        
-        # Template Instantiation
-        if obj_in.template_id:
-            await self._instantiate_template(db, project_id=db_obj.id, template_id=obj_in.template_id, owner_id=None)
-
-        return await self.get(db, id=db_obj.id)
+        return await self.create_with_owner(db, obj_in=obj_in, owner_id=None)
 
     @atomic
     async def create_with_owner(
-        self, db: AsyncSession, *, obj_in: ProjectCreate, owner_id: UUID
+        self, db: AsyncSession, *, obj_in: ProjectCreate, owner_id: Optional[UUID]
     ) -> Project:
         obj_in_data = clean_dict_datetimes(obj_in.model_dump(exclude={'topic_ids', 'type_ids', 'member_ids', 'template_id'}))
         db_obj = self.model(**obj_in_data, owner_id=owner_id)
@@ -247,14 +220,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             
         query = (
             query.distinct()
-            .options(
-                selectinload(Project.topic_ref),
-                selectinload(Project.type_ref),
-                selectinload(Project.topics),
-                selectinload(Project.types),
-                selectinload(Project.members),
-                selectinload(Project.owner)
-            )
+            .options(*_PROJECT_LOAD)
             .offset(skip)
             .limit(limit)
         )
