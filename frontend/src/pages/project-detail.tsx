@@ -54,12 +54,12 @@ import { calculateSortIndex } from '@/lib/kanban';
 import { findTask, flattenTasks } from '@/lib/tasks';
 import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
+import { taskPayload, useTaskMutations } from '@/hooks/use-task-mutations';
 import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
 import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
 import BulkActionBar from '@/components/bulk-action-bar';
 import { EMPTY_SELECTION, type SelectionState } from '@/lib/selection';
 import { confirmDialog } from '@/lib/confirm';
-import { errorMessage } from '@/lib/api-error';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -221,45 +221,13 @@ export default function ProjectDetailPage() {
     onError: () => toast.error("Failed to update timeline regions")
   });
 
-  const createTaskMutation = useMutation({
-    mutationFn: async (data: TaskFormValues) => {
-      const response = await api.post('/tasks/', { ...data, project_id: id });
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      setIsTaskDialogOpen(false);
-      toast.success("Task created successfully");
-    },
-  });
-
-  const deleteTaskMutation = useMutation({
-    mutationFn: async (taskId: string) => {
-      return api.delete(`/tasks/${taskId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
+  const { createTask, updateTask, deleteTask, archiveTask, moveTask } = useTaskMutations({
+    listKey: ['tasks', id],
+    relatedKeys: [['project', id], ['project-stats', id]],
+    projectId: id,
+    onSaved: () => {
       setIsTaskDialogOpen(false);
       setEditingTaskId(null);
-      toast.success("Task deleted successfully");
-    },
-  });
-
-  const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, data }: { taskId: string; data: Partial<TaskFormValues> }) => {
-      const response = await api.put(`/tasks/${taskId}`, data);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
-      setIsTaskDialogOpen(false);
-      setEditingTaskId(null);
-      toast.success("Task updated successfully");
     },
   });
 
@@ -283,43 +251,9 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const [kanbanSyncKey, setKanbanSyncKey] = useState(0);
-
-  const moveTaskMutation = useMutation({
-    mutationFn: async ({ taskId, newStatus, sortIndex }: { taskId: string; newStatus: string; sortIndex?: number }) => {
-      const data: any = { status: newStatus };
-      if (sortIndex !== undefined) data.sort_index = sortIndex;
-      return api.put(`/tasks/${taskId}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
-    },
-    onError: (error: any) => {
-      // The board already moved the card optimistically: tell the user why it was refused and put it back.
-      toast.error(errorMessage(error, 'Could not move the task'));
-      setKanbanSyncKey((k) => k + 1);
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-    },
-  });
-
-  const archiveTaskMutation = useMutation({
-    mutationFn: async (taskId: string) => {
-      return api.post(`/tasks/${taskId}/archive`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      setIsTaskDialogOpen(false);
-      setEditingTaskId(null);
-      toast.success("Task archived successfully");
-    },
-  });
-
   const moveCard = (taskId: string, newStatus: string, index?: number) => {
     const sortIndex = index === undefined ? undefined : calculateSortIndex(flattenTasks(view.filtered), newStatus, index, taskId);
-    moveTaskMutation.mutate({ taskId, newStatus, sortIndex });
+    moveTask.mutate({ taskId, newStatus, sortIndex });
   };
 
   const handleTaskMove = (taskId: string, newStatus: string, index?: number) => moveCard(taskId, newStatus, index);
@@ -356,21 +290,15 @@ export default function ProjectDetailPage() {
   };
 
   const handleTaskSubmit = (data: TaskFormValues) => {
-    const formatDate = fromDateInput;
-
     const formattedData = {
-      ...data,
-      start_date: formatDate(data.start_date),
-      due_date: formatDate(data.due_date),
-      deadline_at: formatDate(data.deadline_at),
-      completed_at: formatDate(data.completed_at),
+      ...taskPayload(data),
       parent_id: data.parent_id === undefined ? parentTaskId : data.parent_id
     };
 
     if (editingTaskId) {
-      updateTaskMutation.mutate({ taskId: editingTaskId, data: formattedData });
+      updateTask.mutate({ taskId: editingTaskId, data: formattedData });
     } else {
-      createTaskMutation.mutate(formattedData);
+      createTask.mutate(formattedData);
     }
   };
 
@@ -576,7 +504,6 @@ export default function ProjectDetailPage() {
             onAddTask={canEdit(project.my_role) ? handleAddTask : undefined}
             onTaskClick={handleTaskClick}
             onSubtaskClick={handleSubtaskClick}
-            syncKey={kanbanSyncKey}
           />
         </TabsContent>
 
@@ -722,17 +649,17 @@ export default function ProjectDetailPage() {
               }}
               onSubmit={handleTaskSubmit}
               onCancel={() => setIsTaskDialogOpen(false)}
-              isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
+              isLoading={createTask.isPending || updateTask.isPending}
               allTasks={tasks || []}
               editingTaskId={editingTaskId}
               extraTabs={editingTask?.id ? taskExtraTabs(editingTask, id) : undefined}
               footerStart={editingTask ? (
                 <TaskFooterMeta
                   task={editingTask}
-                  onArchive={() => archiveTaskMutation.mutate(editingTask.id)}
-                  onDelete={() => deleteTaskMutation.mutate(editingTask.id)}
-                  archiving={archiveTaskMutation.isPending}
-                  deleting={deleteTaskMutation.isPending}
+                  onArchive={() => archiveTask.mutate(editingTask.id)}
+                  onDelete={() => deleteTask.mutate(editingTask.id)}
+                  archiving={archiveTask.isPending}
+                  deleting={deleteTask.isPending}
                 />
               ) : undefined}
           />

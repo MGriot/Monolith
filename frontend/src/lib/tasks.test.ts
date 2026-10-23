@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findTask, flattenTasks, subtreeIds, walkTasks } from './tasks';
+import { findTask, flattenTasks, patchTask, subtreeIds, walkTasks } from './tasks';
 
 interface Node { id: string; n?: number; subtasks?: Node[] | null }
 
@@ -50,5 +50,25 @@ describe('findTask / subtreeIds', () => {
     expect([...subtreeIds(tree, 'a1')]).toEqual(['a1', 'a1x']);
     expect([...subtreeIds(tree, 'b')]).toEqual(['b']);
     expect(subtreeIds(tree, 'zzz').size).toBe(0);
+  });
+});
+
+describe('patchTask', () => {
+  it('patches a root task', () => {
+    const next = patchTask(tree, 'b', { n: 9 });
+    expect(next[1]).toEqual({ id: 'b', n: 9 });
+    expect(next[0]).toBe(tree[0]);
+  });
+
+  it('patches a subtask at any depth and keeps other branches', () => {
+    const next = patchTask(tree, 'a1x', { n: 5 });
+    expect(next[0].subtasks?.[0].subtasks?.[0]).toEqual({ id: 'a1x', n: 5 });
+    expect(next[0].subtasks?.[1]).toBe(tree[0].subtasks?.[1]);
+    expect(next[1]).toBe(tree[1]);
+    expect(tree[0].subtasks?.[0].subtasks?.[0]).toEqual({ id: 'a1x' }); // input untouched
+  });
+
+  it('returns the same array when the id is not found', () => {
+    expect(patchTask(tree, 'zzz', { n: 1 })).toBe(tree);
   });
 });

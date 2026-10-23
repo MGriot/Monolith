@@ -49,3 +49,20 @@ export function subtreeIds(tasks: TaskNode[], id: string): Set<string> {
   const root = findTask(tasks, id);
   return new Set(root ? flattenTasks([root]).map((t) => t.id) : []);
 }
+
+/** Copy of the tree with `patch` applied to the task with this id (at any depth); untouched branches are reused. */
+export function patchTask<T extends TaskNode>(tasks: T[], id: string, patch: Partial<T>): T[] {
+  let changed = false;
+  const next = tasks.map((task) => {
+    if (task.id === id) {
+      changed = true;
+      return { ...task, ...patch };
+    }
+    if (!task.subtasks?.length) return task;
+    const subtasks = patchTask(task.subtasks as T[], id, patch);
+    if (subtasks === task.subtasks) return task;
+    changed = true;
+    return { ...task, subtasks };
+  });
+  return changed ? next : tasks;
+}
