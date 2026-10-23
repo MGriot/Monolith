@@ -13,6 +13,14 @@ export function parseApiDate(value: string | Date | null | undefined): Date | nu
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/**
+ * Event timestamps (created_at, ran_at, started_at...) are naive UTC on the server. Read one without a zone as UTC;
+ * keep an explicit `Z` or `+hh:mm` offset. Not for calendar-day fields such as due dates: use parseApiDate for those.
+ */
+export function parseServerDate(value: string): Date {
+  return new Date(/(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(value) ? value : `${value}Z`);
+}
+
 /** API value -> `yyyy-MM-dd` for <input type="date">. */
 export function toDateInputValue(value: string | Date | null | undefined): string {
   const d = parseApiDate(value);

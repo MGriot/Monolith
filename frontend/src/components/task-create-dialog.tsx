@@ -11,9 +11,10 @@ import {
 import { Label } from "@/components/ui/label";
 import TaskForm, { type TaskFormValues } from '@/components/task-form';
 import TaskDialog from '@/components/task-dialog';
-import type { Project } from '@/types';
 import { toast } from 'sonner';
-import { fromDateInput } from "@/lib/dates";
+import { taskPayload } from '@/hooks/use-task-mutations';
+import { errorMessage } from '@/lib/api-error';
+import { projectsQuery } from '@/lib/queries';
 
 interface TaskCreateDialogProps {
   open: boolean;
@@ -24,30 +25,13 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
   const queryClient = useQueryClient();
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
 
-  const { data: projects, isLoading: isProjectsLoading } = useQuery({
-    queryKey: ['projects-minimal'],
-    queryFn: async () => {
-      const response = await api.get('/projects/');
-      return response.data as Project[];
-    },
-    enabled: open
-  });
+  const { data: projects, isLoading: isProjectsLoading } = useQuery({ ...projectsQuery, enabled: open });
 
   const createTaskMutation = useMutation({
-    mutationFn: async (newTask: TaskFormValues) => {
-      const formatDate = fromDateInput;
-      
-      const formattedTask = {
-        ...newTask,
-        project_id: selectedProjectId === "none" ? null : selectedProjectId,
-        start_date: formatDate(newTask.start_date),
-        due_date: formatDate(newTask.due_date),
-        deadline_at: formatDate(newTask.deadline_at),
-        completed_at: formatDate(newTask.completed_at),
-      };
-      
-      return api.post('/tasks/', formattedTask);
-    },
+    mutationFn: async (newTask: TaskFormValues) => api.post('/tasks/', {
+      ...taskPayload(newTask),
+      project_id: selectedProjectId === "none" ? null : selectedProjectId,
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['calendar'] });
@@ -57,8 +41,7 @@ export default function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialo
       toast.success("Task created successfully");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.detail || err.message;
-      toast.error(`Failed to create task: ${typeof msg === 'object' ? JSON.stringify(msg) : msg}`);
+      toast.error(`Failed to create task: ${errorMessage(err, err.message)}`);
     }
   });
 

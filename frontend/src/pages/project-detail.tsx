@@ -49,15 +49,20 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import type { Project, Task } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { DeadlineLine } from '@/components/deadline-line';
-import { fromDateInput } from "@/lib/dates";
-import { calculateSortIndex, flattenTasks } from '@/lib/kanban';
+import { formatDisplayDate, fromDateInput } from "@/lib/dates";
+import { calculateSortIndex } from '@/lib/kanban';
+import { findTask, flattenTasks } from '@/lib/tasks';
 import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
+import { taskPayload, useTaskMutations } from '@/hooks/use-task-mutations';
 import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
 import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
 import BulkActionBar from '@/components/bulk-action-bar';
 import { EMPTY_SELECTION, type SelectionState } from '@/lib/selection';
 import { confirmDialog } from '@/lib/confirm';
+
+/** Stable fallback while the tasks load, so useTaskView's memos don't recompute every render. */
+const NO_TASKS: Task[] = [];
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -91,7 +96,8 @@ export default function ProjectDetailPage() {
     },
   });
 
-  const view = useTaskView(tasks ?? []);
+  const view = useTaskView(tasks ?? NO_TASKS);
+  const filteredCount = useMemo(() => flattenTasks(view.filtered).length, [view.filtered]);
   const assigneeOptions = useMemo(() => collectAssignees(tasks ?? []), [tasks]);
   const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
   const bulkEnabled = canEdit(project?.my_role);
@@ -175,25 +181,10 @@ export default function ProjectDetailPage() {
         </div>
       );
     }
-    return () => {
-      setTitle(null);
-      setActions(null);
-    };
   }, [project, setTitle, setActions, activeTab, archiveProjectMutation.isPending]);
 
   // Recursive find to handle deep WBS hierarchy
-  const findTaskRecursive = (taskList: Task[], taskId: string): Task | null => {
-    for (const task of taskList) {
-      if (task.id === taskId) return task;
-      if (task.subtasks && task.subtasks.length > 0) {
-        const found = findTaskRecursive(task.subtasks, taskId);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  const editingTask = tasks && editingTaskId ? findTaskRecursive(tasks, editingTaskId) : null;
+  const editingTask = tasks && editingTaskId ? findTask(tasks, editingTaskId) : null;
 
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ['project-stats', id],
@@ -234,45 +225,13 @@ export default function ProjectDetailPage() {
     onError: () => toast.error("Failed to update timeline regions")
   });
 
-  const createTaskMutation = useMutation({
-    mutationFn: async (data: TaskFormValues) => {
-      const response = await api.post('/tasks/', { ...data, project_id: id });
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      setIsTaskDialogOpen(false);
-      toast.success("Task created successfully");
-    },
-  });
-
-  const deleteTaskMutation = useMutation({
-    mutationFn: async (taskId: string) => {
-      return api.delete(`/tasks/${taskId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
+  const { createTask, updateTask, deleteTask, archiveTask, moveTask } = useTaskMutations({
+    listKey: ['tasks', id],
+    relatedKeys: [['project', id], ['project-stats', id]],
+    projectId: id,
+    onSaved: () => {
       setIsTaskDialogOpen(false);
       setEditingTaskId(null);
-      toast.success("Task deleted successfully");
-    },
-  });
-
-  const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, data }: { taskId: string; data: Partial<TaskFormValues> }) => {
-      const response = await api.put(`/tasks/${taskId}`, data);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
-      setIsTaskDialogOpen(false);
-      setEditingTaskId(null);
-      toast.success("Task updated successfully");
     },
   });
 
@@ -296,43 +255,9 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const [kanbanSyncKey, setKanbanSyncKey] = useState(0);
-
-  const moveTaskMutation = useMutation({
-    mutationFn: async ({ taskId, newStatus, sortIndex }: { taskId: string; newStatus: string; sortIndex?: number }) => {
-      const data: any = { status: newStatus };
-      if (sortIndex !== undefined) data.sort_index = sortIndex;
-      return api.put(`/tasks/${taskId}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      queryClient.invalidateQueries({ queryKey: ['project-stats', id] });
-    },
-    onError: (error: any) => {
-      // The board already moved the card optimistically: tell the user why it was refused and put it back.
-      toast.error(error?.response?.data?.detail || 'Could not move the task');
-      setKanbanSyncKey((k) => k + 1);
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-    },
-  });
-
-  const archiveTaskMutation = useMutation({
-    mutationFn: async (taskId: string) => {
-      return api.post(`/tasks/${taskId}/archive`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      setIsTaskDialogOpen(false);
-      setEditingTaskId(null);
-      toast.success("Task archived successfully");
-    },
-  });
-
   const moveCard = (taskId: string, newStatus: string, index?: number) => {
     const sortIndex = index === undefined ? undefined : calculateSortIndex(flattenTasks(view.filtered), newStatus, index, taskId);
-    moveTaskMutation.mutate({ taskId, newStatus, sortIndex });
+    moveTask.mutate({ taskId, newStatus, sortIndex });
   };
 
   const handleTaskMove = (taskId: string, newStatus: string, index?: number) => moveCard(taskId, newStatus, index);
@@ -369,26 +294,17 @@ export default function ProjectDetailPage() {
   };
 
   const handleTaskSubmit = (data: TaskFormValues) => {
-    const formatDate = fromDateInput;
-
     const formattedData = {
-      ...data,
-      start_date: formatDate(data.start_date),
-      due_date: formatDate(data.due_date),
-      deadline_at: formatDate(data.deadline_at),
-      completed_at: formatDate(data.completed_at),
+      ...taskPayload(data),
       parent_id: data.parent_id === undefined ? parentTaskId : data.parent_id
     };
 
     if (editingTaskId) {
-      updateTaskMutation.mutate({ taskId: editingTaskId, data: formattedData });
+      updateTask.mutate({ taskId: editingTaskId, data: formattedData });
     } else {
-      createTaskMutation.mutate(formattedData);
+      createTask.mutate(formattedData);
     }
   };
-
-  const handleReorderTask = () => {};
-  const handleIndentTask = () => {};
 
   const handlePromoteSuccess = (task: Task) => {
     setActiveTab("overview");
@@ -483,8 +399,8 @@ export default function ProjectDetailPage() {
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="flex flex-col gap-1">
-                        <p className="text-[11px] text-muted-foreground font-medium">Start: {project.start_date ? new Date(project.start_date).toLocaleDateString() : '-'}</p>
-                        <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold">Due: {project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}</p>
+                        <p className="text-[11px] text-muted-foreground font-medium">Start: {formatDisplayDate(project.start_date)}</p>
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold">Due: {formatDisplayDate(project.due_date)}</p>
                         <DeadlineLine deadline={project.deadline_at} due={project.due_date} done={project.status === 'Done'} />
                     </div>
                 </CardContent>
@@ -544,7 +460,7 @@ export default function ProjectDetailPage() {
               filters={view.filters}
               onChange={view.setFilters}
               assignees={assigneeOptions}
-              resultCount={flattenTasks(view.filtered).length}
+              resultCount={filteredCount}
             />
             <ProjectTaskList
               tasks={view.sorted}
@@ -553,8 +469,6 @@ export default function ProjectDetailPage() {
               onTaskClick={handleTaskClick}
               onSubtaskClick={handleSubtaskClick}
               onAddSubtask={handleAddSubtask}
-              onReorderTask={handleReorderTask}
-              onIndentTask={handleIndentTask}
               selection={bulkEnabled ? { state: selection, onChange: setSelection } : undefined}
               highlightCritical={showCriticalPath}
             />
@@ -578,7 +492,7 @@ export default function ProjectDetailPage() {
               onChange={view.setFilters}
               assignees={assigneeOptions}
               showLayoutControls={false}
-              resultCount={flattenTasks(view.filtered).length}
+              resultCount={filteredCount}
             />
           </div>
           <KanbanBoard
@@ -589,7 +503,6 @@ export default function ProjectDetailPage() {
             onAddTask={canEdit(project.my_role) ? handleAddTask : undefined}
             onTaskClick={handleTaskClick}
             onSubtaskClick={handleSubtaskClick}
-            syncKey={kanbanSyncKey}
           />
         </TabsContent>
 
@@ -735,17 +648,17 @@ export default function ProjectDetailPage() {
               }}
               onSubmit={handleTaskSubmit}
               onCancel={() => setIsTaskDialogOpen(false)}
-              isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
+              isLoading={createTask.isPending || updateTask.isPending}
               allTasks={tasks || []}
               editingTaskId={editingTaskId}
               extraTabs={editingTask?.id ? taskExtraTabs(editingTask, id) : undefined}
               footerStart={editingTask ? (
                 <TaskFooterMeta
                   task={editingTask}
-                  onArchive={() => archiveTaskMutation.mutate(editingTask.id)}
-                  onDelete={() => deleteTaskMutation.mutate(editingTask.id)}
-                  archiving={archiveTaskMutation.isPending}
-                  deleting={deleteTaskMutation.isPending}
+                  onArchive={() => archiveTask.mutate(editingTask.id)}
+                  onDelete={() => deleteTask.mutate(editingTask.id)}
+                  archiving={archiveTask.isPending}
+                  deleting={deleteTask.isPending}
                 />
               ) : undefined}
           />

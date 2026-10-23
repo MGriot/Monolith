@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { Eyebrow } from "@/components/ui/section";
-import type { User, Team } from "@/types";
+import type { Team } from "@/types";
+import { usersQuery } from '@/lib/queries';
 
 interface AssigneeSelectorProps {
   selectedValues: string[];
@@ -34,10 +35,7 @@ export function AssigneeSelector({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const { data: users, isLoading: usersLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => (await api.get('/users/')).data as User[],
-  });
+  const { data: users, isLoading: usersLoading } = useQuery(usersQuery);
 
   const { data: teams, isLoading: teamsLoading } = useQuery({
     queryKey: ['teams'],

@@ -20,6 +20,7 @@ import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { parseServerDate } from "@/lib/dates";
 
 export default function NotificationPopover() {
   const queryClient = useQueryClient();
@@ -38,11 +39,7 @@ export default function NotificationPopover() {
     // Create WebSocket connection
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    // Note: In development inside Docker, host might need to point to the backend container or proxy
-    // But since Vite proxies /api, and usually WebSockets are separate, 
-    // we try to reach the backend directly or via the same host if Nginx handles it.
-    // Given vite.config.ts proxies /api, we'll try to reach the backend at /api/v1/notifications/ws/
-    
+    // Same origin: the Vite dev proxy and nginx both forward /api WebSocket upgrades to the backend.
     const wsUrl = `${protocol}//${host}/api/v1/notifications/ws`;
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
@@ -59,7 +56,7 @@ export default function NotificationPopover() {
           });
           queryClient.invalidateQueries({ queryKey: notificationKeys.all });
         }
-      } catch (e) {
+      } catch {
         // Silently ignore non-JSON
       }
     };
@@ -156,7 +153,7 @@ export default function NotificationPopover() {
                       </p>
                       <span className="text-[11px] text-fg-faint whitespace-nowrap flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                        {formatDistanceToNow(parseServerDate(n.created_at), { addSuffix: true })}
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-normal line-clamp-2">

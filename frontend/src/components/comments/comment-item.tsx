@@ -6,9 +6,9 @@ import { toast } from 'sonner';
 import type { Comment } from '@/types';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { Button } from '@/components/ui/button';
-import { errorMessage } from '@/components/auth-card';
+import { errorMessage } from '@/lib/api-error';
 import { confirmDialog } from '@/lib/confirm';
-import { parseUtc } from '@/lib/activity';
+import { parseServerDate } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 import { CommentInput } from './comment-input';
 
@@ -27,7 +27,7 @@ interface CommentItemProps {
 const isImage = (url: string) => ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(url.split('.').pop()?.toLowerCase() || '');
 
 function when(value: string) {
-  const at = parseUtc(value);
+  const at = parseServerDate(value);
   const today = new Date().toDateString() === at.toDateString();
   return today
     ? at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
@@ -84,10 +84,10 @@ export function CommentItem({ comment, currentUserId, onEdit, onDelete, onReply,
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-baseline gap-2">
           <span className="text-xs font-medium text-foreground">{isMe ? 'You' : comment.author?.full_name || comment.author?.email || 'Former member'}</span>
-          <time className="text-[11px] tabular-nums text-fg-faint" dateTime={comment.created_at} title={parseUtc(comment.created_at).toLocaleString()}>
+          <time className="text-[11px] tabular-nums text-fg-faint" dateTime={comment.created_at} title={parseServerDate(comment.created_at).toLocaleString()}>
             {when(comment.created_at)}
           </time>
-          {comment.updated_at && parseUtc(comment.updated_at).getTime() - parseUtc(comment.created_at).getTime() > 60_000 && (
+          {comment.updated_at && parseServerDate(comment.updated_at).getTime() - parseServerDate(comment.created_at).getTime() > 60_000 && (
             <span className="text-[11px] text-fg-faint">(edited)</span>
           )}
         </div>

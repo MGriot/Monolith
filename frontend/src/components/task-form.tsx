@@ -40,6 +40,9 @@ import TaskCustomFields, { useCustomFieldDefs } from "./task-custom-fields";
 import { RecurrenceField } from "./recurrence-field";
 import { sanitizeCustomValues, validateCustomValues, type CustomValues } from "@/lib/custom-fields";
 import type { Task, Topic, WorkType, Project } from "@/types";
+import { toDateInputValue } from "@/lib/dates";
+import { subtreeIds, walkTasks } from "@/lib/tasks";
+import { PRIORITIES, STATUSES, statusLabel } from "@/constants/statuses";
 
 const subtaskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -171,16 +174,6 @@ export default function TaskForm({
   });
 
   const processedInitialValues = useMemo(() => {
-    const formatDate = (dateStr?: string | null) => {
-      if (!dateStr) return "";
-      try {
-        // Only return the date part YYYY-MM-DD
-        return format(parseISO(dateStr), "yyyy-MM-dd");
-      } catch (e) {
-        return "";
-      }
-    };
-
     const vals = {
       status: "Todo",
       priority: "Medium",
@@ -202,10 +195,10 @@ export default function TaskForm({
       subtasks: [],
       custom_values: taskObject?.custom_values ?? {},
       ...initialValues,
-      start_date: formatDate(initialValues?.start_date),
-      due_date: formatDate(initialValues?.due_date),
-      deadline_at: formatDate(initialValues?.deadline_at),
-      completed_at: formatDate(initialValues?.completed_at),
+      start_date: toDateInputValue(initialValues?.start_date),
+      due_date: toDateInputValue(initialValues?.due_date),
+      deadline_at: toDateInputValue(initialValues?.deadline_at),
+      completed_at: toDateInputValue(initialValues?.completed_at),
     };
 
     if (initialValues?.topics && vals.topic_ids?.length === 0) {
@@ -280,7 +273,7 @@ export default function TaskForm({
         if (diff >= 0 && diff !== durationDays) {
           setValue("duration_days", diff);
         }
-      } catch (e) {
+      } catch {
         // Ignore parsing errors
       }
     }
@@ -295,7 +288,7 @@ export default function TaskForm({
         
         const newEnd = addDays(start, val - 1);
         setValue("due_date", format(newEnd, "yyyy-MM-dd"));
-      } catch (e) {
+      } catch {
         // Ignore calculation errors
       }
     }
@@ -352,46 +345,20 @@ export default function TaskForm({
     return filtered.map((t: WorkType) => ({ id: t.id, label: t.name, color: t.color }));
   }, [workTypes, project]);
 
-  // Helper to flatten tasks for the select, excluding descendants of the current task
-  const getAvailableParents = () => {
+  // Flat task list for the parent select, excluding the current task and its descendants
+  const availableParents = useMemo(() => {
     const flat: { id: string; title: string; wbs_code?: string; level: number }[] = [];
+    if (!allTasks) return flat;
 
-    // Find descendants to exclude
-    const descendants = new Set<string>();
-    if (editingTaskId && allTasks) {
-      const findDescendants = (tasks: Task[]) => {
-        for (const t of tasks) {
-          descendants.add(t.id);
-          if (t.subtasks) findDescendants(t.subtasks);
-        }
-      };
+    // A task can't move under itself or one of its descendants
+    const excluded = editingTaskId ? subtreeIds(allTasks, editingTaskId) : new Set<string>();
+    if (editingTaskId) excluded.add(editingTaskId);
 
-      const findAndExclude = (tasks: Task[]) => {
-        for (const t of tasks) {
-          if (t.id === editingTaskId) {
-            if (t.subtasks) findDescendants(t.subtasks);
-            return true;
-          }
-          if (t.subtasks && findAndExclude(t.subtasks)) return true;
-        }
-        return false;
-      };
-      findAndExclude(allTasks);
-      descendants.add(editingTaskId);
-    }
-
-    const recurse = (tasks: Task[], level: number) => {
-      for (const t of tasks) {
-        if (!descendants.has(t.id)) {
-          flat.push({ id: t.id, title: t.title, wbs_code: t.wbs_code, level });
-          if (t.subtasks) recurse(t.subtasks, level + 1);
-        }
-      }
-    };
-
-    if (allTasks) recurse(allTasks, 0);
+    walkTasks(allTasks, (t, _parent, level) => {
+      if (!excluded.has(t.id)) flat.push({ id: t.id, title: t.title, wbs_code: t.wbs_code, level });
+    }, { descend: (t) => !excluded.has(t.id) });
     return flat;
-  };
+  }, [allTasks, editingTaskId]);
 
   const handleFormSubmit = (data: TaskFormValues) => {
     // Drop values whose field was deleted or that are invalid, so the API doesn't reject the whole task
@@ -485,7 +452,7 @@ export default function TaskForm({
         setValue("pessimistic_days", pessimistic);
         setValue("optimistic_days", optimistic);
         toast.success("PERT values suggested from timeline");
-    } catch (e) {
+    } catch {
         toast.error("Could not calculate suggestions");
     }
   };
@@ -504,7 +471,7 @@ export default function TaskForm({
                     if (!isNaN(d.getTime())) {
                         if (!minStart || d < minStart) minStart = d;
                     }
-                } catch (e) {}
+                } catch {}
             }
             if (st.due_date) {
                 try {
@@ -512,7 +479,7 @@ export default function TaskForm({
                     if (!isNaN(d.getTime())) {
                         if (!maxDue || d > maxDue) maxDue = d;
                     }
-                } catch (e) {}
+                } catch {}
             }
             if (st.subtasks && st.subtasks.length > 0) {
                 traverse(st.subtasks);
@@ -535,7 +502,6 @@ export default function TaskForm({
     toast.success("Dates synced from all descendants");
   };
 
-  const availableParents = getAvailableParents();
 
   const checklist = watch("checklist") || [];
   const dependencyCount = (taskObject?.blocked_by?.length || 0) + (taskObject?.blocking?.length || 0);
@@ -783,20 +749,12 @@ export default function TaskForm({
         <div className="grid grid-cols-2 gap-3">
           <Field label="Status" htmlFor="status">
             <select id="status" className={selectClass} {...register("status")}>
-              <option value="Backlog">Backlog</option>
-              <option value="Todo">Todo</option>
-              <option value="In Progress">In Progress</option>
-              <option value="On hold">On Hold</option>
-              <option value="Review">Review</option>
-              <option value="Done">Done</option>
+              {STATUSES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
             </select>
           </Field>
           <Field label="Priority" htmlFor="priority">
             <select id="priority" className={selectClass} {...register("priority")}>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Critical">Critical</option>
+              {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </Field>
         </div>

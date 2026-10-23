@@ -12,11 +12,11 @@ import {
   endOfYear,
   parseISO,
   min,
-  max,
-  startOfDay
+  max
 } from 'date-fns';
 import { exportFullElement } from '@/lib/export-image';
 import { cn } from '@/lib/utils';
+import { positionPx, stepZoom, widthPx } from '@/lib/timeline';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, User as UserIcon, Download, Folder } from 'lucide-react';
 import { toast } from 'sonner';
@@ -36,6 +36,8 @@ const ZOOM_CONFIG = {
   month: { scale: 12, label: 'Months' },
   year: { scale: 12, label: 'Years' }
 };
+
+const ZOOM_LEVELS = Object.keys(ZOOM_CONFIG) as ZoomLevel[];
 
 export default function ResourceTimeline({ tasks, users, title = "Resource Load" }: ResourceTimelineProps) {
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('month');
@@ -163,34 +165,10 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
   const dayWidth = ZOOM_CONFIG[zoomLevel].scale;
   const containerWidth = totalDays * dayWidth;
 
-  // IMPROVED: High-precision pixel positioning using calendar days to avoid drift during DST changes
-  const getPositionPx = (dateInput: string | Date) => {
-    if (!viewWindow) return 0;
-    const date = typeof dateInput === 'string' ? parseISO(dateInput) : dateInput;
-    
-    // Calculate full calendar days from view window start
-    const days = differenceInCalendarDays(date, viewWindow.start);
-    
-    // Calculate intra-day fraction correctly (DST-safe)
-    const dayStart = startOfDay(date);
-    const msIntoDay = date.getTime() - dayStart.getTime();
-    const fraction = msIntoDay / (24 * 60 * 60 * 1000);
-    
-    return (days + fraction) * dayWidth;
-  };
+  // Calendar-day positioning (no drift across DST changes)
+  const getPositionPx = (dateInput: string | Date) => (viewWindow ? positionPx(dateInput, viewWindow.start, dayWidth) : 0);
 
-  const getWidthPx = (startStr: string, endStr: string) => {
-    if (!viewWindow) return 0;
-    const start = parseISO(startStr);
-    const end = parseISO(endStr);
-    
-    // Precise duration: (calendar days diff) + (end fraction) - (start fraction) + 1 full day
-    const days = differenceInCalendarDays(end, start);
-    const startFrac = (start.getTime() - startOfDay(start).getTime()) / (24 * 60 * 60 * 1000);
-    const endFrac = (end.getTime() - startOfDay(end).getTime()) / (24 * 60 * 60 * 1000);
-    
-    return (days + 1 + endFrac - startFrac) * dayWidth;
-  };
+  const getWidthPx = (startStr: string, endStr: string) => (viewWindow ? widthPx(startStr, endStr, dayWidth) : 0);
 
   const getBarColor = (item: any) => {
     const status = item.status?.toLowerCase() || '';
@@ -205,12 +183,7 @@ export default function ResourceTimeline({ tasks, users, title = "Resource Load"
     }
   };
 
-  const handleZoom = (direction: 'in' | 'out') => {
-    const levels: ZoomLevel[] = ['day', 'week', 'month', 'year'];
-    const currentIndex = levels.indexOf(zoomLevel);
-    if (direction === 'in' && currentIndex > 0) setZoomLevel(levels[currentIndex - 1]);
-    if (direction === 'out' && currentIndex < levels.length - 1) setZoomLevel(levels[currentIndex + 1]);
-  };
+  const handleZoom = (direction: 'in' | 'out') => setZoomLevel(stepZoom(ZOOM_LEVELS, zoomLevel, direction));
 
   const todayPx = getPositionPx(new Date());
 

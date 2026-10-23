@@ -31,7 +31,10 @@ const AdminMetadataPage = lazy(() => import("./pages/admin-metadata"));
 const WorkflowsPage = lazy(() => import("./pages/workflows"));
 const WhiteboardPage = lazy(() => import("./pages/whiteboard"));
 
-const queryClient = new QueryClient();
+// Data is reused for 30 s before a mount or window focus refetches it; mutations still invalidate what they change.
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000 } },
+});
 
 /** Authenticated shell. Mounted once for all pages, so the sidebar, search and notification socket survive navigation. */
 const PrivateLayout = () => {

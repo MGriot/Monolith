@@ -15,18 +15,17 @@ import {
   formatDuration,
   manualEntryRange,
   parseDurationInput,
-  parseServerDate,
   type TaskTimeSummary,
   type TimeEntry,
 } from '@/lib/time-tracking';
 import { useAuth } from '@/components/auth-provider';
+import { errorMessage } from '@/lib/api-error';
+import { parseServerDate } from '@/lib/dates';
 
 interface TaskTimeResponse {
   summary: TaskTimeSummary;
   entries: TimeEntry[];
 }
-
-const errorMessage = (e: any, fallback: string) => e?.response?.data?.detail || fallback;
 
 /** Timer control, manual entry, estimate-vs-actual and the entry list for one task. */
 export default function TaskTimeTracker({ taskId }: { taskId: string }) {

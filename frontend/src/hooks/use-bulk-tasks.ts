@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import { errorMessage } from '@/components/auth-card';
+import { errorMessage } from '@/lib/api-error';
 import { chunk, summarizeBulk, type BulkResult } from '@/lib/selection';
 
 /** Server cap per request (POST /tasks/bulk). */

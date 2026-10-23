@@ -56,6 +56,7 @@ import type { Project as ProjectType, ProjectTemplate } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { fromDateInput } from "@/lib/dates";
 import { confirmDialog } from '@/lib/confirm';
+import { projectsQuery } from '@/lib/queries';
 
 export default function ProjectsListPage() {
   const navigate = useNavigate();
@@ -98,7 +99,6 @@ export default function ProjectsListPage() {
         </Button>
       </div>
     );
-    return () => setActions(null);
   }, [setActions, view]);
 
   useEffect(() => {
@@ -112,13 +112,7 @@ export default function ProjectsListPage() {
     }
   }, [searchParams, setSearchParams]);
 
-  const { data: projects, isLoading, isError } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => {
-      const response = await api.get('/projects/');
-      return response.data as ProjectType[];
-    },
-  });
+  const { data: projects, isLoading, isError } = useQuery(projectsQuery);
 
   const { data: templates } = useQuery({
     queryKey: ['templates'],
@@ -135,22 +129,9 @@ export default function ProjectsListPage() {
         deadline_at: fromDateInput(values.deadline_at),
       };
 
-      const projectResponse = await api.post('/projects/', formattedValues);
-      const newProject = projectResponse.data;
-
-      // If a template was selected, create the tasks from it
-      if (selectedTemplate && selectedTemplate.tasks_json) {
-        for (const taskTemplate of selectedTemplate.tasks_json) {
-          await api.post('/tasks/', {
-            ...taskTemplate,
-            project_id: newProject.id,
-            start_date: formattedValues.start_date,
-            due_date: formattedValues.due_date
-          });
-        }
-      }
-
-      return newProject;
+      // The API copies the template (task tree, topic and work type presets) in the same request
+      const projectResponse = await api.post('/projects/', { ...formattedValues, template_id: selectedTemplate?.id ?? null });
+      return projectResponse.data;
     },
     onSuccess: (newProject) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
