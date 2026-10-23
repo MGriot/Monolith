@@ -13,11 +13,31 @@ from app.schemas.task import TaskCreate
 from app.core.enums import IdeaStatus, Status
 from app.crud.crud_task import task as crud_task
 
-from sqlalchemy import func, exists
+from sqlalchemy import func
 from app.models.associations import idea_votes, idea_downvotes
 from app.models.project import Project as ProjectModel
 from app.schemas.project import ProjectCreate
 from app.db.transaction import atomic, commit
+
+async def _annotate_votes(db: AsyncSession, ideas: List[Idea], current_user_id: Optional[UUID]) -> None:
+    """Set vote_count / downvote_count / has_voted / has_downvoted on every idea, with one query per vote table."""
+    ids = [i.id for i in ideas]
+    for table, count_attr, flag_attr in ((idea_votes, "vote_count", "has_voted"),
+                                         (idea_downvotes, "downvote_count", "has_downvoted")):
+        counts, mine = {}, set()
+        if ids:
+            rows = await db.execute(
+                select(table.c.idea_id, func.count(), func.bool_or(table.c.user_id == current_user_id))
+                .where(table.c.idea_id.in_(ids)).group_by(table.c.idea_id)
+            )
+            for idea_id, count, voted in rows.all():
+                counts[idea_id] = count
+                if current_user_id and voted:
+                    mine.add(idea_id)
+        for annotated in ideas:
+            setattr(annotated, count_attr, counts.get(annotated.id, 0))
+            setattr(annotated, flag_attr, annotated.id in mine)
+
 
 class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
     async def get(self, db: AsyncSession, id: Any, current_user_id: Optional[UUID] = None) -> Optional[Idea]:
@@ -29,34 +49,7 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
         result = await db.execute(query)
         db_obj = result.scalars().first()
         if db_obj:
-            # Count upvotes
-            vote_count = await db.execute(
-                select(func.count()).select_from(idea_votes).where(idea_votes.c.idea_id == id)
-            )
-            db_obj.vote_count = vote_count.scalar()
-            
-            # Count downvotes
-            downvote_count = await db.execute(
-                select(func.count()).select_from(idea_downvotes).where(idea_downvotes.c.idea_id == id)
-            )
-            db_obj.downvote_count = downvote_count.scalar()
-
-            if current_user_id:
-                # Check upvote
-                vote_exists = await db.execute(
-                    select(exists().where(idea_votes.c.idea_id == id).where(idea_votes.c.user_id == current_user_id))
-                )
-                db_obj.has_voted = vote_exists.scalar()
-                
-                # Check downvote
-                downvote_exists = await db.execute(
-                    select(exists().where(idea_downvotes.c.idea_id == id).where(idea_downvotes.c.user_id == current_user_id))
-                )
-                db_obj.has_downvoted = downvote_exists.scalar()
-            else:
-                db_obj.has_voted = False
-                db_obj.has_downvoted = False
-            
+            await _annotate_votes(db, [db_obj], current_user_id)
         return db_obj
 
     async def get_multi_by_project(
@@ -78,33 +71,7 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
         )
         ideas = result.scalars().all()
         
-        for idea in ideas:
-            # Count votes
-            count_res = await db.execute(
-                select(func.count()).select_from(idea_votes).where(idea_votes.c.idea_id == idea.id)
-            )
-            idea.vote_count = count_res.scalar()
-            
-            # Count downvotes
-            down_res = await db.execute(
-                select(func.count()).select_from(idea_downvotes).where(idea_downvotes.c.idea_id == idea.id)
-            )
-            idea.downvote_count = down_res.scalar()
-            
-            if current_user_id:
-                vote_exists = await db.execute(
-                    select(exists().where(idea_votes.c.idea_id == idea.id).where(idea_votes.c.user_id == current_user_id))
-                )
-                idea.has_voted = vote_exists.scalar()
-                
-                downvote_exists = await db.execute(
-                    select(exists().where(idea_downvotes.c.idea_id == idea.id).where(idea_downvotes.c.user_id == current_user_id))
-                )
-                idea.has_downvoted = downvote_exists.scalar()
-            else:
-                idea.has_voted = False
-                idea.has_downvoted = False
-                
+        await _annotate_votes(db, ideas, current_user_id)
         return ideas
 
     async def get_multi_by_user(
@@ -139,33 +106,7 @@ class CRUDIdea(CRUDBase[Idea, IdeaCreate, IdeaUpdate]):
         result = await db.execute(query)
         ideas = result.scalars().all()
 
-        for idea_obj in ideas:
-            # Count upvotes
-            count_res = await db.execute(
-                select(func.count()).select_from(idea_votes).where(idea_votes.c.idea_id == idea_obj.id)
-            )
-            idea_obj.vote_count = count_res.scalar()
-            
-            # Count downvotes
-            down_res = await db.execute(
-                select(func.count()).select_from(idea_downvotes).where(idea_downvotes.c.idea_id == idea_obj.id)
-            )
-            idea_obj.downvote_count = down_res.scalar()
-
-            if current_user_id:
-                vote_exists = await db.execute(
-                    select(exists().where(idea_votes.c.idea_id == idea_obj.id).where(idea_votes.c.user_id == current_user_id))
-                )
-                idea_obj.has_voted = vote_exists.scalar()
-                
-                downvote_exists = await db.execute(
-                    select(exists().where(idea_downvotes.c.idea_id == idea_obj.id).where(idea_downvotes.c.user_id == current_user_id))
-                )
-                idea_obj.has_downvoted = downvote_exists.scalar()
-            else:
-                idea_obj.has_voted = False
-                idea_obj.has_downvoted = False
-
+        await _annotate_votes(db, ideas, current_user_id)
         return ideas
 
     async def toggle_vote(self, db: AsyncSession, *, idea_id: UUID, user_id: UUID) -> bool:

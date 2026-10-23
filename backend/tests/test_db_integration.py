@@ -170,3 +170,35 @@ def test_template_with_a_repeated_preset_name_instantiates_once():
         assert [t.topic_id for t in tasks] == [topics[0].id]
 
     run_in_rolled_back_db(scenario)
+
+
+def test_idea_vote_counts_and_flags():
+    from app.crud.crud_idea import idea as crud_idea
+    from app.models.associations import idea_downvotes, idea_votes
+    from app.models.idea import Idea
+
+    async def scenario(db, owner_id):
+        other = User(email=f"other-{uuid4().hex[:8]}@example.test", full_name="Other",
+                     hashed_password=get_password_hash("Not-used-1234"), is_active=True)
+        db.add(other)
+        project = await _project(db, owner_id, "Ideas")
+        a, b, c = (Idea(title=t, project_id=project.id, author_id=owner_id) for t in ("A", "B", "C"))
+        db.add_all([a, b, c])
+        await db.flush()
+        await db.execute(idea_votes.insert().values([
+            {"idea_id": a.id, "user_id": owner_id}, {"idea_id": a.id, "user_id": other.id},
+            {"idea_id": b.id, "user_id": other.id}]))
+        await db.execute(idea_downvotes.insert().values([{"idea_id": c.id, "user_id": owner_id}]))
+
+        def flags(ideas):
+            return {i.title: (i.vote_count, i.downvote_count, i.has_voted, i.has_downvoted) for i in ideas}
+
+        expected = {"A": (2, 0, True, False), "B": (1, 0, False, False), "C": (0, 1, False, True)}
+        assert flags(await crud_idea.get_multi_by_project(db, project_id=project.id, current_user_id=owner_id)) == expected
+        assert flags(await crud_idea.get_multi_by_user(db, user_id=owner_id, current_user_id=owner_id)) == expected
+        assert flags([await crud_idea.get(db, id=a.id, current_user_id=owner_id)]) == {"A": expected["A"]}
+        # Without a current user nothing is flagged.
+        anonymous = flags(await crud_idea.get_multi_by_project(db, project_id=project.id))
+        assert anonymous == {k: (v[0], v[1], False, False) for k, v in expected.items()}
+
+    run_in_rolled_back_db(scenario)
