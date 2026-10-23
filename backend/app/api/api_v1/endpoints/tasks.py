@@ -58,11 +58,14 @@ async def export_tasks(
         selectinload(TaskModel.project),
         selectinload(TaskModel.topics),
         selectinload(TaskModel.types),
-        selectinload(TaskModel.subtasks) # For details explosion
     )
-    
+
     result = await db.execute(query)
     tasks = result.scalars().all()
+    if mode == "details":
+        # Whole subtrees with their assignees and project, in one recursive query: subtasks that are not assigned to
+        # the user are not in `tasks`, and lazy-loading their relations in an async session fails (MissingGreenlet).
+        await crud_task.task._load_trees(db, [t.id for t in tasks])
 
     data = []
     
@@ -90,8 +93,6 @@ async def export_tasks(
         
         if mode == "details" and t.subtasks:
             for st in t.subtasks:
-                # Need to load relationships for subtasks too if we want full explosion
-                # For now we'll do a simple explosion of what's already there
                 process_task(st, t.title)
 
     for t in tasks:

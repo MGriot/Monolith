@@ -131,3 +131,22 @@ def test_my_tasks_export_summary_and_details():
         assert sorted(r[2] for r in xlsx[1:]) == ["Draft", "Plan"]
 
     run_in_rolled_back_db(scenario)
+
+
+def test_my_tasks_details_export_includes_subtasks_assigned_to_someone_else():
+    async def scenario(db, owner_id):
+        user = await db.get(User, owner_id)
+        project = await crud_project.project.create_with_owner(db, obj_in=ProjectCreate(name="P"), owner_id=owner_id)
+        await crud_task.task.create(db, obj_in=TaskCreate(
+            title="Mine", project_id=project.id, assignee_ids=[owner_id],
+            subtasks=[TaskShortCreate(title="Unassigned", subtasks=[TaskShortCreate(title="Deeper")])],
+        ), owner_id=owner_id)
+        db.expire_all()  # what a fresh request sees: nothing of the tree is loaded yet
+        await db.refresh(user)
+
+        details = await _csv_rows(await tasks_api.export_tasks(
+            include_archived=False, mode="details", format="csv", db=db, current_user=user))
+        assert [(r[0], r[1], r[2]) for r in details[1:]] == [("P", "", "Mine"), ("P", "Mine", "Unassigned"),
+                                                            ("P", "Unassigned", "Deeper")]
+
+    run_in_rolled_back_db(scenario)
