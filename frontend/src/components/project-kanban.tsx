@@ -79,7 +79,15 @@ export default function ProjectKanban({ projects, onProjectMove, onProjectClick 
           ))}
         </div>
       </div>
-      <DragOverlay dropAnimation={defaultDropAnimationSideEffects as any}>
+      <DragOverlay dropAnimation={{
+        sideEffects: defaultDropAnimationSideEffects({
+          styles: {
+            active: {
+              opacity: '0.5',
+            },
+          },
+        }),
+      }}>
         {activeId ? (
           <ProjectCard 
             project={projects.find(p => p.id === activeId)!} 
