@@ -46,7 +46,7 @@ def run_in_rolled_back_db(scenario):
                     await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
                     await conn.run_sync(Base.metadata.create_all)
                     db = AsyncSession(bind=conn, expire_on_commit=False, join_transaction_mode="create_savepoint")
-                    owner = User(email=f"owner-{uuid4().hex[:8]}@example.test", full_name="Test Owner",
+                    owner = User(email=f"owner-{uuid4().hex[:8]}@example.com", full_name="Test Owner",
                                  hashed_password=get_password_hash("Not-used-1234"), is_active=True)
                     db.add(owner)
                     await db.flush()
@@ -178,7 +178,7 @@ def test_idea_vote_counts_and_flags():
     from app.models.idea import Idea
 
     async def scenario(db, owner_id):
-        other = User(email=f"other-{uuid4().hex[:8]}@example.test", full_name="Other",
+        other = User(email=f"other-{uuid4().hex[:8]}@example.com", full_name="Other",
                      hashed_password=get_password_hash("Not-used-1234"), is_active=True)
         db.add(other)
         project = await _project(db, owner_id, "Ideas")
@@ -200,5 +200,39 @@ def test_idea_vote_counts_and_flags():
         # Without a current user nothing is flagged.
         anonymous = flags(await crud_idea.get_multi_by_project(db, project_id=project.id))
         assert anonymous == {k: (v[0], v[1], False, False) for k, v in expected.items()}
+
+    run_in_rolled_back_db(scenario)
+
+
+def test_portfolio_health_counts_overdue_and_critical_tasks():
+    from datetime import datetime, timedelta
+
+    from app.api.api_v1.endpoints import projects as projects_api
+
+    async def scenario(db, owner_id):
+        user = await db.get(User, owner_id)
+        past = datetime.utcnow() - timedelta(days=10)
+        chain = await _project(db, owner_id, "Chain")
+        quiet = await _project(db, owner_id, "Quiet")
+        # A (3 days) -> B (3 days) is the longest chain; C (1 day) runs in parallel with slack.
+        a = await crud_task.task.create(db, obj_in=TaskCreate(
+            title="A", project_id=chain.id, start_date=past, due_date=past + timedelta(days=2)), owner_id=owner_id)
+        b = await crud_task.task.create(db, obj_in=TaskCreate(
+            title="B", project_id=chain.id, start_date=past + timedelta(days=3), due_date=past + timedelta(days=5)),
+            owner_id=owner_id)
+        await crud_task.task.create(db, obj_in=TaskCreate(
+            title="C", project_id=chain.id, start_date=past, due_date=past), owner_id=owner_id)
+        await crud_dependency.dependency.create(db, obj_in=DependencyCreate(
+            successor_id=b.id, predecessor_id=a.id, type=DependencyType.FS))
+        await crud_task.task.create(db, obj_in=TaskCreate(title="Undated", project_id=quiet.id), owner_id=owner_id)
+        db.expire_all()
+        await db.refresh(user)
+
+        health = await projects_api.get_portfolio_health(db=db, current_user=user)
+        by_name = {p.name: p for p in health.projects}
+        assert (by_name["Chain"].overdue_tasks, by_name["Chain"].critical_path_tasks) == (3, 2)
+        assert by_name["Chain"].health_score == 85.0
+        assert (by_name["Quiet"].overdue_tasks, by_name["Quiet"].critical_path_tasks, by_name["Quiet"].health_score) == (0, 1, 100.0)
+        assert health.total_active == 2
 
     run_in_rolled_back_db(scenario)

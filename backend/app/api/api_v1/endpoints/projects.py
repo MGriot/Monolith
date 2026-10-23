@@ -168,7 +168,10 @@ async def export_project(
     return tabular_response(data, fmt=format, sheet="Tasks",
                             basename=f"export_{project.name}_{datetime.now().strftime('%Y%m%d')}")
 
+from sqlalchemy import func, or_
+from app.core.cpm import calculate_cpm
 from app.schemas.portfolio import PortfolioHealthResponse, ProjectHealth
+from app.schemas.task import Task as TaskSchema
 from app.core.enums import Status as TaskStatus
 
 @router.get("/portfolio/health", response_model=PortfolioHealthResponse)
@@ -192,16 +195,33 @@ async def get_portfolio_health(
     total_progress = 0.0
     critical_projects = 0
     now = datetime.utcnow()
+    project_ids = [p.id for p in projects]
+
+    # Overdue tasks per project, one query for the whole portfolio
+    overdue_by_project = dict((await db.execute(
+        select(Task.project_id, func.count())
+        .where(Task.project_id.in_(project_ids), Task.is_archived == False,
+               Task.due_date < now, or_(Task.status.is_(None), Task.status != TaskStatus.DONE))
+        .group_by(Task.project_id)
+    )).all()) if project_ids else {}
+
+    # Critical-path tasks per project: the same CPM the Gantt runs, over every project's task tree at once
+    roots = (await db.execute(
+        select(Task.id, Task.project_id)
+        .where(Task.project_id.in_(project_ids), Task.parent_id == None, Task.is_archived == False)
+    )).all() if project_ids else []
+    trees = await crud_task.task._load_trees(db, [r.id for r in roots])
+    roots_by_project: dict = {}
+    for r in roots:
+        roots_by_project.setdefault(r.project_id, []).append(TaskSchema.model_validate(trees[r.id]))
+
+    def count_critical(tasks) -> int:
+        return sum(bool(t.is_critical) + count_critical(t.subtasks or []) for t in tasks)
 
     for p in projects:
-        # Load tasks for analysis
-        tasks_stmt = select(Task).filter(Task.project_id == p.id, Task.is_archived == False)
-        tasks_res = await db.execute(tasks_stmt)
-        tasks = tasks_res.scalars().all()
+        overdue = overdue_by_project.get(p.id, 0)
+        critical_path = count_critical(calculate_cpm(roots_by_project.get(p.id, [])))
 
-        overdue = sum(1 for t in tasks if t.due_date and t.due_date < now and t.status != TaskStatus.DONE)
-        critical_path = sum(1 for t in tasks if getattr(t, 'is_critical', False))
-        
         # Simple health score formula: 100 - (overdue * 5), with penalties for a threatened hard deadline
         score = 100.0 - (overdue * 5.0)
         if p.status == "On hold": score -= 20
