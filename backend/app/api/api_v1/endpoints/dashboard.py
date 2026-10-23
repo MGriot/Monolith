@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload
-from datetime import datetime, timedelta
+from collections import defaultdict
+from datetime import datetime, time, timedelta
 
 from app.api import deps
 from app.models.project import Project
@@ -26,12 +27,13 @@ async def get_team_workload(
     Calculate daily workload per user for the next N days.
     """
     start_date = datetime.utcnow().date()
-    
+    window_end = start_date + timedelta(days=days - 1)
+
     # 1. Fetch all active users
     users_res = await db.execute(select(User).filter(User.is_active == True))
     users = users_res.scalars().all()
-    
-    # 2. Fetch all active tasks with assignees
+
+    # 2. Open, dated tasks that overlap the window (others add nothing), with their assignees
     tasks_stmt = (
         select(Task)
         .filter(
@@ -39,58 +41,62 @@ async def get_team_workload(
                 Task.status != Status.DONE,
                 Task.start_date != None,
                 Task.due_date != None,
-                Task.is_archived == False
+                Task.is_archived == False,
+                Task.due_date >= datetime.combine(start_date, time.min),
+                Task.start_date < datetime.combine(window_end + timedelta(days=1), time.min),
             )
         )
         .options(selectinload(Task.assignees))
     )
     tasks_res = await db.execute(tasks_stmt)
     tasks = tasks_res.scalars().all()
-    
+
+    tasks_by_user = defaultdict(list)
+    for t in tasks:
+        for u in t.assignees:
+            tasks_by_user[u.id].append(t)
+
     response_users = []
-    
+
     for user in users:
-        # Filter tasks assigned to this user
-        user_tasks = [t for t in tasks if any(u.id == user.id for u in t.assignees)]
-        
         day_map = {}
         for i in range(days):
             d = start_date + timedelta(days=i)
             day_map[d.isoformat()] = {"hours": 0.0, "count": 0}
-            
+
         is_over = False
-        for task in user_tasks:
+        for task in tasks_by_user.get(user.id, []):
             t_start = task.start_date.date()
             t_due = task.due_date.date()
             t_dur = (t_due - t_start).days + 1
-            
+
             if t_dur <= 0: continue
-            
+
             # Assume 8h per task by default if not specified
-            daily_effort = 8.0 / t_dur 
-            
-            curr = t_start
-            while curr <= t_due:
-                d_str = curr.isoformat()
-                if d_str in day_map:
-                    day_map[d_str]["hours"] += daily_effort
-                    day_map[d_str]["count"] += 1
-                    if day_map[d_str]["hours"] > 8.0:
-                        is_over = True
+            daily_effort = 8.0 / t_dur
+
+            # only the days inside the window
+            curr = max(t_start, start_date)
+            while curr <= min(t_due, window_end):
+                day = day_map[curr.isoformat()]
+                day["hours"] += daily_effort
+                day["count"] += 1
+                if day["hours"] > 8.0:
+                    is_over = True
                 curr += timedelta(days=1)
-                
+
         workload_list = [
             DayWorkload(date=d, hours=round(v["hours"], 1), task_count=v["count"])
             for d, v in day_map.items()
         ]
-        
+
         response_users.append(UserWorkload(
             user_id=str(user.id),
             user_name=user.full_name or user.email,
             workload=workload_list,
             is_overallocated=is_over
         ))
-        
+
     return TeamWorkloadResponse(users=response_users)
 
 @router.post("/trigger-weekly-summary", status_code=202)

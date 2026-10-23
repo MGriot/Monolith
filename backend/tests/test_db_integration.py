@@ -236,3 +236,27 @@ def test_portfolio_health_counts_overdue_and_critical_tasks():
         assert health.total_active == 2
 
     run_in_rolled_back_db(scenario)
+
+
+def test_team_workload_only_counts_tasks_inside_the_window():
+    from datetime import datetime, timedelta
+
+    from app.api.api_v1.endpoints import dashboard as dashboard_api
+
+    async def scenario(db, owner_id):
+        user = await db.get(User, owner_id)
+        project = await _project(db, owner_id, "Load")
+        today = datetime.utcnow().replace(hour=10, minute=0, second=0, microsecond=0)
+        for title, start, due in (("Now", today, today + timedelta(days=1)),          # 4h on day 0 and 1
+                                  ("Past", today - timedelta(days=20), today - timedelta(days=10)),
+                                  ("Later", today + timedelta(days=30), today + timedelta(days=31))):
+            await crud_task.task.create(db, obj_in=TaskCreate(
+                title=title, project_id=project.id, start_date=start, due_date=due, assignee_ids=[owner_id]),
+                owner_id=owner_id)
+
+        response = await dashboard_api.get_team_workload(db=db, current_user=user, days=7)
+        mine = next(u for u in response.users if u.user_id == str(owner_id))
+        assert [(w.hours, w.task_count) for w in mine.workload[:3]] == [(4.0, 1), (4.0, 1), (0.0, 0)]
+        assert sum(w.task_count for w in mine.workload) == 2 and not mine.is_overallocated
+
+    run_in_rolled_back_db(scenario)
