@@ -150,3 +150,24 @@ def test_my_tasks_details_export_includes_subtasks_assigned_to_someone_else():
                                                             ("P", "Unassigned", "Deeper")]
 
     run_in_rolled_back_db(scenario)
+
+
+def test_all_projects_details_keeps_each_projects_tasks_under_it():
+    async def scenario(db, owner_id):
+        user = await db.get(User, owner_id)
+        for name, titles in (("Alpha", ["A2", "A1"]), ("Beta", ["B1"])):
+            project = await crud_project.project.create_with_owner(db, obj_in=ProjectCreate(name=name), owner_id=owner_id)
+            for i, title in enumerate(titles):
+                await crud_task.task.create(db, obj_in=TaskCreate(
+                    title=title, project_id=project.id, sort_index=10 * (len(titles) - i)), owner_id=owner_id)
+
+        rows = await _csv_rows(await projects_api.export_projects_multi(
+            include_archived=False, mode="details", format="csv", db=db, current_user=user))
+        by_project = {}
+        for r in rows[1:]:
+            by_project.setdefault(r[0], []).append((r[1], r[2]))
+        # sort_index order inside each project, WBS numbered per project
+        assert by_project == {"Alpha": [("", "[PROJECT ROOT]"), ("1", "A1"), ("2", "A2")],
+                              "Beta": [("", "[PROJECT ROOT]"), ("1", "B1")]}
+
+    run_in_rolled_back_db(scenario)

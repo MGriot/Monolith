@@ -82,6 +82,7 @@ async def export_projects_multi(
                 if t.subtasks:
                     flatten_for_export(t.subtasks, project_name)
 
+        trees = await crud_task.task.get_trees_by_projects(db, project_ids=[p.id for p in projects])
         for p in projects:
             data.append({
                 "Project": p.name,
@@ -96,9 +97,8 @@ async def export_projects_multi(
                 "Progress %": f"{p.progress_percent}%",
                 "Description": p.description or ""
             })
-            all_tasks_tree = await crud_task.task.get_multi_by_project(db, project_id=p.id, limit=1000)
-            apply_wbs_codes(all_tasks_tree)
-            flatten_for_export(all_tasks_tree, p.name)
+            apply_wbs_codes(trees[p.id])
+            flatten_for_export(trees[p.id], p.name)
 
     scope = 'archived' if include_archived else 'active'
     return tabular_response(data, fmt=format, sheet="Projects",
@@ -206,21 +206,14 @@ async def get_portfolio_health(
     )).all()) if project_ids else {}
 
     # Critical-path tasks per project: the same CPM the Gantt runs, over every project's task tree at once
-    roots = (await db.execute(
-        select(Task.id, Task.project_id)
-        .where(Task.project_id.in_(project_ids), Task.parent_id == None, Task.is_archived == False)
-    )).all() if project_ids else []
-    trees = await crud_task.task._load_trees(db, [r.id for r in roots])
-    roots_by_project: dict = {}
-    for r in roots:
-        roots_by_project.setdefault(r.project_id, []).append(TaskSchema.model_validate(trees[r.id]))
+    trees = await crud_task.task.get_trees_by_projects(db, project_ids=project_ids)
 
     def count_critical(tasks) -> int:
         return sum(bool(t.is_critical) + count_critical(t.subtasks or []) for t in tasks)
 
     for p in projects:
         overdue = overdue_by_project.get(p.id, 0)
-        critical_path = count_critical(calculate_cpm(roots_by_project.get(p.id, [])))
+        critical_path = count_critical(calculate_cpm([TaskSchema.model_validate(t) for t in trees[p.id]]))
 
         # Simple health score formula: 100 - (overdue * 5), with penalties for a threatened hard deadline
         score = 100.0 - (overdue * 5.0)

@@ -125,6 +125,25 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         by_id = await self._load_trees(db, list(root_ids))
         return [by_id[i] for i in root_ids if i in by_id]
 
+    async def get_trees_by_projects(
+        self, db: AsyncSession, *, project_ids: List[UUID], include_archived: bool = False
+    ) -> Dict[UUID, List[Task]]:
+        """Top-level task trees of several projects at once (same order as get_multi_by_project), keyed by project."""
+        if not project_ids:
+            return {}
+        query = select(self.model.id, self.model.project_id).filter(
+            self.model.project_id.in_(project_ids), self.model.parent_id == None
+        )
+        if not include_archived:
+            query = query.filter(self.model.is_archived == False)
+        roots = (await db.execute(query.order_by(self.model.sort_index.asc(), self.model.created_at.asc()))).all()
+        by_id = await self._load_trees(db, [r.id for r in roots])
+        trees: Dict[UUID, List[Task]] = {pid: [] for pid in project_ids}
+        for r in roots:
+            if r.id in by_id:
+                trees[r.project_id].append(by_id[r.id])
+        return trees
+
     def calculate_task_progress(self, task: Task) -> float:
         """
         Calculate task progress. 
