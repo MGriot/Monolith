@@ -116,9 +116,42 @@ interface DragPreview {
 interface LinkDrag {
   fromId: string;
   fromSide: BarSide;
-  x: number;
-  y: number;
+  /** Pointer position when the drag started; LinkPreviewLine follows the pointer from there. */
+  anchor: { x: number; y: number };
   target: { id: string; side: BarSide; ok: boolean; reason?: string } | null;
+}
+
+type Point = { x: number; y: number };
+
+/**
+ * Dashed line from the source bar to the pointer while a dependency is drawn. It owns the pointer position, so a
+ * pointer move re-renders this line only, not the whole chart.
+ */
+function LinkPreviewLine({ x1, y1, anchor, bad, follow }: {
+  x1: number;
+  y1: number;
+  anchor: Point;
+  bad: boolean;
+  follow: React.MutableRefObject<((p: Point) => void) | null>;
+}) {
+  const [pt, setPt] = useState(anchor);
+  useEffect(() => {
+    follow.current = setPt;
+    return () => { follow.current = null; };
+  }, [follow]);
+  return (
+    <g>
+      <path
+        d={`M ${x1} ${y1} L ${pt.x} ${pt.y}`}
+        fill="none"
+        stroke={bad ? '#ef4444' : '#2563eb'}
+        strokeWidth={2}
+        strokeDasharray="6 4"
+        vectorEffect="non-scaling-stroke"
+      />
+      <circle cx={pt.x} cy={pt.y} r={4} fill={bad ? '#ef4444' : '#2563eb'} />
+    </g>
+  );
 }
 
 type GanttItem = (Task | (Subtask & { isSubtask: boolean, parentTitle: string, parentId: string })) & { rowIndex: number, projectName?: string };
@@ -439,6 +472,7 @@ export default function ProjectGantt({
   const [pendingDeps, setPendingDeps] = useState<{ id: string; successor_id: string; predecessor_id: string; type: DepType; lag_days: number }[]>([]);
   const [preview, setPreview] = useState<DragPreview | null>(null);
   const [linkDrag, setLinkDrag] = useState<LinkDrag | null>(null);
+  const linkFollowRef = useRef<((p: Point) => void) | null>(null);
   const [rejectedId, setRejectedId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const suppressClickRef = useRef(false);
@@ -489,6 +523,18 @@ export default function ProjectGantt({
     if (!preview) return committedItems;
     return committedItems.map((it: any) => (it.id === preview.id ? ({ ...it, ...rangeToApi(preview.range) } as GanttItem) : it));
   }, [committedItems, preview]);
+
+  const itemById = useMemo(() => new Map(ganttItems.map((it) => [it.id, it])), [ganttItems]);
+
+  // Tasks some other task waits on (they get the "blocking" marker)
+  const predecessorIds = useMemo(() => {
+    const ids = new Set<string>();
+    ganttItems.forEach((item: any) => {
+      (item.blocked_by || []).forEach((dep: any) => ids.add(dep.predecessor_id));
+      (item.blocked_by_ids || []).forEach((id: string) => ids.add(id));
+    });
+    return ids;
+  }, [ganttItems]);
 
   const rangeOf = (item: any): DayRange => ({
     start: apiToDay(item.start_date),
@@ -615,17 +661,36 @@ export default function ProjectGantt({
       const rect = contentRef.current?.getBoundingClientRect();
       return { x: ev.clientX - (rect?.left ?? 0) - sidebarWidth, y: ev.clientY - (rect?.top ?? 0) };
     };
+    // Same bar and side as last time: reuse the result (and skip the re-render) instead of validating again.
+    let lastTarget: LinkDrag['target'] = null;
     const targetAt = (ev: PointerEvent): LinkDrag['target'] => {
       const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('[data-gantt-bar]') as HTMLElement | null;
       const id = el?.dataset.ganttBar;
       if (!el || !id) return null;
       const rect = el.getBoundingClientRect();
+      const barSide = sideAt(ev.clientX, rect.left, rect.width);
+      if (lastTarget && lastTarget.id === id && lastTarget.side === barSide) return lastTarget;
       const check = validateLink(dependencyEdges, item.id, id);
-      return { id, side: sideAt(ev.clientX, rect.left, rect.width), ok: check.ok, reason: check.ok ? undefined : check.reason };
+      return { id, side: barSide, ok: check.ok, reason: check.ok ? undefined : check.reason };
     };
-    setLinkDrag({ fromId: item.id, fromSide: side, x: anchorX, y: rowY, target: null });
+    setLinkDrag({ fromId: item.id, fromSide: side, anchor: { x: anchorX, y: rowY }, target: null });
+
+    // At most one update per animation frame; the chart itself re-renders only when the hovered target changes.
+    let frame = 0;
+    let lastMove: PointerEvent | null = null;
+    const flushMove = () => {
+      frame = 0;
+      if (!lastMove) return;
+      linkFollowRef.current?.(toLocal(lastMove));
+      const target = targetAt(lastMove);
+      if (target !== lastTarget) {
+        lastTarget = target;
+        setLinkDrag((d) => (d ? { ...d, target } : d));
+      }
+    };
 
     const stop = () => {
+      if (frame) cancelAnimationFrame(frame);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', stop);
@@ -635,8 +700,8 @@ export default function ProjectGantt({
       setLinkDrag(null);
     };
     const onMove = (ev: PointerEvent) => {
-      const pt = toLocal(ev);
-      setLinkDrag({ fromId: item.id, fromSide: side, x: pt.x, y: pt.y, target: targetAt(ev) });
+      lastMove = ev;
+      if (!frame) frame = requestAnimationFrame(flushMove);
     };
     const onUp = async (ev: PointerEvent) => {
       const target = targetAt(ev);
@@ -851,13 +916,7 @@ export default function ProjectGantt({
     setColumns(columns.map(c => c.id === id ? { ...c, visible: !c.visible } : c));
   };
 
-  const isPredecessor = (taskId: string) => {
-    return ganttItems.some((item: any) => {
-      const blockedBy = item.blocked_by || [];
-      const blockedByIds = item.blocked_by_ids || [];
-      return blockedBy.some((dep: any) => dep.predecessor_id === taskId) || blockedByIds.includes(taskId);
-    });
-  };
+  const isPredecessor = (taskId: string) => predecessorIds.has(taskId);
 
   const hasBlockers = (item: any) => {
     return (item.blocked_by && item.blocked_by.length > 0) || (item.blocked_by_ids && item.blocked_by_ids.length > 0);
@@ -1253,11 +1312,11 @@ export default function ProjectGantt({
                                   const drawHierarchy = (taskList: Task[]) => {
                                     taskList.forEach(task => {
                                       if (!showSubtasks || !task.subtasks || task.subtasks.length === 0) return;
-                                      const parentItem = ganttItems.find(i => i.id === task.id);
+                                      const parentItem = itemById.get(task.id);
                                       if (!parentItem) return;
                                       const startX = getItemLeftEdgePx(task);
                                       const startY = (parentItem as any).rowIndex * ROW_HEIGHT + (ROW_HEIGHT / 2);
-                                      const renderedSubtasks = task.subtasks.map(st => ganttItems.find(i => i.id === st.id)).filter((st): st is GanttItem => !!st && !!st.start_date);
+                                      const renderedSubtasks = task.subtasks.map(st => itemById.get(st.id)).filter((st): st is GanttItem => !!st && !!st.start_date);
                                       if (renderedSubtasks.length === 0) return;
                                       const minChildX = Math.min(...renderedSubtasks.map(st => getItemLeftEdgePx(st)));
                 
@@ -1354,7 +1413,7 @@ export default function ProjectGantt({
                 
                                                   return combinedDeps.map(dep => {
                 
-                                                    const blocker = ganttItems.find(i => i.id === dep.predecessor_id);
+                                                    const blocker = itemById.get(dep.predecessor_id);
                 
                                                     if (!blocker) return null;
                 
@@ -1458,23 +1517,16 @@ export default function ProjectGantt({
                 
                                                 })}
                 {linkDrag && (() => {
-                  const src: any = ganttItems.find((i: any) => i.id === linkDrag.fromId);
+                  const src: any = itemById.get(linkDrag.fromId);
                   if (!src) return null;
-                  const sx = linkDrag.fromSide === 'start' ? getItemLeftEdgePx(src) : getItemRightEdgePx(src);
-                  const sy = src.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
-                  const bad = !!linkDrag.target && !linkDrag.target.ok;
                   return (
-                    <g>
-                      <path
-                        d={`M ${sx} ${sy} L ${linkDrag.x} ${linkDrag.y}`}
-                        fill="none"
-                        stroke={bad ? '#ef4444' : '#2563eb'}
-                        strokeWidth={2}
-                        strokeDasharray="6 4"
-                        vectorEffect="non-scaling-stroke"
-                      />
-                      <circle cx={linkDrag.x} cy={linkDrag.y} r={4} fill={bad ? '#ef4444' : '#2563eb'} />
-                    </g>
+                    <LinkPreviewLine
+                      x1={linkDrag.fromSide === 'start' ? getItemLeftEdgePx(src) : getItemRightEdgePx(src)}
+                      y1={src.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2}
+                      anchor={linkDrag.anchor}
+                      bad={!!linkDrag.target && !linkDrag.target.ok}
+                      follow={linkFollowRef}
+                    />
                   );
                 })()}
               </svg>
