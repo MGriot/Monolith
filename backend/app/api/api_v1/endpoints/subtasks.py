@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
 from app.api.access import require_task_access
+from app.api.api_v1.endpoints import tasks as tasks_api
 from app.crud import crud_task
 from app.schemas.task import Task, TaskCreate, TaskUpdate
 from app.models.user import User
@@ -47,11 +48,8 @@ async def create_subtask(
 
     # A subtask always lives in its parent's project; never trust the client for this.
     subtask_in.project_id = parent_task.project_id
-    if not subtask_in.owner_id:
-        subtask_in.owner_id = current_user.id
-        
-    subtask_obj = await crud_task.task.create(db=db, obj_in=subtask_in)
-    return subtask_obj
+    # Same path as POST /tasks/ (owner default, custom-field validation, domain errors as 400).
+    return await tasks_api.create_task(db=db, task_in=subtask_in, current_user=current_user)
 
 @router.get("/{subtask_id}", response_model=Task)
 async def read_subtask(
@@ -77,11 +75,7 @@ async def update_subtask(
     """
     Update a subtask.
     """
-    await require_task_access(db, subtask_id, current_user, write=True)
-    subtask_obj = await crud_task.task.get(db, id=subtask_id)
-
-    subtask_obj = await crud_task.task.update(db=db, db_obj=subtask_obj, obj_in=subtask_in)
-    return subtask_obj
+    return await tasks_api.update_task(db=db, task_id=subtask_id, task_in=subtask_in, current_user=current_user)
 
 @router.delete("/{subtask_id}", response_model=Task)
 async def delete_subtask(
