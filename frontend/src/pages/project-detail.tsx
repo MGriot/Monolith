@@ -61,6 +61,9 @@ import BulkActionBar from '@/components/bulk-action-bar';
 import { EMPTY_SELECTION, type SelectionState } from '@/lib/selection';
 import { confirmDialog } from '@/lib/confirm';
 
+/** Stable fallback while the tasks load, so useTaskView's memos don't recompute every render. */
+const NO_TASKS: Task[] = [];
+
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -93,7 +96,8 @@ export default function ProjectDetailPage() {
     },
   });
 
-  const view = useTaskView(tasks ?? []);
+  const view = useTaskView(tasks ?? NO_TASKS);
+  const filteredCount = useMemo(() => flattenTasks(view.filtered).length, [view.filtered]);
   const assigneeOptions = useMemo(() => collectAssignees(tasks ?? []), [tasks]);
   const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
   const bulkEnabled = canEdit(project?.my_role);
@@ -459,7 +463,7 @@ export default function ProjectDetailPage() {
               filters={view.filters}
               onChange={view.setFilters}
               assignees={assigneeOptions}
-              resultCount={flattenTasks(view.filtered).length}
+              resultCount={filteredCount}
             />
             <ProjectTaskList
               tasks={view.sorted}
@@ -493,7 +497,7 @@ export default function ProjectDetailPage() {
               onChange={view.setFilters}
               assignees={assigneeOptions}
               showLayoutControls={false}
-              resultCount={flattenTasks(view.filtered).length}
+              resultCount={filteredCount}
             />
           </div>
           <KanbanBoard

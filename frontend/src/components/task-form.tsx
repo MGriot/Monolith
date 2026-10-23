@@ -345,8 +345,8 @@ export default function TaskForm({
     return filtered.map((t: WorkType) => ({ id: t.id, label: t.name, color: t.color }));
   }, [workTypes, project]);
 
-  // Helper to flatten tasks for the select, excluding descendants of the current task
-  const getAvailableParents = () => {
+  // Flat task list for the parent select, excluding the current task and its descendants
+  const availableParents = useMemo(() => {
     const flat: { id: string; title: string; wbs_code?: string; level: number }[] = [];
     if (!allTasks) return flat;
 
@@ -358,7 +358,7 @@ export default function TaskForm({
       if (!excluded.has(t.id)) flat.push({ id: t.id, title: t.title, wbs_code: t.wbs_code, level });
     }, { descend: (t) => !excluded.has(t.id) });
     return flat;
-  };
+  }, [allTasks, editingTaskId]);
 
   const handleFormSubmit = (data: TaskFormValues) => {
     // Drop values whose field was deleted or that are invalid, so the API doesn't reject the whole task
@@ -502,7 +502,6 @@ export default function TaskForm({
     toast.success("Dates synced from all descendants");
   };
 
-  const availableParents = getAvailableParents();
 
   const checklist = watch("checklist") || [];
   const dependencyCount = (taskObject?.blocked_by?.length || 0) + (taskObject?.blocking?.length || 0);

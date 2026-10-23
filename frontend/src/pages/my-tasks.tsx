@@ -100,6 +100,7 @@ export default function MyTasksPage() {
   }, [tasks]);
 
   const taskView = useTaskView(activeTasks);
+  const filteredCount = useMemo(() => flattenTasks(taskView.filtered).length, [taskView.filtered]);
   const assigneeOptions = useMemo(() => collectAssignees(activeTasks), [activeTasks]);
   const filtering = hasActiveFilters(taskView.filters);
 
@@ -176,7 +177,7 @@ export default function MyTasksPage() {
           onChange={taskView.setFilters}
           assignees={assigneeOptions}
           showLayoutControls={view === 'list'}
-          resultCount={flattenTasks(taskView.filtered).length}
+          resultCount={filteredCount}
         />
         <div className="min-h-[500px]">
           {view === 'kanban' ? (
