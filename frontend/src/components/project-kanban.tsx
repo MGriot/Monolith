@@ -1,21 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { 
   DndContext, 
   DragOverlay, 
   rectIntersection, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
-  useSensors,
   useDroppable,
-  type DragStartEvent,
-  type DragOverEvent,
-  type DragEndEvent,
   defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
 import { 
   SortableContext, 
-  sortableKeyboardCoordinates, 
   verticalListSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable';
@@ -27,6 +19,7 @@ import { cn, formatPercent } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import type { Project } from '@/types';
+import { useKanbanDnd } from '@/hooks/use-kanban-dnd';
 
 interface ProjectKanbanProps {
   projects: Project[];
@@ -42,15 +35,7 @@ const COLUMNS = [
 ];
 
 export default function ProjectKanban({ projects, onProjectMove, onProjectClick }: ProjectKanbanProps) {
-  const [items, setItems] = useState<Record<string, string[]>>({
-    'planning': [],
-    'active': [],
-    'on hold': [],
-    'done': []
-  });
-  const [activeId, setActiveId] = useState<string | null>(null);
-
-  useEffect(() => {
+  const columns = useMemo(() => {
     const newItems: Record<string, string[]> = {
       'planning': [],
       'active': [],
@@ -65,67 +50,21 @@ export default function ProjectKanban({ projects, onProjectMove, onProjectClick 
         newItems['planning'].push(p.id);
       }
     });
-    setItems(newItems);
+    return newItems;
   }, [projects]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  function findContainer(id: string) {
-    if (id in items) return id;
-    return Object.keys(items).find((key) => items[key].includes(id));
-  }
-
-  function handleDragStart(event: DragStartEvent) {
-    setActiveId(event.active.id as string);
-  }
-
-  function handleDragOver(event: DragOverEvent) {
-    const { active, over } = event;
-    const overId = over?.id;
-    if (!overId || active.id in items) return;
-    const activeContainer = findContainer(active.id as string);
-    const overContainer = findContainer(overId as string);
-    if (!activeContainer || !overContainer || activeContainer === overContainer) return;
-
-    setItems((prev) => {
-      const activeItems = prev[activeContainer];
-      const overItems = prev[overContainer];
-      const overIndex = overItems.indexOf(overId as string);
-      let newIndex = overId in prev ? overItems.length + 1 : overIndex >= 0 ? overIndex : overItems.length + 1;
-      return {
-        ...prev,
-        [activeContainer]: activeItems.filter((item) => item !== active.id),
-        [overContainer]: [...overItems.slice(0, newIndex), active.id as string, ...overItems.slice(newIndex)]
-      };
-    });
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    const overId = over?.id;
-    if (!overId) { setActiveId(null); return; }
-
-    const overContainer = findContainer(overId as string);
-    const activeContainer = findContainer(active.id as string);
-
-    if (overContainer && activeContainer) {
-      if (activeContainer !== overContainer) {
-        onProjectMove(active.id as string, overContainer);
-      }
-    }
-    setActiveId(null);
-  }
+  const { items, activeId, sensors, handlers } = useKanbanDnd({
+    columns,
+    onDrop: ({ id, from, to }) => {
+      if (from !== to) onProjectMove(id, to);
+    },
+  });
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={rectIntersection}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
+      {...handlers}
     >
       <div className="h-full overflow-x-auto pb-4">
         <div className="flex gap-6 min-w-max mx-auto px-6 h-full min-h-[calc(100vh-280px)]">
