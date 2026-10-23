@@ -7,7 +7,7 @@ from pydantic import BaseModel, field_validator
 from datetime import datetime
 
 from app.api import deps
-from app.api.access import ADMIN, ROLES, project_role, require_project_access
+from app.api.access import ADMIN, ROLES, project_role, require_project_access, visible_project_filter
 from app.core.export import enum_value, fmt_date, tabular_response
 from app.core.wbs import apply_wbs_codes
 from app.db.transaction import commit
@@ -304,9 +304,8 @@ async def read_projects_gantt(
     """
     Retrieve projects for Gantt view (those with start and due dates).
     """
-    from sqlalchemy import and_, or_
+    from sqlalchemy import and_
     from app.models.project import Project as ProjectModel
-    from app.models.associations import project_members
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
 
@@ -324,13 +323,7 @@ async def read_projects_gantt(
         selectinload(ProjectModel.types)
     )
     
-    if not current_user.is_superuser:
-        query = query.outerjoin(project_members).where(
-            or_(
-                ProjectModel.owner_id == current_user.id,
-                project_members.c.user_id == current_user.id
-            )
-        ).distinct()
+    query = query.where(visible_project_filter(current_user))
     
     result = await db.execute(query)
     projects = result.scalars().all()

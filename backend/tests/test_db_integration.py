@@ -389,3 +389,56 @@ def test_assigned_tasks_serialise_deep_subtrees():
         assert (schemas[0].title, depth, node.title) == ("Assigned", 6, "L6")
 
     run_in_rolled_back_db(scenario)
+
+
+def test_lists_use_one_visibility_rule():
+    """Owner or member of the project, or owner / assignee of the task; nothing else (dashboard, calendar, risk, search)."""
+    from datetime import datetime, timedelta
+
+    from app.api.access import visible_project_filter, visible_task_filter
+    from app.api.api_v1.endpoints import calendar as calendar_api, dashboard as dashboard_api, search as search_api
+    from app.models.associations import project_members
+    from app.models.project import Project
+    from app.models.task import Task
+
+    async def scenario(db, owner_id):
+        me = User(email=f"me-{uuid4().hex[:8]}@example.com", full_name="Me", hashed_password="x", is_active=True)
+        db.add(me)
+        await db.flush()
+        soon = datetime.utcnow() + timedelta(days=2)
+        mine = await _project(db, me.id, "Vis mine")
+        shared = await _project(db, owner_id, "Vis shared")        # I'm a member
+        foreign = await _project(db, owner_id, "Vis foreign")      # I'm not
+        await db.execute(project_members.insert().values(project_id=shared.id, user_id=me.id, role="viewer"))
+        for title, project, owner, assignees in (
+            ("Vis in mine", mine, me.id, []), ("Vis in shared", shared, owner_id, []),
+            ("Vis hidden", foreign, owner_id, []), ("Vis assigned to me", foreign, owner_id, [me.id]),
+            ("Vis no project", None, me.id, []),
+        ):
+            await crud_task.task.create(db, obj_in=TaskCreate(
+                title=title, project_id=project.id if project else None, due_date=soon, start_date=soon,
+                assignee_ids=assignees), owner_id=owner)
+        for p in (mine, shared, foreign):
+            p.due_date = soon
+        await db.flush()
+
+        expected_projects = {"Vis mine", "Vis shared"}
+        expected_tasks = {"Vis in mine", "Vis in shared", "Vis assigned to me", "Vis no project"}
+        projects = (await db.execute(select(Project.name).where(visible_project_filter(me)))).scalars().all()
+        tasks = (await db.execute(select(Task.title).where(visible_task_filter(me)))).scalars().all()
+        assert set(projects) == expected_projects and set(tasks) == expected_tasks
+
+        cal = await calendar_api.get_calendar_events(db=db, current_user=me, start_date=None, end_date=None)
+        titles = {i.title for i in (cal["items"] if isinstance(cal, dict) else cal.items)}
+        assert titles == expected_projects | expected_tasks
+
+        summary = await dashboard_api.get_dashboard_summary(db=db, current_user=me)
+        assert (summary["total_projects"], summary["total_tasks"]) == (2, 4)
+
+        risk = await dashboard_api.get_risk_data(db=db, current_user=me)
+        assert {i["name"] for i in risk} == expected_projects | expected_tasks
+
+        hits = await search_api.search_all(q="Vis", db=db, current_user=me)
+        assert {h.title for h in hits} == expected_projects | expected_tasks
+
+    run_in_rolled_back_db(scenario)

@@ -5,6 +5,7 @@ from sqlalchemy import and_, func, select, or_
 from datetime import datetime
 
 from app.api import deps
+from app.api.access import visible_project_filter, visible_task_filter
 from app.models.project import Project
 from app.models.task import Task
 from app.models.user import User
@@ -15,7 +16,7 @@ from app.core.mailer import absolute_url
 from app.core.ratelimit import FailureLimiter
 from app.core.utils import make_naive
 
-from app.models.associations import project_members, task_assignees
+from app.models.associations import task_assignees
 from sqlalchemy.orm import selectinload
 
 router = APIRouter()
@@ -37,13 +38,7 @@ async def get_calendar_events(
     
     # Fetch Projects
     project_query = select(Project).where(Project.due_date != None)
-    if not current_user.is_superuser:
-        project_query = project_query.outerjoin(project_members).filter(
-            or_(
-                Project.owner_id == current_user.id,
-                project_members.c.user_id == current_user.id
-            )
-        ).distinct()
+    project_query = project_query.where(visible_project_filter(current_user))
         
     if start_date and end_date:
         from sqlalchemy import func
@@ -71,13 +66,7 @@ async def get_calendar_events(
         selectinload(Task.assignees),
         selectinload(Task.project)
     )
-    if not current_user.is_superuser:
-        task_query = task_query.join(Project).outerjoin(project_members).filter(
-            or_(
-                Project.owner_id == current_user.id,
-                project_members.c.user_id == current_user.id
-            )
-        ).distinct()
+    task_query = task_query.where(visible_task_filter(current_user))
         
     if start_date and end_date:
         from sqlalchemy import func
