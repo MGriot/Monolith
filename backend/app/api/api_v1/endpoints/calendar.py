@@ -2,7 +2,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, func, select, or_
-from datetime import datetime
+from datetime import date, datetime, time, timedelta, timezone
 
 from app.api import deps
 from app.api.access import visible_project_filter, visible_task_filter
@@ -21,6 +21,26 @@ from sqlalchemy.orm import selectinload
 
 router = APIRouter()
 
+# Window used when a caller sends no range (or only one end of it), so the endpoint never returns every dated row.
+DEFAULT_PAST = timedelta(days=90)
+DEFAULT_FUTURE = timedelta(days=365)
+
+
+def calendar_window(
+    start_date: Optional[datetime], end_date: Optional[datetime], today: Optional[date] = None
+) -> tuple[datetime, datetime]:
+    """The range to query: both ends as sent; neither sent -> 90 days ago .. one year ahead; one end sent -> a window
+    of the same length (455 days) from or up to that date."""
+    if start_date and end_date:
+        return start_date, end_date
+    if start_date:
+        return start_date, start_date + DEFAULT_PAST + DEFAULT_FUTURE
+    if end_date:
+        return end_date - DEFAULT_PAST - DEFAULT_FUTURE, end_date
+    today = today or datetime.now(timezone.utc).date()
+    return datetime.combine(today - DEFAULT_PAST, time.min), datetime.combine(today + DEFAULT_FUTURE, time.max)
+
+
 @router.get("/", response_model=CalendarResponse)
 async def get_calendar_events(
     db: AsyncSession = Depends(deps.get_db),
@@ -29,10 +49,10 @@ async def get_calendar_events(
     end_date: Optional[datetime] = Query(None),
 ) -> Any:
     """
-    Get all projects and tasks with due dates, filtered by access rights.
+    Projects and tasks with a due date that overlap the range, filtered by access rights.
+    Without a range: from 90 days ago to one year ahead.
     """
-    start_date = make_naive(start_date)
-    end_date = make_naive(end_date)
+    start_date, end_date = calendar_window(make_naive(start_date), make_naive(end_date))
     
     items = []
     
@@ -40,13 +60,11 @@ async def get_calendar_events(
     project_query = select(Project).where(Project.due_date != None)
     project_query = project_query.where(visible_project_filter(current_user))
         
-    if start_date and end_date:
-        from sqlalchemy import func
-        project_query = project_query.where(
-            func.coalesce(Project.start_date, Project.due_date) <= end_date
-        ).where(
-            Project.due_date >= start_date
-        )
+    project_query = project_query.where(
+        func.coalesce(Project.start_date, Project.due_date) <= end_date
+    ).where(
+        Project.due_date >= start_date
+    )
     
     result = await db.execute(project_query)
     projects = result.scalars().all()
@@ -68,13 +86,11 @@ async def get_calendar_events(
     )
     task_query = task_query.where(visible_task_filter(current_user))
         
-    if start_date and end_date:
-        from sqlalchemy import func
-        task_query = task_query.where(
-            func.coalesce(Task.start_date, Task.due_date) <= end_date
-        ).where(
-            Task.due_date >= start_date
-        )
+    task_query = task_query.where(
+        func.coalesce(Task.start_date, Task.due_date) <= end_date
+    ).where(
+        Task.due_date >= start_date
+    )
     
     result = await db.execute(task_query)
     tasks = result.scalars().all()

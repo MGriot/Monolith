@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '@/components/auth-provider';
@@ -31,6 +31,7 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import { confirmDialog } from '@/lib/confirm';
 import { errorMessage } from '@/lib/api-error';
 import { usersQuery, type UserRecord as User } from '@/lib/queries';
+import { rangeParams, workloadRange } from '@/lib/calendar-range';
 
 export default function UsersPage() {
   const queryClient = useQueryClient();
@@ -55,10 +56,11 @@ export default function UsersPage() {
     onError: (err: any) => toast.error(errorMessage(err, 'Could not update the request')),
   });
 
+  const workloadParams = useMemo(() => rangeParams(workloadRange(new Date())), []);
   const { data: calendarData } = useQuery({
-    queryKey: ['calendar-events', 'admin-all'],
+    queryKey: ['calendar-events', 'admin-all', workloadParams],
     queryFn: async () => {
-      const response = await api.get('/calendar/');
+      const response = await api.get('/calendar/', { params: workloadParams });
       return response.data;
     },
   });

@@ -7,8 +7,10 @@ import {
   endOfMonth,
   endOfWeek,
   format,
+  startOfDay,
   startOfMonth,
   startOfWeek,
+  subDays,
 } from 'date-fns';
 import { parseApiDate } from './dates';
 
@@ -54,6 +56,17 @@ export function rangeKey(view: CalendarView, anchor: Date): string {
 
 export function yearBounds(year: number): DateRange {
   return { start: new Date(year, 0, 1), end: new Date(year, 11, 31) };
+}
+
+/** Window of the workload timelines (dashboard, users page): 90 days back to a year ahead, the API's own default. */
+export function workloadRange(today: Date): DateRange {
+  const day = startOfDay(today);
+  return { start: subDays(day, 90), end: addDays(day, 365) };
+}
+
+/** `start_date` / `end_date` query parameters for GET /calendar/, as local calendar days. */
+export function rangeParams({ start, end }: DateRange): { start_date: string; end_date: string } {
+  return { start_date: format(start, 'yyyy-MM-dd'), end_date: format(end, 'yyyy-MM-dd') };
 }
 
 /**
