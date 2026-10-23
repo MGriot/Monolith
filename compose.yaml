@@ -99,7 +99,7 @@ services:
   # Internal SMTP for notifications / verification / digests.
   # Not published to the host: only reachable from backend over mail_net.
   mailserver:
-    image: ghcr.io/docker-mailserver/docker-mailserver:latest   # TODO pin an exact tag
+    image: ghcr.io/docker-mailserver/docker-mailserver:16.0.1   # pinned; bump deliberately after reading its changelog
     container_name: monolith_mail
     hostname: mail
     domainname: ${MAIL_DOMAIN:-monolith.local}
