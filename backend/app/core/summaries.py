@@ -1,7 +1,7 @@
 import logging
 from html import escape as esc
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func
 
@@ -184,6 +184,13 @@ class SummaryGenerator:
             
         return html
 
+    async def _digest_recipient(self, user_id: Any) -> Optional[User]:
+        """The user if they are active and want the weekly digest, else None."""
+        if not user_id:
+            return None
+        owner = (await self.db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+        return owner if owner and owner.is_active and owner.notify_email_digest else None
+
     async def dispatch_all_summaries(self):
         """
         Main entry point for the weekly scheduler.
@@ -211,34 +218,33 @@ class SummaryGenerator:
         teams_result = await self.db.execute(select(Team).where(Team.owner_id != None))
         teams = teams_result.scalars().all()
         for team in teams:
+            owner = await self._digest_recipient(team.owner_id)
+            if not owner:
+                continue  # build the summary only for an owner who will receive it
             summary = await self.get_team_activity_summary(team.id)
             if summary["active_members"] > 0:
                 html = self.generate_team_summary_html(team, summary)
-                # Get owner email
-                owner_result = await self.db.execute(select(User).where(User.id == team.owner_id))
-                owner = owner_result.scalar_one_or_none()
-                if owner and owner.is_active and owner.notify_email_digest:
-                    await send_email_notification(
-                        owner.email,
-                        f"[Monolith] Team Weekly Summary: {team.name}",
-                        "Please view this email in HTML to see your team summary.",
-                        html_body=html
-                    )
+                await send_email_notification(
+                    owner.email,
+                    f"[Monolith] Team Weekly Summary: {team.name}",
+                    "Please view this email in HTML to see your team summary.",
+                    html_body=html
+                )
 
         # 3. Project Summaries (to owners)
         projects_result = await self.db.execute(select(Project).where(Project.is_archived == False))
         projects = projects_result.scalars().all()
         for project in projects:
+            owner = await self._digest_recipient(project.owner_id)
+            if not owner:
+                continue
             report = await self.get_project_health_report(project.id)
             html = self.generate_project_health_html(project, report)
-            owner_result = await self.db.execute(select(User).where(User.id == project.owner_id))
-            owner = owner_result.scalar_one_or_none()
-            if owner and owner.is_active and owner.notify_email_digest:
-                await send_email_notification(
-                    owner.email,
-                    f"[Monolith] Project Health Report: {project.name}",
-                    "Please view this email in HTML to see your project report.",
-                    html_body=html
-                )
+            await send_email_notification(
+                owner.email,
+                f"[Monolith] Project Health Report: {project.name}",
+                "Please view this email in HTML to see your project report.",
+                html_body=html
+            )
         
         logger.info("Weekly summary dispatch completed.")
