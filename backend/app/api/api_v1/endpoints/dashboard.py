@@ -10,7 +10,8 @@ from app.models.project import Project
 from app.models.task import Task
 from app.models.user import User
 from app.core.enums import Status
-from app.core.reports import generate_weekly_summaries, notify_near_deadlines
+from app.core.reports import notify_near_deadlines
+from app.core.summaries import SummaryGenerator
 from app.schemas.workload import TeamWorkloadResponse, UserWorkload, DayWorkload
 
 router = APIRouter()
@@ -101,8 +102,8 @@ async def trigger_weekly_summary(
     Manually trigger the generation of weekly email summaries for all users.
     Admin only.
     """
-    # Run in background ideally, but for test we can await
-    await generate_weekly_summaries(db)
+    # The same digest the Monday scheduler job sends (active users who opted in).
+    await SummaryGenerator(db).dispatch_all_summaries()
     return {"message": "Weekly summary generation triggered"}
 
 @router.post("/trigger-deadline-notifications", status_code=202)
