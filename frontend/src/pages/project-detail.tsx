@@ -306,9 +306,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleReorderTask = () => {};
-  const handleIndentTask = () => {};
-
   const handlePromoteSuccess = (task: Task) => {
     setActiveTab("overview");
     setEditingTaskId(task.id);
@@ -472,8 +469,6 @@ export default function ProjectDetailPage() {
               onTaskClick={handleTaskClick}
               onSubtaskClick={handleSubtaskClick}
               onAddSubtask={handleAddSubtask}
-              onReorderTask={handleReorderTask}
-              onIndentTask={handleIndentTask}
               selection={bulkEnabled ? { state: selection, onChange: setSelection } : undefined}
               highlightCritical={showCriticalPath}
             />

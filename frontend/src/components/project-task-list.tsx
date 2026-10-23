@@ -162,6 +162,8 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
         </TableCell>
         <TableCell className="py-2 text-right">
           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Shown only where the page handles them */}
+            {onReorderTask && (<>
             <Button
               variant="ghost"
               size="icon"
@@ -186,6 +188,8 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             >
               <ArrowDown className="w-3.5 h-3.5" />
             </Button>
+            </>)}
+            {onIndentTask && (<>
             <Button
               variant="ghost"
               size="icon"
@@ -212,6 +216,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </Button>
+            </>)}
           </div>
         </TableCell>
         <TableCell className="py-2 text-center">
