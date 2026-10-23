@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import List, Union, Dict, Any, Optional
 from uuid import UUID
 from datetime import datetime
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload, selectinload
@@ -268,29 +269,24 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 await self.update(db, db_obj=parent, obj_in={"status": new_status})
             # The .update() call will handle the next level up if parent.parent_id exists.
 
-    async def is_blocked_by_recursive(self, db: AsyncSession, item_id: UUID, blocker_candidate_id: UUID, visited: set) -> bool:
+    async def is_blocked_by_recursive(self, db: AsyncSession, item_id: UUID, blocker_candidate_id: UUID) -> bool:
+        """True if item_id is blocker_candidate_id or (transitively) blocked by it, following both dependency rows and
+        the legacy blocked_by_ids array - one recursive query instead of two per visited task."""
         if item_id == blocker_candidate_id:
             return True
-        if item_id in visited:
-            return False
-        visited.add(item_id)
-        
-        # Check Dependency table (preferred)
-        from app.models.dependency import Dependency
-        res = await db.execute(select(Dependency.predecessor_id).filter(Dependency.successor_id == item_id))
-        predecessors = res.scalars().all()
-        for pred_id in predecessors:
-            if await self.is_blocked_by_recursive(db, pred_id, blocker_candidate_id, visited):
-                return True
-                
-        # Fallback to old blocked_by_ids
-        res = await db.execute(select(Task.blocked_by_ids).filter(Task.id == item_id))
-        row = res.first()
-        if row and row[0]:
-            for b_id in row[0]:
-                if await self.is_blocked_by_recursive(db, b_id, blocker_candidate_id, visited):
-                    return True
-        return False
+        reachable = await db.execute(text("""
+            WITH RECURSIVE blockers(id) AS (
+                SELECT CAST(:start AS uuid)
+                UNION
+                SELECT nxt.id FROM blockers b CROSS JOIN LATERAL (
+                    SELECT d.predecessor_id AS id FROM dependencies d WHERE d.successor_id = b.id
+                    UNION ALL
+                    SELECT unnest(t.blocked_by_ids) FROM tasks t WHERE t.id = b.id
+                ) AS nxt
+            )
+            SELECT EXISTS (SELECT 1 FROM blockers WHERE id = CAST(:target AS uuid))
+        """), {"start": str(item_id), "target": str(blocker_candidate_id)})
+        return bool(reachable.scalar())
 
     async def check_for_active_blockers(self, db: AsyncSession, item_id: UUID) -> List[str]:
         active_blocker_titles = []
@@ -306,13 +302,13 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if t.status != Status.DONE:
                 active_blocker_titles.append(t.title)
         
-        # Check legacy field
+        # Check legacy field (one query for all ids, kept in the array's order)
         res = await db.execute(select(Task.blocked_by_ids).filter(Task.id == item_id))
         row = res.first()
         if row and row[0]:
+            legacy = {t.id: t for t in (await db.execute(select(Task).filter(Task.id.in_(row[0])))).scalars().all()}
             for b_id in row[0]:
-                res = await db.execute(select(Task).filter(Task.id == b_id))
-                obj = res.scalars().first()
+                obj = legacy.get(b_id)
                 if obj and obj.status != Status.DONE:
                     if obj.title not in active_blocker_titles:
                         active_blocker_titles.append(obj.title)
@@ -524,7 +520,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             for b_id in new_blocker_ids:
                 if b_id == db_obj.id:
                     raise ValueError("Item cannot block itself")
-                if await self.is_blocked_by_recursive(db, b_id, db_obj.id, set()):
+                if await self.is_blocked_by_recursive(db, b_id, db_obj.id):
                     raise ValueError(f"Circular dependency detected with item ID: {b_id}")
             db_obj.blocked_by_ids = new_blocker_ids
 
@@ -556,15 +552,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if new_p_id == db_obj.id:
                 raise ValueError("A task cannot be its own parent")
             
-            async def is_descendant(parent_candidate_id: UUID, task_id: UUID) -> bool:
-                res = await db.execute(select(self.model.id).filter(self.model.parent_id == task_id))
-                children_ids = res.scalars().all()
-                for c_id in children_ids:
-                    if c_id == parent_candidate_id or await is_descendant(parent_candidate_id, c_id):
-                        return True
-                return False
-            
-            if await is_descendant(new_p_id, db_obj.id):
+            # every descendant of this task, in one recursive query
+            descendants = select(self.model.id).where(self.model.parent_id == db_obj.id).cte("descendants", recursive=True)
+            descendants = descendants.union(select(self.model.id).where(self.model.parent_id == descendants.c.id))
+            if (await db.execute(select(descendants.c.id).where(descendants.c.id == new_p_id))).first():
                 raise ValueError("Cannot set a descendant as a parent (circular hierarchy)")
 
         # 8. Call base update for remaining fields (relations are read now: the refresh below unloads them)

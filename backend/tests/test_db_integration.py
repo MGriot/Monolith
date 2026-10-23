@@ -260,3 +260,48 @@ def test_team_workload_only_counts_tasks_inside_the_window():
         assert sum(w.task_count for w in mine.workload) == 2 and not mine.is_overallocated
 
     run_in_rolled_back_db(scenario)
+
+
+def test_parent_and_blocker_cycles_and_done_guard():
+    async def scenario(db, owner_id):
+        project = await _project(db, owner_id, "Graph")
+
+        async def new(title, **kw):
+            return (await crud_task.task.create(db, obj_in=TaskCreate(title=title, project_id=project.id, **kw),
+                                                owner_id=owner_id)).id
+
+        async def update(task_id, data):
+            obj = await crud_task.task.get(db, id=task_id)
+            return await crud_task.task.update(db, db_obj=obj, obj_in=data)
+
+        # Parent loops: a task cannot move under its own descendant, at any depth
+        root = await new("Root")
+        child = await new("Child", parent_id=root)
+        grandchild = await new("Grandchild", parent_id=child)
+        other = await new("Other")
+        for bad_parent in (root, child, grandchild):
+            with pytest.raises(ValueError):
+                await update(root, {"parent_id": bad_parent})
+        await update(grandchild, {"parent_id": other})  # a legal move still works
+        assert (await crud_task.task.get(db, id=grandchild)).parent_id == other
+
+        # Blocker loops through dependency rows AND legacy blocked_by_ids: x <-dep- y <-legacy- z
+        x, y, z = await new("X"), await new("Y"), await new("Z")
+        await crud_dependency.dependency.create(db, obj_in=DependencyCreate(
+            successor_id=y, predecessor_id=x, type=DependencyType.FS))
+        await update(z, {"blocked_by_ids": [y]})
+        with pytest.raises(ValueError, match="Circular"):
+            await update(x, {"blocked_by_ids": [z]})
+        with pytest.raises(ValueError, match="itself"):
+            await update(x, {"blocked_by_ids": [x]})
+        await update(x, {"blocked_by_ids": [other]})  # no loop: accepted
+
+        # Done guard lists unfinished blockers from both sources, dependency rows first, no duplicates
+        await update(z, {"blocked_by_ids": [y, x, y]})
+        await crud_dependency.dependency.create(db, obj_in=DependencyCreate(
+            successor_id=z, predecessor_id=other, type=DependencyType.FS))
+        with pytest.raises(ValueError) as exc:
+            await update(z, {"status": Status.DONE})
+        assert str(exc.value) == "Task is blocked by unfinished items: Other, Y, X"
+
+    run_in_rolled_back_db(scenario)
