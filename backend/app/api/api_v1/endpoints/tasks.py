@@ -117,60 +117,20 @@ async def read_assigned_tasks(
     from sqlalchemy import or_
     
     query = (
-        select(TaskModel)
+        select(TaskModel.id)
         .join(task_assignees)
         .outerjoin(ProjectModel, TaskModel.project_id == ProjectModel.id)
         .filter(task_assignees.c.user_id == current_user.id)
         .filter(TaskModel.is_archived == False)
         .filter(or_(ProjectModel.id == None, ProjectModel.is_archived == False))
-        .options(
-            selectinload(TaskModel.owner),
-            selectinload(TaskModel.assignees),
-            selectinload(TaskModel.blocked_by),
-            selectinload(TaskModel.blocking),
-            selectinload(TaskModel.topic_ref),
-            selectinload(TaskModel.type_ref),
-            selectinload(TaskModel.topics),
-            selectinload(TaskModel.types),
-            selectinload(TaskModel.project),
-            selectinload(TaskModel.subtasks).options(
-                selectinload(TaskModel.owner),
-                selectinload(TaskModel.assignees),
-                selectinload(TaskModel.blocked_by),
-                selectinload(TaskModel.blocking),
-                selectinload(TaskModel.topic_ref),
-                selectinload(TaskModel.type_ref),
-                selectinload(TaskModel.topics),
-                selectinload(TaskModel.types),
-                selectinload(TaskModel.subtasks).options(
-                    selectinload(TaskModel.owner),
-                    selectinload(TaskModel.assignees),
-                    selectinload(TaskModel.blocked_by),
-                    selectinload(TaskModel.blocking),
-                    selectinload(TaskModel.topic_ref),
-                    selectinload(TaskModel.type_ref),
-                    selectinload(TaskModel.topics),
-                    selectinload(TaskModel.types),
-                    selectinload(TaskModel.subtasks).options(
-                        selectinload(TaskModel.owner),
-                        selectinload(TaskModel.assignees),
-                        selectinload(TaskModel.blocked_by),
-                        selectinload(TaskModel.blocking),
-                        selectinload(TaskModel.topic_ref),
-                        selectinload(TaskModel.type_ref),
-                        selectinload(TaskModel.topics),
-                        selectinload(TaskModel.types),
-                        selectinload(TaskModel.subtasks)
-                    )
-                )
-            )
-        )
         .offset(skip)
         .limit(limit)
     )
-    result = await db.execute(query)
-    tasks = result.scalars().all()
-    
+    ids = (await db.execute(query)).scalars().all()
+    # Whole subtrees with their relations, at any depth (nested selectinload stopped at four levels -> MissingGreenlet)
+    by_id = await crud_task.task._load_trees(db, list(ids))
+    tasks = [by_id[i] for i in ids if i in by_id]
+
     # We don't apply WBS here as these tasks are from different projects/levels
     return tasks
 

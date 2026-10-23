@@ -364,3 +364,28 @@ def test_rollup_results_after_nested_create_update_and_bulk():
         assert after_bulk[0] == 100.0 and after_leaf[0] < after_bulk[0]
 
     run_in_rolled_back_db(scenario)
+
+
+def test_assigned_tasks_serialise_deep_subtrees():
+    from app.api.api_v1.endpoints import tasks as tasks_api
+    from app.schemas.task import Task as TaskSchema
+
+    async def scenario(db, owner_id):
+        user = await db.get(User, owner_id)
+        project = await _project(db, owner_id, "Deep")
+        chain = None
+        for level in range(6, 0, -1):  # L1 > L2 > ... > L6
+            chain = [TaskShortCreate(title=f"L{level}", subtasks=chain or [])]
+        await crud_task.task.create(db, obj_in=TaskCreate(
+            title="Assigned", project_id=project.id, assignee_ids=[owner_id], subtasks=chain), owner_id=owner_id)
+        db.expire_all()
+        await db.refresh(user)
+
+        tasks = await tasks_api.read_assigned_tasks(db=db, skip=0, limit=100, current_user=user)
+        schemas = [TaskSchema.model_validate(t) for t in tasks]  # what the response_model does
+        node, depth = schemas[0], 0
+        while node.subtasks:
+            node, depth = node.subtasks[0], depth + 1
+        assert (schemas[0].title, depth, node.title) == ("Assigned", 6, "L6")
+
+    run_in_rolled_back_db(scenario)
