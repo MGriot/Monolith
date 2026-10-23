@@ -111,16 +111,8 @@ export default function WorkflowsPage() {
         queryFn: async () => (await api.get('/workflows/')).data as Workflow[],
     });
 
-    const mdeOptions = useMemo(() => ({
-        ...markdownEditorOptions({ minHeight: "300px" }),
-        // Custom preview rendering to support LaTeX and Tipsy
-        previewRender: () => {
-          // We can't easily render React components into a string for SimpleMDE's preview
-          // but we can use a simpler marked-based approach or just rely on the main view mode.
-          // For now, let's just use the default but keep the option for future static rendering.
-          return null; // returning null uses default
-        }
-    }), []);
+    // EasyMDE's own preview (marked); a previewRender returning null left the preview panes blank.
+    const mdeOptions = useMemo(() => markdownEditorOptions({ minHeight: "300px" }), []);
 
     const createMutation = useMutation({
         mutationFn: (data: any) => api.post('/workflows/', data),
