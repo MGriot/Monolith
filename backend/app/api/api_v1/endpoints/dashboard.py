@@ -1,13 +1,14 @@
 from typing import Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import selectinload
 from collections import defaultdict
 from datetime import datetime, time, timedelta
 
 from app.api import deps
 from app.api.access import visible_project_filter, visible_task_filter
+from app.models.associations import project_members
 from app.models.project import Project
 from app.models.task import Task
 from app.models.user import User
@@ -26,12 +27,22 @@ async def get_team_workload(
 ) -> Any:
     """
     Calculate daily workload per user for the next N days.
+    Non-admins see themselves and the people who own or belong to a project they can see, counting only tasks they
+    can see; superusers see everyone.
     """
     start_date = datetime.utcnow().date()
     window_end = start_date + timedelta(days=days - 1)
 
-    # 1. Fetch all active users
-    users_res = await db.execute(select(User).filter(User.is_active == True))
+    # 1. Active users: everyone for a superuser, else me and the people I share a project with
+    users_stmt = select(User).filter(User.is_active == True)
+    if not current_user.is_superuser:
+        visible_projects = select(Project.id).where(visible_project_filter(current_user))
+        users_stmt = users_stmt.filter(or_(
+            User.id == current_user.id,
+            User.id.in_(select(project_members.c.user_id).where(project_members.c.project_id.in_(visible_projects))),
+            User.id.in_(select(Project.owner_id).where(Project.id.in_(visible_projects))),
+        ))
+    users_res = await db.execute(users_stmt)
     users = users_res.scalars().all()
 
     # 2. Open, dated tasks that overlap the window (others add nothing), with their assignees
@@ -43,6 +54,7 @@ async def get_team_workload(
                 Task.start_date != None,
                 Task.due_date != None,
                 Task.is_archived == False,
+                visible_task_filter(current_user),
                 Task.due_date >= datetime.combine(start_date, time.min),
                 Task.start_date < datetime.combine(window_end + timedelta(days=1), time.min),
             )

@@ -442,3 +442,41 @@ def test_lists_use_one_visibility_rule():
         assert {h.title for h in hits} == expected_projects | expected_tasks
 
     run_in_rolled_back_db(scenario)
+
+
+def test_team_workload_shows_only_people_who_share_a_project():
+    from datetime import datetime, timedelta
+
+    from app.api.api_v1.endpoints import dashboard as dashboard_api
+    from app.models.associations import project_members
+
+    async def scenario(db, owner_id):
+        def person(name):
+            return User(email=f"{name}-{uuid4().hex[:6]}@example.com", full_name=name, hashed_password="x", is_active=True)
+
+        me, mate, stranger = person("Me"), person("Mate"), person("Stranger")
+        db.add_all([me, mate, stranger])
+        await db.flush()
+        shared = await _project(db, me.id, "Shared")
+        theirs = await _project(db, stranger.id, "Theirs")     # mate is a member, I am not
+        await db.execute(project_members.insert().values([
+            {"project_id": shared.id, "user_id": mate.id, "role": "editor"},
+            {"project_id": theirs.id, "user_id": mate.id, "role": "editor"}]))
+        today = datetime.utcnow().replace(hour=10)
+        for title, project, who in (("Shared work", shared, mate), ("Their work", theirs, mate), ("Private", theirs, stranger)):
+            await crud_task.task.create(db, obj_in=TaskCreate(
+                title=title, project_id=project.id, start_date=today, due_date=today, assignee_ids=[who.id]),
+                owner_id=who.id)
+
+        mine = await dashboard_api.get_team_workload(db=db, current_user=me, days=3)
+        by_user = {u.user_name: u for u in mine.users}
+        assert set(by_user) == {"Me", "Mate"}                       # the stranger shares no project with me
+        assert by_user["Mate"].workload[0].task_count == 1          # "Their work" is in a project I cannot see
+
+        admin = User(id=uuid4(), is_superuser=True)
+        everyone = await dashboard_api.get_team_workload(db=db, current_user=admin, days=3)
+        names = {u.user_name for u in everyone.users}
+        assert {"Me", "Mate", "Stranger"} <= names
+        assert next(u for u in everyone.users if u.user_name == "Mate").workload[0].task_count == 2
+
+    run_in_rolled_back_db(scenario)
