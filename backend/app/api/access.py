@@ -183,3 +183,18 @@ async def require_context_access(
         await require_task_access(db, task_id, user, write=write)
     if idea_id:
         await require_idea_access(db, idea_id, user, min_role=min_role)
+
+
+def require_owner(obj, user: User, detail: str) -> None:
+    """Owned, shareable objects (templates, SOP workflows, teams): only superusers and the owner."""
+    if not (user.is_superuser or obj.owner_id == user.id):
+        raise HTTPException(status_code=403, detail=detail)
+
+
+def require_owner_or_shared(obj, user: User, detail: str, *, also=()) -> None:
+    """Superusers, the owner, the users it is shared with, and anyone in `also` (e.g. a team's members)."""
+    if user.is_superuser or obj.owner_id == user.id:
+        return
+    if any(u.id == user.id for u in (*obj.shared_with, *also)):
+        return
+    raise HTTPException(status_code=403, detail=detail)

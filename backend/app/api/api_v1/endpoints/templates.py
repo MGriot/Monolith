@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud, models, schemas
 from app.api import deps
+from app.api.access import require_owner, require_owner_or_shared
 
 router = APIRouter()
 
@@ -56,12 +57,7 @@ async def update_template(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     
-    # Check if user is owner or co-owner (shared_with)
-    is_owner = template.owner_id == current_user.id
-    is_shared = any(u.id == current_user.id for u in template.shared_with)
-    
-    if not current_user.is_superuser and not is_owner and not is_shared:
-        raise HTTPException(status_code=403, detail="Not enough permissions to modify this template")
+    require_owner_or_shared(template, current_user, "Not enough permissions to modify this template")
         
     template = await crud.project_template.update(db, db_obj=template, obj_in=obj_in)
     return template
@@ -84,11 +80,7 @@ async def read_template(
     if template.is_public:
         return template
         
-    is_owner = template.owner_id == current_user.id
-    is_shared = any(u.id == current_user.id for u in template.shared_with)
-    
-    if not current_user.is_superuser and not is_owner and not is_shared:
-        raise HTTPException(status_code=403, detail="Not enough permissions to view this template")
+    require_owner_or_shared(template, current_user, "Not enough permissions to view this template")
     return template
 
 @router.delete("/{id}", response_model=schemas.template.ProjectTemplate)
@@ -105,8 +97,7 @@ async def delete_template(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
         
-    if not current_user.is_superuser and (template.owner_id != current_user.id):
-        raise HTTPException(status_code=403, detail="Only the owner can delete this template")
+    require_owner(template, current_user, "Only the owner can delete this template")
         
     template = await crud.project_template.remove(db, id=id)
     return template
