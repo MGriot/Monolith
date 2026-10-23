@@ -274,7 +274,8 @@ async def bulk_update_tasks(
             results[task_id] = BulkTaskResult(id=task_id, ok=False, status_code=e.status_code, detail=str(e.detail))
 
     patch = body.patch.model_dump(exclude_unset=True) if body.patch is not None else {}
-    async with transaction(db):
+    # one project roll-up per affected project at the end, not one per task
+    async with transaction(db), crud_task.task.project_sync_once(db):
         for task_id in allowed:
             try:
                 async with db.begin_nested():

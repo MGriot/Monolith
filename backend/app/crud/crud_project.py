@@ -153,7 +153,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     await create_recursive_tasks(t_data["subtasks"], parent_id=new_task.id)
 
         if template.tasks_json:
-            await create_recursive_tasks(template.tasks_json)
+            async with crud_task.project_sync_once(db):  # roll the project up once, not after every template task
+                await create_recursive_tasks(template.tasks_json)
         
         await commit(db)
 

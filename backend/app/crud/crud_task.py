@@ -1,4 +1,6 @@
+import functools
 from collections import defaultdict
+from contextlib import asynccontextmanager
 from typing import List, Union, Dict, Any, Optional
 from uuid import UUID
 from datetime import datetime
@@ -51,6 +53,22 @@ def reconcile_dates(obj_data: dict, start0, due0, dur0) -> dict:
         if start and due:
             obj_data["duration_days"] = (due - start).days + 1
     return obj_data
+
+
+_PENDING_SYNC = "pending_project_sync"
+
+
+def _sync_projects_once(fn):
+    """Run a task CRUD method so that project roll-ups requested anywhere inside it (nested subtasks, parent status
+    roll-ups, ...) happen once per project when the outermost call finishes, instead of after every step."""
+
+    @functools.wraps(fn)
+    async def wrapper(self, *args, **kwargs):
+        db = args[0] if args else kwargs["db"]
+        async with self.project_sync_once(db):
+            return await fn(self, *args, **kwargs)
+
+    return wrapper
 
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
@@ -167,9 +185,33 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             return 25.0
         return 0.0
 
+    @asynccontextmanager
+    async def project_sync_once(self, db: AsyncSession):
+        """Collect sync_project_from_tasks() calls made inside the block and run each project's sync once at the end."""
+        if _PENDING_SYNC in db.info:  # an outer block owns the sync
+            yield
+            return
+        pending: Dict[UUID, None] = {}  # ordered set
+        db.info[_PENDING_SYNC] = pending
+        try:
+            yield
+            while pending:
+                project_id = next(iter(pending))
+                del pending[project_id]
+                await self._sync_project_now(db, project_id)
+        finally:
+            db.info.pop(_PENDING_SYNC, None)
+
     async def sync_project_from_tasks(self, db: AsyncSession, project_id: UUID):
         if not project_id:
             return
+        pending = db.info.get(_PENDING_SYNC)
+        if pending is not None:
+            pending[project_id] = None
+            return
+        await self._sync_project_now(db, project_id)
+
+    async def _sync_project_now(self, db: AsyncSession, project_id: UUID):
             
         from app.crud.crud_project import project as project_crud
         
@@ -228,10 +270,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if new_due_date and project_obj.due_date != new_due_date:
                 update_data["due_date"] = new_due_date
 
-            # Add aggregated topic/type IDs to update
-            if topic_ids:
+            # Add aggregated topic/type IDs to update (only when they changed: the rewrite costs queries and a write)
+            if topic_ids and topic_ids != {t.id for t in project_obj.topics}:
                 update_data["topic_ids"] = list(topic_ids)
-            if type_ids:
+            if type_ids and type_ids != {t.id for t in project_obj.types}:
                 update_data["type_ids"] = list(type_ids)
 
             if update_data:
@@ -242,14 +284,15 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         Updates the status of a parent task based on its children's status.
         Bubbles up to the root.
         """
-        # Load parent with its children
-        parent = await self.get(db, id=parent_id)
-        if not parent or not parent.subtasks:
+        # Only the direct children's statuses are needed; the parent's subtree is loaded only if its status changes.
+        parent_status = (await db.execute(select(self.model.status).where(self.model.id == parent_id))).first()
+        child_statuses = (await db.execute(select(self.model.status).where(self.model.parent_id == parent_id))).scalars().all()
+        if not parent_status or not child_statuses:
             return
 
-        total = len(parent.subtasks)
-        done_count = sum(1 for s in parent.subtasks if s.status == Status.DONE)
-        in_progress_count = sum(1 for s in parent.subtasks if s.status in [Status.IN_PROGRESS, Status.REVIEW])
+        total = len(child_statuses)
+        done_count = sum(1 for st in child_statuses if st == Status.DONE)
+        in_progress_count = sum(1 for st in child_statuses if st in [Status.IN_PROGRESS, Status.REVIEW])
         
         new_status = Status.TODO
         if done_count == total:
@@ -262,7 +305,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         elif in_progress_count > 0 or done_count > 0:
             new_status = Status.IN_PROGRESS
         
-        if parent.status != new_status:
+        if parent_status[0] != new_status:
+            parent = await self.get(db, id=parent_id)
             # Use direct update to avoid triggering another loop if not needed, 
             # but we NEED to bubble up, so we call update which calls this again.
             with activity.acting_as(activity.ROLLUP_LABEL):
@@ -316,6 +360,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return active_blocker_titles
 
     @atomic
+    @_sync_projects_once
     async def create(self, db: AsyncSession, *, obj_in: TaskCreate, owner_id: Optional[UUID] = None) -> Task:
         obj_data = clean_dict_datetimes(obj_in.model_dump(exclude_unset=True, exclude={'topic_ids', 'type_ids'}))
         assignee_ids = obj_data.pop("assignee_ids", [])
@@ -476,6 +521,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             logging.getLogger(__name__).exception("Could not queue assignment e-mails")
 
     @atomic
+    @_sync_projects_once
     async def update(
         self, db: AsyncSession, *, db_obj: Task, obj_in: Union[TaskUpdate, Dict[str, Any]]
     ) -> Task:
@@ -658,6 +704,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return db_obj
 
     @atomic
+    @_sync_projects_once
     async def remove(self, db: AsyncSession, *, id: UUID) -> Task:
         # Load object first to get parent/project info
         db_obj = await self.get(db, id=id)

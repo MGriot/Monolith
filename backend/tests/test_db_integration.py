@@ -305,3 +305,62 @@ def test_parent_and_blocker_cycles_and_done_guard():
         assert str(exc.value) == "Task is blocked by unfinished items: Other, Y, X"
 
     run_in_rolled_back_db(scenario)
+
+
+def test_rollup_results_after_nested_create_update_and_bulk():
+    from datetime import datetime
+    from types import SimpleNamespace
+
+    from app.api.api_v1.endpoints import tasks as tasks_api
+    from app.models.metadata import Topic
+    from app.schemas.task import BulkTaskRequest
+
+    async def scenario(db, owner_id):
+        project = await _project(db, owner_id, "Rollup")
+        t1, t2 = Topic(name="Alpha"), Topic(name="Beta")
+        db.add_all([t1, t2])
+        await db.flush()
+        d = lambda day: datetime(2026, 3, day)  # noqa: E731
+        root = await crud_task.task.create(db, obj_in=TaskCreate(
+            title="Root", project_id=project.id, topic_ids=[t1.id],
+            subtasks=[TaskShortCreate(title="A", start_date=d(2), due_date=d(4), subtasks=[
+                          TaskShortCreate(title="A1", start_date=d(2), due_date=d(3)),
+                          TaskShortCreate(title="A2", due_date=d(9))]),
+                      TaskShortCreate(title="B", start_date=d(5), due_date=d(6))],
+        ), owner_id=owner_id)
+        lone = await crud_task.task.create(db, obj_in=TaskCreate(
+            title="Lone", project_id=project.id, topic_ids=[t2.id], start_date=d(1), due_date=d(1)), owner_id=owner_id)
+        root_id, lone_id, project_id = root.id, lone.id, project.id
+
+        async def state():
+            db.expire_all()
+            p = await crud_project.project.get(db, id=project_id)
+            tree = await crud_task.task.get_multi_by_project(db, project_id=project_id)
+            statuses = {}
+
+            def walk(ts):
+                for t in ts:
+                    statuses[t.title] = t.status.value
+                    walk(t.subtasks)
+            walk(tree)
+            return (p.progress_percent, p.start_date, p.due_date, sorted(t.name for t in p.topics), statuses)
+
+        after_create = await state()
+        assert after_create[1:4] == (d(1), d(9), ["Alpha", "Beta"])
+        assert set(after_create[4].values()) == {"Todo"}
+
+        tree = {t.title: t for t in (await crud_task.task.get(db, id=root_id)).subtasks}
+        a1 = await crud_task.task.get(db, id=tree["A"].subtasks[0].id)
+        await crud_task.task.update(db, db_obj=a1, obj_in={"status": Status.DONE})
+        after_leaf = await state()
+        assert after_leaf[4] == {"Root": "In Progress", "A": "In Progress", "A1": "Done", "A2": "Todo", "B": "Todo",
+                                 "Lone": "Todo"}
+
+        ids = [tree["A"].subtasks[1].id, tree["B"].id, lone_id]
+        await tasks_api.bulk_update_tasks(db=db, body=BulkTaskRequest(ids=ids, patch={"status": "Done"}),
+                                          current_user=SimpleNamespace(id=owner_id, is_superuser=True))
+        after_bulk = await state()
+        assert after_bulk[4] == {"Root": "Done", "A": "Done", "A1": "Done", "A2": "Done", "B": "Done", "Lone": "Done"}
+        assert after_bulk[0] == 100.0 and after_leaf[0] < after_bulk[0]
+
+    run_in_rolled_back_db(scenario)
