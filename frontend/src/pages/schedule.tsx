@@ -14,7 +14,7 @@ import {
 } from 'date-fns';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Filter, Plus, ExternalLink, Calendar as CalendarIcon, GanttChart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, ExternalLink, Calendar as CalendarIcon, GanttChart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Popover,
@@ -605,14 +605,9 @@ function RoadmapView() {
       emptyText="No projects with timelines found."
       rows={rows}
       legend={
-        <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mr-4">
-                <div className="w-2 h-2 rounded-full bg-primary" /> Active
-                <div className="w-2 h-2 rounded-full bg-emerald-500" /> Done
-            </div>
-            <Button variant="outline" size="sm" className="gap-2">
-                <Filter className="h-4 w-4" /> Filter
-            </Button>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="w-2 h-2 rounded-full bg-primary" /> Active
+            <div className="w-2 h-2 rounded-full bg-emerald-500" /> Done
         </div>
       }
     />
