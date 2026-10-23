@@ -43,6 +43,17 @@ All notable changes to this project will be documented in this file.
   with no fixed release.
 - CI uses Node 22 and the Node 24-based majors of `actions/checkout`, `actions/setup-node` and `actions/setup-python`;
   the frontend image builds on `node:22-alpine`.
+- Faster task writes: a project is rolled up once per operation instead of after every nested subtask, ancestor,
+  template task or bulk id (39-task nested create: 1315 -> 808 SQL statements; 30-task bulk change: 991 -> 759).
+  Blocker and parent-loop checks, idea vote counts, portfolio health, team workload and the all-projects export no
+  longer run one query per item.
+- CSV / Excel exports are written without pandas; the download name is quoted (spaces, quotes and accents survive).
+- The backend image no longer installs pandas, numpy, xhtml2pdf, Pillow, reportlab or the cairo libraries
+  (67 -> 52 Python packages). `python-dateutil` (recurring tasks) is now declared explicitly.
+- `compose.yaml` passes twelve more settings through from `.env` (token lifetime, upload limit, login throttling,
+  mail timings...); they are listed with their defaults in `.env.example`.
+- The mail server image is pinned (`docker-mailserver:16.0.1`); `pip-audit` now fails CI on a known vulnerability.
+- CI runs every backend unit test module (three were never run) and the export tests against Postgres.
 
 ### Removed
 - The fake "Matteo (You)" / "Antigravity" collaborators in the sketch editor.
@@ -52,12 +63,19 @@ All notable changes to this project will be documented in this file.
 - The remaining loose scripts in `backend/` (26 hand-run `test_*.py`, the pre-Alembic `apply_*` / `cleanup_*` /
   `purge_*` / `list_*` scripts) and `scripts/debug/`. Two still-valid tests moved to `backend/tests/`.
 - User uploads that had been committed under `backend/uploads/` (the folder is now ignored).
+- The unused PDF report service (`core/pdf.py`) and its template, the legacy `Subtask` ORM model (its tables stay), and
+  a second weekly-digest implementation that ignored the digest opt-out.
 
 ### Fixed
 - Topic and work-type names are unique per scope again (migration 0014). The old `UNIQUE(name, project_id, task_id)`
   let duplicate global and project names through, because NULL scope columns never compare equal. The migration merges
   existing duplicates into one (links, allow-lists, template tasks and automation rules follow it); creating a duplicate
   is now a 409. `backend/fix_scoped_taxonomy_constraints.py`, which did this by hand on old databases, is gone.
+- The My Tasks details export failed (HTTP 500) when a task had subtasks not assigned to you; `/tasks/assigned` failed
+  for subtask trees deeper than four levels.
+- Portfolio health always reported 0 critical-path tasks; it now runs the same critical-path calculation as the Gantt.
+- `/subtasks` create and update now validate custom fields and answer domain errors with 400 instead of 500.
+- The admin "send weekly summary now" action sends the same digest as the scheduler (active users who opted in).
 - The two hand-run database scripts that failed under pytest (`test_crud_dependencies_standalone.py`,
   `test_recursive_logic.py`) are replaced by `tests/test_db_integration.py`: real PostgreSQL tests (dependencies, cycle
   rejection, nested create, status roll-up and its change-log label) that roll back everything; CI runs them against a
