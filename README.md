@@ -51,6 +51,10 @@ scripts/mail-bootstrap.sh       # one-time: TLS certificate + sender mailbox for
 podman-compose up -d --build    # or: docker compose up -d --build
 ```
 
+Stick to one compose tool per stack: containers created by `docker compose` (or by `podman compose`, which hands off to
+`docker-compose`) block `podman-compose` and keep the old images running; `podman-compose down` then `up` fixes it
+([troubleshooting](docs/guide/11-troubleshooting.html#problems)).
+
 | What | Where |
 |---|---|
 | App | http://localhost:8080 (`HTTP_PORT`) |
