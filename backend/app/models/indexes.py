@@ -79,5 +79,21 @@ Index(
 
 # --- custom fields: definitions per project, unique names; GIN on the JSONB values for filtering by field value
 Index("ix_custom_field_defs_project_id", CustomFieldDef.project_id)
-Index("uq_custom_field_defs_project_name", CustomFieldDef.project_id, CustomFieldDef.name, unique=True)
+# Names are unique per (project, applies_to); global definitions (project_id NULL) per applies_to (migration 0015)
+Index(
+    "uq_custom_field_defs_project_name",
+    CustomFieldDef.project_id,
+    CustomFieldDef.applies_to,
+    CustomFieldDef.name,
+    unique=True,
+    postgresql_where=CustomFieldDef.project_id.isnot(None),
+)
+Index(
+    "uq_custom_field_defs_global_name",
+    CustomFieldDef.applies_to,
+    CustomFieldDef.name,
+    unique=True,
+    postgresql_where=CustomFieldDef.project_id.is_(None),
+)
 Index("ix_tasks_custom_values", Task.custom_values, postgresql_using="gin")
+Index("ix_projects_custom_values", Project.custom_values, postgresql_using="gin")

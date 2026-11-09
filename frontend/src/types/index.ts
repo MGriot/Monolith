@@ -65,7 +65,7 @@ export interface Task {
   // List
   checklist?: { id: string; content: string; is_done: boolean }[];
   // Custom field values keyed by CustomFieldDef id
-  custom_values?: Record<string, string | number>;
+  custom_values?: Record<string, string | number | boolean>;
   // RRULE subset, e.g. FREQ=WEEKLY;BYDAY=MO. Completing the task creates the next one
   recurrence_rule?: string | null;
 }
@@ -109,6 +109,8 @@ export interface Project {
   // Risk
   risk_probability?: number;
   risk_impact?: number;
+  // Project custom field values keyed by CustomFieldDef id (fields with applies_to 'project')
+  custom_values?: Record<string, string | number | boolean>;
 }
 
 export interface Topic {

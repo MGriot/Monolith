@@ -8,10 +8,12 @@ from datetime import datetime
 
 from app.api import deps
 from app.api.access import ADMIN, ROLES, project_role, require_project_access, visible_project_filter
+from app.core.config import settings
+from app.core.custom_fields import export_columns
 from app.core.export import enum_value, fmt_date, tabular_response
 from app.core.wbs import apply_wbs_codes
 from app.db.transaction import commit
-from app.crud import crud_project, crud_task
+from app.crud import crud_custom_field, crud_project, crud_task
 from app.schemas.project import Project, ProjectCreate, ProjectUpdate
 from app.models.user import User
 from app.models.task import Task
@@ -48,6 +50,8 @@ async def export_projects_multi(
     data = []
 
     if mode == "summary":
+        # Across projects only the global project fields line up as columns.
+        global_project_fields = await crud_custom_field.list_global_defs(db, "project")
         for p in projects:
             data.append({
                 "Name": p.name,
@@ -61,7 +65,8 @@ async def export_projects_multi(
                 "Deadline": fmt_date(p.deadline_at),
                 "Archived": "Yes" if p.is_archived else "No",
                 "Archived At": fmt_date(p.archived_at),
-                "Owner": _person(p.owner) if p.owner else ""
+                "Owner": _person(p.owner) if p.owner else "",
+                **export_columns(global_project_fields, p.custom_values, settings.CURRENCY),
             })
     else:
         # Details mode: one header row per project, then its task tree
@@ -122,6 +127,7 @@ async def export_project(
     await require_project_access(db, project_id, current_user)
 
     if mode == "summary":
+        project_fields = await crud_custom_field.list_defs(db, project_id, "project")
         data = [{
             "Project Name": project.name,
             "Description": project.description or "",
@@ -132,10 +138,12 @@ async def export_project(
             "Deadline": fmt_date(project.deadline_at),
             "Archived": "Yes" if project.is_archived else "No",
             "Owner": _person(project.owner) if project.owner else "N/A",
-            "Tags": ", ".join(project.tags or [])
+            "Tags": ", ".join(project.tags or []),
+            **export_columns(project_fields, project.custom_values, settings.CURRENCY),
         }]
     else:
         all_tasks_tree = await crud_task.task.get_multi_by_project(db, project_id=project_id, limit=1000)
+        task_fields = await crud_custom_field.list_defs(db, project_id, "task")
         apply_wbs_codes(all_tasks_tree)
 
         data = []
@@ -158,7 +166,8 @@ async def export_project(
                     "Duration (Days)": duration,
                     "Assignees": ", ".join([_person(u) for u in t.assignees]),
                     "Milestone": "Yes" if t.is_milestone else "No",
-                    "Tags": ", ".join(t.tags or [])
+                    "Tags": ", ".join(t.tags or []),
+                    **export_columns(task_fields, t.custom_values, settings.CURRENCY),
                 })
                 if t.subtasks:
                     flatten_for_export(t.subtasks)
@@ -291,6 +300,14 @@ async def create_project(
             project_in.allowed_global_topics = template.allowed_global_topics
             project_in.allowed_global_work_types = template.allowed_global_work_types
 
+    if project_in.custom_values:
+        # A new project only sees the global project fields; its own can be added once it exists.
+        try:
+            project_in.custom_values = await crud_custom_field.validate_for_project(
+                db, None, project_in.custom_values, applies_to="project"
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
     project = await crud_project.project.create_with_owner(
         db=db, obj_in=project_in, owner_id=current_user.id
     )
@@ -401,7 +418,14 @@ async def update_project(
     
     # Project admins (owner, superusers and members with the admin role) manage settings and members
     await require_project_access(db, project_id, current_user, min_role=ADMIN)
-        
+    if "custom_values" in project_in.model_fields_set:
+        try:
+            project_in.custom_values = await crud_custom_field.validate_for_project(
+                db, project_id, project_in.custom_values or {}, applies_to="project"
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
     project = await crud_project.project.update(db=db, db_obj=project, obj_in=project_in)
     return project
 

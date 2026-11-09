@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { parseISO, differenceInDays } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,20 @@ import { formatDisplayDate, isAfterDueDay } from "@/lib/dates";
 import { isCriticalTask } from '@/lib/gantt';
 import type { TaskGroup } from '@/lib/task-filters';
 import { clickSelection, headerState, pruneSelection, toggleAll, visibleIds, type SelectionState } from '@/lib/selection';
+import { useCustomFieldDefs } from '@/hooks/use-custom-field-defs';
+import { CustomFieldValue } from '@/components/custom-field-values';
+import { fieldSuffix, formatMoney, type CustomFieldDef } from '@/lib/custom-fields';
+import { useCurrency, usersQuery } from '@/lib/queries';
+
+/** How many task custom fields get a column (in field order); the rest stay in the task editor. */
+export const MAX_FIELD_COLUMNS = 3;
+
+interface FieldColumns {
+  defs: CustomFieldDef[];
+  users?: { id: string; full_name?: string | null; email?: string }[];
+  currency: string;
+}
+const FieldColumnsContext = createContext<FieldColumns>({ defs: [], currency: 'EUR' });
 
 export interface ProjectTaskListProps {
   tasks: Task[];
@@ -44,6 +59,8 @@ export interface ProjectTaskListProps {
   selection?: { state: SelectionState; onChange: (next: SelectionState) => void };
   /** follows the Gantt's Critical Path toggle: critical rows are flagged, the rest dimmed */
   highlightCritical?: boolean;
+  /** when set, the project's first task custom fields get a column each */
+  projectId?: string;
 }
 
 interface RecursiveRowProps {
@@ -62,6 +79,7 @@ interface RecursiveRowProps {
 }
 
 function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask, collapsed, onToggleCollapse, selected, onSelectClick, highlightCritical }: RecursiveRowProps) {
+  const fields = useContext(FieldColumnsContext);
   const isExpanded = !collapsed.has(task.id);
   const hasChildren = task.subtasks && task.subtasks.length > 0;
 
@@ -294,9 +312,14 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
                 "text-[11px] font-bold",
                 (task.real_cost || 0) > (task.budget || 0) ? "text-red-500" : "text-fg-body"
             )}>
-                {task.real_cost ? `$${task.real_cost.toLocaleString()}` : '-'}
+                {task.real_cost ? formatMoney(task.real_cost, fields.currency) : '-'}
             </span>
         </TableCell>
+        {fields.defs.map((def) => (
+          <TableCell key={def.id} className="py-2 text-center text-[11px] font-medium text-fg-body max-w-[10rem]">
+            <CustomFieldValue def={def} value={task.custom_values?.[def.id]} users={fields.users} currency={fields.currency} />
+          </TableCell>
+        ))}
         <TableCell className="py-2 text-center">
           <span className="text-[11px] font-semibold text-muted-foreground">{duration > 0 ? `${duration}d` : '-'}</span>
         </TableCell>
@@ -345,7 +368,12 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
   );
 }
 
-export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask, selection, highlightCritical }: ProjectTaskListProps) {
+export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, onSubtaskClick, onAddSubtask, onReorderTask, onIndentTask, selection, highlightCritical, projectId }: ProjectTaskListProps) {
+  const currency = useCurrency();
+  const { data: allDefs } = useCustomFieldDefs(projectId, 'task');
+  const fieldDefs = useMemo(() => (projectId ? (allDefs ?? []).slice(0, MAX_FIELD_COLUMNS) : []), [projectId, allDefs]);
+  const { data: users } = useQuery({ ...usersQuery, enabled: fieldDefs.some((d) => d.field_type === 'user') });
+  const fieldColumns = useMemo(() => ({ defs: fieldDefs, users, currency }), [fieldDefs, users, currency]);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const toggleCollapse = (id: string) =>
     setCollapsed((prev) => {
@@ -367,9 +395,10 @@ export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, 
   }, [order, selectionState, onSelectionChange]);
 
   const header = selectionState ? headerState(selectionState, order) : 'none';
-  const colCount = selection ? 16 : 15;
+  const colCount = (selection ? 16 : 15) + fieldDefs.length;
 
   return (
+    <FieldColumnsContext.Provider value={fieldColumns}>
     <div className="rounded-md border border-border bg-background overflow-hidden shadow-sm">
       <div className="table-container">
         <Table>
@@ -397,7 +426,15 @@ export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, 
             <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Priority</TableHead>
             <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Assignees</TableHead>
             <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">List</TableHead>
-            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Cost ($)</TableHead>
+            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Cost ({currency})</TableHead>
+            {fieldDefs.map((def) => {
+              const suffix = fieldSuffix(def, currency);
+              return (
+                <TableHead key={def.id} className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center whitespace-nowrap">
+                  {def.name}{suffix ? ` (${suffix})` : ''}
+                </TableHead>
+              );
+            })}
             <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">Days</TableHead>
             <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Start</TableHead>
             <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Concluded</TableHead>
@@ -445,5 +482,6 @@ export default function ProjectTaskList({ tasks, groups, filtered, onTaskClick, 
       </Table>
       </div>
     </div>
+    </FieldColumnsContext.Provider>
   );
 }

@@ -56,6 +56,9 @@ class Project(Base):
     # Whitelisting
     allowed_global_topics = Column(JSONB, nullable=False, default=[])
     allowed_global_work_types = Column(JSONB, nullable=False, default=[])
+
+    # Values of project custom fields (global and this project's, applies_to='project'), keyed by CustomFieldDef.id
+    custom_values = Column(JSONB, nullable=False, default=dict, server_default="{}")
     
     # Relationships
     owner = relationship("User", backref="owned_projects", foreign_keys=[owner_id])

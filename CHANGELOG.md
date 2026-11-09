@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Custom fields on projects, global fields, units and currency**: a field now applies to projects or to tasks, and
+  superusers can define **global** fields every project gets (Metadata › Custom fields) next to each project's own.
+  New types `currency`, `checkbox` and `url`; number fields take a free-text unit (`h`, `kg`, `%`), currency fields an
+  ISO currency; both take minimum, maximum and decimals. Project values are edited on the project editor's Fields tab
+  and shown on the overview; the first task fields become task-list columns; exports carry every field with its unit.
+  `GET/POST/PUT/DELETE /custom-fields` (global), `applies_to` on `/projects/{id}/custom-fields`, `custom_values` on
+  projects; MCP `*_global_custom_field` tools. Migration 0015.
+- **`CURRENCY`** setting (default `EUR`, exposed in `GET /auth/config`): budget and actual cost are no longer shown in `$`.
+- `scripts/docs/screenshots`: Playwright script that seeds demo data and retakes the custom-field guide screenshots.
 - **Task change log**: every task change (create, edit, status, assignment, archive, delete, dependencies) is recorded
   as a plain sentence with who made it, through the app, the API or MCP; automation and roll-up changes are labelled.
   Shown with the discussion in the project and task Activity tabs (filter All / Comments / Changes);

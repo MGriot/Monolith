@@ -51,22 +51,84 @@
   <section id="custom-fields">
     <span class="eyebrow">Data</span>
     <h2>Custom fields</h2>
-    <p class="prose">Project admins define fields in <span class="ui">Project Settings</span> › <span class="ui">Custom fields</span>; they appear in every task editor of that project.</p>
+    <p class="prose">Projects and tasks come with a fixed set of fields: dates, status, priority, budget and actual cost, risk and so on. <b>Custom fields</b> add your own on top, such as an approved budget in euros, the effort in hours, a cost centre, a link to the client portal or a "contract signed" tick. Each field has a <b>type</b> that decides what can be entered, and number fields can carry a <b>unit</b>, limits and a number of decimals.</p>
+
+    <h3>Where a field lives</h3>
+    <p class="prose">Two choices define every field:</p>
     <div class="tbl wrap"><table>
-      <thead><tr><th>Type</th><th>Value</th><th>Example</th></tr></thead>
+      <thead><tr><th></th><th>Global field</th><th>Project field</th></tr></thead>
       <tbody>
-        <tr><td><code>text</code></td><td>free text</td><td>Cost centre <code>CC-4410</code></td></tr>
-        <tr><td><code>number</code></td><td>any number</td><td>Allocation % <code>75</code></td></tr>
-        <tr><td><code>select</code></td><td>one of the field's options</td><td>Work package <code>WP2 Platform</code></td></tr>
-        <tr><td><code>date</code></td><td>ISO date</td><td>Contract signed</td></tr>
-        <tr><td><code>user</code></td><td>a user id</td><td>Reviewer</td></tr>
+        <tr><td><b>Who defines it</b></td><td>Superusers, in <span class="ui">Metadata</span> › <span class="ui">Custom fields</span></td><td>Project admins, in <span class="ui">Project Settings</span></td></tr>
+        <tr><td><b>Where it appears</b></td><td>In every project, read-only in project settings and marked with a globe</td><td>In that project only</td></tr>
+        <tr><td><b>Typical use</b></td><td>Things every project reports the same way: approved budget, cost centre, contract signed</td><td>What only this project tracks: pallet weight, vendor quote, reviewed</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose">Independently, a field <b>applies to projects</b> (one value per project, shown on the overview) or <b>to tasks</b> (one value per task, edited on the task's <span class="ui">Fields</span> tab). Neither the type nor what a field applies to can change once it exists. Delete the field and create a new one instead.</p>
+    <figure class="shot"><img src="../img/guide/custom-fields-admin-global.webp" alt="Metadata page with the global project fields and global task fields cards" loading="lazy" width="1440" height="900"><figcaption>Superusers define global fields under <span class="ui">Metadata</span> › <span class="ui">Custom fields</span>: one card for project fields, one for task fields.</figcaption></figure>
+    <figure class="shot"><img src="../img/guide/custom-fields-project-settings.webp" alt="Project settings listing project fields, two of them marked Global" loading="lazy" width="1440" height="900"><figcaption>In <span class="ui">Project Settings</span> the global fields are listed first with a <span class="ui">Global</span> badge and cannot be edited there. The project's own fields follow.</figcaption></figure>
+
+    <h3>Types, units and limits</h3>
+    <div class="tbl wrap"><table>
+      <thead><tr><th>Type</th><th>Value</th><th>Settings</th><th>Shown as</th></tr></thead>
+      <tbody>
+        <tr><td><code>text</code></td><td>free text, up to 5,000 characters</td><td></td><td>Client reference <code>PO-4410</code></td></tr>
+        <tr><td><code>number</code></td><td>a number</td><td><b>unit</b> (free text: <code>h</code>, <code>kg</code>, <code>%</code>, <code>days</code>), minimum, maximum, decimals</td><td><code>12.5 h</code>, <code>820 kg</code>, <code>40%</code></td></tr>
+        <tr><td><code>currency</code></td><td>an amount</td><td><b>currency</b> (ISO code, empty = the instance currency), minimum, maximum, decimals</td><td><code>€175,000.00</code>, <code>US$18,450.50</code></td></tr>
+        <tr><td><code>select</code></td><td>one of the field's options</td><td>options</td><td>Cost centre <code>Operations</code></td></tr>
+        <tr><td><code>date</code></td><td>a calendar date</td><td></td><td>Kick-off <code>14/09/2026</code></td></tr>
+        <tr><td><code>user</code></td><td>a person with an account</td><td></td><td>Reviewer <code>Sam Rivera</code></td></tr>
+        <tr><td><code>checkbox</code></td><td>yes or no</td><td></td><td>Contract signed <code>Yes</code></td></tr>
+        <tr><td><code>url</code></td><td>an <code>http(s)</code> link</td><td></td><td>a clickable link</td></tr>
       </tbody>
     </table></div>
     <ul class="prose">
-      <li>Names are unique per project. Values live in <code>tasks.custom_values</code> keyed by field id and are validated on every save: an unknown field or a wrong value is a 400.</li>
-      <li><code>null</code> clears a value; omitting <code>custom_values</code> on update leaves them untouched.</li>
-      <li>Deleting a field strips its values from every task; removing a select option clears tasks still using it.</li>
+      <li><b>Unit</b> is only a label, so <code>h</code> and <code>hours</code> are different units to Monolith. Pick one per field and keep it.</li>
+      <li><b>Minimum and maximum</b> are inclusive. Either can be left empty: <code>≥ 0</code> means "no negative values".</li>
+      <li><b>Decimals</b> rounds what is entered (<code>12.346</code> with 2 decimals is stored as <code>12.35</code>). The limits are checked after rounding. Left empty, numbers keep what was typed and money follows its currency (2 decimals for EUR, 0 for JPY).</li>
+      <li>Number inputs accept a decimal comma or point (<code>1234,5</code> or <code>1234.5</code>).</li>
     </ul>
+    <figure class="shot"><img src="../img/guide/custom-fields-editor-types.webp" alt="New field form for a Number field with unit days, minimum 0, maximum 90 and 0 decimals" loading="lazy" width="1440" height="900"><figcaption>The field form shows only the settings its type takes. A number gets a unit, limits and decimals; a currency field gets a currency instead of a unit.</figcaption></figure>
+
+    <h3>Worked example: a budget in euros</h3>
+    <ol class="steps">
+      <li><p>As a superuser, open <span class="ui">Metadata</span> and, in <span class="ui">Global project fields</span>, add <b>Approved budget</b> of type <span class="ui">Currency</span>. Leave the currency on <span class="ui">Default (EUR)</span>, set the minimum to <code>0</code> and decimals to <code>2</code>.</p></li>
+      <li><p>Every project now has the field. A project admin opens <span class="ui">Project Settings</span> › <span class="ui">Project details</span> › <span class="ui">Fields</span>, types <code>175000</code> and saves.</p></li>
+      <li><p>The overview shows <b>€175,000.00</b> under <span class="ui">Project fields</span>. The projects list and the project exports get an <code>Approved budget (EUR)</code> column.</p></li>
+    </ol>
+    <figure class="shot"><img src="../img/guide/custom-fields-project-values.webp" alt="Project editor Fields tab with Approved budget, Contract signed, Cost centre, Client portal and Kick-off" loading="lazy" width="1440" height="900"><figcaption>Project values are edited on the <span class="ui">Fields</span> tab of the project editor (project admins). A value outside the limits is flagged before saving.</figcaption></figure>
+    <figure class="shot"><img src="../img/guide/custom-fields-project-overview.webp" alt="Project overview with financials in euros and the Project fields card" loading="lazy" width="1440" height="900"><figcaption>The overview lists every project field, with the global ones marked by a globe. Financials use the instance currency.</figcaption></figure>
+
+    <h3>Task values</h3>
+    <p class="prose">Task fields, global and the project's own, are edited on the task's <span class="ui">Fields</span> tab by anyone who can edit the task. Number inputs show the unit or currency symbol and the allowed range. Tasks outside any project get the global task fields only. The project's task list shows the first three task fields as columns, in field order. All of them are in the project's detailed export.</p>
+    <figure class="shot"><img src="../img/guide/custom-fields-task-values.webp" alt="Task editor Fields tab with Effort in h, Pallet weight in kg, Vendor quote in USD and Reviewed" loading="lazy" width="1440" height="900"><figcaption>A task's <span class="ui">Fields</span> tab: <b>Effort</b> is a global field, the other three belong to the project.</figcaption></figure>
+    <figure class="shot"><img src="../img/guide/custom-fields-task-list-columns.webp" alt="Task list with Effort (h) and Pallet weight (kg) columns" loading="lazy" width="1440" height="900"><figcaption>The first task fields become columns of the task list, with their unit in the header.</figcaption></figure>
+
+    <h3>Changing and deleting fields</h3>
+    <ul class="prose">
+      <li>Renaming is safe: values are stored by field id, not by name. Names are unique (ignoring case) among everything a project sees, so a project cannot add a field with the same name as a global one.</li>
+      <li><b>Removing a select option</b> clears it wherever it was used. <b>Tightening the limits</b> clears values now outside them. Loosening them, or changing unit, currency or decimals, keeps every value.</li>
+      <li><b>Deleting a field</b> removes its values from every project or task that had one. For a global field that means every project.</li>
+      <li>Changes to task values show up in the task's change log as "updated N custom fields".</li>
+    </ul>
+    <div class="callout warn"><b>Careful</b><p>Deleting a global field cannot be undone and reaches every project. Export first if you need the values.</p></div>
+
+    <h3>Fixed budget and the instance currency</h3>
+    <p class="prose">The built-in <b>budget</b> and <b>actual cost</b> of projects and tasks stay as they are: they feed the financials card, the risk and cost panel, statistics and exports. They are shown in the instance currency, set with <code>CURRENCY</code> (default <code>EUR</code>, see <a href="01-getting-started.html#configuration">configuration</a>). The same currency is used by currency fields that do not name their own. Use a custom field when you need a second amount (an approved budget next to the planned one) or an amount in another currency.</p>
+
+    <h3>API and MCP</h3>
+    <p class="prose">Values travel in <code>custom_values</code> on projects and tasks: a JSON object keyed by field id. <code>null</code> clears a value, and omitting <code>custom_values</code> on update leaves them untouched. Every save is validated: an unknown field, a wrong type or a value outside the limits is a <code>400</code>.</p>
+    <pre class="code"><span class="c"># the fields a project sees (global first); applies_to = project | task</span>
+GET  /api/v1/projects/{id}/custom-fields?applies_to=task
+POST /api/v1/projects/{id}/custom-fields   {"name": "Effort", "field_type": "number", "applies_to": "task",
+                                             "unit": "h", "min_value": 0, "decimals": 1}
+<span class="c"># global fields (writes: superusers only)</span>
+GET  /api/v1/custom-fields
+POST /api/v1/custom-fields                 {"name": "Approved budget", "field_type": "currency",
+                                             "applies_to": "project", "min_value": 0, "decimals": 2}
+<span class="c"># values</span>
+PUT  /api/v1/projects/{id}                 {"custom_values": {"&lt;field id&gt;": 175000}}
+PUT  /api/v1/tasks/{id}                    {"custom_values": {"&lt;field id&gt;": 12.5, "&lt;other id&gt;": true}}</pre>
+    <p class="prose small">API: <a href="10-api-reference.html#api-custom-fields"><code>/api/v1/custom-fields</code></a>. MCP: <code>list_custom_fields</code>, <code>create_custom_field</code>, <code>update_custom_field</code>, <code>delete_custom_field</code> and their <code>…_global_custom_field</code> counterparts; <code>update_project</code> and <code>update_task</code> take <code>custom_values</code>.</p>
   </section>
 
   <section id="recurring">

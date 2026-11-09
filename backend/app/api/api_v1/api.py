@@ -16,6 +16,7 @@ api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboar
 api_router.include_router(teams.router, prefix="/teams", tags=["teams"])
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
 api_router.include_router(custom_fields.router, prefix="/projects", tags=["custom-fields"])
+api_router.include_router(custom_fields.global_router, prefix="/custom-fields", tags=["custom-fields"])
 api_router.include_router(automations.router, prefix="/projects", tags=["automations"])
 api_router.include_router(time_entries.router, prefix="/time", tags=["time"])
 api_router.include_router(templates.router, prefix="/templates", tags=["templates"])

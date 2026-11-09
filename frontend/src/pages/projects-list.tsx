@@ -56,7 +56,13 @@ import type { Project as ProjectType, ProjectTemplate } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { fromDateInput } from "@/lib/dates";
 import { confirmDialog } from '@/lib/confirm';
-import { projectsQuery } from '@/lib/queries';
+import { projectsQuery, useCurrency, usersQuery } from '@/lib/queries';
+import { useGlobalFieldDefs } from '@/hooks/use-custom-field-defs';
+import { CustomFieldValue } from '@/components/custom-field-values';
+import { fieldSuffix } from '@/lib/custom-fields';
+
+/** Global project fields shown as columns (every project has them; per-project fields would not line up). */
+const MAX_FIELD_COLUMNS = 3;
 
 export default function ProjectsListPage() {
   const navigate = useNavigate();
@@ -69,6 +75,10 @@ export default function ProjectsListPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<ProjectType | null>(null);
   const { setActions } = useTitle();
+  const currency = useCurrency();
+  const { data: globalProjectFields } = useGlobalFieldDefs('project');
+  const fieldColumns = (globalProjectFields ?? []).slice(0, MAX_FIELD_COLUMNS);
+  const { data: users } = useQuery({ ...usersQuery, enabled: fieldColumns.some((d) => d.field_type === 'user') });
 
   useEffect(() => {
     setActions(
@@ -223,13 +233,17 @@ export default function ProjectsListPage() {
                   <TableHead>Priority</TableHead>
                   <TableHead className="w-[200px]">Progress</TableHead>
                   <TableHead>Due Date</TableHead>
+                  {fieldColumns.map((def) => {
+                    const suffix = fieldSuffix(def, currency);
+                    return <TableHead key={def.id} className="whitespace-nowrap">{def.name}{suffix ? ` (${suffix})` : ''}</TableHead>;
+                  })}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {projects?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={7 + fieldColumns.length} className="h-32 text-center text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <p>No projects found. Create one to get started.</p>
                         <Button variant="outline" size="sm" onClick={() => setIsCreateDialogOpen(true)}>
@@ -281,6 +295,11 @@ export default function ProjectsListPage() {
                           <span>{project.due_date ? format(parseISO(project.due_date), 'MMM d, yyyy') : 'No date'}</span>
                         </div>
                       </TableCell>
+                      {fieldColumns.map((def) => (
+                        <TableCell key={def.id} className="text-xs font-medium tabular-nums max-w-[12rem]">
+                          <CustomFieldValue def={def} value={project.custom_values?.[def.id]} users={users} currency={currency} />
+                        </TableCell>
+                      ))}
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
