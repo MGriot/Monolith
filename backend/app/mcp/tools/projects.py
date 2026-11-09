@@ -44,14 +44,16 @@ async def create_project(project: ProjectCreate) -> dict[str, Any]:
     Accepts every project field: name (required), description, status, priority, start_date, due_date (planned
     finish), deadline_at (hard deadline), budget (planned) and real_cost (actual), risk_probability / risk_impact
     (1-5), tags, topic_ids / type_ids (see `list_topics`, `list_work_types`), member_ids (they join as editors; use
-    `set_project_member_role` to change), template_id (copies a template's task tree).
+    `set_project_member_role` to change), template_id (copies a template's task tree), custom_values
+    ({field_id: value} for the global project fields, see `list_global_custom_fields`).
     """
     return await call(projects_api.create_project, project_in=project)
 
 
 @mcp.tool()
 async def update_project(project_id: UUID, changes: ProjectUpdate) -> dict[str, Any]:
-    """Change project fields (editor role or above); only the keys you send are touched."""
+    """Change project fields (admin role); only the keys you send are touched. custom_values ({field_id: value},
+    see `list_custom_fields` with applies_to "project") replaces the whole object; null clears one value."""
     return await call(projects_api.update_project, project_id=project_id, project_in=changes)
 
 

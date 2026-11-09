@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import type { Topic, WorkType } from '@/types';
 import { errorMessage } from '@/lib/api-error';
 import { projectsQuery } from '@/lib/queries';
+import CustomFieldsManager from '@/components/custom-fields-manager';
 
 type Kind = 'topics' | 'work-types';
 
@@ -139,7 +140,7 @@ export default function AdminMetadataPage() {
     <PageBody className="max-w-6xl">
       <PageHeader
         title="Metadata"
-        description="Topics and work types label projects and tasks. Global ones are available in every project."
+        description="Topics, work types and custom fields for projects and tasks. Global ones are available in every project."
       >
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-72">
@@ -174,6 +175,19 @@ export default function AdminMetadataPage() {
         {panel('topics')}
         {panel('work-types')}
       </div>
+
+      <section className="mt-10 space-y-3" id="custom-fields" aria-labelledby="custom-fields-heading">
+        <div>
+          <h2 id="custom-fields-heading" className="text-base font-semibold">Custom fields</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Fields every project gets, such as a budget in a currency or a cost centre. Project admins add their own fields in each project's settings.
+          </p>
+        </div>
+        <div className="grid items-start gap-6 xl:grid-cols-2">
+          <CustomFieldsManager scope="global" appliesTo="project" />
+          <CustomFieldsManager scope="global" appliesTo="task" />
+        </div>
+      </section>
     </PageBody>
   );
 }

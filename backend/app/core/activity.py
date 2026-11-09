@@ -139,7 +139,10 @@ def describe(changes: Dict[str, List[Any]]) -> List[Tuple[str, str, Dict[str, An
         elif field == "parent_id":
             actions.append("moved it in the task tree")
         elif field == "custom_values":
-            actions.append("updated custom fields")
+            # Names would need the definitions, which a flush hook cannot load; the count is still useful.
+            o, n = (old if isinstance(old, dict) else {}), (new if isinstance(new, dict) else {})
+            count = sum(1 for k in set(o) | set(n) if o.get(k) != n.get(k))
+            actions.append("updated 1 custom field" if count == 1 else f"updated {count or ''} custom fields".replace("  ", " "))
         else:
             values.append(f"{label} {_fmt(field, old)} → {_fmt(field, new)}")
         recorded[field] = [_jsonable(old), _jsonable(new)]

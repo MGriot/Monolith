@@ -480,3 +480,59 @@ def test_team_workload_shows_only_people_who_share_a_project():
         assert next(u for u in everyone.users if u.user_name == "Mate").workload[0].task_count == 2
 
     run_in_rolled_back_db(scenario)
+
+
+def test_custom_field_scopes_unique_names_and_value_cleanup():
+    from app.crud import crud_custom_field
+    from app.models.custom_field import CustomFieldDef
+    from app.models.project import Project
+    from app.models.task import Task
+
+    async def scenario(db, owner_id):
+        p1, p2 = await _project(db, owner_id, "Fields A"), await _project(db, owner_id, "Fields B")
+        budget = CustomFieldDef(project_id=None, applies_to="project", name="Budget", field_type="currency", currency="EUR")
+        effort = CustomFieldDef(project_id=p1.id, applies_to="task", name="Effort", field_type="number", unit="h",
+                                min_value=0, max_value=100)
+        same_name_on_projects = CustomFieldDef(project_id=p1.id, applies_to="project", name="Effort", field_type="text")
+        db.add_all([budget, effort, same_name_on_projects])
+        await db.flush()
+
+        # what a project sees: global first, then its own; another project only the global one
+        seen = await crud_custom_field.list_defs(db, p1.id)
+        assert [d.name for d in seen][0] == "Budget" and {d.id for d in seen} == {budget.id, effort.id, same_name_on_projects.id}
+        assert [d.id for d in await crud_custom_field.list_defs(db, p2.id)] == [budget.id]
+        assert [d.id for d in await crud_custom_field.list_defs(db, p1.id, "task")] == [effort.id]
+
+        # names: case-insensitive among global + own; a global name blocks every project
+        assert await crud_custom_field.name_taken(db, p2.id, "project", "budget")
+        assert not await crud_custom_field.name_taken(db, p2.id, "task", "Effort")
+        assert await crud_custom_field.name_taken(db, None, "task", "effort")
+
+        # the partial unique indexes back that up
+        for dup in (CustomFieldDef(project_id=None, applies_to="project", name="Budget", field_type="text"),
+                    CustomFieldDef(project_id=p1.id, applies_to="task", name="Effort", field_type="text")):
+            nested = await db.begin_nested()
+            db.add(dup)
+            with pytest.raises(IntegrityError):
+                await db.flush()
+            await nested.rollback()
+
+        # values: validated per applies_to, then cleaned up when limits tighten or the field goes
+        cleaned = await crud_custom_field.validate_for_project(db, p1.id, {str(budget.id): 1500.5}, applies_to="project")
+        await db.execute(Project.__table__.update().where(Project.id.in_([p1.id, p2.id])).values(custom_values=cleaned))
+        with pytest.raises(ValueError):
+            await crud_custom_field.validate_for_project(db, p1.id, {str(budget.id): 1}, applies_to="task")
+        t1 = await crud_task.task.create(db, obj_in=TaskCreate(title="Big", project_id=p1.id,
+                                                                custom_values={str(effort.id): 80}), owner_id=owner_id)
+        t2 = await crud_task.task.create(db, obj_in=TaskCreate(title="Small", project_id=p1.id,
+                                                                custom_values={str(effort.id): 8}), owner_id=owner_id)
+        effort.max_value = 40
+        await crud_custom_field.drop_values_outside_range(db, effort)
+        values = dict((await db.execute(select(Task.id, Task.custom_values).where(Task.id.in_([t1.id, t2.id])))).all())
+        assert values[t1.id] == {} and values[t2.id] == {str(effort.id): 8}
+
+        await crud_custom_field.strip_field(db, budget)  # global: every project loses the value
+        left = (await db.execute(select(Project.custom_values).where(Project.id.in_([p1.id, p2.id])))).scalars().all()
+        assert left == [{}, {}]
+
+    run_in_rolled_back_db(scenario)

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, computed_field
@@ -33,6 +33,9 @@ class ProjectBase(BaseModel):
     # Risk Management
     risk_probability: int = 1
     risk_impact: int = 1
+
+    # Project custom field values ({field_id: value}), validated against the fields with applies_to='project'
+    custom_values: Optional[Dict[str, Any]] = {}
 
 class ProjectCreate(ProjectBase):
     name: str
