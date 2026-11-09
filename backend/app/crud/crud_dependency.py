@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -51,10 +51,6 @@ class CRUDDependency(CRUDBase[Dependency, DependencyCreate, DependencyCreate]):
 
     async def get_by_successor(self, db: AsyncSession, successor_id: UUID) -> List[Dependency]:
         result = await db.execute(select(self.model).filter(self.model.successor_id == successor_id))
-        return result.scalars().all()
-
-    async def get_by_predecessor(self, db: AsyncSession, predecessor_id: UUID) -> List[Dependency]:
-        result = await db.execute(select(self.model).filter(self.model.predecessor_id == predecessor_id))
         return result.scalars().all()
 
 dependency = CRUDDependency(Dependency)

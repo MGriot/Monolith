@@ -3,7 +3,8 @@
 FROM docker.io/library/node:22-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci || npm install
+# strict: a lockfile out of sync with package.json fails the build instead of resolving fresh versions
+RUN npm ci
 
 FROM deps AS dev
 COPY . .

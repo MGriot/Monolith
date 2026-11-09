@@ -2,9 +2,7 @@ import { Archive, Loader2, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useBulkTasks, type BulkRequest } from '@/hooks/use-bulk-tasks';
 import { confirmDialog } from '@/lib/confirm';
-
-const STATUSES = ['Backlog', 'Todo', 'In Progress', 'On hold', 'Review', 'Done'];
-const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
+import { PRIORITIES, STATUSES, statusLabel } from '@/constants/statuses';
 
 export interface BulkAssigneeOption {
   id: string;
@@ -48,7 +46,7 @@ export default function BulkActionBar({ ids, assignees, onClear }: Props) {
       >
         <option value="">Status...</option>
         {STATUSES.map((s) => (
-          <option key={s} value={s}>{s}</option>
+          <option key={s} value={s}>{statusLabel(s)}</option>
         ))}
       </select>
 

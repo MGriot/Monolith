@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Literal, Optional, ForwardRef
+from typing import Any, Dict, List, Literal, Optional
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator, model_validator
@@ -148,8 +148,6 @@ TaskShortCreate.model_rebuild()
 # but deprecated
 Subtask = Task
 SubtaskCreate = TaskCreate
-SubtaskUpdate = TaskUpdate
-SubtaskShortCreate = TaskShortCreate
 
 # ---- bulk actions (POST /tasks/bulk) ----------------------------------------------------------------------------
 BULK_MAX_IDS = 200

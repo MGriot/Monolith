@@ -1,4 +1,5 @@
 import type { Comment, User } from '@/types';
+import { parseServerDate } from './dates';
 
 /** One line of the change log (GET /projects/{id}/activity, GET /tasks/{id}/activity). */
 export interface ActivityEvent {
@@ -20,11 +21,6 @@ export type TimelineItem =
   | { type: 'day'; key: string; label: string }
   | { type: 'comment'; key: string; at: Date; comment: Comment }
   | { type: 'event'; key: string; at: Date; event: ActivityEvent };
-
-/** The API stores naive UTC timestamps: read them as UTC. */
-export function parseUtc(value: string): Date {
-  return new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(value) ? value : `${value}Z`);
-}
 
 function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -59,10 +55,10 @@ export function buildTimeline(
 ): TimelineItem[] {
   const items: Exclude<TimelineItem, { type: 'day' }>[] = [];
   if (filter !== 'changes') {
-    for (const comment of comments) items.push({ type: 'comment', key: `c-${comment.id}`, at: parseUtc(comment.created_at), comment });
+    for (const comment of comments) items.push({ type: 'comment', key: `c-${comment.id}`, at: parseServerDate(comment.created_at), comment });
   }
   if (filter !== 'comments') {
-    for (const event of events) items.push({ type: 'event', key: `e-${event.id}`, at: parseUtc(event.created_at), event });
+    for (const event of events) items.push({ type: 'event', key: `e-${event.id}`, at: parseServerDate(event.created_at), event });
   }
   items.sort((a, b) => a.at.getTime() - b.at.getTime());
   const out: TimelineItem[] = [];

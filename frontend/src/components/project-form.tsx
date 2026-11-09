@@ -17,6 +17,7 @@ import { TagInput } from "@/components/ui/tag-input";
 import { EntityEditor, EditorTitle, RailGroup, RiskCostPanel, type EditorTab } from "@/components/entity-editor";
 import type { Topic, WorkType, Project } from "@/types";
 import { toDateInputValue } from "@/lib/dates";
+import { PRIORITIES, STATUSES, statusLabel } from "@/constants/statuses";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -214,20 +215,12 @@ export default function ProjectForm({
         <div className="grid grid-cols-2 gap-3">
           <Field label="Status" htmlFor="project_status">
             <select id="project_status" className={selectClass} {...register("status")}>
-              <option value="Backlog">Backlog</option>
-              <option value="Todo">Todo</option>
-              <option value="In Progress">In Progress</option>
-              <option value="On hold">On Hold</option>
-              <option value="Review">Review</option>
-              <option value="Done">Done</option>
+              {STATUSES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
             </select>
           </Field>
           <Field label="Priority" htmlFor="project_priority">
             <select id="project_priority" className={selectClass} {...register("priority")}>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Critical">Critical</option>
+              {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </Field>
         </div>

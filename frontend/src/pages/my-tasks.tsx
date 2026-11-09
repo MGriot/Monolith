@@ -1,5 +1,5 @@
 import { Fragment, useState, useMemo, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,11 +37,12 @@ import TaskDialog, { TaskFooterMeta } from '@/components/task-dialog';
 import { taskExtraTabs, taskSubtitle } from '@/components/task-dialog-helpers';
 import type { Task } from '@/types';
 import { useTitle } from '@/context/title-context';
-import { toast } from 'sonner';
-import { fromDateInput } from "@/lib/dates";
-import { calculateSortIndex as sharedSortIndex, flattenTasks } from '@/lib/kanban';
+import { formatDisplayDate } from "@/lib/dates";
+import { calculateSortIndex as sharedSortIndex } from '@/lib/kanban';
+import { findTask, flattenTasks } from '@/lib/tasks';
 import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
+import { taskPayload, useTaskMutations } from '@/hooks/use-task-mutations';
 import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
 import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
 import BulkActionBar from '@/components/bulk-action-bar';
@@ -50,7 +51,6 @@ import { useAuth } from '@/components/auth-provider';
 import { confirmDialog } from '@/lib/confirm';
 
 export default function MyTasksPage() {
-  const queryClient = useQueryClient();
   const [view, setView] = useState<'kanban' | 'list'>('list');
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
@@ -85,10 +85,6 @@ export default function MyTasksPage() {
         </div>
       </div>
     );
-    return () => {
-      setActions(null);
-      setTitle(null);
-    };
   }, [setActions, setTitle, view]);
 
   const { data: tasks, isLoading, isError } = useQuery({
@@ -104,6 +100,7 @@ export default function MyTasksPage() {
   }, [tasks]);
 
   const taskView = useTaskView(activeTasks);
+  const filteredCount = useMemo(() => flattenTasks(taskView.filtered).length, [taskView.filtered]);
   const assigneeOptions = useMemo(() => collectAssignees(activeTasks), [activeTasks]);
   const filtering = hasActiveFilters(taskView.filters);
 
@@ -124,102 +121,19 @@ export default function MyTasksPage() {
   // command palette "toggle view"
   useEffect(() => onAppEvent(TOGGLE_VIEW_EVENT, () => setView((v) => (v === 'kanban' ? 'list' : 'kanban'))), []);
 
-  const findTaskRecursive = (taskList: Task[], taskId: string): Task | null => {
-    for (const task of taskList) {
-      if (task.id === taskId) return task;
-      if (task.subtasks && task.subtasks.length > 0) {
-        const found = findTaskRecursive(task.subtasks, taskId);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
+  const editingTask = tasks && editingTaskId ? findTask(tasks, editingTaskId) : null;
 
-  const editingTask = tasks && editingTaskId ? findTaskRecursive(tasks, editingTaskId) : null;
-
-  const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, data }: { taskId: string; data: Partial<TaskFormValues> }) => {
-      const response = await api.put(`/tasks/${taskId}`, data);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'assigned'] });
+  const { updateTask, deleteTask, archiveTask, moveTask } = useTaskMutations({
+    listKey: ['tasks', 'assigned'],
+    onSaved: () => {
       setIsTaskDialogOpen(false);
       setEditingTaskId(null);
-      toast.success("Task updated successfully");
-    },
-  });
-
-  const deleteTaskMutation = useMutation({
-    mutationFn: async (taskId: string) => {
-      return api.delete(`/tasks/${taskId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'assigned'] });
-      setIsTaskDialogOpen(false);
-      setEditingTaskId(null);
-      toast.success("Task deleted successfully");
-    },
-  });
-
-  const archiveTaskMutation = useMutation({
-    mutationFn: async (taskId: string) => {
-      return api.post(`/tasks/${taskId}/archive`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'assigned'] });
-      setIsTaskDialogOpen(false);
-      setEditingTaskId(null);
-      toast.success("Task archived successfully");
-    },
-  });
-
-  const moveTaskMutation = useMutation({
-    mutationFn: async ({ taskId, newStatus, sortIndex }: { taskId: string; newStatus: string; sortIndex?: number }) => {
-      const data: any = { status: newStatus };
-      if (sortIndex !== undefined) data.sort_index = sortIndex;
-      return api.put(`/tasks/${taskId}`, data);
-    },
-    onMutate: async ({ taskId, newStatus, sortIndex }) => {
-      await queryClient.cancelQueries({ queryKey: ['tasks', 'assigned'] });
-      const previousTasks = queryClient.getQueryData(['tasks', 'assigned']);
-
-      queryClient.setQueryData(['tasks', 'assigned'], (old: Task[] | undefined) => {
-        return old?.map(t => {
-          if (t.id === taskId) {
-            const updated = { ...t, status: newStatus };
-            if (sortIndex !== undefined) updated.sort_index = sortIndex;
-            return updated;
-          }
-          return t;
-        });
-      });
-
-      return { previousTasks };
-    },
-    onError: (err: any, __, context) => {
-      queryClient.setQueryData(['tasks', 'assigned'], context?.previousTasks);
-      const msg = err.response?.data?.detail || err.message;
-      toast.error(`Move failed: ${msg}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'assigned'] });
     },
   });
 
   const handleTaskSubmit = (data: TaskFormValues) => {
-    const formatDate = fromDateInput;
-
-    const formattedData = {
-      ...data,
-      start_date: formatDate(data.start_date),
-      due_date: formatDate(data.due_date),
-      deadline_at: formatDate(data.deadline_at),
-      completed_at: formatDate(data.completed_at),
-    };
-
     if (editingTaskId) {
-      updateTaskMutation.mutate({ taskId: editingTaskId, data: formattedData });
+      updateTask.mutate({ taskId: editingTaskId, data: taskPayload(data) });
     }
   };
 
@@ -228,7 +142,7 @@ export default function MyTasksPage() {
 
   const handleKanbanReorder = (taskId: string, newIndex: number, container: string) => {
     const sortIndex = calculateSortIndex(container, newIndex, taskId);
-    moveTaskMutation.mutate({ taskId, newStatus: container, sortIndex });
+    moveTask.mutate({ taskId, newStatus: container, sortIndex });
   };
 
   const handleTaskClick = (task: Task) => {
@@ -263,14 +177,14 @@ export default function MyTasksPage() {
           onChange={taskView.setFilters}
           assignees={assigneeOptions}
           showLayoutControls={view === 'list'}
-          resultCount={flattenTasks(taskView.filtered).length}
+          resultCount={filteredCount}
         />
         <div className="min-h-[500px]">
           {view === 'kanban' ? (
             <KanbanBoard 
               tasks={taskView.filtered} 
-              onTaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx, id) : undefined })}
-              onSubtaskMove={(id, status, idx) => moveTaskMutation.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx, id) : undefined })}
+              onTaskMove={(id, status, idx) => moveTask.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx, id) : undefined })}
+              onSubtaskMove={(id, status, idx) => moveTask.mutate({ taskId: id, newStatus: status, sortIndex: idx !== undefined ? calculateSortIndex(status, idx, id) : undefined })}
               onReorder={handleKanbanReorder}
               onTaskClick={handleTaskClick}
               onSubtaskClick={handleTaskClick}
@@ -350,7 +264,7 @@ export default function MyTasksPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right text-xs font-bold text-muted-foreground">
-                          {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                          {formatDisplayDate(task.due_date)}
                         </TableCell>
                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
@@ -367,7 +281,7 @@ export default function MyTasksPage() {
                                 className="text-destructive"
                                 onClick={() => {
                                   void confirmDialog({ title: "Delete this task?", confirmLabel: 'Delete', tone: 'danger' }).then((ok) => { if (ok) {
-                                    deleteTaskMutation.mutate(task.id);
+                                    deleteTask.mutate(task.id);
                                   } });
                                 }}
                               >
@@ -436,17 +350,17 @@ export default function MyTasksPage() {
               }}
               onSubmit={handleTaskSubmit}
               onCancel={() => setIsTaskDialogOpen(false)}
-              isLoading={updateTaskMutation.isPending}
+              isLoading={updateTask.isPending}
               allTasks={tasks || []}
               editingTaskId={editingTaskId}
               extraTabs={taskExtraTabs(editingTask, editingTask.project_id || undefined)}
               footerStart={
                 <TaskFooterMeta
                   task={editingTask}
-                  onArchive={() => archiveTaskMutation.mutate(editingTask.id)}
-                  onDelete={() => deleteTaskMutation.mutate(editingTask.id)}
-                  archiving={archiveTaskMutation.isPending}
-                  deleting={deleteTaskMutation.isPending}
+                  onArchive={() => archiveTask.mutate(editingTask.id)}
+                  onDelete={() => deleteTask.mutate(editingTask.id)}
+                  archiving={archiveTask.isPending}
+                  deleting={deleteTask.isPending}
                 />
               }
             />

@@ -1,8 +1,3 @@
-import sys
-import os
-# Add the backend directory to sys.path
-sys.path.append(os.path.join(os.getcwd(), "backend"))
-
 from app.core.wbs import apply_wbs_codes
 from app.schemas.task import Task, Subtask
 from datetime import datetime
@@ -46,10 +41,3 @@ def test_wbs_generation():
     assert tasks[1].wbs_code == "2"
     
     print("WBS generation test passed.")
-
-if __name__ == "__main__":
-    try:
-        test_wbs_generation()
-    except Exception as e:
-        print(f"WBS generation test failed: {e}")
-        sys.exit(1)

@@ -1,22 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { 
   DndContext, 
   DragOverlay, 
   rectIntersection, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
-  useSensors,
   useDroppable,
-  type DragStartEvent,
-  type DragOverEvent,
-  type DragEndEvent,
   defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
 import { 
-  arrayMove, 
   SortableContext, 
-  sortableKeyboardCoordinates, 
   verticalListSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable';
@@ -27,7 +18,10 @@ import { MoreVertical, GripVertical, Plus, User as UserIcon, Milestone, AlertTri
 import { cn } from '@/lib/utils';
 import { parseISO } from 'date-fns';
 import type { Task, Subtask } from '@/types';
-import { isAfterDueDay } from "@/lib/dates";
+import { formatDisplayDate, isAfterDueDay } from "@/lib/dates";
+import { walkTasks } from "@/lib/tasks";
+import { STATUSES, statusLabel } from "@/constants/statuses";
+import { useKanbanDnd } from "@/hooks/use-kanban-dnd";
 
 interface KanbanItem {
   id: string;
@@ -61,49 +55,24 @@ interface KanbanBoardProps {
   syncKey?: number;
 }
 
-const COLUMNS = [
-  { id: 'Backlog', title: 'Backlog' },
-  { id: 'Todo', title: 'To Do' },
-  { id: 'In Progress', title: 'In Progress' },
-  { id: 'On hold', title: 'On Hold' },
-  { id: 'Review', title: 'Review' },
-  { id: 'Done', title: 'Done' }
-];
+const COLUMNS = STATUSES.map((id) => ({ id, title: id === 'Todo' ? 'To Do' : statusLabel(id) }));
+
+const emptyColumns = (): Record<string, string[]> => Object.fromEntries(STATUSES.map((s) => [s, []]));
 
 export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorder, onAddTask, onTaskClick, onSubtaskClick, syncKey = 0 }: KanbanBoardProps) {
-  const [items, setItems] = useState<Record<string, string[]>>({
-    'Backlog': [],
-    'Todo': [],
-    'In Progress': [],
-    'On hold': [],
-    'Review': [],
-    'Done': []
-  });
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [initialContainer, setInitialContainer] = useState<string | null>(null);
-
   // Flatten tasks recursively
   const kanbanItems = useMemo(() => {
     const list: KanbanItem[] = [];
-    
-    const flatten = (taskList: Task[], parent?: Task) => {
-        taskList.forEach(task => {
-            list.push({ 
-                ...task, 
-                type: task.parent_id ? 'subtask' : 'task', 
-                topic: task.topic || parent?.topic, 
-                parentId: task.parent_id || undefined,
-                project: task.project || parent?.project,
-                has_children: task.subtasks && task.subtasks.length > 0
-            } as any);
-            
-            if (task.subtasks && task.subtasks.length > 0) {
-                flatten(task.subtasks, task);
-            }
-        });
-    };
-
-    flatten(tasks);
+    walkTasks(tasks, (task, parent) => {
+        list.push({ 
+            ...task, 
+            type: task.parent_id ? 'subtask' : 'task', 
+            topic: task.topic || parent?.topic, 
+            parentId: task.parent_id || undefined,
+            project: task.project || parent?.project,
+            has_children: task.subtasks && task.subtasks.length > 0
+        } as any);
+    });
     // Sort flattened list by sort_index to ensure initial items order is correct
     // Secondary sort by created_at for stability
     return list.sort((a, b) => {
@@ -114,15 +83,8 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorde
     });
   }, [tasks]);
 
-  useEffect(() => {
-    const newItems: Record<string, string[]> = {
-      'Backlog': [],
-      'Todo': [],
-      'In Progress': [],
-      'On hold': [],
-      'Review': [],
-      'Done': []
-    };
+  const columns = useMemo(() => {
+    const newItems = emptyColumns();
     kanbanItems.forEach((item: KanbanItem) => {
       const statusKey = Object.keys(newItems).find(k => k.toLowerCase() === item.status.toLowerCase());
       if (statusKey) {
@@ -131,123 +93,32 @@ export default function KanbanBoard({ tasks, onTaskMove, onSubtaskMove, onReorde
         console.warn(`Unknown status: ${item.status}`);
       }
     });
-    setItems(newItems);
-  }, [kanbanItems, syncKey]);
+    return newItems;
+  }, [kanbanItems]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  function findContainer(id: string) {
-    if (id in items) return id;
-    return Object.keys(items).find((key) => items[key].includes(id));
-  }
-
-  function handleDragStart(event: DragStartEvent) {
-    const id = event.active.id as string;
-    setActiveId(id);
-    setInitialContainer(findContainer(id) || null);
-  }
-
-  function handleDragOver(event: DragOverEvent) {
-    const { active, over } = event;
-    const overId = over?.id;
-
-    if (!overId || active.id in items) return;
-
-    const activeContainer = findContainer(active.id as string);
-    const overContainer = findContainer(overId as string);
-
-    if (!activeContainer || !overContainer || activeContainer === overContainer) return;
-
-    setItems((prev) => {
-      const activeItems = prev[activeContainer];
-      const overItems = prev[overContainer];
-      const overIndex = overItems.indexOf(overId as string);
-
-      let newIndex;
-      if (overId in prev) {
-        newIndex = overItems.length + 1;
-      } else {
-        const isBelowLastItem = over && overIndex === overItems.length - 1;
-        const modifier = isBelowLastItem ? 1 : 0;
-        newIndex = overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
-      }
-
-      return {
-        ...prev,
-        [activeContainer]: activeItems.filter((item) => item !== active.id),
-        [overContainer]: [
-          ...overItems.slice(0, newIndex),
-          active.id as string,
-          ...overItems.slice(newIndex, overItems.length)
-        ]
-      };
-    });
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    const overId = over?.id;
-
-    if (!overId) {
-      setActiveId(null);
-      setInitialContainer(null);
-      return;
-    }
-
-    const overContainer = findContainer(overId as string);
-    const activeContainer = findContainer(active.id as string);
-
-    if (overContainer && activeContainer) {
-      const activeIndex = items[activeContainer].indexOf(active.id as string);
-      let overIndex = items[overContainer].indexOf(overId as string);
-
-      // If dropped onto the container itself, position at the end
-      if (overIndex === -1 && overId === overContainer) {
-        overIndex = items[overContainer].length;
-      }
-
-      if (activeIndex !== overIndex || activeContainer !== initialContainer) {
-        // Only update local state if it's a reorder or container change
-        setItems((prev) => ({
-          ...prev,
-          [overContainer]: arrayMove(prev[overContainer], activeIndex, overIndex)
-        }));
-        
-        const movedItem = kanbanItems.find((i: KanbanItem) => i.id === active.id);
-        if (movedItem) {
-          if (activeContainer !== initialContainer) {
-            if (movedItem.type === 'task') {
-              onTaskMove(movedItem.id, overContainer, overIndex);
-            } else {
-              onSubtaskMove(movedItem.id, overContainer, overIndex);
-            }
-          } else if (activeIndex !== overIndex) {
-            onReorder?.(movedItem.id, overIndex, overContainer);
-          }
+  const { items, activeId, sensors, handlers } = useKanbanDnd({
+    columns,
+    resetKey: syncKey,
+    onDrop: ({ id, from, to, fromIndex, toIndex }) => {
+      const movedItem = kanbanItems.find((i: KanbanItem) => i.id === id);
+      if (!movedItem) return;
+      if (from !== to) {
+        if (movedItem.type === 'task') {
+          onTaskMove(movedItem.id, to, toIndex);
+        } else {
+          onSubtaskMove(movedItem.id, to, toIndex);
         }
+      } else if (fromIndex !== toIndex) {
+        onReorder?.(movedItem.id, toIndex, to);
       }
-    }
-
-    setActiveId(null);
-    setInitialContainer(null);
-  }
+    },
+  });
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={rectIntersection}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
+      {...handlers}
     >
       <div className="h-full overflow-x-auto pb-4">
         <div className="flex gap-6 min-w-max mx-auto px-6 h-full min-h-[calc(100vh-280px)]">
@@ -488,7 +359,7 @@ function TaskCard({ item, isDragging, dragProps, onClick }: { item: KanbanItem, 
         {item.deadline_at && (
             <div className="flex items-center gap-1 text-[11px] font-semibold text-red-500">
                 <AlertTriangle className="w-2.5 h-2.5" />
-                {new Date(item.deadline_at).toLocaleDateString()}
+                {formatDisplayDate(item.deadline_at)}
             </div>
         )}
 

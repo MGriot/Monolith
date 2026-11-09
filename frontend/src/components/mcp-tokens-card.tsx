@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { Copy, KeyRound, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import { errorMessage } from '@/components/auth-card';
+import { errorMessage } from '@/lib/api-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SettingsGroup } from '@/components/ui/settings-group';
 import { selectClass } from '@/components/ui/field';
 import { confirmDialog } from '@/lib/confirm';
+import { parseServerDate } from '@/lib/dates';
 
 interface McpToken {
   id: string;
@@ -26,11 +27,11 @@ const EXPIRY = [
   { label: 'Never', days: null },
 ] as const;
 
-const fmt = (d: string | null) => (d ? new Date(d + (d.endsWith('Z') ? '' : 'Z')).toLocaleDateString() : '—');
+const fmt = (d: string | null) => (d ? parseServerDate(d).toLocaleDateString() : '—');
 
 function tokenState(t: McpToken): 'active' | 'expired' | 'revoked' {
   if (t.revoked_at) return 'revoked';
-  if (t.expires_at && new Date(t.expires_at + 'Z').getTime() < Date.now()) return 'expired';
+  if (t.expires_at && parseServerDate(t.expires_at).getTime() < Date.now()) return 'expired';
   return 'active';
 }
 

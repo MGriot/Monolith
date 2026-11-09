@@ -9,7 +9,7 @@ from app.models.template import ProjectTemplate
 from app.models.user import User
 from app.schemas.template import ProjectTemplateCreate, ProjectTemplateUpdate
 from app.core.utils import clean_dict_for_json
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 class CRUDProjectTemplate(CRUDBase[ProjectTemplate, ProjectTemplateCreate, ProjectTemplateUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[ProjectTemplate]:
@@ -25,18 +25,6 @@ class CRUDProjectTemplate(CRUDBase[ProjectTemplate, ProjectTemplateCreate, Proje
     ) -> List[ProjectTemplate]:
         result = await db.execute(
             select(self.model)
-            .options(selectinload(ProjectTemplate.shared_with), selectinload(ProjectTemplate.owner))
-            .offset(skip)
-            .limit(limit)
-        )
-        return result.scalars().all()
-
-    async def get_multi_by_owner(
-        self, db: AsyncSession, *, owner_id: UUID, skip: int = 0, limit: int = 100
-    ) -> List[ProjectTemplate]:
-        result = await db.execute(
-            select(self.model)
-            .filter(self.model.owner_id == owner_id)
             .options(selectinload(ProjectTemplate.shared_with), selectinload(ProjectTemplate.owner))
             .offset(skip)
             .limit(limit)
@@ -72,7 +60,7 @@ class CRUDProjectTemplate(CRUDBase[ProjectTemplate, ProjectTemplateCreate, Proje
     async def create_with_owner(
         self, db: AsyncSession, *, obj_in: ProjectTemplateCreate, owner_id: UUID
     ) -> ProjectTemplate:
-        obj_in_data = obj_in.dict(exclude={'shared_with_ids'})
+        obj_in_data = obj_in.model_dump(exclude={'shared_with_ids'})
         # Clean for JSON serialization (convert UUIDs to strings in JSON fields)
         obj_in_data = clean_dict_for_json(obj_in_data)
         
@@ -93,7 +81,7 @@ class CRUDProjectTemplate(CRUDBase[ProjectTemplate, ProjectTemplateCreate, Proje
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
             
         if "shared_with_ids" in update_data:
             shared_with_ids = update_data.pop("shared_with_ids")

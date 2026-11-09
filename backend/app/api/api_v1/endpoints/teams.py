@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app import crud, models, schemas
 from app.api import deps
+from app.api.access import require_owner, require_owner_or_shared
 
 router = APIRouter()
 
@@ -38,7 +39,7 @@ async def read_team_activity(
     """
     from app.models.task import Task
     from app.models.associations import team_members
-    from sqlalchemy import select, desc, and_
+    from sqlalchemy import select, desc
     
     # 1. Find all teammates (users in the same teams as current_user)
     team_ids_query = select(team_members.c.team_id).where(team_members.c.user_id == current_user.id)
@@ -117,11 +118,7 @@ async def update_team(
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
     
-    is_owner = team.owner_id == current_user.id
-    is_shared = any(u.id == current_user.id for u in team.shared_with)
-    
-    if not current_user.is_superuser and not is_owner and not is_shared:
-        raise HTTPException(status_code=403, detail="Not enough permissions to manage this team")
+    require_owner_or_shared(team, current_user, "Not enough permissions to manage this team")
     team = await crud.team.update(db, db_obj=team, obj_in=obj_in)
     return team
 
@@ -143,12 +140,7 @@ async def read_team(
     if team.is_public:
         return team
         
-    is_owner = team.owner_id == current_user.id
-    is_shared = any(u.id == current_user.id for u in team.shared_with)
-    is_member = any(u.id == current_user.id for u in team.members)
-    
-    if not current_user.is_superuser and not is_owner and not is_shared and not is_member:
-        raise HTTPException(status_code=403, detail="Not enough permissions to view this team")
+    require_owner_or_shared(team, current_user, "Not enough permissions to view this team", also=team.members)
             
     return team
 
@@ -165,7 +157,6 @@ async def delete_team(
     team = await crud.team.get(db, id=id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
-    if not current_user.is_superuser and team.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not enough permissions to delete this team")
+    require_owner(team, current_user, "Not enough permissions to delete this team")
     team = await crud.team.remove(db, id=id)
     return team

@@ -1,7 +1,6 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Monolith Project Planner"
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
@@ -56,8 +55,6 @@ class Settings(BaseSettings):
     PASSWORD_RESET_MINUTES: int = 30
     EMAIL_VERIFY_HOURS: int = 48
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

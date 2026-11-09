@@ -101,6 +101,7 @@
         <tr><td><code>0011</code></td><td>Personal MCP tokens (<code>mcp_tokens</code>, hashed)</td></tr>
         <tr><td><code>0012</code></td><td>Sketch previews moved from base64 in the database to files under <code>uploads/previews</code></td></tr>
         <tr><td><code>0013</code></td><td>Task change log (<code>activity_events</code>): who changed what, per project</td></tr>
+        <tr><td><code>0014</code></td><td>Topic and work-type names unique per scope (global, project, task); existing duplicates are merged</td></tr>
       </tbody>
     </table></div>
     <pre class="code">podman exec monolith_backend alembic -c /app/alembic.ini current

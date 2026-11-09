@@ -47,13 +47,6 @@ task_assignees = Table(
     Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
 )
 
-subtask_assignees = Table(
-    "subtask_assignees",
-    Base.metadata,
-    Column("subtask_id", UUID(as_uuid=True), ForeignKey("subtasks.id"), primary_key=True),
-    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
-)
-
 team_members = Table(
     "team_members",
     Base.metadata,

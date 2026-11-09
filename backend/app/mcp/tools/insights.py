@@ -37,7 +37,7 @@ async def get_risk_matrix() -> Json:
 
 @mcp.tool()
 async def get_calendar(start_date: datetime | None = None, end_date: datetime | None = None) -> dict[str, Any]:
-    """Dated tasks and projects (start, due, deadline) between two dates."""
+    """Dated tasks and projects (start, due, deadline) between two dates; without dates, 90 days ago to one year ahead."""
     return await call(calendar_api.get_calendar_events, start_date=start_date, end_date=end_date)
 
 

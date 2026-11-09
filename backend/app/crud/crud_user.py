@@ -1,7 +1,6 @@
 from typing import Optional, Any, Union, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.exc import NoResultFound
 
 from app.core.security import get_password_hash, verify_password
 
@@ -9,7 +8,7 @@ from app.core.security import get_password_hash, verify_password
 _DUMMY_HASH = get_password_hash("timing-equaliser")
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 async def get(db: AsyncSession, id: Any) -> Optional[User]:
     result = await db.execute(select(User).filter(User.id == id))

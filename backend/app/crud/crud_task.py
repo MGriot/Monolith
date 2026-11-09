@@ -1,7 +1,10 @@
+import functools
 from collections import defaultdict
+from contextlib import asynccontextmanager
 from typing import List, Union, Dict, Any, Optional
 from uuid import UUID
 from datetime import datetime
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload, selectinload
@@ -50,6 +53,22 @@ def reconcile_dates(obj_data: dict, start0, due0, dur0) -> dict:
         if start and due:
             obj_data["duration_days"] = (due - start).days + 1
     return obj_data
+
+
+_PENDING_SYNC = "pending_project_sync"
+
+
+def _sync_projects_once(fn):
+    """Run a task CRUD method so that project roll-ups requested anywhere inside it (nested subtasks, parent status
+    roll-ups, ...) happen once per project when the outermost call finishes, instead of after every step."""
+
+    @functools.wraps(fn)
+    async def wrapper(self, *args, **kwargs):
+        db = args[0] if args else kwargs["db"]
+        async with self.project_sync_once(db):
+            return await fn(self, *args, **kwargs)
+
+    return wrapper
 
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
@@ -125,6 +144,25 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         by_id = await self._load_trees(db, list(root_ids))
         return [by_id[i] for i in root_ids if i in by_id]
 
+    async def get_trees_by_projects(
+        self, db: AsyncSession, *, project_ids: List[UUID], include_archived: bool = False
+    ) -> Dict[UUID, List[Task]]:
+        """Top-level task trees of several projects at once (same order as get_multi_by_project), keyed by project."""
+        if not project_ids:
+            return {}
+        query = select(self.model.id, self.model.project_id).filter(
+            self.model.project_id.in_(project_ids), self.model.parent_id == None
+        )
+        if not include_archived:
+            query = query.filter(self.model.is_archived == False)
+        roots = (await db.execute(query.order_by(self.model.sort_index.asc(), self.model.created_at.asc()))).all()
+        by_id = await self._load_trees(db, [r.id for r in roots])
+        trees: Dict[UUID, List[Task]] = {pid: [] for pid in project_ids}
+        for r in roots:
+            if r.id in by_id:
+                trees[r.project_id].append(by_id[r.id])
+        return trees
+
     def calculate_task_progress(self, task: Task) -> float:
         """
         Calculate task progress. 
@@ -147,9 +185,33 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             return 25.0
         return 0.0
 
+    @asynccontextmanager
+    async def project_sync_once(self, db: AsyncSession):
+        """Collect sync_project_from_tasks() calls made inside the block and run each project's sync once at the end."""
+        if _PENDING_SYNC in db.info:  # an outer block owns the sync
+            yield
+            return
+        pending: Dict[UUID, None] = {}  # ordered set
+        db.info[_PENDING_SYNC] = pending
+        try:
+            yield
+            while pending:
+                project_id = next(iter(pending))
+                del pending[project_id]
+                await self._sync_project_now(db, project_id)
+        finally:
+            db.info.pop(_PENDING_SYNC, None)
+
     async def sync_project_from_tasks(self, db: AsyncSession, project_id: UUID):
         if not project_id:
             return
+        pending = db.info.get(_PENDING_SYNC)
+        if pending is not None:
+            pending[project_id] = None
+            return
+        await self._sync_project_now(db, project_id)
+
+    async def _sync_project_now(self, db: AsyncSession, project_id: UUID):
             
         from app.crud.crud_project import project as project_crud
         
@@ -208,10 +270,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if new_due_date and project_obj.due_date != new_due_date:
                 update_data["due_date"] = new_due_date
 
-            # Add aggregated topic/type IDs to update
-            if topic_ids:
+            # Add aggregated topic/type IDs to update (only when they changed: the rewrite costs queries and a write)
+            if topic_ids and topic_ids != {t.id for t in project_obj.topics}:
                 update_data["topic_ids"] = list(topic_ids)
-            if type_ids:
+            if type_ids and type_ids != {t.id for t in project_obj.types}:
                 update_data["type_ids"] = list(type_ids)
 
             if update_data:
@@ -222,14 +284,15 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         Updates the status of a parent task based on its children's status.
         Bubbles up to the root.
         """
-        # Load parent with its children
-        parent = await self.get(db, id=parent_id)
-        if not parent or not parent.subtasks:
+        # Only the direct children's statuses are needed; the parent's subtree is loaded only if its status changes.
+        parent_status = (await db.execute(select(self.model.status).where(self.model.id == parent_id))).first()
+        child_statuses = (await db.execute(select(self.model.status).where(self.model.parent_id == parent_id))).scalars().all()
+        if not parent_status or not child_statuses:
             return
 
-        total = len(parent.subtasks)
-        done_count = sum(1 for s in parent.subtasks if s.status == Status.DONE)
-        in_progress_count = sum(1 for s in parent.subtasks if s.status in [Status.IN_PROGRESS, Status.REVIEW])
+        total = len(child_statuses)
+        done_count = sum(1 for st in child_statuses if st == Status.DONE)
+        in_progress_count = sum(1 for st in child_statuses if st in [Status.IN_PROGRESS, Status.REVIEW])
         
         new_status = Status.TODO
         if done_count == total:
@@ -242,36 +305,32 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         elif in_progress_count > 0 or done_count > 0:
             new_status = Status.IN_PROGRESS
         
-        if parent.status != new_status:
+        if parent_status[0] != new_status:
+            parent = await self.get(db, id=parent_id)
             # Use direct update to avoid triggering another loop if not needed, 
             # but we NEED to bubble up, so we call update which calls this again.
             with activity.acting_as(activity.ROLLUP_LABEL):
                 await self.update(db, db_obj=parent, obj_in={"status": new_status})
             # The .update() call will handle the next level up if parent.parent_id exists.
 
-    async def is_blocked_by_recursive(self, db: AsyncSession, item_id: UUID, blocker_candidate_id: UUID, visited: set) -> bool:
+    async def is_blocked_by_recursive(self, db: AsyncSession, item_id: UUID, blocker_candidate_id: UUID) -> bool:
+        """True if item_id is blocker_candidate_id or (transitively) blocked by it, following both dependency rows and
+        the legacy blocked_by_ids array - one recursive query instead of two per visited task."""
         if item_id == blocker_candidate_id:
             return True
-        if item_id in visited:
-            return False
-        visited.add(item_id)
-        
-        # Check Dependency table (preferred)
-        from app.models.dependency import Dependency
-        res = await db.execute(select(Dependency.predecessor_id).filter(Dependency.successor_id == item_id))
-        predecessors = res.scalars().all()
-        for pred_id in predecessors:
-            if await self.is_blocked_by_recursive(db, pred_id, blocker_candidate_id, visited):
-                return True
-                
-        # Fallback to old blocked_by_ids
-        res = await db.execute(select(Task.blocked_by_ids).filter(Task.id == item_id))
-        row = res.first()
-        if row and row[0]:
-            for b_id in row[0]:
-                if await self.is_blocked_by_recursive(db, b_id, blocker_candidate_id, visited):
-                    return True
-        return False
+        reachable = await db.execute(text("""
+            WITH RECURSIVE blockers(id) AS (
+                SELECT CAST(:start AS uuid)
+                UNION
+                SELECT nxt.id FROM blockers b CROSS JOIN LATERAL (
+                    SELECT d.predecessor_id AS id FROM dependencies d WHERE d.successor_id = b.id
+                    UNION ALL
+                    SELECT unnest(t.blocked_by_ids) FROM tasks t WHERE t.id = b.id
+                ) AS nxt
+            )
+            SELECT EXISTS (SELECT 1 FROM blockers WHERE id = CAST(:target AS uuid))
+        """), {"start": str(item_id), "target": str(blocker_candidate_id)})
+        return bool(reachable.scalar())
 
     async def check_for_active_blockers(self, db: AsyncSession, item_id: UUID) -> List[str]:
         active_blocker_titles = []
@@ -287,13 +346,13 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if t.status != Status.DONE:
                 active_blocker_titles.append(t.title)
         
-        # Check legacy field
+        # Check legacy field (one query for all ids, kept in the array's order)
         res = await db.execute(select(Task.blocked_by_ids).filter(Task.id == item_id))
         row = res.first()
         if row and row[0]:
+            legacy = {t.id: t for t in (await db.execute(select(Task).filter(Task.id.in_(row[0])))).scalars().all()}
             for b_id in row[0]:
-                res = await db.execute(select(Task).filter(Task.id == b_id))
-                obj = res.scalars().first()
+                obj = legacy.get(b_id)
                 if obj and obj.status != Status.DONE:
                     if obj.title not in active_blocker_titles:
                         active_blocker_titles.append(obj.title)
@@ -301,8 +360,9 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return active_blocker_titles
 
     @atomic
+    @_sync_projects_once
     async def create(self, db: AsyncSession, *, obj_in: TaskCreate, owner_id: Optional[UUID] = None) -> Task:
-        obj_data = clean_dict_datetimes(obj_in.dict(exclude_unset=True, exclude={'topic_ids', 'type_ids'}))
+        obj_data = clean_dict_datetimes(obj_in.model_dump(exclude_unset=True, exclude={'topic_ids', 'type_ids'}))
         assignee_ids = obj_data.pop("assignee_ids", [])
         subtasks_data = obj_data.pop("subtasks", [])
         
@@ -461,6 +521,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             logging.getLogger(__name__).exception("Could not queue assignment e-mails")
 
     @atomic
+    @_sync_projects_once
     async def update(
         self, db: AsyncSession, *, db_obj: Task, obj_in: Union[TaskUpdate, Dict[str, Any]]
     ) -> Task:
@@ -472,7 +533,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         before = activity.snapshot(db_obj)
         
         if isinstance(obj_in, TaskUpdate):
-            obj_data = obj_in.dict(exclude_unset=True)
+            obj_data = obj_in.model_dump(exclude_unset=True)
         else:
             obj_data = obj_in.copy()
         
@@ -505,7 +566,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             for b_id in new_blocker_ids:
                 if b_id == db_obj.id:
                     raise ValueError("Item cannot block itself")
-                if await self.is_blocked_by_recursive(db, b_id, db_obj.id, set()):
+                if await self.is_blocked_by_recursive(db, b_id, db_obj.id):
                     raise ValueError(f"Circular dependency detected with item ID: {b_id}")
             db_obj.blocked_by_ids = new_blocker_ids
 
@@ -537,15 +598,10 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             if new_p_id == db_obj.id:
                 raise ValueError("A task cannot be its own parent")
             
-            async def is_descendant(parent_candidate_id: UUID, task_id: UUID) -> bool:
-                res = await db.execute(select(self.model.id).filter(self.model.parent_id == task_id))
-                children_ids = res.scalars().all()
-                for c_id in children_ids:
-                    if c_id == parent_candidate_id or await is_descendant(parent_candidate_id, c_id):
-                        return True
-                return False
-            
-            if await is_descendant(new_p_id, db_obj.id):
+            # every descendant of this task, in one recursive query
+            descendants = select(self.model.id).where(self.model.parent_id == db_obj.id).cte("descendants", recursive=True)
+            descendants = descendants.union(select(self.model.id).where(self.model.parent_id == descendants.c.id))
+            if (await db.execute(select(descendants.c.id).where(descendants.c.id == new_p_id))).first():
                 raise ValueError("Cannot set a descendant as a parent (circular hierarchy)")
 
         # 8. Call base update for remaining fields (relations are read now: the refresh below unloads them)
@@ -648,6 +704,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return db_obj
 
     @atomic
+    @_sync_projects_once
     async def remove(self, db: AsyncSession, *, id: UUID) -> Task:
         # Load object first to get parent/project info
         db_obj = await self.get(db, id=id)
@@ -668,5 +725,3 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         return obj
 
 task = CRUDTask(Task)
-# Point subtask to task for backward compatibility during migration
-subtask = task

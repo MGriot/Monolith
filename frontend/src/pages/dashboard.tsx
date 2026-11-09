@@ -25,6 +25,7 @@ import { Panel, Eyebrow } from '@/components/ui/section';
 import { StatStrip, StatTile } from '@/components/ui/stat-tile';
 import { EmptyState } from '@/components/ui/empty-state';
 import { STATUS_COLORS } from '@/constants/colors';
+import { rangeParams, workloadRange } from '@/lib/calendar-range';
 
 interface DashboardSummary {
   total_projects: number;
@@ -131,9 +132,10 @@ export default function DashboardPage() {
     queryFn: async () => (await api.get('/dashboard/team-workload?days=14')).data as TeamWorkloadResponse,
   });
 
+  const workloadParams = useMemo(() => rangeParams(workloadRange(new Date())), []);
   const { data: calendarData } = useQuery({
-    queryKey: ['calendar-events', 'global'],
-    queryFn: async () => (await api.get('/calendar/')).data,
+    queryKey: ['calendar-events', 'global', workloadParams],
+    queryFn: async () => (await api.get('/calendar/', { params: workloadParams })).data,
     enabled: !!user?.is_superuser,
   });
 

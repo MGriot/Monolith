@@ -1,7 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, ConfigDict, computed_field
 from app.core.enums import Status, Priority
 
 from .metadata import Topic, WorkType
@@ -53,8 +53,7 @@ class ProjectInDBBase(ProjectBase):
     updated_at: datetime
     progress_percent: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class Project(ProjectInDBBase):
     # The caller's role (viewer/editor/admin); only filled by GET /projects/{id}

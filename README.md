@@ -51,6 +51,10 @@ scripts/mail-bootstrap.sh       # one-time: TLS certificate + sender mailbox for
 podman-compose up -d --build    # or: docker compose up -d --build
 ```
 
+Stick to one compose tool per stack: containers created by `docker compose` (or by `podman compose`, which hands off to
+`docker-compose`) block `podman-compose` and keep the old images running; `podman-compose down` then `up` fixes it
+([troubleshooting](docs/guide/11-troubleshooting.html#problems)).
+
 | What | Where |
 |---|---|
 | App | http://localhost:8080 (`HTTP_PORT`) |
@@ -184,8 +188,7 @@ React 19 · TypeScript · Tailwind · TanStack Query · Excalidraw 0.18 — Fast
 backend/     FastAPI app (app/api, app/mcp, app/core, app/models), Alembic migrations, tests (unit + live)
 frontend/    React app (Vite)
 docs/        guide/ (HTML documentation), img/ (screenshots; img/guide/ for the guide), redesign/ (UI redesign proposal)
-scripts/     mail-bootstrap.sh, live-smoke.sh, mcp_sample_project.py + sample_project.json, docs/gen_reference.py,
-             debug/ (one-off Playwright scripts)
+scripts/     mail-bootstrap.sh, live-smoke.sh, mcp_sample_project.py + sample_project.json, docs/gen_reference.py
 nginx/       reverse proxy configuration
 compose.yaml / compose.dev.yaml
 ```
@@ -195,7 +198,7 @@ compose.yaml / compose.dev.yaml
 ```bash
 cd backend && python -m pytest -q tests/                      # unit tests, no database
 TEST_DATABASE_URL=postgresql+asyncpg://postgres:test@localhost:55432/postgres \
-  python -m pytest -q tests/test_db_integration.py              # against a throw-away Postgres (rolled back)
+  python -m pytest -q tests/test_*_integration.py               # against a throw-away Postgres (rolled back)
 cd frontend && npm ci && npm run typecheck && npm test && npm run build
 scripts/live-smoke.sh                                         # against a throw-away stack with a fresh database
 python scripts/docs/gen_reference.py --check                  # generated guide sections are current

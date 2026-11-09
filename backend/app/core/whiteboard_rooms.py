@@ -259,10 +259,6 @@ class RoomManager:
         room.files = dict(data.get("files") or {})
         await self._broadcast(room, {"type": "scene_replace", "elements": room.scene(), "files": room.files})
 
-    def online_user_ids(self, whiteboard_id: UUID) -> List[str]:
-        room = self.rooms.get(whiteboard_id)
-        return sorted({str(p.user_id) for p in room.peers.values()}) if room else []
-
     # --- internals -------------------------------------------------------------------------------------------
     async def _refresh_role(self, room: Room, peer: Peer) -> bool:
         """Re-read the peer's project role now and then; False (and `revoked`) once access is gone."""

@@ -8,7 +8,7 @@ from app.crud.base import CRUDBase
 from app.models.workflow import Workflow
 from app.models.user import User
 from app.schemas.workflow import WorkflowCreate, WorkflowUpdate
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 class CRUDWorkflow(CRUDBase[Workflow, WorkflowCreate, WorkflowUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[Workflow]:
@@ -22,7 +22,7 @@ class CRUDWorkflow(CRUDBase[Workflow, WorkflowCreate, WorkflowUpdate]):
     async def create_with_owner(
         self, db: AsyncSession, *, obj_in: WorkflowCreate, owner_id: UUID
     ) -> Workflow:
-        obj_in_data = obj_in.dict(exclude={'shared_with_ids'})
+        obj_in_data = obj_in.model_dump(exclude={'shared_with_ids'})
         db_obj = self.model(
             **obj_in_data,
             owner_id=owner_id
@@ -43,7 +43,7 @@ class CRUDWorkflow(CRUDBase[Workflow, WorkflowCreate, WorkflowUpdate]):
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
             
         if "shared_with_ids" in update_data:
             shared_with_ids = update_data.pop("shared_with_ids")

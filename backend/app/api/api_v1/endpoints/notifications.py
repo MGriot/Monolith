@@ -14,7 +14,6 @@ from app.schemas.notification import Notification, NotificationUpdate
 from app.models.user import User
 from app.core.websockets import manager
 from app.core.config import settings
-from app.core import security
 from app.db.session import AsyncSessionLocal
 from app.crud import crud_user
 

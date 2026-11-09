@@ -24,7 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { getStatusColors, getPriorityColors } from '@/constants/colors';
 import type { Task } from '@/types';
-import { isAfterDueDay } from "@/lib/dates";
+import { formatDisplayDate, isAfterDueDay } from "@/lib/dates";
 import { isCriticalTask } from '@/lib/gantt';
 import type { TaskGroup } from '@/lib/task-filters';
 import { clickSelection, headerState, pruneSelection, toggleAll, visibleIds, type SelectionState } from '@/lib/selection';
@@ -162,6 +162,8 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
         </TableCell>
         <TableCell className="py-2 text-right">
           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Shown only where the page handles them */}
+            {onReorderTask && (<>
             <Button
               variant="ghost"
               size="icon"
@@ -186,6 +188,8 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             >
               <ArrowDown className="w-3.5 h-3.5" />
             </Button>
+            </>)}
+            {onIndentTask && (<>
             <Button
               variant="ghost"
               size="icon"
@@ -212,6 +216,7 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </Button>
+            </>)}
           </div>
         </TableCell>
         <TableCell className="py-2 text-center">
@@ -297,23 +302,23 @@ function RecursiveTaskRow({ task, level, onTaskClick, onSubtaskClick, onAddSubta
         </TableCell>
         <TableCell className="py-2">
           <span className="text-[11px] font-medium text-muted-foreground">
-            {task.start_date ? new Date(task.start_date).toLocaleDateString() : '-'}
+            {formatDisplayDate(task.start_date)}
           </span>
         </TableCell>
         <TableCell className="py-2">
           <span className="text-[11px] font-medium text-muted-foreground">
-            {task.completed_at ? new Date(task.completed_at).toLocaleDateString() : '-'}
+            {formatDisplayDate(task.completed_at)}
           </span>
         </TableCell>
         <TableCell className="text-right py-2">
           <div className="flex flex-col items-end">
             <span className={cn("font-bold text-muted-foreground", level === 0 ? "text-[11px]" : "text-[11px]")}>
-              {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+              {formatDisplayDate(task.due_date)}
             </span>
             {task.deadline_at && (
               <span className="text-[11px] font-semibold text-red-500 flex items-center gap-0.5">
                 <AlertTriangle className="w-2.5 h-2.5" />
-                {new Date(task.deadline_at).toLocaleDateString()}
+                {formatDisplayDate(task.deadline_at)}
               </span>
             )}
           </div>

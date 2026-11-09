@@ -104,7 +104,6 @@ export default function TemplatesPage() {
         <Plus className="w-4 h-4" /> Create Template
       </Button>
     );
-    return () => setActions(null);
   }, [setActions]);
 
   // Queries

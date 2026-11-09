@@ -12,6 +12,7 @@ import { Plus, Trash2, Edit2, Tag, Briefcase, Loader2, Info } from 'lucide-react
 import { toast } from 'sonner';
 import type { Topic, WorkType } from '@/types';
 import { confirmDialog } from '@/lib/confirm';
+import { errorMessage } from '@/lib/api-error';
 
 interface ScopedTaxonomyManagerProps {
   projectId?: string;
@@ -65,7 +66,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
       setNewTopicName('');
       toast.success('Topic created');
     },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to create topic')
+    onError: (err: any) => toast.error(errorMessage(err, 'Failed to create topic'))
   });
 
   const updateTopicMutation = useMutation({
@@ -75,7 +76,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
       setEditingTopic(null);
       toast.success('Topic updated');
     },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to update topic')
+    onError: (err: any) => toast.error(errorMessage(err, 'Failed to update topic'))
   });
 
   const deleteTopicMutation = useMutation({
@@ -84,7 +85,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
       queryClient.invalidateQueries({ queryKey: ['metadata', 'topics'] });
       toast.success('Topic deleted');
     },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to delete topic')
+    onError: (err: any) => toast.error(errorMessage(err, 'Failed to delete topic'))
   });
 
   const createTypeMutation = useMutation({
@@ -94,7 +95,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
       setNewTypeName('');
       toast.success('Work Type created');
     },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to create work type')
+    onError: (err: any) => toast.error(errorMessage(err, 'Failed to create work type'))
   });
 
   const updateTypeMutation = useMutation({
@@ -104,7 +105,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
       setEditingWorkType(null);
       toast.success('Work Type updated');
     },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to update work type')
+    onError: (err: any) => toast.error(errorMessage(err, 'Failed to update work type'))
   });
 
   const deleteTypeMutation = useMutation({
@@ -113,7 +114,7 @@ export default function ScopedTaxonomyManager({ projectId, taskId, title, descri
       queryClient.invalidateQueries({ queryKey: ['metadata', 'work-types'] });
       toast.success('Work Type deleted');
     },
-    onError: (err: any) => toast.error(err.response?.data?.detail || 'Failed to delete work type')
+    onError: (err: any) => toast.error(errorMessage(err, 'Failed to delete work type'))
   });
 
   const handleUpdateTopic = (e: React.FormEvent) => {

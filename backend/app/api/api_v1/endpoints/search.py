@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
 from app.api import deps
-from app.models.associations import project_members, task_assignees
+from app.api.access import visible_project_filter, visible_task_filter
 from app.models.project import Project
 from app.models.task import Task
 from app.models.idea import Idea
@@ -26,9 +26,6 @@ async def search_all(
     # Escape LIKE wildcards so "100%" or "a_b" are searched literally (and "%" cannot match everything)
     escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     query_str = f"%{escaped}%"
-    uid = current_user.id
-    member_projects = select(project_members.c.project_id).where(project_members.c.user_id == uid)
-    owned_projects = select(Project.id).where(Project.owner_id == uid)
 
     # 1. Search Projects
     project_stmt = select(Project).filter(
@@ -37,8 +34,7 @@ async def search_all(
             Project.description.ilike(query_str, escape="\\")
         )
     )
-    if not current_user.is_superuser:
-        project_stmt = project_stmt.filter(or_(Project.owner_id == uid, Project.id.in_(member_projects)))
+    project_stmt = project_stmt.filter(visible_project_filter(current_user))
     
     project_res = await db.execute(project_stmt.limit(20))
     for p in project_res.scalars().all():
@@ -58,15 +54,7 @@ async def search_all(
             Task.description.ilike(query_str, escape="\\")
         )
     )
-    # Filter by owner or assignment
-    # This is more complex, but we'll try to be efficient
-    if not current_user.is_superuser:
-        task_stmt = task_stmt.filter(or_(
-            Task.owner_id == uid,
-            Task.project_id.in_(owned_projects),
-            Task.project_id.in_(member_projects),
-            Task.id.in_(select(task_assignees.c.task_id).where(task_assignees.c.user_id == uid)),
-        ))
+    task_stmt = task_stmt.filter(visible_task_filter(current_user))
     
     task_res = await db.execute(task_stmt.limit(20))
     for t in task_res.scalars().all():
@@ -88,11 +76,7 @@ async def search_all(
         )
     )
     # Only ideas from projects the user owns or belongs to
-    if not current_user.is_superuser:
-        idea_stmt = idea_stmt.filter(or_(
-            Idea.project_id.in_(owned_projects),
-            Idea.project_id.in_(member_projects),
-        ))
+    idea_stmt = idea_stmt.filter(Idea.project_id.in_(select(Project.id).where(visible_project_filter(current_user))))
     idea_res = await db.execute(idea_stmt.limit(20))
     for i in idea_res.scalars().all():
         results.append(SearchResult(

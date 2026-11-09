@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '@/components/auth-provider';
@@ -41,6 +41,9 @@ import "easymde/dist/easymde.min.css";
 import { useTitle } from '@/context/title-context';
 import { cn } from '@/lib/utils';
 import { confirmDialog } from '@/lib/confirm';
+import { errorMessage } from '@/lib/api-error';
+import { parseServerDate } from '@/lib/dates';
+import { markdownEditorOptions } from '@/lib/markdown-editor';
 
 export default function WorkflowsPage() {
     const { user } = useAuth();
@@ -101,10 +104,6 @@ export default function WorkflowsPage() {
                 </div>
             );
         }
-        return () => {
-            setTitle(null);
-            setActions(null);
-        };
     }, [selectedWorkflow, setTitle, setActions, searchTerm]);
 
     const { data: workflows, isLoading } = useQuery({
@@ -112,48 +111,8 @@ export default function WorkflowsPage() {
         queryFn: async () => (await api.get('/workflows/')).data as Workflow[],
     });
 
-    const handleImageUpload = useCallback(async (file: File, onSuccess: (url: string) => void, onError: (error: string) => void) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        try {
-          const response = await api.post('/comments/upload', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          });
-          const url = response.data.url.startsWith('http') ? response.data.url : `/uploads/${response.data.url.split('/').pop()}`;
-          onSuccess(url);
-        } catch (error) {
-          console.error('Upload failed:', error);
-          onError("Upload failed");
-          toast.error("Failed to upload image");
-        }
-    }, []);
-
-    const mdeOptions = useMemo(() => {
-        return {
-          autofocus: false,
-          spellChecker: false,
-          status: false,
-          minHeight: "300px",
-          uploadImage: true,
-          imageUploadFunction: handleImageUpload,
-          imageAccept: "image/png, image/jpeg, image/gif, image/webp",
-          toolbar: [
-            "bold", "italic", "heading", "|", 
-            "quote", "unordered-list", "ordered-list", "|", 
-            "link", "image", "table", "|", 
-            "preview", "side-by-side", "fullscreen", "|", 
-            "guide"
-          ],
-          // Custom preview rendering to support LaTeX and Tipsy
-          previewRender: () => {
-            // We can't easily render React components into a string for SimpleMDE's preview
-            // but we can use a simpler marked-based approach or just rely on the main view mode.
-            // For now, let's just use the default but keep the option for future static rendering.
-            return null; // returning null uses default
-          }
-        } as any;
-    }, [handleImageUpload]);
+    // EasyMDE's own preview (marked); a previewRender returning null left the preview panes blank.
+    const mdeOptions = useMemo(() => markdownEditorOptions({ minHeight: "300px" }), []);
 
     const createMutation = useMutation({
         mutationFn: (data: any) => api.post('/workflows/', data),
@@ -163,7 +122,7 @@ export default function WorkflowsPage() {
             toast.success('Workflow created');
         },
         onError: (err: any) => {
-            toast.error(err.response?.data?.detail || 'Failed to create workflow');
+            toast.error(errorMessage(err, 'Failed to create workflow'));
         }
     });
 
@@ -178,7 +137,7 @@ export default function WorkflowsPage() {
             toast.success('Workflow updated');
         },
         onError: (err: any) => {
-            toast.error(err.response?.data?.detail || 'Failed to update workflow');
+            toast.error(errorMessage(err, 'Failed to update workflow'));
         }
     });
 
@@ -254,7 +213,7 @@ export default function WorkflowsPage() {
                                         <Badge variant="outline" className={cn("text-[11px] font-semibold uppercase tracking-tight", selectedWorkflow.is_public ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20" : "text-muted-foreground bg-subtle border-border")}>
                                             {selectedWorkflow.is_public ? 'Public Document' : 'Internal SOP'}
                                         </Badge>
-                                        <span className="text-[11px] text-fg-faint font-bold uppercase tracking-wide">Modified {new Date(selectedWorkflow.updated_at).toLocaleDateString()}</span>
+                                        <span className="text-[11px] text-fg-faint font-bold uppercase tracking-wide">Modified {parseServerDate(selectedWorkflow.updated_at).toLocaleDateString()}</span>
                                     </div>
                                     <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-none">{selectedWorkflow.title}</h1>
                                     {selectedWorkflow.description && (
