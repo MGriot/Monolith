@@ -56,6 +56,7 @@
     <span class="eyebrow">Classification</span>
     <h2>Topics and work types</h2>
     <p class="prose"><span class="ui">Metadata</span> (administrators) manages the <b>global</b> lists: name, colour, active flag. Topic colours tint project headers and Gantt bars. Project admins add <b>scoped</b> entries in <span class="ui">Project Settings</span>, which only that project sees, and choose which global entries the project offers. Deactivating hides an entry from pickers without touching items that use it.</p>
+    <p class="prose">The same page holds the <b>global custom fields</b>, which every project gets: project fields such as an approved budget and task fields such as effort in hours (<a href="06-tracking.html#custom-fields">6.2</a>).</p>
   </section>
 
   <section id="teams">
@@ -102,6 +103,7 @@
         <tr><td><code>0012</code></td><td>Sketch previews moved from base64 in the database to files under <code>uploads/previews</code></td></tr>
         <tr><td><code>0013</code></td><td>Task change log (<code>activity_events</code>): who changed what, per project</td></tr>
         <tr><td><code>0014</code></td><td>Topic and work-type names unique per scope (global, project, task); existing duplicates are merged</td></tr>
+        <tr><td><code>0015</code></td><td>Custom fields on projects, global fields, units, currency and limits (<code>projects.custom_values</code>)</td></tr>
       </tbody>
     </table></div>
     <pre class="code">podman exec monolith_backend alembic -c /app/alembic.ini current
