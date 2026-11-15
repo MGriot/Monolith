@@ -1,5 +1,5 @@
 """Per-project configuration: custom fields and automation rules."""
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from pydantic import Field
@@ -12,28 +12,62 @@ from app.schemas.automation import AutomationRuleCreate, AutomationRuleUpdate
 from app.schemas.custom_field import CustomFieldDefCreate, CustomFieldDefUpdate
 
 
-@mcp.tool()
-async def list_custom_fields(project_id: UUID) -> list[dict[str, Any]]:
-    """A project's custom fields. Task values live in `custom_values`, keyed by field id."""
-    return await call(fields_api.list_custom_fields, project_id=project_id)
+FIELD_HELP = """
+field_type: text, number, currency, select (give `options`), date, user, checkbox or url.
+applies_to: "task" (values on tasks, the default) or "project" (values on the project itself).
+number takes an optional free-text `unit` ("h", "kg", "%"); currency an optional ISO `currency` ("EUR", empty =
+the instance currency). Both take `min_value`, `max_value` and `decimals` (0-6).
+Values go in `custom_values` ({field_id: value}) on the task or project: number/currency a number, checkbox
+true/false, url an http(s) link, date "YYYY-MM-DD", user a user id, select one of the options; null clears.
+"""
 
 
 @mcp.tool()
+async def list_custom_fields(project_id: UUID, applies_to: Literal["project", "task"] | None = None) -> list[dict[str, Any]]:
+    """Every custom field a project sees: global ones (scope "global") first, then its own. Values live in
+    `custom_values` on tasks (applies_to "task") or on the project (applies_to "project"), keyed by field id."""
+    return await call(fields_api.list_custom_fields, project_id=project_id, applies_to=applies_to)
+
+
+@mcp.tool(description="Add a custom field to one project (admin role)." + FIELD_HELP)
 async def create_custom_field(project_id: UUID, field: CustomFieldDefCreate) -> dict[str, Any]:
-    """Add a custom field (admin role). field_type: text, number, select (give `options`), date or user."""
     return await call(fields_api.create_custom_field, project_id=project_id, body=field)
 
 
 @mcp.tool()
 async def update_custom_field(project_id: UUID, field_id: UUID, changes: CustomFieldDefUpdate) -> dict[str, Any]:
-    """Rename a custom field, change its select options or its position (admin role)."""
+    """Rename a project's custom field, change its options, unit, currency, limits, decimals or position (admin role).
+    The type and applies_to are fixed. Values outside new options or limits are cleared."""
     return await call(fields_api.update_custom_field, project_id=project_id, field_id=field_id, body=changes)
 
 
 @mcp.tool()
 async def delete_custom_field(project_id: UUID, field_id: UUID) -> dict[str, Any]:
-    """Delete a custom field and its values on every task (admin role)."""
+    """Delete a project's custom field and its stored values (admin role)."""
     return await call(fields_api.delete_custom_field, project_id=project_id, field_id=field_id)
+
+
+@mcp.tool()
+async def list_global_custom_fields(applies_to: Literal["project", "task"] | None = None) -> list[dict[str, Any]]:
+    """Global custom fields, which every project gets."""
+    return await call(fields_api.list_global_custom_fields, applies_to=applies_to)
+
+
+@mcp.tool(description="Add a global custom field that every project gets (superuser only)." + FIELD_HELP)
+async def create_global_custom_field(field: CustomFieldDefCreate) -> dict[str, Any]:
+    return await call(fields_api.create_global_custom_field, body=field)
+
+
+@mcp.tool()
+async def update_global_custom_field(field_id: UUID, changes: CustomFieldDefUpdate) -> dict[str, Any]:
+    """Change a global custom field (superuser only); same rules as `update_custom_field`."""
+    return await call(fields_api.update_global_custom_field, field_id=field_id, body=changes)
+
+
+@mcp.tool()
+async def delete_global_custom_field(field_id: UUID) -> dict[str, Any]:
+    """Delete a global custom field and its values on every project or task (superuser only)."""
+    return await call(fields_api.delete_global_custom_field, field_id=field_id)
 
 
 AUTOMATION_HELP = """

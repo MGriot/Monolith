@@ -36,7 +36,8 @@ import { Field, selectClass } from "@/components/ui/field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ColorSwatchPicker } from "@/components/ui/color-swatch-picker";
 import TaskTimeTracker from "./task-time-tracker";
-import TaskCustomFields, { useCustomFieldDefs } from "./task-custom-fields";
+import TaskCustomFields from "./task-custom-fields";
+import { useCustomFieldDefs } from "@/hooks/use-custom-field-defs";
 import { RecurrenceField } from "./recurrence-field";
 import { sanitizeCustomValues, validateCustomValues, type CustomValues } from "@/lib/custom-fields";
 import type { Task, Topic, WorkType, Project } from "@/types";
@@ -135,7 +136,7 @@ export default function TaskForm({
     enabled: !!projectId,
   });
 
-  const { data: customFieldDefs } = useCustomFieldDefs(projectId);
+  const { data: customFieldDefs } = useCustomFieldDefs(projectId, "task");
 
   const { data: topics, isLoading: isLoadingTopics } = useQuery({
     queryKey: ['metadata', 'topics', projectId, editingTaskId],
@@ -369,7 +370,7 @@ export default function TaskForm({
     }
     const cleanedData = {
       ...data,
-      ...(projectId && customFieldDefs ? { custom_values: sanitizeCustomValues(customDefs, data.custom_values) } : { custom_values: undefined }),
+      ...(customFieldDefs ? { custom_values: sanitizeCustomValues(customDefs, data.custom_values) } : { custom_values: undefined }),
       parent_id: data.parent_id === "" ? null : data.parent_id,
       color: data.color === "" ? null : data.color,
       description: data.description === "" ? null : data.description,
@@ -730,8 +731,6 @@ export default function TaskForm({
       value: "fields",
       label: "Fields",
       icon: <SlidersHorizontal className="h-3.5 w-3.5" />,
-      disabled: !projectId,
-      disabledReason: "Only for tasks in a project",
       content: (
         <TaskCustomFields
           projectId={projectId}

@@ -43,7 +43,8 @@ EXPECTED = {
     # time, fields, automations
     "start_timer", "stop_timer", "get_running_timer", "log_time", "update_time_entry", "delete_time_entry",
     "get_task_time", "get_timesheet", "list_custom_fields", "create_custom_field", "update_custom_field",
-    "delete_custom_field", "list_automations", "create_automation", "update_automation", "delete_automation",
+    "delete_custom_field", "list_global_custom_fields", "create_global_custom_field", "update_global_custom_field",
+    "delete_global_custom_field", "list_automations", "create_automation", "update_automation", "delete_automation",
     "list_automation_runs",
     # collaboration
     "list_comments", "add_comment", "edit_comment", "delete_comment", "list_ideas", "propose_idea", "update_idea",

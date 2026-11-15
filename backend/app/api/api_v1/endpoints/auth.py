@@ -62,6 +62,7 @@ async def public_config() -> Any:
         "allow_signup": settings.ALLOW_SIGNUP,
         "email_enabled": settings.EMAIL_ENABLED,
         "min_password_length": settings.MIN_PASSWORD_LENGTH,
+        "currency": settings.CURRENCY,
     }
 
 

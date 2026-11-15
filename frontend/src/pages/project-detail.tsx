@@ -44,6 +44,9 @@ import { ProjectMembersCard } from '@/components/project-members';
 import { canAdmin, canEdit } from '@/lib/roles';
 import DataExportDialog from '@/components/data-export-dialog';
 import CustomFieldsManager from '@/components/custom-fields-manager';
+import { ProjectFieldValuesCard } from '@/components/custom-field-values';
+import { formatMoney } from '@/lib/custom-fields';
+import { useCurrency } from '@/lib/queries';
 import AutomationRules from '@/components/automation-rules';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import type { Project, Task } from '@/types';
@@ -66,6 +69,7 @@ const NO_TASKS: Task[] = [];
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const currency = useCurrency();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
@@ -417,7 +421,7 @@ export default function ProjectDetailPage() {
                                 "font-bold",
                                 (project.real_cost || 0) > (project.budget || 0) ? "text-red-500" : "text-emerald-600 dark:text-emerald-400"
                             )}>
-                                ${project.real_cost?.toLocaleString()} / ${project.budget?.toLocaleString()}
+                                {formatMoney(project.real_cost || 0, currency)} / {formatMoney(project.budget || 0, currency)}
                             </span>
                         </div>
                         <Progress value={Math.min(100, ((project.real_cost || 0) / (project.budget || 1)) * 100)} className="h-1.5" />
@@ -425,6 +429,8 @@ export default function ProjectDetailPage() {
                 </CardContent>
             </Card>
           </div>
+
+          {id && <ProjectFieldValuesCard projectId={id} values={project.custom_values} />}
 
           <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden flex flex-col">
             <div className="p-4 border-b border-hairline bg-subtle/50 flex items-center justify-between">
@@ -463,6 +469,7 @@ export default function ProjectDetailPage() {
               resultCount={filteredCount}
             />
             <ProjectTaskList
+              projectId={id}
               tasks={view.sorted}
               groups={view.groups}
               filtered={hasActiveFilters(view.filters)}
@@ -599,7 +606,9 @@ export default function ProjectDetailPage() {
             )}
             {canAdmin(project.my_role) && (<>
 
-            {id && <CustomFieldsManager projectId={id} />}
+            {id && <CustomFieldsManager projectId={id} appliesTo="project" />}
+
+            {id && <CustomFieldsManager projectId={id} appliesTo="task" />}
 
             {id && <AutomationRules projectId={id} />}
 

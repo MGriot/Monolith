@@ -83,6 +83,7 @@ podman ps                          <span class="c"># every service should report
         <tr><td><code>HTTP_PORT</code></td><td>no (8080)</td><td>Host port of the proxy.</td></tr>
         <tr><td><code>APP_BASE_URL</code></td><td>no</td><td>Public origin used in e-mail links, the calendar feed and the MCP Host check.</td></tr>
         <tr><td><code>ALLOW_SIGNUP</code></td><td>no (false)</td><td>Let people request an account on <code>/register</code>; an administrator approves each request.</td></tr>
+        <tr><td><code>CURRENCY</code></td><td>no (EUR)</td><td>ISO 4217 code for budgets, actual cost and currency custom fields that do not name their own (<a href="06-tracking.html#custom-fields">6.2</a>).</td></tr>
         <tr><td><code>MCP_ENABLED</code></td><td>no (true)</td><td>Mount the MCP server at <code>/mcp</code>. Every client still needs a personal token (<a href="09-mcp.html#tokens">9.2</a>).</td></tr>
         <tr><td><code>MCP_ALLOWED_HOSTS</code></td><td>no</td><td>Extra Host names accepted on <code>/mcp</code> besides <code>APP_BASE_URL</code> and localhost.</td></tr>
         <tr><td><code>CORS_ORIGINS</code></td><td>no</td><td>Browser origins allowed to call the API cross-origin. The bundled proxy is same-origin and needs none.</td></tr>

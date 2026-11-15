@@ -1,0 +1,14 @@
+{
+  "name": "monolith-docs-screenshots",
+  "private": true,
+  "type": "module",
+  "description": "Reproducible guide screenshots (dev only, not part of the app build)",
+  "scripts": {
+    "seed": "node seed.mjs",
+    "capture": "node capture.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.48.2",
+    "sharp": "0.33.5"
+  }
+}

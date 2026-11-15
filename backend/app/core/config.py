@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_NAME: str = "Administrator"
     ALLOW_SIGNUP: bool = False          # public self-registration (POST /users/ without an admin token)
     MIN_PASSWORD_LENGTH: int = 8
+
+    # ISO 4217 code for money shown in the app: project/task budget and real cost, currency fields without their own
+    CURRENCY: str = "EUR"
     LOGIN_MAX_FAILURES: int = 5
     LOGIN_WINDOW_SECONDS: int = 900
 

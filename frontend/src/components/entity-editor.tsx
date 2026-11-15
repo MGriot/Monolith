@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eyebrow, Section } from "@/components/ui/section";
 import { Field } from "@/components/ui/field";
+import { formatMoney } from "@/lib/custom-fields";
+import { useCurrency } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
 export interface EditorTab {
@@ -237,6 +239,7 @@ export function RiskCostPanel({
   const exposure = (probability || 1) * (impact || 1);
   const exposureTone = exposure <= 4 ? "bg-success-soft text-success" : exposure <= 9 ? "bg-warning-soft text-warning" : "bg-danger-soft text-danger";
   const remaining = budget - realCost;
+  const currency = useCurrency();
   return (
     <div className="grid gap-5 lg:grid-cols-2">
       <Section icon={<AlertCircle className="h-4 w-4 text-warning" />} title="Risk" description="Probability × impact">
@@ -252,10 +255,10 @@ export function RiskCostPanel({
 
       <Section icon={<Database className="h-4 w-4 text-info" />} title="Cost">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          <Field label="Planned budget ($)" htmlFor={`${idPrefix}budget`}>
+          <Field label={`Planned budget (${currency})`} htmlFor={`${idPrefix}budget`}>
             <Input id={`${idPrefix}budget`} type="number" step="0.01" className="h-9 tabular-nums" {...fields.budget} />
           </Field>
-          <Field label="Actual cost ($)" htmlFor={`${idPrefix}real_cost`}>
+          <Field label={`Actual cost (${currency})`} htmlFor={`${idPrefix}real_cost`}>
             <Input id={`${idPrefix}real_cost`} type="number" step="0.01" className="h-9 tabular-nums" {...fields.realCost} />
           </Field>
         </div>
@@ -270,7 +273,7 @@ export function RiskCostPanel({
         <div className={cn("flex items-center justify-between rounded-md px-3 py-2", remaining < 0 ? "bg-danger-soft text-danger" : "bg-success-soft text-success")}>
           <span className="text-xs font-medium">{remaining < 0 ? "Over budget" : "Remaining"}</span>
           <span className="text-lg font-semibold tabular-nums">
-            {remaining < 0 ? "-" : ""}${Math.abs(remaining).toLocaleString()}
+            {formatMoney(remaining, currency)}
           </span>
         </div>
       </Section>

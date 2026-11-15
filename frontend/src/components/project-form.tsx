@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { differenceInCalendarDays, parseISO } from "date-fns";
-import { AlertCircle, CalendarDays } from "lucide-react";
+import { AlertCircle, CalendarDays, SlidersHorizontal } from "lucide-react";
+import { toast } from "sonner";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,9 @@ import { EntityEditor, EditorTitle, RailGroup, RiskCostPanel, type EditorTab } f
 import type { Topic, WorkType, Project } from "@/types";
 import { toDateInputValue } from "@/lib/dates";
 import { PRIORITIES, STATUSES, statusLabel } from "@/constants/statuses";
+import { ProjectCustomFields } from "@/components/task-custom-fields";
+import { useCustomFieldDefs } from "@/hooks/use-custom-field-defs";
+import { sanitizeCustomValues, validateCustomValues, type CustomValues } from "@/lib/custom-fields";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -35,6 +39,7 @@ const projectSchema = z.object({
   real_cost: z.number().optional(),
   risk_probability: z.number().min(1).max(5).optional(),
   risk_impact: z.number().min(1).max(5).optional(),
+  custom_values: z.record(z.string(), z.any()).optional(),
 });
 
 export type ProjectFormValues = z.infer<typeof projectSchema>;
@@ -69,6 +74,9 @@ export default function ProjectForm({
     })).data as Topic[],
   });
 
+  // Global project fields, plus the project's own once it exists
+  const { data: customFieldDefs } = useCustomFieldDefs(projectId, "project");
+
   const { data: workTypes, isLoading: typesLoading } = useQuery({
     queryKey: ['metadata', 'work-types', projectId],
     queryFn: async () => (await api.get('/metadata/work-types', {
@@ -94,6 +102,7 @@ export default function ProjectForm({
       real_cost: v.real_cost || 0,
       risk_probability: v.risk_probability || 1,
       risk_impact: v.risk_impact || 1,
+      custom_values: v.custom_values ?? {},
     };
   }, [initialValues]);
 
@@ -207,7 +216,29 @@ export default function ProjectForm({
         />
       ),
     },
+    {
+      value: "fields",
+      label: "Fields",
+      icon: <SlidersHorizontal className="h-3.5 w-3.5" />,
+      content: (
+        <ProjectCustomFields
+          projectId={projectId}
+          values={(watch("custom_values") || {}) as CustomValues}
+          onChange={(values) => setValue("custom_values", values, { shouldDirty: true })}
+        />
+      ),
+    },
   ];
+
+  const submit = (data: ProjectFormValues) => {
+    const defs = customFieldDefs ?? [];
+    if (Object.keys(validateCustomValues(defs, data.custom_values)).length > 0) {
+      toast.error("Fix the highlighted custom fields first");
+      return;
+    }
+    // Without the definitions loaded, leave the stored values alone rather than wiping them
+    onSubmit({ ...data, custom_values: customFieldDefs ? sanitizeCustomValues(defs, data.custom_values) : undefined });
+  };
 
   const rail = (
     <>
@@ -278,7 +309,7 @@ export default function ProjectForm({
     <EntityEditor
       variant={variant}
       isDirty={isDirty}
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit(submit)}
       main={
         <>
           <EditorTitle id="name" placeholder="Project name" registration={register("name")} error={errors.name?.message} />
