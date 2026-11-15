@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -6,13 +6,13 @@ from sqlalchemy.future import select
 from app.crud.base import CRUDBase
 from app.models.webhook import Webhook
 from app.schemas.webhook import WebhookCreate, WebhookUpdate
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 class CRUDWebhook(CRUDBase[Webhook, WebhookCreate, WebhookUpdate]):
     async def create_with_owner(
         self, db: AsyncSession, *, obj_in: WebhookCreate, owner_id: UUID
     ) -> Webhook:
-        obj_in_data = obj_in.dict()
+        obj_in_data = obj_in.model_dump()
         db_obj = self.model(**obj_in_data, owner_id=owner_id)
         db.add(db_obj)
         await commit(db)

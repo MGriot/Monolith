@@ -21,7 +21,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import app.models  # noqa: F401  (registers every mapper so string relationships resolve)
@@ -183,3 +183,40 @@ async def require_context_access(
         await require_task_access(db, task_id, user, write=write)
     if idea_id:
         await require_idea_access(db, idea_id, user, min_role=min_role)
+
+
+def require_owner(obj, user: User, detail: str) -> None:
+    """Owned, shareable objects (templates, SOP workflows, teams): only superusers and the owner."""
+    if not (user.is_superuser or obj.owner_id == user.id):
+        raise HTTPException(status_code=403, detail=detail)
+
+
+def require_owner_or_shared(obj, user: User, detail: str, *, also=()) -> None:
+    """Superusers, the owner, the users it is shared with, and anyone in `also` (e.g. a team's members)."""
+    if user.is_superuser or obj.owner_id == user.id:
+        return
+    if any(u.id == user.id for u in (*obj.shared_with, *also)):
+        return
+    raise HTTPException(status_code=403, detail=detail)
+
+
+# --- list visibility (dashboard, calendar, search, project lists) -----------------------------------------------
+def visible_project_filter(user: User):
+    """Projects a user can see in lists: every project for superusers, else the ones they own or are a member of."""
+    if user.is_superuser:
+        return true()
+    member_of = select(project_members.c.project_id).where(project_members.c.user_id == user.id)
+    return or_(Project.owner_id == user.id, Project.id.in_(member_of))
+
+
+def visible_task_filter(user: User):
+    """Tasks a user can see in lists (the read rule of has_task_access): tasks in a visible project, plus tasks they own
+    or are assigned to anywhere, including tasks without a project."""
+    if user.is_superuser:
+        return true()
+    assigned = select(task_assignees.c.task_id).where(task_assignees.c.user_id == user.id)
+    return or_(
+        Task.owner_id == user.id,
+        Task.project_id.in_(select(Project.id).where(visible_project_filter(user))),
+        Task.id.in_(assigned),
+    )

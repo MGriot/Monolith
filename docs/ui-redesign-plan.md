@@ -428,7 +428,7 @@ Tech notes:
 - **OS file drops** use native `dragenter/dragover/drop` (dnd-kit doesn't handle `DataTransfer.files`).
   `Dropzone` counts enter/leave to avoid flicker and checks `e.dataTransfer.types.includes('Files')`.
 - **Uploads**: queue with concurrency 3, `axios` `onUploadProgress` per file, cancel via `AbortController`,
-  per-file error with Retry, client-side check against the 100 MB `client_max_body_size` in `nginx.conf`.
+  per-file error with Retry, client-side check against the backend's `MAX_UPLOAD_MB` (50 MB by default; `nginx.conf` only sets a 100 MB ceiling).
   Folder uploads (`webkitGetAsEntry`) recreate the folder structure — phase 2.
 
 ### 6.3 Backend changes required

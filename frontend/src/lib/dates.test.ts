@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { formatDisplayDate, fromDateInput, isAfterDueDay, parseApiDate, toDateInputValue } from './dates';
+import { formatDisplayDate, fromDateInput, isAfterDueDay, parseApiDate, parseServerDate, toDateInputValue } from './dates';
 
 const ORIGINAL_TZ = process.env.TZ;
 afterEach(() => {
@@ -78,5 +78,22 @@ describe('isAfterDueDay', () => {
   it('is false without a due date', () => {
     expect(isAfterDueDay(new Date(), null)).toBe(false);
     expect(isAfterDueDay(new Date(), undefined)).toBe(false);
+  });
+});
+
+describe('parseServerDate', () => {
+  it('treats naive server timestamps as UTC in every zone', () => {
+    for (const tz of ZONES) {
+      process.env.TZ = tz;
+      expect(parseServerDate('2026-01-01T09:00:00').toISOString()).toBe('2026-01-01T09:00:00.000Z');
+      expect(parseServerDate('2026-01-01T09:00:00.123456').toISOString()).toBe('2026-01-01T09:00:00.123Z');
+    }
+  });
+
+  it('keeps an explicit Z or offset', () => {
+    expect(parseServerDate('2026-01-01T09:00:00Z').toISOString()).toBe('2026-01-01T09:00:00.000Z');
+    expect(parseServerDate('2026-01-01T10:00:00+01:00').toISOString()).toBe('2026-01-01T09:00:00.000Z');
+    expect(parseServerDate('2026-01-01T04:00:00-05:00').toISOString()).toBe('2026-01-01T09:00:00.000Z');
+    expect(parseServerDate('2026-01-01T10:00:00+0100').toISOString()).toBe('2026-01-01T09:00:00.000Z');
   });
 });

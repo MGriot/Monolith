@@ -9,10 +9,12 @@ When a recurring task is completed, the next occurrence is created strictly afte
 completion time, so finishing a daily task three days late does not produce three overdue copies.
 """
 import re
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Dict, Optional
 
 from dateutil.rrule import rrulestr
+
+from app.core.utils import make_naive
 
 MAX_RULE_LENGTH = 200
 FREQS = ("DAILY", "WEEKLY", "MONTHLY", "YEARLY")
@@ -103,18 +105,14 @@ def normalize(rule: Optional[str]) -> Optional[str]:
     return ";".join(f"{k}={parts[k]}" for k in order if k in parts)
 
 
-def _naive_utc(dt: datetime) -> datetime:
-    return dt.astimezone(timezone.utc).replace(tzinfo=None) if dt.tzinfo else dt
-
-
 def next_occurrence(rule: str, base: datetime, not_before: Optional[datetime] = None) -> Optional[datetime]:
     """The first occurrence strictly after max(base, not_before), at base's time of day; None when UNTIL has passed.
 
     `base` is the date the rule is anchored to (the completed task's due/start date).
     """
     parts = parse_rule(rule)
-    base = _naive_utc(base)
-    after = max(base, _naive_utc(not_before)) if not_before else base
+    base = make_naive(base)
+    after = max(base, make_naive(not_before)) if not_before else base
     rr = rrulestr(normalize(rule), dtstart=base)
     nxt = rr.after(after, inc=False)
     if nxt is None:

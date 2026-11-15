@@ -35,13 +35,4 @@ class ConnectionManager:
                 except Exception as e:
                     logger.error(f"Error sending message to user {user_id}: {e}")
 
-    async def broadcast(self, message: Any):
-        """Broadcast a message to all connected users."""
-        for user_id, connections in self.active_connections.items():
-            for connection in connections:
-                try:
-                    await connection.send_json(message)
-                except Exception as e:
-                    logger.error(f"Error broadcasting message to user {user_id}: {e}")
-
 manager = ConnectionManager()

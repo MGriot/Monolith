@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { errorMessage } from "@/lib/api-error";
 
 const requestSchema = z.object({
   full_name: z.string().trim().min(2, "Full name must be at least 2 characters"),
@@ -33,10 +34,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function errorMessage(err: any): string {
+function registerErrorMessage(err: any): string {
   if (err.response?.status === 429) return "Too many requests. Please try again later.";
-  const detail = err.response?.data?.detail;
-  return typeof detail === "string" ? detail : "Failed to send the request. Please try again.";
+  return errorMessage(err, "Failed to send the request. Please try again.");
 }
 
 export default function RegisterPage() {
@@ -58,7 +58,7 @@ export default function RegisterPage() {
       await api.post("/auth/register-request", { email: data.email.trim(), full_name: data.full_name });
       setSentTo(data.email.trim());
     } catch (err: any) {
-      setError(errorMessage(err));
+      setError(registerErrorMessage(err));
     } finally {
       setIsLoading(false);
     }

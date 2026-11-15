@@ -49,10 +49,6 @@ export const getPriorityColors = (priority: string) => {
     return PRIORITY_COLORS[formatted] || PRIORITY_COLORS['Medium'];
 };
 
-export const getPriorityHex = (priority: string) => {
-    return getPriorityColors(priority).hex;
-};
-
 export const getPriorityBorderClass = (priority?: string) => {
     return getPriorityColors(priority || 'Medium').barBorder;
 };

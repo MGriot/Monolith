@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { errorMessage } from "@/lib/api-error";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -30,7 +31,7 @@ function loginErrorMessage(err: any): string {
   const status = err.response?.status;
   if (status === 429) return "Too many failed attempts. Please wait a few minutes and try again.";
   if (!err.response) return "Cannot reach the server. Check your connection and try again.";
-  if (status === 400 || status === 401) return err.response?.data?.detail || "Incorrect email or password.";
+  if (status === 400 || status === 401) return errorMessage(err, "Incorrect email or password.");
   return "Something went wrong. Please try again.";
 }
 

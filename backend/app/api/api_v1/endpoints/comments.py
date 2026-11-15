@@ -1,9 +1,7 @@
 from typing import Any, List, Optional
 import os
-import shutil
-import uuid
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api import deps
 from app.api.access import require_context_access
@@ -12,7 +10,6 @@ from app.crud.crud_comment import crud_comment
 from app.crud import crud_project, crud_task, crud_idea
 from app.schemas.comment import CommentCreate, CommentUpdate, CommentResponse
 from app.models.user import User
-from app.core.config import settings
 
 router = APIRouter()
 
@@ -108,8 +105,6 @@ async def get_available_images(
     """
     from sqlalchemy import select
     from app.models.task import Task
-    from app.models.project import Project
-    from app.models.idea import Idea
     from app.models.whiteboard import Whiteboard
 
     await require_context_access(db, current_user, project_id=project_id, task_id=task_id, idea_id=idea_id)

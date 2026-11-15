@@ -124,20 +124,6 @@ async def call(endpoint: Callable, **kwargs: Any) -> Any:
         return data if data is not None else {"ok": True}
 
 
-async def with_user(fn: Callable) -> Any:
-    """Run `await fn(db, user)` for the few tools that have no REST twin."""
-    async with AsyncSessionLocal() as db:
-        user = await acting_user(db)
-        set_actor(db, user.id)
-        try:
-            result = await fn(db, user)
-            await db.commit()
-            return result
-        except HTTPException as exc:
-            await db.rollback()
-            raise ToolError(describe_http_error(exc)) from None
-
-
 def build(schema, data: Optional[dict]):
     """Build a request schema from tool input, turning validation errors into a readable tool error."""
     try:

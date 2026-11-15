@@ -14,7 +14,7 @@ import {
 } from 'date-fns';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Filter, Plus, ExternalLink, Calendar as CalendarIcon, GanttChart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, ExternalLink, Calendar as CalendarIcon, GanttChart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Popover,
@@ -35,6 +35,8 @@ import {
 } from '@/lib/calendar-range';
 import TaskCreateDialog from '@/components/task-create-dialog';
 import { useTitle } from '@/context/title-context';
+import { isDoneStatus } from '@/constants/statuses';
+import { errorMessage } from '@/lib/api-error';
 
 // --- Calendar View Component ---
 
@@ -71,20 +73,29 @@ function YearNav({ year, onChange }: { year: number; onChange: (year: number) =>
 }
 
 
-function TaskRoadmapView() {
-  const { user } = useAuth();
-  const [year, setYear] = useState(new Date().getFullYear());
-  const viewWindow = useMemo(() => yearBounds(year), [year]);
+interface TimelineRow {
+  id: string;
+  /** Left column: name and secondary line. */
+  label: React.ReactNode;
+  start: string;
+  end: string;
+  barLabel: string;
+  barClassName: string;
+  barTextClassName: string;
+}
 
-  const { data: calendarItems, isLoading } = useQuery({
-    queryKey: ['calendar-tasks-gantt', year],
-    queryFn: async () => {
-      const start = format(viewWindow.start, 'yyyy-MM-dd');
-      const end = format(viewWindow.end, 'yyyy-MM-dd');
-      const response = await api.get(`/calendar/?start_date=${start}&end_date=${end}`);
-      return response.data.items as CalendarItem[];
-    },
-  });
+/** One year, one row per item: a month header and a bar from each row's start to its end. */
+function YearTimeline({ year, onYearChange, title, legend, nameHeader, isLoading, emptyText, rows }: {
+  year: number;
+  onYearChange: (year: number) => void;
+  title: string;
+  legend: React.ReactNode;
+  nameHeader: string;
+  isLoading: boolean;
+  emptyText: string;
+  rows: TimelineRow[];
+}) {
+  const viewWindow = useMemo(() => yearBounds(year), [year]);
 
   const months = useMemo(() => {
     return eachMonthOfInterval({
@@ -108,40 +119,29 @@ function TaskRoadmapView() {
     return Math.max(0.5, (duration / totalDays) * 100);
   };
 
-  const relevantTasks = useMemo(() => {
-    if (!calendarItems || !user) return [];
-    return calendarItems.filter(item => 
-      (item.item_type === 'task' || item.item_type === 'subtask') && 
-      item.start_date && 
-      item.project_owner_id !== user.id
-    );
-  }, [calendarItems, user]);
-
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold text-foreground">{year} Task Progression</h2>
-          <YearNav year={year} onChange={setYear} />
+          <h2 className="text-xl font-bold text-foreground">{year} {title}</h2>
+          <YearNav year={year} onChange={onYearChange} />
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="w-2 h-2 rounded-full bg-purple-500" /> Assigned Tasks
-        </div>
+        {legend}
       </div>
-      
+
       <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden flex flex-col">
         {/* Timeline Header */}
         <div className="flex border-b border-border bg-subtle/50">
           <div className="w-64 border-r border-border p-4 flex-shrink-0 font-semibold text-sm text-fg-soft">
-            Task / Project
+            {nameHeader}
           </div>
           <div className="flex-1 relative h-14 flex items-end">
             {months.map((month) => {
               const left = (differenceInDays(month, viewWindow.start) / totalDays) * 100;
               const width = (differenceInDays(endOfMonth(month), month) + 1) / totalDays * 100;
               return (
-                <div 
-                  key={month.toISOString()} 
+                <div
+                  key={month.toISOString()}
                   className="absolute border-l border-border h-full flex items-center justify-center text-[11px] font-bold text-fg-faint uppercase tracking-tight"
                   style={{ left: `${left}%`, width: `${width}%` }}
                 >
@@ -158,42 +158,42 @@ function TaskRoadmapView() {
             <div className="h-64 flex items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-          ) : relevantTasks.length === 0 ? (
+          ) : rows.length === 0 ? (
             <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
-              <p>No tasks with progression found in other projects.</p>
+              <p>{emptyText}</p>
             </div>
           ) : (
-            relevantTasks.map((task) => (
-              <div key={task.id} className="flex border-b border-hairline hover:bg-subtle/50 transition-colors group">
+            rows.map((row) => (
+              <div key={row.id} className="flex border-b border-hairline hover:bg-subtle/50 transition-colors group">
                 <div className="w-64 border-r border-border p-4 flex-shrink-0 flex flex-col justify-center">
-                  <span className="text-sm font-semibold text-foreground truncate">{task.title}</span>
-                  <span className="text-[11px] text-fg-faint truncate">{task.project_name || 'Individual Task'}</span>
+                  {row.label}
                 </div>
                 <div className="flex-1 relative h-16 py-4 px-0">
                   {/* Grid lines */}
                   {months.map((month) => {
                     const left = (differenceInDays(month, viewWindow.start) / totalDays) * 100;
                     return (
-                      <div 
-                        key={month.toISOString()} 
+                      <div
+                        key={month.toISOString()}
                         className="absolute top-0 bottom-0 border-l border-hairline h-full"
                         style={{ left: `${left}%` }}
                       />
                     );
                   })}
-                  
-                  {/* Task Bar */}
-                  <div 
+
+                  {/* Bar */}
+                  <div
                     className={cn(
-                      "absolute h-8 rounded-md border flex items-center px-3 shadow-sm transition-transform group-hover:scale-[1.01] bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30"
+                      "absolute h-8 rounded-md border flex items-center px-3 shadow-sm transition-transform group-hover:scale-[1.01]",
+                      row.barClassName
                     )}
-                    style={{ 
-                      left: `${getPosition(task.start_date!)}%`, 
-                      width: `${getWidth(task.start_date!, task.due_date)}%` 
+                    style={{
+                      left: `${getPosition(row.start)}%`,
+                      width: `${getWidth(row.start, row.end)}%`
                     }}
                   >
-                    <span className="text-[11px] font-bold truncate text-purple-700 dark:text-purple-300">
-                      {task.title}
+                    <span className={cn("text-[11px] font-bold truncate", row.barTextClassName)}>
+                      {row.barLabel}
                     </span>
                   </div>
                 </div>
@@ -203,6 +203,63 @@ function TaskRoadmapView() {
         </div>
       </div>
     </div>
+  );
+}
+
+function TaskRoadmapView() {
+  const { user } = useAuth();
+  const [year, setYear] = useState(new Date().getFullYear());
+
+  const { data: calendarItems, isLoading } = useQuery({
+    queryKey: ['calendar-tasks-gantt', year],
+    queryFn: async () => {
+      const { start: yearStart, end: yearEnd } = yearBounds(year);
+      const start = format(yearStart, 'yyyy-MM-dd');
+      const end = format(yearEnd, 'yyyy-MM-dd');
+      const response = await api.get(`/calendar/?start_date=${start}&end_date=${end}`);
+      return response.data.items as CalendarItem[];
+    },
+  });
+
+  const rows = useMemo<TimelineRow[]>(() => {
+    if (!calendarItems || !user) return [];
+    return calendarItems
+      .filter(item =>
+        (item.item_type === 'task' || item.item_type === 'subtask') &&
+        item.start_date &&
+        item.project_owner_id !== user.id
+      )
+      .map((task) => ({
+        id: task.id,
+        label: (
+          <>
+            <span className="text-sm font-semibold text-foreground truncate">{task.title}</span>
+            <span className="text-[11px] text-fg-faint truncate">{task.project_name || 'Individual Task'}</span>
+          </>
+        ),
+        start: task.start_date!,
+        end: task.due_date,
+        barLabel: task.title,
+        barClassName: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
+        barTextClassName: "text-purple-700 dark:text-purple-300",
+      }));
+  }, [calendarItems, user]);
+
+  return (
+    <YearTimeline
+      year={year}
+      onYearChange={setYear}
+      title="Task Progression"
+      nameHeader="Task / Project"
+      isLoading={isLoading}
+      emptyText="No tasks with progression found in other projects."
+      rows={rows}
+      legend={
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="w-2 h-2 rounded-full bg-purple-500" /> Assigned Tasks
+        </div>
+      }
+    />
   );
 }
 
@@ -269,8 +326,7 @@ function CalendarView() {
     },
     onError: (error: any, _vars, context) => {
       context?.snapshots.forEach(([k, d]) => queryClient.setQueryData(k, d));
-      const detail = error?.response?.data?.detail;
-      toast.error(typeof detail === 'string' && detail ? detail : 'Could not move the task');
+      toast.error(errorMessage(error, 'Could not move the task'));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar'] });
@@ -507,7 +563,6 @@ interface Project {
 
 function RoadmapView() {
   const [year, setYear] = useState(new Date().getFullYear());
-  const viewWindow = useMemo(() => yearBounds(year), [year]);
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects-gantt', year],
@@ -517,132 +572,45 @@ function RoadmapView() {
     },
   });
 
-  const months = useMemo(() => {
-    return eachMonthOfInterval({
-      start: viewWindow.start,
-      end: viewWindow.end,
-    });
-  }, [viewWindow]);
-
-  const totalDays = differenceInDays(viewWindow.end, viewWindow.start) + 1;
-
-  const getPosition = (dateStr: string) => {
-    const date = parseISO(dateStr);
-    const daysFromStart = differenceInDays(date, viewWindow.start);
-    return Math.max(0, Math.min(100, (daysFromStart / totalDays) * 100));
-  };
-
-  const getWidth = (startStr: string, endStr: string) => {
-    const start = parseISO(startStr);
-    const end = parseISO(endStr);
-    const duration = differenceInDays(end, start) + 1;
-    return Math.max(0.5, (duration / totalDays) * 100);
-  };
+  const rows = useMemo<TimelineRow[]>(() => (projects ?? []).map((project) => ({
+    id: project.id,
+    label: (
+      <>
+        <span className="text-sm font-semibold text-foreground truncate">{project.name}</span>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-[11px] text-muted-foreground">{formatPercent(project.progress_percent)}%</span>
+          <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden max-w-[80px]">
+            <div
+              className="h-full bg-primary"
+              style={{ width: `${project.progress_percent}%` }}
+            />
+          </div>
+        </div>
+      </>
+    ),
+    start: project.start_date,
+    end: project.due_date,
+    barLabel: project.name,
+    barClassName: isDoneStatus(project.status) ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30" : "bg-primary/5 border-primary/20",
+    barTextClassName: isDoneStatus(project.status) ? "text-emerald-700 dark:text-emerald-300" : "text-primary",
+  })), [projects]);
 
   return (
-    <div className="mt-4">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold text-foreground">{year} Timeline</h2>
-          <YearNav year={year} onChange={setYear} />
+    <YearTimeline
+      year={year}
+      onYearChange={setYear}
+      title="Timeline"
+      nameHeader="Project Name"
+      isLoading={isLoading}
+      emptyText="No projects with timelines found."
+      rows={rows}
+      legend={
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="w-2 h-2 rounded-full bg-primary" /> Active
+            <div className="w-2 h-2 rounded-full bg-emerald-500" /> Done
         </div>
-        <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mr-4">
-                <div className="w-2 h-2 rounded-full bg-primary" /> Active
-                <div className="w-2 h-2 rounded-full bg-emerald-500" /> Done
-            </div>
-            <Button variant="outline" size="sm" className="gap-2">
-                <Filter className="h-4 w-4" /> Filter
-            </Button>
-        </div>
-      </div>
-      
-      <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden flex flex-col">
-        {/* Timeline Header */}
-        <div className="flex border-b border-border bg-subtle/50">
-          <div className="w-64 border-r border-border p-4 flex-shrink-0 font-semibold text-sm text-fg-soft">
-            Project Name
-          </div>
-          <div className="flex-1 relative h-14 flex items-end">
-            {months.map((month) => {
-              const left = (differenceInDays(month, viewWindow.start) / totalDays) * 100;
-              const width = (differenceInDays(endOfMonth(month), month) + 1) / totalDays * 100;
-              return (
-                <div 
-                  key={month.toISOString()} 
-                  className="absolute border-l border-border h-full flex items-center justify-center text-[11px] font-bold text-fg-faint uppercase tracking-tight"
-                  style={{ left: `${left}%`, width: `${width}%` }}
-                >
-                  {format(month, 'MMM')}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Timeline Content */}
-        <div className="flex-1 overflow-y-auto max-h-[600px]">
-          {isLoading ? (
-            <div className="h-64 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : projects?.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
-              <p>No projects with timelines found.</p>
-            </div>
-          ) : (
-            projects?.map((project) => (
-              <div key={project.id} className="flex border-b border-hairline hover:bg-subtle/50 transition-colors group">
-                <div className="w-64 border-r border-border p-4 flex-shrink-0 flex flex-col justify-center">
-                  <span className="text-sm font-semibold text-foreground truncate">{project.name}</span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[11px] text-muted-foreground">{formatPercent(project.progress_percent)}%</span>
-                    <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden max-w-[80px]">
-                      <div 
-                        className="h-full bg-primary" 
-                        style={{ width: `${project.progress_percent}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex-1 relative h-16 py-4 px-0">
-                  {/* Grid lines */}
-                  {months.map((month) => {
-                    const left = (differenceInDays(month, viewWindow.start) / totalDays) * 100;
-                    return (
-                      <div 
-                        key={month.toISOString()} 
-                        className="absolute top-0 bottom-0 border-l border-hairline h-full"
-                        style={{ left: `${left}%` }}
-                      />
-                    );
-                  })}
-                  
-                  {/* Project Bar */}
-                  <div 
-                    className={cn(
-                      "absolute h-8 rounded-md border flex items-center px-3 shadow-sm transition-transform group-hover:scale-[1.01]",
-                      project.status === 'done' ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30" : "bg-primary/5 border-primary/20"
-                    )}
-                    style={{ 
-                      left: `${getPosition(project.start_date)}%`, 
-                      width: `${getWidth(project.start_date, project.due_date)}%` 
-                    }}
-                  >
-                    <span className={cn(
-                        "text-[11px] font-bold truncate",
-                        project.status === 'done' ? "text-emerald-700 dark:text-emerald-300" : "text-primary"
-                    )}>
-                      {project.name}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
+      }
+    />
   );
 }
 
@@ -653,7 +621,6 @@ export default function SchedulePage() {
 
     useEffect(() => {
         setTitle("Master Schedule");
-        return () => setTitle(null);
     }, [setTitle]);
 
     return (

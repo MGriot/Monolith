@@ -1,8 +1,3 @@
-import sys
-import os
-# Add the backend directory to sys.path
-sys.path.append(os.path.join(os.getcwd(), "backend"))
-
 from app.schemas.task import Task, TaskCreate, TaskShortCreate
 from app.core.enums import Status, Priority
 from datetime import datetime
@@ -57,13 +52,3 @@ def test_recursive_schema():
     assert create_in.subtasks[0].title == "Child 1"
     assert create_in.subtasks[0].subtasks[0].title == "Grandchild 1.1"
     print("TaskCreate recursive schema check passed.")
-
-if __name__ == "__main__":
-    try:
-        test_recursive_schema()
-        print("All recursive schema verification checks passed.")
-    except Exception as e:
-        print(f"Recursive schema verification failed: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)

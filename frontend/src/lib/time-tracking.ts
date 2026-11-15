@@ -1,5 +1,7 @@
 // Pure helpers for the time tracker. The API stores naive UTC timestamps (no "Z"), so they are parsed as UTC here.
 
+import { parseServerDate } from './dates';
+
 export interface TimeEntry {
   id: string;
   task_id: string;
@@ -20,12 +22,6 @@ export interface TaskTimeSummary {
   actual_hours: number;
   variance_hours: number;
   percent_of_estimate: number | null;
-}
-
-/** Parse a server timestamp; a string without an offset is UTC. */
-export function parseServerDate(value: string): Date {
-  const hasZone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(value);
-  return new Date(hasZone ? value : `${value}Z`);
 }
 
 /** Whole seconds a timer has been running (never negative). */

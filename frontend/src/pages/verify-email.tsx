@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import api from "@/lib/api";
-import { AuthCard, errorMessage } from "@/components/auth-card";
+import { AuthCard } from "@/components/auth-card";
+import { errorMessage } from "@/lib/api-error";
 
 type State = { kind: "working" } | { kind: "ok" } | { kind: "error"; message: string };
 

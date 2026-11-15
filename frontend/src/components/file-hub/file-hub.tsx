@@ -76,6 +76,8 @@ import { useUploadQueue } from '@/hooks/use-upload-queue';
 import { SketchThumbnail } from '@/components/sketch-thumbnail';
 import { DropNavItem, FileCard, FileThumbnail, FolderCard, InlineName, KindIcon, TreeNode, UploadTray, type NativeDropProps } from './parts';
 import type { Topic } from '@/types';
+import { errorMessage } from '@/lib/api-error';
+import { parseServerDate } from '@/lib/dates';
 
 type ViewState = HubView | { type: 'sketches' };
 
@@ -272,9 +274,6 @@ export default function FileHub({ projectId, onOpenFile }: FileHubProps) {
   };
 
   // ------------------------------------------------------------------ mutations
-  const errorText = (err: unknown, fallback: string) =>
-    (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || fallback;
-
   const moveFiles = async (list: HubFile[], targetId: string, opts: { undo?: boolean } = {}) => {
     const moving = filesToMove(list, targetId);
     if (!moving.length) return;
@@ -283,7 +282,7 @@ export default function FileHub({ projectId, onOpenFile }: FileHubProps) {
     await refresh();
     const failed = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[];
     const moved = moving.filter((_, i) => results[i].status === 'fulfilled');
-    if (failed.length) toast.error(`${failed.length} file${failed.length === 1 ? '' : 's'} not moved: ${errorText(failed[0].reason, 'not allowed')}`);
+    if (failed.length) toast.error(`${failed.length} file${failed.length === 1 ? '' : 's'} not moved: ${errorMessage(failed[0].reason, 'not allowed')}`);
     if (moved.length && !opts.undo) {
       toast.success(`Moved ${moved.length === 1 ? `“${moved[0].name}”` : `${moved.length} files`} to ${target?.name ?? 'folder'}`, {
         action: {
@@ -309,7 +308,7 @@ export default function FileHub({ projectId, onOpenFile }: FileHubProps) {
         action: { label: 'Undo', onClick: () => { void api.put(`/folders/${folderId}`, { parent_id: previous }).then(refresh); } },
       });
     } catch (err) {
-      toast.error(errorText(err, 'Could not move the folder'));
+      toast.error(errorMessage(err, 'Could not move the folder'));
     }
   };
 
@@ -318,7 +317,7 @@ export default function FileHub({ projectId, onOpenFile }: FileHubProps) {
       await api.put(`/folders/files/${file.id}`, { topic_ids: topicIds });
       await refresh();
     } catch (err) {
-      toast.error(errorText(err, 'Could not change the topics'));
+      toast.error(errorMessage(err, 'Could not change the topics'));
     }
   };
 
@@ -355,7 +354,7 @@ export default function FileHub({ projectId, onOpenFile }: FileHubProps) {
       await api.put(`/folders/files/${file.id}`, { name });
       await refresh();
     } catch (err) {
-      toast.error(errorText(err, 'Could not rename the file'));
+      toast.error(errorMessage(err, 'Could not rename the file'));
     }
   };
 
@@ -366,7 +365,7 @@ export default function FileHub({ projectId, onOpenFile }: FileHubProps) {
       if (view.type !== 'folder') setView({ type: 'folder', id: currentFolderId });
       setRenamingFolder(res.data.id);
     } catch (err) {
-      toast.error(errorText(err, 'Could not create the folder'));
+      toast.error(errorMessage(err, 'Could not create the folder'));
     }
   };
 
@@ -376,7 +375,7 @@ export default function FileHub({ projectId, onOpenFile }: FileHubProps) {
       await api.put(`/folders/${id}`, { name });
       await refresh();
     } catch (err) {
-      toast.error(errorText(err, 'Could not rename the folder'));
+      toast.error(errorMessage(err, 'Could not rename the folder'));
     }
   };
 
@@ -397,7 +396,7 @@ export default function FileHub({ projectId, onOpenFile }: FileHubProps) {
       await refresh();
       toast.success('Folder deleted');
     } catch (err) {
-      toast.error(errorText(err, 'Could not delete the folder'));
+      toast.error(errorMessage(err, 'Could not delete the folder'));
     }
   };
 
@@ -408,7 +407,7 @@ export default function FileHub({ projectId, onOpenFile }: FileHubProps) {
       await refresh();
       setNoteFile(res.data);
     } catch (err) {
-      toast.error(errorText(err, 'Could not create the note'));
+      toast.error(errorMessage(err, 'Could not create the note'));
     }
   };
 
@@ -770,7 +769,7 @@ export default function FileHub({ projectId, onOpenFile }: FileHubProps) {
               <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 text-xs">
                 <dt className="text-fg-faint">Type</dt><dd>{KIND_LABELS[fileKind(single)].replace(/s$/, '')}</dd>
                 {single.size_bytes ? (<><dt className="text-fg-faint">Size</dt><dd className="tabular-nums">{formatBytes(single.size_bytes)}</dd></>) : null}
-                <dt className="text-fg-faint">Added</dt><dd>{new Date(single.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</dd>
+                <dt className="text-fg-faint">Added</dt><dd>{parseServerDate(single.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</dd>
                 <dt className="text-fg-faint">Folder</dt>
                 <dd className="truncate">
                   <button type="button" className="hover:underline" onClick={() => openView({ type: 'folder', id: single.folder_id })}>
@@ -911,7 +910,7 @@ function SketchGrid({ projectId, whiteboards }: { projectId: string; whiteboards
         >
           <SketchThumbnail src={wb.preview_image} className="aspect-[4/3] border border-hairline" />
           <span className="truncate px-0.5 text-sm font-medium">{wb.title || 'Untitled sketch'}</span>
-          {wb.updated_at && <span className="-mt-1.5 px-0.5 text-xs text-muted-foreground">Edited {new Date(wb.updated_at + (wb.updated_at.endsWith('Z') ? '' : 'Z')).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>}
+          {wb.updated_at && <span className="-mt-1.5 px-0.5 text-xs text-muted-foreground">Edited {parseServerDate(wb.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>}
         </button>
       ))}
     </div>

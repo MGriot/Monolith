@@ -1,23 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { calculateSortIndex, flattenTasks, type SortableTask } from './kanban';
+import { calculateSortIndex, dropIndex, findColumn, moveAcrossColumns, type Columns, type SortableTask } from './kanban';
 
 const t = (id: string, status: string, sort_index: number, extra: Partial<SortableTask> = {}): SortableTask => ({
   id, status, sort_index, created_at: '2025-01-01T00:00:00', ...extra,
-});
-
-describe('flattenTasks', () => {
-  it('returns every task depth-first, subtasks included', () => {
-    const tree: SortableTask[] = [
-      t('a', 'Todo', 0, { subtasks: [t('a1', 'Todo', 0, { subtasks: [t('a1x', 'Done', 0)] }), t('a2', 'Todo', 10)] }),
-      t('b', 'Todo', 10),
-    ];
-    expect(flattenTasks(tree).map((x) => x.id)).toEqual(['a', 'a1', 'a1x', 'a2', 'b']);
-  });
-
-  it('handles empty input and missing subtasks', () => {
-    expect(flattenTasks([])).toEqual([]);
-    expect(flattenTasks([{ ...t('a', 'Todo', 0), subtasks: null }]).map((x) => x.id)).toEqual(['a']);
-  });
 });
 
 describe('calculateSortIndex', () => {
@@ -69,5 +54,40 @@ describe('calculateSortIndex', () => {
     ];
     // order is early, late, next -> index 1 sits between early(10) and late(10)
     expect(calculateSortIndex(tied, 'Todo', 1)).toBe(11);
+  });
+});
+
+describe('board drag helpers', () => {
+  const board = (): Columns => ({ Todo: ['a', 'b', 'c'], Done: ['x', 'y'], Review: [] });
+
+  it('findColumn resolves cards and column ids', () => {
+    expect(findColumn(board(), 'b')).toBe('Todo');
+    expect(findColumn(board(), 'Review')).toBe('Review');
+    expect(findColumn(board(), 'nope')).toBeUndefined();
+  });
+
+  it('dragging over a card in another column inserts before it', () => {
+    expect(moveAcrossColumns(board(), 'a', 'x')).toEqual({ Todo: ['b', 'c'], Done: ['a', 'x', 'y'], Review: [] });
+  });
+
+  it('dragging over the last card of another column inserts after it (isBelowLastItem)', () => {
+    expect(moveAcrossColumns(board(), 'a', 'y')).toEqual({ Todo: ['b', 'c'], Done: ['x', 'y', 'a'], Review: [] });
+  });
+
+  it('dragging over a column appends to it', () => {
+    expect(moveAcrossColumns(board(), 'a', 'Done')).toEqual({ Todo: ['b', 'c'], Done: ['x', 'y', 'a'], Review: [] });
+    expect(moveAcrossColumns(board(), 'a', 'Review')).toEqual({ Todo: ['b', 'c'], Done: ['x', 'y'], Review: ['a'] });
+  });
+
+  it('is a no-op within the same column, for columns being dragged, and for unknown ids', () => {
+    expect(moveAcrossColumns(board(), 'a', 'c')).toBeNull();
+    expect(moveAcrossColumns(board(), 'Todo', 'x')).toBeNull();
+    expect(moveAcrossColumns(board(), 'a', 'nope')).toBeNull();
+  });
+
+  it('dropIndex is the hovered card index, or the end when dropped on the column', () => {
+    expect(dropIndex(board(), 'Todo', 'b')).toBe(1);
+    expect(dropIndex(board(), 'Done', 'Done')).toBe(2);
+    expect(dropIndex(board(), 'Review', 'Review')).toBe(0);
   });
 });

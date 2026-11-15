@@ -1,3 +1,4 @@
+import { formatDisplayDate } from "@/lib/dates";
 import { deadlineState } from "@/lib/deadline";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +17,7 @@ export function DeadlineLine({ deadline, due, done }: { deadline?: string | null
         state === "overdue" && "text-danger",
       )}
     >
-      Deadline: {new Date(deadline!).toLocaleDateString()}
+      Deadline: {formatDisplayDate(deadline)}
       {LABEL[state] && <span className="ml-1 uppercase">· {LABEL[state]}</span>}
     </p>
   );

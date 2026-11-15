@@ -49,6 +49,19 @@ services:
       EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
       EMAIL_RETRY_BASE_SECONDS: ${EMAIL_RETRY_BASE_SECONDS:-60}
       SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-true}
+      # optional tunables (defaults = the app's defaults, see backend/app/core/config.py)
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
+      AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
+      FIRST_SUPERUSER_NAME: ${FIRST_SUPERUSER_NAME:-Administrator}
+      MIN_PASSWORD_LENGTH: ${MIN_PASSWORD_LENGTH:-8}
+      LOGIN_MAX_FAILURES: ${LOGIN_MAX_FAILURES:-5}
+      LOGIN_WINDOW_SECONDS: ${LOGIN_WINDOW_SECONDS:-900}
+      SMTP_TIMEOUT: ${SMTP_TIMEOUT:-10}
+      EMAIL_POLL_SECONDS: ${EMAIL_POLL_SECONDS:-5}
+      EMAIL_MAX_ATTEMPTS: ${EMAIL_MAX_ATTEMPTS:-6}
+      PASSWORD_RESET_MINUTES: ${PASSWORD_RESET_MINUTES:-30}
+      EMAIL_VERIFY_HOURS: ${EMAIL_VERIFY_HOURS:-48}
     volumes:
       - uploads:/app/uploads
     depends_on:
@@ -86,7 +99,7 @@ services:
   # Internal SMTP for notifications / verification / digests.
   # Not published to the host: only reachable from backend over mail_net.
   mailserver:
-    image: ghcr.io/docker-mailserver/docker-mailserver:latest   # TODO pin an exact tag
+    image: ghcr.io/docker-mailserver/docker-mailserver:16.0.1   # pinned; bump deliberately after reading its changelog
     container_name: monolith_mail
     hostname: mail
     domainname: ${MAIL_DOMAIN:-monolith.local}

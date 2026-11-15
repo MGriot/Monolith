@@ -1,6 +1,8 @@
 // Pure helpers for the project automation rules form (no React, no network): the catalog of triggers /
 // conditions / actions, draft handling, client-side validation that mirrors the API, and plain-language summaries.
 
+import { PRIORITIES, STATUSES } from '@/constants/statuses';
+
 export const TRIGGERS = [
   { value: 'task_created', label: 'A task is created' },
   { value: 'status_changed', label: 'A task changes status' },
@@ -9,9 +11,6 @@ export const TRIGGERS = [
   { value: 'due_soon', label: 'A task is due within 48 hours (checked daily, 07:00 UTC)' },
 ] as const;
 export type Trigger = (typeof TRIGGERS)[number]['value'];
-
-export const STATUSES = ['Backlog', 'Todo', 'In Progress', 'On hold', 'Review', 'Done'];
-export const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 
 export type ConditionOp = 'eq' | 'neq' | 'in' | 'not_in' | 'contains' | 'is_set' | 'is_empty';
 export type ConditionField = 'status' | 'old_status' | 'priority' | 'assignee' | 'title' | 'tags' | 'is_milestone' | 'due_date';

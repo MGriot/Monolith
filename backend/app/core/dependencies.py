@@ -1,4 +1,4 @@
-from typing import List, Dict, Set, Optional
+from typing import List, Dict, Optional
 from uuid import UUID
 
 def has_cycle(

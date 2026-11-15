@@ -25,6 +25,9 @@ import { Switch } from '@/components/ui/switch';
 import { AssigneeSelector } from '@/components/assignee-selector';
 import { useTitle } from '@/context/title-context';
 import { confirmDialog } from '@/lib/confirm';
+import { parseServerDate } from '@/lib/dates';
+import { errorMessage } from '@/lib/api-error';
+import { usersQuery } from '@/lib/queries';
 
 interface Team {
   id: string;
@@ -57,7 +60,6 @@ export default function TeamsPage() {
         <Plus className="w-4 h-4" /> Create Team
       </Button>
     );
-    return () => setActions(null);
   }, [setActions]);
 
   const { data: teams, isLoading } = useQuery({
@@ -65,10 +67,7 @@ export default function TeamsPage() {
     queryFn: async () => (await api.get('/teams/')).data as Team[],
   });
 
-  const { data: users } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => (await api.get('/users/')).data as User[],
-  });
+  const { data: users } = useQuery(usersQuery);
 
   const createMutation = useMutation({
     mutationFn: (newTeam: any) => api.post('/teams/', newTeam),
@@ -79,7 +78,7 @@ export default function TeamsPage() {
       toast.success('Team created');
     },
     onError: (err: any) => {
-        toast.error(err.response?.data?.detail || 'Failed to create team');
+        toast.error(errorMessage(err, 'Failed to create team'));
     }
   });
 
@@ -93,7 +92,7 @@ export default function TeamsPage() {
       toast.success('Team updated');
     },
     onError: (err: any) => {
-        toast.error(err.response?.data?.detail || 'Failed to update team');
+        toast.error(errorMessage(err, 'Failed to update team'));
     }
   });
 
@@ -234,7 +233,7 @@ export default function TeamsPage() {
                     </div>
                   </CardContent>
                   <CardFooter className="border-t bg-subtle/50 p-3 flex justify-between items-center">
-                    <span className="text-[11px] text-fg-faint font-medium italic">Created {new Date(team.created_at).toLocaleDateString()}</span>
+                    <span className="text-[11px] text-fg-faint font-medium italic">Created {parseServerDate(team.created_at).toLocaleDateString()}</span>
                     <div className="flex -space-x-2 overflow-hidden">
                       {team.shared_with?.slice(0, 3).map((u) => (
                           <div key={u.id} className="w-5 h-5 rounded-full bg-background border border-border flex items-center justify-center text-[7px] font-bold" title={`Property shared with ${u.full_name}`}>

@@ -7,7 +7,7 @@ from sqlalchemy.future import select
 from app.crud.base import CRUDBase
 from app.models.notification import Notification
 from app.schemas.notification import NotificationCreate, NotificationUpdate, Notification as NotificationSchema
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 class CRUDNotification(CRUDBase[Notification, NotificationCreate, NotificationUpdate]):
     async def create(self, db: AsyncSession, *, obj_in: NotificationCreate) -> Notification:
@@ -62,15 +62,6 @@ class CRUDNotification(CRUDBase[Notification, NotificationCreate, NotificationUp
             .filter(self.model.user_id == user_id, self.model.is_read.is_not(True))
         )
         return int(result.scalar() or 0)
-
-    async def mark_as_read(self, db: AsyncSession, *, notification_id: UUID) -> Notification:
-        db_obj = await self.get(db, id=notification_id)
-        if db_obj:
-            db_obj.is_read = True
-            db.add(db_obj)
-            await commit(db)
-            await db.refresh(db_obj)
-        return db_obj
 
     async def mark_all_as_read(self, db: AsyncSession, *, user_id: UUID) -> int:
         """Mark every unread notification of the user as read with a single UPDATE; returns the row count."""

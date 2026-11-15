@@ -16,8 +16,7 @@ import {
   type CustomFieldType,
 } from '@/lib/custom-fields';
 import { confirmDialog } from '@/lib/confirm';
-
-const errorMessage = (e: any, fallback: string) => e?.response?.data?.detail || fallback;
+import { errorMessage } from '@/lib/api-error';
 
 /** Project settings: define the extra fields every task of the project can carry. */
 export default function CustomFieldsManager({ projectId }: { projectId: string }) {

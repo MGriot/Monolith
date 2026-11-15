@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import api from '@/lib/api';
 import type { Comment } from '@/types';
 import { useAuth } from '@/components/auth-provider';
-import { errorMessage } from '@/components/auth-card';
+import { errorMessage } from '@/lib/api-error';
 import { buildTimeline, type ActivityEvent, type ActivityFilter } from '@/lib/activity';
 import { cn } from '@/lib/utils';
 import { CommentInput } from './comment-input';

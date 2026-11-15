@@ -122,16 +122,32 @@ async def test_dispatch_all_summaries(summary_generator, mock_db):
             MagicMock(scalars=lambda: MagicMock(all=lambda: [User(id=uuid4(), email="u@t.com")])), # users
             MagicMock(scalars=lambda: MagicMock(all=lambda: [Task(title="T1")])), # tasks for user
             MagicMock(scalars=lambda: MagicMock(all=lambda: [Team(id=uuid4(), name="T1", owner_id=uuid4())])), # teams
+            MagicMock(scalar_one_or_none=lambda: User(email="o@t.com", is_active=True, notify_email_digest=True)), # team owner
             MagicMock(scalars=lambda: MagicMock(all=lambda: [uuid4()])), # team members (for active count)
             MagicMock(scalar=lambda: 1), # completions
             MagicMock(scalar=lambda: 1), # new_tasks
             MagicMock(scalar=lambda: 1), # blockers
-            MagicMock(scalar_one_or_none=lambda: User(email="o@t.com", is_active=True, notify_email_digest=True)), # team owner
             MagicMock(scalars=lambda: MagicMock(all=lambda: [Project(id=uuid4(), name="P1", owner_id=uuid4())])), # projects
-            MagicMock(scalars=lambda: MagicMock(all=lambda: [Task(status=Status.DONE)])), # tasks for project
             MagicMock(scalar_one_or_none=lambda: User(email="po@t.com", is_active=True, notify_email_digest=True)), # project owner
+            MagicMock(scalars=lambda: MagicMock(all=lambda: [Task(status=Status.DONE)])), # tasks for project
         ]
         
         await summary_generator.dispatch_all_summaries()
         
         assert mock_send.call_count == 3 # User + Team + Project
+
+
+@pytest.mark.asyncio
+async def test_dispatch_skips_reports_for_owners_without_the_digest(summary_generator, mock_db):
+    with patch("app.core.summaries.send_email_notification", new_callable=AsyncMock) as mock_send:
+        mock_db.execute.side_effect = [
+            MagicMock(scalars=lambda: MagicMock(all=lambda: [])),  # users who want the digest
+            MagicMock(scalars=lambda: MagicMock(all=lambda: [Team(id=uuid4(), name="T1", owner_id=uuid4())])),  # teams
+            MagicMock(scalar_one_or_none=lambda: User(email="o@t.com", is_active=True, notify_email_digest=False)),
+            MagicMock(scalars=lambda: MagicMock(all=lambda: [Project(id=uuid4(), name="P1", owner_id=uuid4())])),
+            MagicMock(scalar_one_or_none=lambda: User(email="po@t.com", is_active=False, notify_email_digest=True)),
+        ]
+        await summary_generator.dispatch_all_summaries()
+    # 5 queries: no team activity or project task queries were run for owners who get no mail
+    assert mock_db.execute.await_count == 5
+    mock_send.assert_not_awaited()

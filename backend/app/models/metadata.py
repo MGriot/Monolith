@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, String, Boolean, ForeignKey, Index, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.db.session import Base
@@ -20,8 +20,15 @@ class Topic(Base):
     project = relationship("Project", back_populates="topics_scoped", foreign_keys=[project_id])
     task = relationship("Task", back_populates="topics_scoped", foreign_keys=[task_id])
 
+    # One name per scope (migration 0014). Partial indexes, because a plain UNIQUE(name, project_id, task_id)
+    # treats NULL scope columns as distinct and would allow duplicate global or project names.
     __table_args__ = (
-        UniqueConstraint('name', 'project_id', 'task_id', name='_topic_name_scope_uc'),
+        Index('topics_global_unique_idx', 'name', unique=True,
+              postgresql_where=text('project_id IS NULL AND task_id IS NULL')),
+        Index('topics_project_unique_idx', 'name', 'project_id', unique=True,
+              postgresql_where=text('project_id IS NOT NULL')),
+        Index('topics_task_unique_idx', 'name', 'task_id', unique=True,
+              postgresql_where=text('task_id IS NOT NULL')),
     )
 
 class WorkType(Base):
@@ -41,6 +48,13 @@ class WorkType(Base):
     project = relationship("Project", back_populates="work_types_scoped", foreign_keys=[project_id])
     task = relationship("Task", back_populates="work_types_scoped", foreign_keys=[task_id])
 
+    # One name per scope (migration 0014). Partial indexes, because a plain UNIQUE(name, project_id, task_id)
+    # treats NULL scope columns as distinct and would allow duplicate global or project names.
     __table_args__ = (
-        UniqueConstraint('name', 'project_id', 'task_id', name='_work_type_name_scope_uc'),
+        Index('work_types_global_unique_idx', 'name', unique=True,
+              postgresql_where=text('project_id IS NULL AND task_id IS NULL')),
+        Index('work_types_project_unique_idx', 'name', 'project_id', unique=True,
+              postgresql_where=text('project_id IS NOT NULL')),
+        Index('work_types_task_unique_idx', 'name', 'task_id', unique=True,
+              postgresql_where=text('task_id IS NOT NULL')),
     )

@@ -50,7 +50,6 @@ export default function ArchivePage() {
         </Button>
       </div>
     );
-    return () => setActions(null);
   }, [setActions, activeTab, navigate]);
 
   const { data: projects, isLoading: isLoadingProjects, isError: isErrorProjects } = useQuery({

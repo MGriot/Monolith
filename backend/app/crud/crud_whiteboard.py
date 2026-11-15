@@ -1,11 +1,11 @@
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.crud.base import CRUDBase
 from app.models.whiteboard import Whiteboard
 from app.schemas.whiteboard import WhiteboardCreate, WhiteboardUpdate
-from app.db.transaction import atomic, commit
+from app.db.transaction import commit
 
 class CRUDWhiteboard(CRUDBase[Whiteboard, WhiteboardCreate, WhiteboardUpdate]):
     async def get_by_project(

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
+import DOMPurify from 'dompurify';
 import Papa from 'papaparse';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -230,7 +231,7 @@ export default function FilePreviewDialog({ url, onClose, projectId }: FilePrevi
           ) : previewContent ? (
             <div className="w-full h-full bg-background overflow-auto p-8 lg:p-12">
                 {previewContent.type === 'html' ? (
-                    <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: previewContent.data }} />
+                    <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewContent.data) }} />
                 ) : previewContent.type === 'md' ? (
                     <div className="prose prose-slate max-w-none">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>

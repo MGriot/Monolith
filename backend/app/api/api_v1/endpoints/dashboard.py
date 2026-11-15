@@ -1,16 +1,20 @@
-from typing import Any, List, Dict
+from typing import Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import selectinload
-from datetime import datetime, timedelta
+from collections import defaultdict
+from datetime import datetime, time, timedelta
 
 from app.api import deps
+from app.api.access import visible_project_filter, visible_task_filter
+from app.models.associations import project_members
 from app.models.project import Project
 from app.models.task import Task
 from app.models.user import User
 from app.core.enums import Status
-from app.core.reports import generate_weekly_summaries, notify_near_deadlines
+from app.core.reports import notify_near_deadlines
+from app.core.summaries import SummaryGenerator
 from app.schemas.workload import TeamWorkloadResponse, UserWorkload, DayWorkload
 
 router = APIRouter()
@@ -23,14 +27,25 @@ async def get_team_workload(
 ) -> Any:
     """
     Calculate daily workload per user for the next N days.
+    Non-admins see themselves and the people who own or belong to a project they can see, counting only tasks they
+    can see; superusers see everyone.
     """
     start_date = datetime.utcnow().date()
-    
-    # 1. Fetch all active users
-    users_res = await db.execute(select(User).filter(User.is_active == True))
+    window_end = start_date + timedelta(days=days - 1)
+
+    # 1. Active users: everyone for a superuser, else me and the people I share a project with
+    users_stmt = select(User).filter(User.is_active == True)
+    if not current_user.is_superuser:
+        visible_projects = select(Project.id).where(visible_project_filter(current_user))
+        users_stmt = users_stmt.filter(or_(
+            User.id == current_user.id,
+            User.id.in_(select(project_members.c.user_id).where(project_members.c.project_id.in_(visible_projects))),
+            User.id.in_(select(Project.owner_id).where(Project.id.in_(visible_projects))),
+        ))
+    users_res = await db.execute(users_stmt)
     users = users_res.scalars().all()
-    
-    # 2. Fetch all active tasks with assignees
+
+    # 2. Open, dated tasks that overlap the window (others add nothing), with their assignees
     tasks_stmt = (
         select(Task)
         .filter(
@@ -38,58 +53,63 @@ async def get_team_workload(
                 Task.status != Status.DONE,
                 Task.start_date != None,
                 Task.due_date != None,
-                Task.is_archived == False
+                Task.is_archived == False,
+                visible_task_filter(current_user),
+                Task.due_date >= datetime.combine(start_date, time.min),
+                Task.start_date < datetime.combine(window_end + timedelta(days=1), time.min),
             )
         )
         .options(selectinload(Task.assignees))
     )
     tasks_res = await db.execute(tasks_stmt)
     tasks = tasks_res.scalars().all()
-    
+
+    tasks_by_user = defaultdict(list)
+    for t in tasks:
+        for u in t.assignees:
+            tasks_by_user[u.id].append(t)
+
     response_users = []
-    
+
     for user in users:
-        # Filter tasks assigned to this user
-        user_tasks = [t for t in tasks if any(u.id == user.id for u in t.assignees)]
-        
         day_map = {}
         for i in range(days):
             d = start_date + timedelta(days=i)
             day_map[d.isoformat()] = {"hours": 0.0, "count": 0}
-            
+
         is_over = False
-        for task in user_tasks:
+        for task in tasks_by_user.get(user.id, []):
             t_start = task.start_date.date()
             t_due = task.due_date.date()
             t_dur = (t_due - t_start).days + 1
-            
+
             if t_dur <= 0: continue
-            
+
             # Assume 8h per task by default if not specified
-            daily_effort = 8.0 / t_dur 
-            
-            curr = t_start
-            while curr <= t_due:
-                d_str = curr.isoformat()
-                if d_str in day_map:
-                    day_map[d_str]["hours"] += daily_effort
-                    day_map[d_str]["count"] += 1
-                    if day_map[d_str]["hours"] > 8.0:
-                        is_over = True
+            daily_effort = 8.0 / t_dur
+
+            # only the days inside the window
+            curr = max(t_start, start_date)
+            while curr <= min(t_due, window_end):
+                day = day_map[curr.isoformat()]
+                day["hours"] += daily_effort
+                day["count"] += 1
+                if day["hours"] > 8.0:
+                    is_over = True
                 curr += timedelta(days=1)
-                
+
         workload_list = [
             DayWorkload(date=d, hours=round(v["hours"], 1), task_count=v["count"])
             for d, v in day_map.items()
         ]
-        
+
         response_users.append(UserWorkload(
             user_id=str(user.id),
             user_name=user.full_name or user.email,
             workload=workload_list,
             is_overallocated=is_over
         ))
-        
+
     return TeamWorkloadResponse(users=response_users)
 
 @router.post("/trigger-weekly-summary", status_code=202)
@@ -101,8 +121,8 @@ async def trigger_weekly_summary(
     Manually trigger the generation of weekly email summaries for all users.
     Admin only.
     """
-    # Run in background ideally, but for test we can await
-    await generate_weekly_summaries(db)
+    # The same digest the Monday scheduler job sends (active users who opted in).
+    await SummaryGenerator(db).dispatch_all_summaries()
     return {"message": "Weekly summary generation triggered"}
 
 @router.post("/trigger-deadline-notifications", status_code=202)
@@ -127,7 +147,7 @@ async def get_risk_data(
     """
     # Projects
     projects_stmt = select(Project).filter(
-        Project.owner_id == current_user.id,
+        visible_project_filter(current_user),
         Project.is_archived == False
     )
     res_p = await db.execute(projects_stmt)
@@ -135,7 +155,7 @@ async def get_risk_data(
 
     # Tasks
     tasks_stmt = select(Task).filter(
-        Task.owner_id == current_user.id,
+        visible_task_filter(current_user),
         Task.is_archived == False,
         Task.status != Status.DONE
     )
@@ -195,10 +215,10 @@ async def get_activity_recap(
         Task.is_archived == False
     ).order_by(Task.due_date.asc()).limit(20)
 
-    if not current_user.is_superuser:
-        new_tasks_query = new_tasks_query.join(Project).where(Project.owner_id == current_user.id)
-        completed_tasks_query = completed_tasks_query.join(Project).where(Project.owner_id == current_user.id)
-        upcoming_deadlines_query = upcoming_deadlines_query.join(Project).where(Project.owner_id == current_user.id)
+    visible = visible_task_filter(current_user)
+    new_tasks_query = new_tasks_query.where(visible)
+    completed_tasks_query = completed_tasks_query.where(visible)
+    upcoming_deadlines_query = upcoming_deadlines_query.where(visible)
 
     res_new = await db.execute(new_tasks_query)
     res_completed = await db.execute(completed_tasks_query)
@@ -245,20 +265,15 @@ async def get_dashboard_summary(
     """
     # 1. Projects Count
     proj_query = select(func.count(Project.id)).where(Project.is_archived == False)
-    if not current_user.is_superuser:
-        proj_query = proj_query.where(Project.owner_id == current_user.id)
+    proj_query = proj_query.where(visible_project_filter(current_user))
     
     res = await db.execute(proj_query)
     total_projects = res.scalar()
 
     # 2. Tasks Count & Breakdown
-    # For tasks, we need to filter by projects owned by the user if not superuser
-    # And EXCLUDE archived tasks
-    count_query = select(Task.status, func.count(Task.id)).where(Task.is_archived == False)
-    if not current_user.is_superuser:
-        count_query = count_query.join(Project, Task.project_id == Project.id).where(
-            Project.owner_id == current_user.id
-        )
+    # Tasks the user can see, archived ones excluded
+    visible = visible_task_filter(current_user)
+    count_query = select(Task.status, func.count(Task.id)).where(Task.is_archived == False, visible)
 
     # One GROUP BY instead of loading every task row into Python just to count them
     res = await db.execute(count_query.group_by(Task.status))
@@ -277,37 +292,23 @@ async def get_dashboard_summary(
     now = datetime.utcnow()
     next_week = now + timedelta(days=7)
     
-    if current_user.is_superuser:
-        upcoming_query = select(Task).where(
-            Task.due_date >= now,
-            Task.due_date <= next_week,
-            Task.status != Status.DONE,
-            Task.is_archived == False
-        ).order_by(Task.due_date.asc()).limit(5)
-    else:
-        upcoming_query = select(Task).join(Project).where(
-            Project.owner_id == current_user.id,
-            Task.due_date >= now,
-            Task.due_date <= next_week,
-            Task.status != Status.DONE,
-            Task.is_archived == False
-        ).order_by(Task.due_date.asc()).limit(5)
+    upcoming_query = select(Task).where(
+        visible,
+        Task.due_date >= now,
+        Task.due_date <= next_week,
+        Task.status != Status.DONE,
+        Task.is_archived == False
+    ).order_by(Task.due_date.asc()).limit(5)
 
     res = await db.execute(upcoming_query)
     upcoming_tasks = res.scalars().all()
 
     # 4. Recent Activity (last 5 completed tasks)
-    if current_user.is_superuser:
-        activity_query = select(Task).where(
-            Task.status == Status.DONE,
-            Task.completed_at != None
-        ).order_by(Task.completed_at.desc()).limit(5)
-    else:
-        activity_query = select(Task).join(Project).where(
-            Project.owner_id == current_user.id,
-            Task.status == Status.DONE,
-            Task.completed_at != None
-        ).order_by(Task.completed_at.desc()).limit(5)
+    activity_query = select(Task).where(
+        visible,
+        Task.status == Status.DONE,
+        Task.completed_at != None
+    ).order_by(Task.completed_at.desc()).limit(5)
 
     res = await db.execute(activity_query)
     recent_activity = res.scalars().all()
@@ -318,11 +319,9 @@ async def get_dashboard_summary(
         func.date(Task.completed_at).label("date"),
         func.count(Task.id).label("count")
     ).where(
-        Task.completed_at != None
+        Task.completed_at != None,
+        visible,
     )
-
-    if not current_user.is_superuser:
-        activity_query = activity_query.join(Project).where(Project.owner_id == current_user.id)
 
     global_activity_query = activity_query.group_by(
         func.date(Task.completed_at)

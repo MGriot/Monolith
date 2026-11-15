@@ -1,6 +1,6 @@
 from .user import User
 from .project import Project
-from .task import Task, Subtask
+from .task import Task
 from .dependency import Dependency
 from .notification import Notification
 from .metadata import Topic, WorkType

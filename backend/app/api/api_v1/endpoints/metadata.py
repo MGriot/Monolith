@@ -1,6 +1,7 @@
 from typing import Any, List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api import deps
 from app.crud import crud_metadata
@@ -8,6 +9,15 @@ from app.schemas import metadata as schemas
 from app.models.user import User
 
 router = APIRouter()
+
+
+async def _unique_name(db: AsyncSession, write, label: str) -> Any:
+    """Run a create/update; a name already used in the same scope (global, project or task) is a 409, not a 500."""
+    try:
+        return await write
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail=f"A {label} with this name already exists in this scope")
 
 # --- Topics ---
 
@@ -43,7 +53,7 @@ async def create_topic(
     topic_in: schemas.TopicCreate,
     current_user: User = Depends(deps.get_current_admin),
 ) -> Any:
-    return await crud_metadata.topic.create(db, obj_in=topic_in)
+    return await _unique_name(db, crud_metadata.topic.create(db, obj_in=topic_in), "topic")
 
 @router.put("/topics/{id}", response_model=schemas.Topic)
 async def update_topic(
@@ -56,7 +66,7 @@ async def update_topic(
     topic = await crud_metadata.topic.get(db, id=id)
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
-    return await crud_metadata.topic.update(db, db_obj=topic, obj_in=topic_in)
+    return await _unique_name(db, crud_metadata.topic.update(db, db_obj=topic, obj_in=topic_in), "topic")
 
 @router.delete("/topics/{id}", response_model=schemas.Topic)
 async def delete_topic(
@@ -104,7 +114,7 @@ async def create_work_type(
     work_type_in: schemas.WorkTypeCreate,
     current_user: User = Depends(deps.get_current_admin),
 ) -> Any:
-    return await crud_metadata.work_type.create(db, obj_in=work_type_in)
+    return await _unique_name(db, crud_metadata.work_type.create(db, obj_in=work_type_in), "work type")
 
 @router.put("/work-types/{id}", response_model=schemas.WorkType)
 async def update_work_type(
@@ -117,7 +127,9 @@ async def update_work_type(
     work_type = await crud_metadata.work_type.get(db, id=id)
     if not work_type:
         raise HTTPException(status_code=404, detail="Work Type not found")
-    return await crud_metadata.work_type.update(db, db_obj=work_type, obj_in=work_type_in)
+    return await _unique_name(
+        db, crud_metadata.work_type.update(db, db_obj=work_type, obj_in=work_type_in), "work type"
+    )
 
 @router.delete("/work-types/{id}", response_model=schemas.WorkType)
 async def delete_work_type(

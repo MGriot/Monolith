@@ -33,8 +33,8 @@ export interface FilterableTask {
   subtasks?: FilterableTask[] | null;
 }
 
-const PRIORITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-const STATUS_RANK: Record<string, number> = { backlog: 0, todo: 1, 'in progress': 2, review: 3, 'on hold': 4, done: 5 };
+export const PRIORITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+export const STATUS_RANK: Record<string, number> = { backlog: 0, todo: 1, 'in progress': 2, review: 3, 'on hold': 4, done: 5 };
 
 const list = (v: string | null): string[] => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : []);
 const pick = <T extends string>(v: string | null, allowed: readonly T[], fallback: T): T =>

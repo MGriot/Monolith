@@ -14,19 +14,23 @@ from app.schemas.task import TaskCreate
 from app.core.utils import clean_dict_datetimes
 from app.db.transaction import atomic, commit
 
+# Relations every project read returns (the Project schema serialises all of them).
+_PROJECT_LOAD = (
+    selectinload(Project.topic_ref),
+    selectinload(Project.type_ref),
+    selectinload(Project.topics),
+    selectinload(Project.types),
+    selectinload(Project.members),
+    selectinload(Project.owner),
+)
+
+
 class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
     async def get(self, db: AsyncSession, id: Any) -> Optional[Project]:
         result = await db.execute(
             select(self.model)
             .filter(self.model.id == id)
-            .options(
-                selectinload(Project.topic_ref),
-                selectinload(Project.type_ref),
-                selectinload(Project.topics),
-                selectinload(Project.types),
-                selectinload(Project.members),
-                selectinload(Project.owner)
-            )
+            .options(*_PROJECT_LOAD)
         )
         return result.scalars().first()
 
@@ -39,51 +43,20 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             
         result = await db.execute(
             query
-            .options(
-                selectinload(Project.topic_ref),
-                selectinload(Project.type_ref),
-                selectinload(Project.topics),
-                selectinload(Project.types),
-                selectinload(Project.members),
-                selectinload(Project.owner)
-            )
+            .options(*_PROJECT_LOAD)
             .offset(skip)
             .limit(limit)
         )
         return result.scalars().all()
 
-    @atomic
     async def create(self, db: AsyncSession, *, obj_in: ProjectCreate) -> Project:
-        obj_data = clean_dict_datetimes(obj_in.dict(exclude={'topic_ids', 'type_ids', 'member_ids', 'template_id'}))
-        db_obj = self.model(**obj_data)
-        
-        if obj_in.topic_ids:
-            topics_result = await db.execute(select(Topic).filter(Topic.id.in_(obj_in.topic_ids)))
-            db_obj.topics = topics_result.scalars().all()
-            
-        if obj_in.type_ids:
-            types_result = await db.execute(select(WorkType).filter(WorkType.id.in_(obj_in.type_ids)))
-            db_obj.types = types_result.scalars().all()
-
-        if obj_in.member_ids:
-            members_result = await db.execute(select(User).filter(User.id.in_(obj_in.member_ids)))
-            db_obj.members = members_result.scalars().all()
-
-        db.add(db_obj)
-        await commit(db)
-        await db.refresh(db_obj)
-        
-        # Template Instantiation
-        if obj_in.template_id:
-            await self._instantiate_template(db, project_id=db_obj.id, template_id=obj_in.template_id, owner_id=None)
-
-        return await self.get(db, id=db_obj.id)
+        return await self.create_with_owner(db, obj_in=obj_in, owner_id=None)
 
     @atomic
     async def create_with_owner(
-        self, db: AsyncSession, *, obj_in: ProjectCreate, owner_id: UUID
+        self, db: AsyncSession, *, obj_in: ProjectCreate, owner_id: Optional[UUID]
     ) -> Project:
-        obj_in_data = clean_dict_datetimes(obj_in.dict(exclude={'topic_ids', 'type_ids', 'member_ids', 'template_id'}))
+        obj_in_data = clean_dict_datetimes(obj_in.model_dump(exclude={'topic_ids', 'type_ids', 'member_ids', 'template_id'}))
         db_obj = self.model(**obj_in_data, owner_id=owner_id)
         
         if obj_in.topic_ids:
@@ -115,30 +88,36 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
 
         from app.crud.crud_task import task as crud_task
 
-        # 1. Instantiate Scoped Topics
+        # 1. Instantiate Scoped Topics (names are unique per project, so a preset repeated in the template is reused)
         topic_map = {} # template_id -> new_id
+        topic_by_name = {}
         for t_preset in (template.topics_preset or []):
-            new_topic = Topic(
-                name=t_preset["name"],
-                color=t_preset.get("color", "#64748b"),
-                project_id=project_id
-            )
-            db.add(new_topic)
-            await db.flush()
-            topic_map[t_preset.get("id")] = new_topic.id
+            if t_preset["name"] not in topic_by_name:
+                new_topic = Topic(
+                    name=t_preset["name"],
+                    color=t_preset.get("color", "#64748b"),
+                    project_id=project_id
+                )
+                db.add(new_topic)
+                await db.flush()
+                topic_by_name[t_preset["name"]] = new_topic.id
+            topic_map[t_preset.get("id")] = topic_by_name[t_preset["name"]]
 
         # 2. Instantiate Scoped WorkTypes
         type_map = {}
+        type_by_name = {}
         for w_preset in (template.work_types_preset or []):
-            new_type = WorkType(
-                name=w_preset["name"],
-                color=w_preset.get("color", "#64748b"),
-                icon=w_preset.get("icon"),
-                project_id=project_id
-            )
-            db.add(new_type)
-            await db.flush()
-            type_map[w_preset.get("id")] = new_type.id
+            if w_preset["name"] not in type_by_name:
+                new_type = WorkType(
+                    name=w_preset["name"],
+                    color=w_preset.get("color", "#64748b"),
+                    icon=w_preset.get("icon"),
+                    project_id=project_id
+                )
+                db.add(new_type)
+                await db.flush()
+                type_by_name[w_preset["name"]] = new_type.id
+            type_map[w_preset.get("id")] = type_by_name[w_preset["name"]]
 
         # 3. Instantiate Hierarchical Tasks
         async def create_recursive_tasks(tasks_data, parent_id=None):
@@ -149,11 +128,11 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 
                 # If not in map, maybe it's already a real UUID (global)
                 if not t_topic_id and t_data.get("topic_id"):
-                    try: t_topic_id = UUID(t_data["topic_id"])
-                    except: pass
+                    try: t_topic_id = UUID(str(t_data["topic_id"]))
+                    except ValueError: pass  # neither a preset id nor a UUID: leave the task without a topic
                 if not t_type_id and t_data.get("type_id"):
-                    try: t_type_id = UUID(t_data["type_id"])
-                    except: pass
+                    try: t_type_id = UUID(str(t_data["type_id"]))
+                    except ValueError: pass
 
                 task_in = TaskCreate(
                     title=t_data["title"],
@@ -174,7 +153,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     await create_recursive_tasks(t_data["subtasks"], parent_id=new_task.id)
 
         if template.tasks_json:
-            await create_recursive_tasks(template.tasks_json)
+            async with crud_task.project_sync_once(db):  # roll the project up once, not after every template task
+                await create_recursive_tasks(template.tasks_json)
         
         await commit(db)
 
@@ -184,7 +164,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
             
         # Handle many-to-many topics
         if "topic_ids" in update_data:
@@ -215,28 +195,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
 
         return await super().update(db, db_obj=db_obj, obj_in=update_data)
 
-    async def get_multi_by_owner(
-        self, db: AsyncSession, *, owner_id: UUID, skip: int = 0, limit: int = 100, include_archived: bool = False
-    ) -> List[Project]:
-        query = select(self.model).filter(self.model.owner_id == owner_id)
-        if not include_archived:
-            query = query.filter(self.model.is_archived == False)
-            
-        result = await db.execute(
-            query
-            .options(
-                selectinload(Project.topic_ref),
-                selectinload(Project.type_ref),
-                selectinload(Project.topics),
-                selectinload(Project.types),
-                selectinload(Project.members),
-                selectinload(Project.owner)
-            )
-            .offset(skip)
-            .limit(limit)
-        )
-        return result.scalars().all()
-
     async def get_multi_by_user(
         self, db: AsyncSession, *, user_id: UUID, skip: int = 0, limit: int = 100, include_archived: bool = False
     ) -> List[Project]:
@@ -263,14 +221,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             
         query = (
             query.distinct()
-            .options(
-                selectinload(Project.topic_ref),
-                selectinload(Project.type_ref),
-                selectinload(Project.topics),
-                selectinload(Project.types),
-                selectinload(Project.members),
-                selectinload(Project.owner)
-            )
+            .options(*_PROJECT_LOAD)
             .offset(skip)
             .limit(limit)
         )

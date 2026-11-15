@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import crud, models, schemas
+from app import models, schemas
 from app.api import deps
 from app.api.access import ADMIN, EDITOR, has_project_access, require_idea_access, require_project_access
 from app.crud.crud_idea import idea as crud_idea

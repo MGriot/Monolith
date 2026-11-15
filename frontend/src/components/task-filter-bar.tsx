@@ -7,13 +7,16 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  DEFAULT_FILTERS, GROUP_KEYS, SORT_KEYS, UNASSIGNED, hasActiveFilters, isDefaultView,
+  DEFAULT_FILTERS, GROUP_KEYS, PRIORITY_RANK, SORT_KEYS, STATUS_RANK, UNASSIGNED, hasActiveFilters, isDefaultView,
   type GroupKey, type SortKey, type TaskFilters,
 } from '@/lib/task-filters';
+import { PRIORITIES, STATUSES, statusLabel } from '@/constants/statuses';
 import { deleteView, findMatchingView, loadViews, saveView, type SavedView, type ViewScope } from '@/lib/saved-views';
 
-const STATUSES = ['Backlog', 'Todo', 'In Progress', 'Review', 'On Hold', 'Done'];
-const PRIORITIES = ['Critical', 'High', 'Medium', 'Low'];
+// Listed in the same order the status / priority sort uses (most urgent priority first).
+const byRank = (rank: Record<string, number>) => (a: string, b: string) => rank[a.toLowerCase()] - rank[b.toLowerCase()];
+const STATUS_OPTIONS = [...STATUSES].sort(byRank(STATUS_RANK)).map((s) => ({ value: s, label: statusLabel(s) }));
+const PRIORITY_OPTIONS = [...PRIORITIES].sort(byRank(PRIORITY_RANK)).map((p) => ({ value: p, label: p }));
 const SORT_LABELS: Record<SortKey, string> = {
   manual: 'Manual order', due: 'Due date', priority: 'Priority', status: 'Status', title: 'Title', created: 'Created',
 };
@@ -104,8 +107,8 @@ export default function TaskFilterBar({ filters, onChange, assignees, scope, sho
         />
       </div>
 
-      <MultiSelect label="Status" options={STATUSES.map((s) => ({ value: s, label: s }))} selected={filters.status} onChange={(status) => patch({ status })} />
-      <MultiSelect label="Priority" options={PRIORITIES.map((p) => ({ value: p, label: p }))} selected={filters.priority} onChange={(priority) => patch({ priority })} />
+      <MultiSelect label="Status" options={STATUS_OPTIONS} selected={filters.status} onChange={(status) => patch({ status })} />
+      <MultiSelect label="Priority" options={PRIORITY_OPTIONS} selected={filters.priority} onChange={(priority) => patch({ priority })} />
       <MultiSelect label="Assignee" options={assigneeOptions} selected={filters.assignee} onChange={(assignee) => patch({ assignee })} />
 
       {showLayoutControls && (

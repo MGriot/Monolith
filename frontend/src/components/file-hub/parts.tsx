@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { fileKind, formatBytes, type FileKind, type HubFile, type HubFolder, type HubIndex } from '@/lib/file-hub';
 import type { UploadItem } from '@/hooks/use-upload-queue';
 import { ExcalidrawScenePreview } from '@/components/sketch-thumbnail';
+import { parseServerDate } from '@/lib/dates';
 
 /** Handlers that make an element accept files dragged in from the desktop. */
 export interface NativeDropProps {
@@ -104,7 +105,7 @@ export function FileCard({ file, selected, focused, view, folderName, onSelect, 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `file:${file.id}`, data: { kind: 'file', id: file.id } });
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => { if (focused) ref.current?.scrollIntoView({ block: 'nearest' }); }, [focused]);
-  const meta = [formatBytes(file.size_bytes), new Date(file.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })].filter(Boolean).join(' · ');
+  const meta = [formatBytes(file.size_bytes), parseServerDate(file.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })].filter(Boolean).join(' · ');
 
   const common = {
     ref: (el: HTMLDivElement | null) => { setNodeRef(el); ref.current = el; },

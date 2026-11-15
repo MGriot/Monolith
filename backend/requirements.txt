@@ -5,7 +5,6 @@ asyncpg
 pydantic
 pydantic-settings
 PyJWT>=2.10
-passlib[bcrypt]
 python-multipart
 alembic
 python-dotenv
@@ -14,8 +13,6 @@ sse-starlette
 email-validator
 httpx
 bcrypt==4.0.1
-bcrypt
-pandas
+python-dateutil
 openpyxl
-xhtml2pdf
 Jinja2

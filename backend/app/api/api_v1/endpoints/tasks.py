@@ -1,16 +1,13 @@
 from typing import Any, List, Optional
-import os
-import shutil
-import uuid
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.api.access import EDITOR, has_task_access, require_project_access, require_task_access
+from app.api.access import EDITOR, require_project_access, require_task_access
 from app.core import activity
 from app.core.uploads import save_upload
 from app.crud import crud_task, crud_project, crud_dependency, crud_custom_field
@@ -21,14 +18,8 @@ from app.schemas.task import (
 from app.db.transaction import transaction
 from app.models.user import User
 from app.models.dependency import Dependency as DependencyModel
-from app.core.config import settings
-from app.core.enums import Status
+from app.core.export import enum_value, fmt_date, tabular_response
 from datetime import datetime
-
-import io
-import pandas as pd
-from datetime import datetime
-from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 
@@ -67,11 +58,14 @@ async def export_tasks(
         selectinload(TaskModel.project),
         selectinload(TaskModel.topics),
         selectinload(TaskModel.types),
-        selectinload(TaskModel.subtasks) # For details explosion
     )
-    
+
     result = await db.execute(query)
     tasks = result.scalars().all()
+    if mode == "details":
+        # Whole subtrees with their assignees and project, in one recursive query: subtasks that are not assigned to
+        # the user are not in `tasks`, and lazy-loading their relations in an async session fails (MissingGreenlet).
+        await crud_task.task._load_trees(db, [t.id for t in tasks])
 
     data = []
     
@@ -85,11 +79,11 @@ async def export_tasks(
             "Parent Task": parent_title or "",
             "Title": t.title,
             "Description": t.description or "",
-            "Status": t.status.value if hasattr(t.status, 'value') else str(t.status),
-            "Priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
-            "Start Date": t.start_date.strftime("%Y-%m-%d") if t.start_date else "",
-            "Due Date": t.due_date.strftime("%Y-%m-%d") if t.due_date else "",
-            "Completed At": t.completed_at.strftime("%Y-%m-%d %H:%M") if t.completed_at else "",
+            "Status": enum_value(t.status),
+            "Priority": enum_value(t.priority),
+            "Start Date": fmt_date(t.start_date),
+            "Due Date": fmt_date(t.due_date),
+            "Completed At": fmt_date(t.completed_at, "%Y-%m-%d %H:%M"),
             "Duration (Days)": duration,
             "Assignees": ", ".join([u.full_name or u.email for u in t.assignees]),
             "Milestone": "Yes" if t.is_milestone else "No",
@@ -99,38 +93,13 @@ async def export_tasks(
         
         if mode == "details" and t.subtasks:
             for st in t.subtasks:
-                # Need to load relationships for subtasks too if we want full explosion
-                # For now we'll do a simple explosion of what's already there
                 process_task(st, t.title)
 
     for t in tasks:
         process_task(t)
 
-    df = pd.DataFrame(data)
-    
-    if format == "csv":
-        stream = io.StringIO()
-        df.to_csv(stream, index=False)
-        response = StreamingResponse(
-            io.BytesIO(stream.getvalue().encode()),
-            media_type="text/csv",
-        )
-        filename = f"tasks_export_{datetime.now().strftime('%Y%m%d')}.csv"
-        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
-        return response
-    else:
-        # Excel
-        stream = io.BytesIO()
-        with pd.ExcelWriter(stream, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='My Tasks')
-        
-        response = StreamingResponse(
-            io.BytesIO(stream.getvalue()),
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-        filename = f"tasks_export_{datetime.now().strftime('%Y%m%d')}.xlsx"
-        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
-        return response
+    return tabular_response(data, fmt=format, sheet="My Tasks",
+                            basename=f"tasks_export_{datetime.now().strftime('%Y%m%d')}")
 
 @router.get("/assigned", response_model=List[Task])
 async def read_assigned_tasks(
@@ -148,60 +117,20 @@ async def read_assigned_tasks(
     from sqlalchemy import or_
     
     query = (
-        select(TaskModel)
+        select(TaskModel.id)
         .join(task_assignees)
         .outerjoin(ProjectModel, TaskModel.project_id == ProjectModel.id)
         .filter(task_assignees.c.user_id == current_user.id)
         .filter(TaskModel.is_archived == False)
         .filter(or_(ProjectModel.id == None, ProjectModel.is_archived == False))
-        .options(
-            selectinload(TaskModel.owner),
-            selectinload(TaskModel.assignees),
-            selectinload(TaskModel.blocked_by),
-            selectinload(TaskModel.blocking),
-            selectinload(TaskModel.topic_ref),
-            selectinload(TaskModel.type_ref),
-            selectinload(TaskModel.topics),
-            selectinload(TaskModel.types),
-            selectinload(TaskModel.project),
-            selectinload(TaskModel.subtasks).options(
-                selectinload(TaskModel.owner),
-                selectinload(TaskModel.assignees),
-                selectinload(TaskModel.blocked_by),
-                selectinload(TaskModel.blocking),
-                selectinload(TaskModel.topic_ref),
-                selectinload(TaskModel.type_ref),
-                selectinload(TaskModel.topics),
-                selectinload(TaskModel.types),
-                selectinload(TaskModel.subtasks).options(
-                    selectinload(TaskModel.owner),
-                    selectinload(TaskModel.assignees),
-                    selectinload(TaskModel.blocked_by),
-                    selectinload(TaskModel.blocking),
-                    selectinload(TaskModel.topic_ref),
-                    selectinload(TaskModel.type_ref),
-                    selectinload(TaskModel.topics),
-                    selectinload(TaskModel.types),
-                    selectinload(TaskModel.subtasks).options(
-                        selectinload(TaskModel.owner),
-                        selectinload(TaskModel.assignees),
-                        selectinload(TaskModel.blocked_by),
-                        selectinload(TaskModel.blocking),
-                        selectinload(TaskModel.topic_ref),
-                        selectinload(TaskModel.type_ref),
-                        selectinload(TaskModel.topics),
-                        selectinload(TaskModel.types),
-                        selectinload(TaskModel.subtasks)
-                    )
-                )
-            )
-        )
         .offset(skip)
         .limit(limit)
     )
-    result = await db.execute(query)
-    tasks = result.scalars().all()
-    
+    ids = (await db.execute(query)).scalars().all()
+    # Whole subtrees with their relations, at any depth (nested selectinload stopped at four levels -> MissingGreenlet)
+    by_id = await crud_task.task._load_trees(db, list(ids))
+    tasks = [by_id[i] for i in ids if i in by_id]
+
     # We don't apply WBS here as these tasks are from different projects/levels
     return tasks
 
@@ -218,7 +147,6 @@ async def read_tasks(
     """
     Retrieve tasks for a project.
     """
-    from typing import Optional
     project = await crud_project.project.get(db, id=project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -281,10 +209,6 @@ async def create_task(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-async def check_task_permissions(db: AsyncSession, task_obj: Any, current_user: User, required_level: str = "read") -> None:
-    if not await has_task_access(db, task_obj, current_user, write=(required_level != "read")):
-        raise HTTPException(status_code=403, detail="Not enough permissions for this task")
-
 @router.post("/bulk", response_model=BulkTaskResponse)
 async def bulk_update_tasks(
     *,
@@ -310,7 +234,8 @@ async def bulk_update_tasks(
             results[task_id] = BulkTaskResult(id=task_id, ok=False, status_code=e.status_code, detail=str(e.detail))
 
     patch = body.patch.model_dump(exclude_unset=True) if body.patch is not None else {}
-    async with transaction(db):
+    # one project roll-up per affected project at the end, not one per task
+    async with transaction(db), crud_task.task.project_sync_once(db):
         for task_id in allowed:
             try:
                 async with db.begin_nested():
@@ -348,11 +273,8 @@ async def read_task(
     """
     Get task by ID.
     """
+    await require_task_access(db, task_id, current_user)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "read")
     return task_obj
 
 @router.put("/{task_id}", response_model=Task)
@@ -366,11 +288,8 @@ async def update_task(
     """
     Update a task.
     """
+    await require_task_access(db, task_id, current_user, write=True)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "write")
             
     try:
         if "custom_values" in task_in.model_fields_set:
@@ -380,7 +299,6 @@ async def update_task(
         task_obj = await crud_task.task.update(db=db, db_obj=task_obj, obj_in=task_in)
         return task_obj
     except ValueError as e:
-        print(f"DEBUG: Task update ValueError: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete("/{task_id}", response_model=Task)
@@ -393,11 +311,8 @@ async def delete_task(
     """
     Delete a task.
     """
+    await require_task_access(db, task_id, current_user, write=True)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "write")
     
     task_obj = await crud_task.task.remove(db=db, id=task_id)
     return task_obj
@@ -412,11 +327,8 @@ async def upload_task_attachment(
     """
     Upload an attachment to a task.
     """
+    await require_task_access(db, task_id, current_user, write=True)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "write")
     
     unique_filename, _ext, _size = await save_upload(file)
     
@@ -509,11 +421,8 @@ async def archive_task(
     """
     Archive a task.
     """
+    await require_task_access(db, task_id, current_user, write=True)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "write")
         
     task_obj = await crud_task.task.update(
         db=db, 
@@ -532,11 +441,8 @@ async def restore_task(
     """
     Restore an archived task.
     """
+    await require_task_access(db, task_id, current_user, write=True)
     task_obj = await crud_task.task.get(db, id=task_id)
-    if not task_obj:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    await check_task_permissions(db, task_obj, current_user, "write")
         
     task_obj = await crud_task.task.update(
         db=db, 

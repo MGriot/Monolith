@@ -21,8 +21,7 @@ mailserver*/
 
 # files and sketch previews written when the backend runs outside a container
 /uploads/
-backend/uploads/previews/
+backend/uploads/
 
-# screenshots and debug output never belong at the repository root
+# screenshots never belong at the repository root
 /*.png
-scripts/debug/output/

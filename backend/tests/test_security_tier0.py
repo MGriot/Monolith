@@ -291,11 +291,12 @@ def test_comment_reply_must_stay_in_same_thread(client, as_user, monkeypatch):
 
 def test_author_cannot_self_approve_idea(client, as_user, monkeypatch):
     from app.api.api_v1.endpoints import ideas
+    from app.crud import crud_project
 
     idea = SimpleNamespace(id=ID, project_id=uuid4(), author_id=as_user.id)
     project = SimpleNamespace(owner_id=uuid4())
     monkeypatch.setattr(ideas.crud_idea, "get", AsyncMock(return_value=idea))
-    monkeypatch.setattr(ideas.crud.project, "get", AsyncMock(return_value=project))
+    monkeypatch.setattr(crud_project.project, "get", AsyncMock(return_value=project))
     update = AsyncMock()
     monkeypatch.setattr(ideas.crud_idea, "update", update)
     # an editor (the author) but not a project admin

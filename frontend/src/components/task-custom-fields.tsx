@@ -10,7 +10,7 @@ import {
   type CustomFieldDef,
   type CustomValues,
 } from '@/lib/custom-fields';
-import type { User } from '@/types';
+import { usersQuery } from '@/lib/queries';
 
 const SELECT_CLASS =
   'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -33,11 +33,7 @@ interface TaskCustomFieldsProps {
 export default function TaskCustomFields({ projectId, values, onChange }: TaskCustomFieldsProps) {
   const { data: defs, isLoading } = useCustomFieldDefs(projectId);
   const needsUsers = !!defs?.some((d) => d.field_type === 'user');
-  const { data: users } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => (await api.get('/users/')).data as User[],
-    enabled: needsUsers,
-  });
+  const { data: users } = useQuery({ ...usersQuery, enabled: needsUsers });
 
   const set = (def: CustomFieldDef, raw: string) => {
     const next = { ...values };

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud, models, schemas
 from app.api import deps
+from app.api.access import require_owner, require_owner_or_shared
 
 router = APIRouter()
 
@@ -54,11 +55,7 @@ async def update_workflow(
     if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
     
-    is_owner = workflow.owner_id == current_user.id
-    is_shared = any(u.id == current_user.id for u in workflow.shared_with)
-    
-    if not current_user.is_superuser and not is_owner and not is_shared:
-        raise HTTPException(status_code=403, detail="Not enough permissions to modify this workflow")
+    require_owner_or_shared(workflow, current_user, "Not enough permissions to modify this workflow")
         
     workflow = await crud.workflow.update(db, db_obj=workflow, obj_in=obj_in)
     return workflow
@@ -80,11 +77,7 @@ async def read_workflow(
     if workflow.is_public:
         return workflow
         
-    is_owner = workflow.owner_id == current_user.id
-    is_shared = any(u.id == current_user.id for u in workflow.shared_with)
-    
-    if not current_user.is_superuser and not is_owner and not is_shared:
-        raise HTTPException(status_code=403, detail="Not enough permissions to view this workflow")
+    require_owner_or_shared(workflow, current_user, "Not enough permissions to view this workflow")
         
     return workflow
 
@@ -101,7 +94,6 @@ async def delete_workflow(
     workflow = await crud.workflow.get(db, id=id)
     if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
-    if not current_user.is_superuser and workflow.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Only the owner can delete this workflow")
+    require_owner(workflow, current_user, "Only the owner can delete this workflow")
     workflow = await crud.workflow.remove(db, id=id)
     return workflow

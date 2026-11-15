@@ -20,6 +20,7 @@ export default function MarkdownRenderer({ content, className }: MarkdownRendere
         rehypePlugins={[rehypeKatex]}
         components={{
           // Support for tooltips via a custom "tipsy" style syntax or just links with titles
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars -- drop react-markdown's `node` so it isn't spread onto <a>
           a: ({ node, ...props }) => {
             if (props.title) {
               const id = `tooltip-${Math.random().toString(36).substr(2, 9)}`;

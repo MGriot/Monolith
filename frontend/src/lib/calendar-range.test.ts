@@ -1,6 +1,16 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { format } from 'date-fns';
-import { moveItemDates, rangeKey, rangeTitle, shiftAnchor, visibleDays, visibleRange, yearBounds } from './calendar-range';
+import {
+  moveItemDates,
+  rangeKey,
+  rangeParams,
+  rangeTitle,
+  shiftAnchor,
+  visibleDays,
+  visibleRange,
+  workloadRange,
+  yearBounds,
+} from './calendar-range';
 
 const ORIGINAL_TZ = process.env.TZ;
 afterEach(() => {
@@ -81,5 +91,19 @@ describe.each(ZONES)('moveItemDates in %s', (tz) => {
     expect(moveItemDates({ start_date: null, due_date: '2025-01-01T00:00:00' }, d(2025, 1, 1), d(2024, 12, 31))).toEqual({
       due_date: '2024-12-31T00:00:00',
     });
+  });
+});
+
+describe.each(ZONES)('workload window in %s', (tz) => {
+  it('the dashboard and users page ask /calendar/ for 90 days back to a year ahead', () => {
+    process.env.TZ = tz;
+    expect(rangeParams(workloadRange(new Date(2026, 9, 23, 23, 30)))).toEqual({
+      start_date: '2026-07-25',
+      end_date: '2027-10-23',
+    });
+  });
+  it('crosses a leap day as calendar days', () => {
+    process.env.TZ = tz;
+    expect(rangeParams(workloadRange(d(2028, 1, 15)))).toEqual({ start_date: '2027-10-17', end_date: '2029-01-14' });
   });
 });

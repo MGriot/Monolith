@@ -1,10 +1,9 @@
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, computed_field
 from app.core.enums import IdeaStatus
 from app.schemas.user import User as UserSchema
-from app.schemas.comment import CommentResponse
 
 class IdeaBase(BaseModel):
     title: Optional[str] = None

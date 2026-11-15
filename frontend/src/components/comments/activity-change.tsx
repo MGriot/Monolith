@@ -1,5 +1,6 @@
 import { Archive, ArchiveRestore, Bot, GitBranch, Pencil, Plus, RefreshCw, Trash2, UserPlus } from 'lucide-react';
-import { actorName, isAutomatic, parseUtc, type ActivityEvent } from '@/lib/activity';
+import { actorName, isAutomatic, type ActivityEvent } from '@/lib/activity';
+import { parseServerDate } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 
 const ICONS: Record<string, typeof Pencil> = {
@@ -28,7 +29,7 @@ export function ActivityChange({
 }) {
   const auto = isAutomatic(event);
   const Icon = auto ? Bot : ICONS[event.kind] ?? Pencil;
-  const at = parseUtc(event.created_at);
+  const at = parseServerDate(event.created_at);
   const canOpen = !!(onOpenTask && event.task_id && event.kind !== 'deleted');
 
   return (
