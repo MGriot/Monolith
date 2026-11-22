@@ -53,11 +53,13 @@ import type { Project, Task } from '@/types';
 import { useTitle } from '@/context/title-context';
 import { DeadlineLine } from '@/components/deadline-line';
 import { formatDisplayDate, fromDateInput } from "@/lib/dates";
+import { errorMessage } from '@/lib/api-error';
 import { calculateSortIndex } from '@/lib/kanban';
 import { findTask, flattenTasks } from '@/lib/tasks';
 import TaskFilterBar from '@/components/task-filter-bar';
 import { useTaskView } from '@/hooks/use-task-view';
 import { taskPayload, useTaskMutations } from '@/hooks/use-task-mutations';
+import { taskFormValues } from '@/lib/form-fields';
 import { collectAssignees, hasActiveFilters } from '@/lib/task-filters';
 import { TOGGLE_VIEW_EVENT, onAppEvent } from '@/lib/app-events';
 import BulkActionBar from '@/components/bulk-action-bar';
@@ -214,8 +216,10 @@ export default function ProjectDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project', id] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success("Project updated successfully");
     },
+    onError: (error) => toast.error(errorMessage(error, "Could not save the project")),
   });
 
   const updateProjectRegionsMutation = useMutation({
@@ -632,26 +636,7 @@ export default function ProjectDetailPage() {
             <TaskForm
               projectId={id}
               taskObject={editingTask}
-              initialValues={editingTask ? {
-                title: editingTask.title,
-                description: editingTask.description,
-                status: editingTask.status,
-                priority: editingTask.priority,
-                topic_ids: editingTask.topic_ids || editingTask.topics?.map(t => t.id) || [],
-                type_ids: editingTask.type_ids || editingTask.types?.map(t => t.id) || [],
-                is_milestone: editingTask.is_milestone,
-                start_date: editingTask.start_date || '',
-                due_date: editingTask.due_date || '',
-                deadline_at: editingTask.deadline_at || '',
-                completed_at: editingTask.completed_at || '',
-                assignee_ids: editingTask.assignees?.map(u => u.id) || [],
-                parent_id: editingTask.parent_id,
-                color: editingTask.color,
-                optimistic_days: editingTask.optimistic_days,
-                normal_days: editingTask.normal_days,
-                pessimistic_days: editingTask.pessimistic_days,
-                duration_days: editingTask.duration_days
-              } : {
+              initialValues={editingTask ? taskFormValues(editingTask) : {
                 status: initialStatus,
                 parent_id: parentTaskId
               }}

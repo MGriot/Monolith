@@ -62,8 +62,12 @@ export interface Task {
   // Financials
   budget?: number;
   real_cost?: number;
+  // Risk (1-5)
+  risk_probability?: number;
+  risk_impact?: number;
   // List
-  checklist?: { id: string; content: string; is_done: boolean }[];
+  checklist?: { id: string; text: string; is_done: boolean }[];
+  assignee_ids?: string[];
   // Custom field values keyed by CustomFieldDef id
   custom_values?: Record<string, string | number | boolean>;
   // RRULE subset, e.g. FREQ=WEEKLY;BYDAY=MO. Completing the task creates the next one

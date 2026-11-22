@@ -16,6 +16,7 @@ import { Section } from "@/components/ui/section";
 import { Field, selectClass } from "@/components/ui/field";
 import { TagInput } from "@/components/ui/tag-input";
 import { EntityEditor, EditorTitle, RailGroup, RiskCostPanel, type EditorTab } from "@/components/entity-editor";
+import { numberField, reportInvalidFields } from "@/lib/form-fields";
 import type { Topic, WorkType, Project } from "@/types";
 import { toDateInputValue } from "@/lib/dates";
 import { PRIORITIES, STATUSES, statusLabel } from "@/constants/statuses";
@@ -208,10 +209,10 @@ export default function ProjectForm({
           budget={watch("budget") || 0}
           realCost={watch("real_cost") || 0}
           fields={{
-            probability: register("risk_probability", { valueAsNumber: true }),
-            impact: register("risk_impact", { valueAsNumber: true }),
-            budget: register("budget", { valueAsNumber: true }),
-            realCost: register("real_cost", { valueAsNumber: true }),
+            probability: register("risk_probability", numberField()),
+            impact: register("risk_impact", numberField()),
+            budget: register("budget", numberField(0)),
+            realCost: register("real_cost", numberField(0)),
           }}
         />
       ),
@@ -309,7 +310,7 @@ export default function ProjectForm({
     <EntityEditor
       variant={variant}
       isDirty={isDirty}
-      onSubmit={handleSubmit(submit)}
+      onSubmit={handleSubmit(submit, reportInvalidFields)}
       main={
         <>
           <EditorTitle id="name" placeholder="Project name" registration={register("name")} error={errors.name?.message} />

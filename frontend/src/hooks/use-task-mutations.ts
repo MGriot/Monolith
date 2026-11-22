@@ -44,12 +44,14 @@ export function useTaskMutations({ listKey, relatedKeys = [], projectId, onSaved
   const createTask = useMutation({
     mutationFn: async (data: Partial<TaskFormValues>) => (await api.post('/tasks/', { ...data, project_id: projectId })).data,
     onSuccess: saved('Task created successfully'),
+    onError: (error) => toast.error(errorMessage(error, 'Could not create the task')),
   });
 
   const updateTask = useMutation({
     mutationFn: async ({ taskId, data }: { taskId: string; data: Partial<TaskFormValues> }) =>
       (await api.put(`/tasks/${taskId}`, data)).data,
     onSuccess: saved('Task updated successfully'),
+    onError: (error) => toast.error(errorMessage(error, 'Could not save the task')),
   });
 
   const deleteTask = useMutation({

@@ -31,6 +31,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { addDays, differenceInDays, format, parseISO } from "date-fns";
 import DependencyManager from "./dependency-manager";
 import { EntityEditor, EditorTitle, RailGroup, RiskCostPanel, type EditorTab } from "@/components/entity-editor";
+import { numberField, reportInvalidFields } from "@/lib/form-fields";
 import { Section } from "@/components/ui/section";
 import { Field, selectClass } from "@/components/ui/field";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -589,13 +590,13 @@ export default function TaskForm({
           >
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Optimistic" htmlFor="optimistic_days">
-                <Input id="optimistic_days" type="number" className="h-9" {...register("optimistic_days", { valueAsNumber: true })} />
+                <Input id="optimistic_days" type="number" className="h-9" {...register("optimistic_days", numberField(0))} />
               </Field>
               <Field label="Most likely" htmlFor="normal_days">
-                <Input id="normal_days" type="number" className="h-9" {...register("normal_days", { valueAsNumber: true })} />
+                <Input id="normal_days" type="number" className="h-9" {...register("normal_days", numberField(0))} />
               </Field>
               <Field label="Pessimistic" htmlFor="pessimistic_days">
-                <Input id="pessimistic_days" type="number" className="h-9" {...register("pessimistic_days", { valueAsNumber: true })} />
+                <Input id="pessimistic_days" type="number" className="h-9" {...register("pessimistic_days", numberField(0))} />
               </Field>
             </div>
           </Section>
@@ -680,10 +681,10 @@ export default function TaskForm({
           budget={watch("budget") || 0}
           realCost={watch("real_cost") || 0}
           fields={{
-            probability: register("risk_probability", { valueAsNumber: true }),
-            impact: register("risk_impact", { valueAsNumber: true }),
-            budget: register("budget", { valueAsNumber: true }),
-            realCost: register("real_cost", { valueAsNumber: true }),
+            probability: register("risk_probability", numberField()),
+            impact: register("risk_impact", numberField()),
+            budget: register("budget", numberField(0)),
+            realCost: register("real_cost", numberField(0)),
           }}
         />
       ),
@@ -834,7 +835,7 @@ export default function TaskForm({
 
   return (
     <EntityEditor
-      onSubmit={handleSubmit(handleFormSubmit)}
+      onSubmit={handleSubmit(handleFormSubmit, reportInvalidFields)}
       main={
         <>
           <EditorTitle id="title" placeholder="Task title" registration={register("title")} error={errors.title?.message} />
